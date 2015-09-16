@@ -24,8 +24,10 @@ N_PARALLEL_JOBS=2
 
 if [ "$uname" = FreeBSD -o "$uname" = Darwin ]; then
 	TRUE=/usr/bin/true
+	TIME=/usr/bin/time
 else
         TRUE=/bin/true
+	TIME=time
 fi
 
 GIT=${TRUE}
@@ -50,7 +52,7 @@ do
 	counter=0
 	while ${TRUE}
 	do
-		if [ `(/usr/bin/time ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
+		if [ `(${TIME} ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
 		then
 #success
 			break
