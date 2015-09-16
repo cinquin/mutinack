@@ -1,0 +1,1 @@
+Program is expected to not detect mutation.  The mapping quality of the sister arm mutation is 60 and minMappingQualityQ1=20.

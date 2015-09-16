@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The insert size is 130bp and minInsertSize=0.

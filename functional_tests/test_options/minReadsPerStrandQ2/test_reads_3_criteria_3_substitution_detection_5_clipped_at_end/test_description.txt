@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  Number of reads is 3 and minReadsPerStrandQ2=3.

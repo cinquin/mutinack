@@ -1,0 +1,4 @@
+rawInsertionsQ2: All: {(A, C)=3, (T, G)=3}; total: 6
+codingStrandInsQ2: All: {(wt A, ins C)=1}; total: 1
+rawInsertionsQ1: All: {(A, C)=3, (T, G)=3}; total: 6
+rawInsertionsQ2: All: {(A, C)=3, (T, G)=3}; total: 6

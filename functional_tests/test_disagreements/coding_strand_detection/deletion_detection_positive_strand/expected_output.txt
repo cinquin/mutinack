@@ -1,0 +1,3 @@
+codingStrandDelQ2: All: {(wt C, del C)=1}; total: 1
+rawDeletionsQ1: All: {(C, C)=3, (G, G)=3}; total: 6
+rawDeletionsQ2: All: {(C, C)=3, (G, G)=3}; total: 6

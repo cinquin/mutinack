@@ -1,0 +1,1 @@
+Program is expected to not detect mutation.  There are 5 duplexes in the sister arm and minNumberDuplexesSisterArm=6.

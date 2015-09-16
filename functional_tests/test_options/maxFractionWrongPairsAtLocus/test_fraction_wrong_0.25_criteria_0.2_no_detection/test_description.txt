@@ -1,0 +1,1 @@
+Program is expected to not detect mutation.  The fraction of wrong pair at locus is 0.25 and maxFractionWrongPairsAtLocus=0.25.  At the output loci, 2 Q1 duplexes are expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

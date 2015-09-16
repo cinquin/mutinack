@@ -1,0 +1,1 @@
+Program is expected to not detect substitution.  The substitution is 9bp from the end of the read and ignoreLastNBases=8 but the 5 clipped at then end also clip the mutation during alignment.

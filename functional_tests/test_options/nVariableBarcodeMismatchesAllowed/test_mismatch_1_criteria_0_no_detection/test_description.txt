@@ -1,0 +1,2 @@
+Program is expected to not detect mutation.  Variable barcode mismatch is 1 and nVariableBarcodeMismatchesAllowed=0.  At the output loci, 3 Q1 duplexes are expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.
+

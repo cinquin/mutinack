@@ -1,0 +1,1 @@
+Program is expected to not detect deletion.  The consensus of the deletion is at 0.95 and minConsensusThresholdQ2=0.95.  One read has deletion shifted 1bp from the others for a consensus of 19/20 for the deletion at the exact same region.

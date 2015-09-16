@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  Number of reads is 3 and minReadsPerStrandQ2=3.  At the output loci, 1 Q1 duplex is expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

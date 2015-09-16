@@ -1,0 +1,1 @@
+Program is expected to not detect deletion.  The consensus of the deletion is 0.95 and minConsensusThresholdQ2=0.95. There is strand disagreement between two reads of 1 pair so mutation is at 19/20 reads.

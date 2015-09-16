@@ -1,0 +1,1 @@
+codingStrandSubstQ2: All: {(wt A, subst C)=0, (wt A, subst G)=0, (wt A, subst T)=0, (wt C, subst A)=0, (wt C, subst G)=1, (wt C, subst T)=0, (wt G, subst A)=0, (wt G, subst C)=0, (wt G, subst T)=0, (wt T, subst A)=0, (wt T, subst C)=0, (wt T, subst G)=0}; total: 1

@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The mapping quality is 60 and minMappingQualityQ2=50.

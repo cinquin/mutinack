@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The median phred score of the reads is 39 and minReadMedianPhredScore=30.

@@ -1,0 +1,1 @@
+Program is expected to not detect insertion because read goes into adapter.

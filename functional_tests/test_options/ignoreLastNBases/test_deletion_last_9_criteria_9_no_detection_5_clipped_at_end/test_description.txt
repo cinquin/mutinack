@@ -1,0 +1,1 @@
+Program is expected to not detect deletion.  The deletion is 9bp from the end of the read and ignoreLastNBases=9 but the 5 clipped at then end also clip the mutation during alignment, either of which would exclude the mutation.

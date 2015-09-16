@@ -1,0 +1,1 @@
+Program is expected to not detect deletion.  Deletion is at position 7-8 and -ignoreFirstNBasesQ2=7.

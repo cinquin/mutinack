@@ -1,0 +1,1 @@
+Program is expected to not detect mutation.  The mutation in the sister arm has a phred score of 39 and minBasePhredScoreQ1=20.
