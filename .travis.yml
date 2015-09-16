@@ -3,6 +3,7 @@ jdk: oraclejdk8
 before_install:
   - sudo apt-get update
   - sudo apt-get install perl
+  - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
 install:
   - cd functional_tests && cpanm -n -q --skip-satisfied --installdeps .
 script: "rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && ./run_functional_tests"
