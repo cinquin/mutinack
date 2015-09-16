@@ -6,7 +6,7 @@ before_install:
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
   - sudo chown -R ${USER} /home/travis/.cpanm
 install:
-  - cd functional_tests && cpanm -n -q --skip-satisfied --installdeps .
+  - cd functional_tests && sudo cpanm -n -q --skip-satisfied --installdeps .
 script: "rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && ./run_functional_tests"
 
 env:
