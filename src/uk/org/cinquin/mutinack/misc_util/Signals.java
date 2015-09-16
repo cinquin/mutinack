@@ -82,8 +82,10 @@ public class Signals {
 		try {
 			Signal.handle(new Signal("URG"), new Handler("URG").sigHandler);
 			Signal.handle(new Signal("INFO"), new Handler("INFO").sigHandler);
-		} catch (Exception e) { 
-			System.err.println(e.toString());
+		} catch (IllegalArgumentException e) { 
+			if (!System.getProperty("osName", null).contains("Linux")) {
+				System.err.println(e.toString());
+			}
 		}
 	}
 }
