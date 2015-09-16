@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="SequenceAnalysis">
+<property name="build.compiler" value="extJavac"/>
+    <property environment="env"/>
+    <property name="junit.output.dir" value="junit"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.8"/>
+    <property name="source" value="1.8"/>
+    <import file="build-user.xml"/>
+    <path id="SequenceAnalysis.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/jcommander-1.33-SNAPSHOT.jar"/>
+        <pathelement location="lib/org.eclipse.jdt.annotation_2.0.0.v20131221-0104_beta_java8.jar"/>
+        <pathelement location="lib/stanford-corenlp-3.4.jar"/>
+        <pathelement location="lib/junit-4.12.jar"/>
+        <pathelement location="lib/trove-150802233617_PATCHED.jar"/>
+        <pathelement location="lib/sun_tools_8_0_25.jar"/>
+        <pathelement location="lib/testng-6.8.22-20150430.132838-2.jar"/>
+        <pathelement location="lib/bzip2.jar"/>
+        <pathelement location="lib/snappy-java-1.0.3-rc3.jar"/>
+        <pathelement location="lib/hamcrest-core-1.3.jar"/>
+	<pathelement location="lib/slf4j-api-1.7.7.jar"/>
+	<pathelement location="lib/logback-core-1.1.3.jar"/>
+	<pathelement location="lib/logback-classic-1.1.3.jar"/>
+	<pathelement location="lib/protobuf-java-2.4.1_PATCHED.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.java"/>
+                <exclude name="contrib/net/sf/picard/vcf/"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+           <compilerarg value="-XDignore.symbol.file" />
+            <src path="src"/>
+            <classpath refid="SequenceAnalysis.classpath"/>
+        </javac>
+    </target>
+    <target name="UtilTest">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
+            <classpath refid="SequenceAnalysis.classpath"/>
+        </junit>
+    </target>
+    <target name="SequenceAnalysis">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
+            <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
+            <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
+            <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
+            <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
+            <classpath refid="SequenceAnalysis.classpath"/>
+        </junit>
+    </target>
+    <target depends="SequenceAnalysis" name="junitreport">
+        <junitreport todir="${junit.output.dir}">
+            <fileset dir="${junit.output.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${junit.output.dir}"/>
+        </junitreport>
+    </target>
+</project>

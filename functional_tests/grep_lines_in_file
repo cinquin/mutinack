@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+use File::Grep qw( fgrep fmap fdo );
+use warnings;
+
+if (! -e $ARGV[0]) {
+	die "file $ARGV[0] does not exist";
+}
+my $found = 1;
+my $n_lines = 0;
+while(my $line = <STDIN>) {
+	chomp($line);
+	if ($line eq "") {
+		next;
+	}
+	my @capture = split(/\t/, $line);
+	my $subset;
+	if (scalar(@capture) >= 8) {
+		$subset = join("\t", map { (defined) ? $_ : '' } @capture[0..7]);
+	} else {
+		$subset = $line;
+	}
+	if (chomp($subset) eq "") {
+		print STDERR "Problem getting subset of $line ; ignoring \n";
+		next;
+	}
+	$n_lines++;
+	#print "Searching for $subset\n";
+	if ( fgrep { chomp($_) ; index("$_", "$subset") != -1 } $ARGV[0] ) {
+	} else {
+		print STDERR "Could not find $subset\n";
+		$subset2 = join("\t", map { (defined) ? $_ : '' } @capture[1..1]);
+		if ($subset2 ne "") {
+			$subset = $subset2;
+		}
+		print STDERR "Looking for $subset in file $ARGV[0]\n";
+		open my $fh, '<', $ARGV[0];
+		while (<$fh>) {
+ 			print STDERR if /$subset/;
+		}
+		$found = 0;
+		last;
+	}
+}
+if ($n_lines == 0) {
+	print STDERR "Empty reference output: nothing to check against file $ARGV[0]\n";
+	exit 1;	
+}
+if (! $found) {
+	exit 1;
+}

@@ -1,0 +1,4 @@
+.DS_Store
+._*
+/bin/
+src/uk/org/cinquin/mutinack/misc_util/VersionInfo.java

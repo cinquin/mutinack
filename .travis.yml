@@ -1,0 +1,25 @@
+language: java
+jdk: oraclejdk8
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install perl
+install:
+  - cd functional_tests && cpanm -n -q --skip-satisfied --installdeps .
+script: "rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && ./run_functional_tests"
+
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "KVe4vqi3wengC_05Q9Z8_g"
+
+addons:
+  coverity_scan:
+    project:
+      name: "cinquin/mutinack"
+      description: "<Your project description here>"
+    notification_email: olivier.cinquin@uci.edu
+    build_command_prepend: "true"
+    build_command:   "ant"
+    branch_pattern: "*"
+

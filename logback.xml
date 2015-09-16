@@ -1,0 +1,25 @@
+<configuration scan="true">
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <Pattern>%d [%thread] %level %logger - %m%n</Pattern>
+    </layout>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.err</target>
+    <encoder>
+        <pattern>%date %level - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="WARN">
+    <appender-ref ref="STDERR"/>
+  </root>
+  <logger name="MutinackStatus" level="INFO" additivity="false">
+    <appender-ref ref="STDERR"/>
+  </logger>
+</configuration>
+
+

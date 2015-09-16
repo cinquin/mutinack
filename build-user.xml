@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<?eclipse.ant.import?>
+<!-- Partly adapted from http://www.javacint.com/HOWTO_insert_GIT_commit_info_into_your_source_code -->
+<!-- TODO This should me moved to build.xml, and should be made a dependency of build target -->
+<project basedir="." default="" name="gitstuff">
+  <available file=".git" type="dir" property="git.present"/>
+  <target name="git.revision" description="Store git revision in ${repository.version}" if="git.present">
+    <echo level="info" message="git.present is set ${git.present}"/>
+    <exec executable="bash" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
+      <arg value="-c"/>
+      <arg value="echo `git rev-parse --abbrev-ref HEAD` branch\; last commit message: `git status -s | sed  -E 's/^ //g' | grep '^M' | cut -f2 -d ' ' | xargs ls -lt | head -1|awk '{print $6, $7, $8}'` `git log -1 --pretty=%B | sed -e 's/&quot;/\\\\\\&quot;/g'`\;  last commit and subsequent changes: `git log -1 --format=%cd` `git rev-parse HEAD` `git diff-index HEAD | tr '\n' ' '`"/>
+    </exec>
+    <echo level="info" message="git.revision is set ${git.revision}"/>
+    <condition property="repository.version" value="${git.revision}" else="unknown">
+      <and>
+        <isset property="git.revision"/>
+        <length string="${git.revision}" trim="false" length="0" when="greater"/>
+      </and>
+    </condition>
+    <echo level="info" message="repository.version is set ${repository.version}"/>
+  </target>
+  <target name="insert-git-info" depends="git.revision">
+    <replaceregexp file="src/uk/org/cinquin/mutinack/misc_util/VersionInfo.java" match="@GITCOMMIT@.*&quot;" replace="@GITCOMMIT@ ${repository.version}&quot;"/>
+  </target>
+  <target name="unjar_dependencies">
+    <mkdir dir="lib_unjarred"/>
+    <unzip dest="lib_unjarred">
+      <fileset dir="lib">
+        <include name="**/*.jar"/>
+      </fileset>
+    </unzip>
+  </target>
+  <target name="copy_files">
+    <copy todir="build">
+      <fileset dir="lib_unjarred">
+        <exclude name="**/.DS_Store"/>
+        <exclude name="**/*.RSA"/>
+        <exclude name="**/*.DSA"/>
+        <exclude name="**/*.SF"/>
+        <include name="**/*.class"/>
+      </fileset>
+      <fileset dir="bin">
+        <exclude name="**/.DS_Store"/>
+        <exclude name="**/*.RSA"/>
+        <exclude name="**/*.DSA"/>
+        <exclude name="**/*.SF"/>
+        <include name="**/*"/>
+      </fileset>
+    </copy>
+  </target>
+  <target name="jar" depends="insert-git-info,build,copy_files" description="Generate the distribution">
+    <property name="builder.name" value="Daily Build"/>
+    <property name="version.num" value="0.99"/>
+    <buildnumber file="build.num"/>
+    <tstamp>
+      <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss"/>
+    </tstamp>
+    <manifest file="MANIFEST.MF" mode="update">
+      <attribute name="Built-By" value="${builder.name}"/>
+      <attribute name="Implementation-Version" value="${version.num}-b${build.number}"/>
+      <attribute name="Built-Date" value="${TODAY}"/>
+      <attribute name="Main-Class" value="uk.org.cinquin.mutinack.Mutinack"/>
+    </manifest>
+    <jar jarfile="mutinack.jar" manifest="MANIFEST.MF">
+      <fileset dir="build" includes="**/*" excludes="**/.DS_Store"/>
+    </jar>
+  </target>
+  <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpath="findbugs-3.0.1/lib/findbugs-ant.jar"/>
+  <property name="findbugs.home" value="findbugs-3.0.1"/>
+  <target name="findbugs" depends="jar">
+    <findbugs home="${findbugs.home}" output="xml" outputFile="findbugs_output.xml" effort="max" omitVisitors="DefaultEncodingDetector" excludeFilter="findbugs_exclude.xml">
+      <auxClasspath>
+        <fileset dir="">
+          <include name="lib/*.jar"/>
+          <include name="bin/**/*.class"/>
+        </fileset>
+      </auxClasspath>
+      <sourcePath path="src/"/>
+      <class location="bin/uk">
+	</class>
+    </findbugs>
+  </target>
+</project>

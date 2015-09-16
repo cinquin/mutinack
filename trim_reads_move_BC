@@ -1,0 +1,75 @@
+#!/usr/bin/env perl
+use String::Approx qw(amatch);
+use String::Approx 'aindex';
+use String::Approx 'adist';
+$num_args = $#ARGV + 1;
+if ( $num_args != 1 ) {
+    $BARCODE_LENGTH = 6;
+}
+else {
+    $BARCODE_LENGTH = $ARGV[0];
+}
+my $line_index = -1;
+my @array;
+while ( my $line = <STDIN> ) {
+    chomp($line);
+    $line_index = $line_index + 1;
+    if ( $line_index == 4 ) {
+        foreach (@array) {
+            print $_ . "\n";
+        }
+        $line_index = 0;
+    }
+    @array[$line_index] = $line;
+    if ( $line_index == 3 ) {
+        @array[0] = @array[0] . " BQ:Z:" . substr $line, 0, $BARCODE_LENGTH;
+        @array[$line_index] = substr $line, $BARCODE_LENGTH;
+    }
+    elsif ( $line_index == 0 ) {
+        @array[$line_index] = ( split( /\s+/, $line ) )[0];
+    }
+    elsif ( $line_index == 1 ) {
+        @array[0] = @array[0] . " BC:Z:" . substr $line, 0, $BARCODE_LENGTH;
+        $line = substr $line, $BARCODE_LENGTH;
+        my $length = length($line);
+        $line   = uc $line;
+        $index  = aindex( "AGATCGGAAGAGCACAC", ["3"], $line );
+        $dist   = adist( "AGATCGGAAGAGCACAC", $line );
+        $index2 = aindex( "AGATCGGAAGAGCGTCG", ["3"], $line );
+        $dist2  = adist( "AGATCGGAAGAGCGTCG", ["3"], $line );
+
+        if ( $dist2 < $dist ) {
+            $index = $index2;
+            $dist  = $dist2;
+        }
+        if ( $index > -1 && $index < $BARCODE_LENGTH + 2 ) {
+            @array[1] = ( ( "N" x $length ) );
+        }
+        elsif ( $index == -1 ) {
+            @array[1] = "$line";
+        }
+        else {
+            my $putative_AGA = substr $line, $index - $BARCODE_LENGTH, 3;
+            $extra_dist = adist( "AGA", $putative_AGA );
+
+            #print "extra dist : $extra_dist\n";
+            $dist = $dist + $extra_dist;
+
+            #print "dist : $dist\n";
+            if ( $dist <= 3 ) {
+
+#remove 6 bases that correspond to variable + constant barcode + an extra 4 bases
+                my $sub = substr $line, 0,
+                  $index - $BARCODE_LENGTH > 0 ? $index - $BARCODE_LENGTH : 0;
+                $sub = $sub . ( "N" x ( $length - length($sub) ) );
+                @array[1] = "$sub";
+            }
+            else {
+                @array[1] = "$line";
+            }
+        }
+    }
+    else {
+        @array[$line_index] = $line;
+    }
+}

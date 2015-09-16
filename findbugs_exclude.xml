@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FindBugsFilter xmlns="http://findbugs.sourceforge.net/filter/3.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://findbugs.sourceforge.net/filter/3.0.0 https://findbugs.googlecode.com/git/findbugs/etc/findbugsfilter.xsd">
+
+  <Match>
+    <Bug pattern="LI_LAZY_INIT_STATIC,UC_USELESS_OBJECT,SBSC_USE_STRINGBUFFER_CONCATENATION,AT_OPERATION_SEQUENCE_ON_CONCURRENT_ABSTRACTION,NP_NULL_ON_SOME_PATH_MIGHT_BE_INFEASIBLE,SC_START_IN_CTOR,JLM_JSR166_UTILCONCURRENT_MONITORENTER,EQ_UNUSUAL,EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS"/>
+  </Match>
+  <Match>
+    <Bug category="MALICIOUS_CODE"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

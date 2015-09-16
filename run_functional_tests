@@ -1,0 +1,74 @@
+#!/bin/sh
+ulimit -c 0
+set -e
+uname=`uname`
+if [ "$uname" == FreeBSD ]; then
+	MAKE=gmake
+else
+	MAKE=make
+fi
+
+#This script assumes the presence of a Makefile in directory functional_tests,
+#with targets all_failed (to re-run failed that were marked in a previous run
+#as having hailed) and all. Target all_failed is invoked first; if it fails,
+#and BAIL_IF_FAILED_TESTS_NOT_FIXED is equal to 1, the script exits with an
+#error. If not, target all is invoked next.
+
+#Set to 1 to get quick notification that failed tests have not been
+#fixed (the tradeoff is not knowing if some tests that were passing are now
+#failing).
+BAIL_IF_FAILED_TESTS_NOT_FIXED=1
+
+#make -j parameter
+N_PARALLEL_JOBS=2
+
+GIT=/usr/bin/true
+#Uncomment line below to activate git failed test tracking functionality
+#GIT=git
+
+update_repo () {
+	if [ ! -z "`${GIT} diff --shortstat 2> /dev/null | tail -n1`" ]
+	then
+		(${GIT} branch -u origin/`${GIT} rev-parse --abbrev-ref HEAD` && ${GIT} config --global push.default simple && ${GIT} stash && ${GIT} fetch && (${GIT} merge || ${GIT} merge -X ours) && (${GIT} stash pop > /dev/null 2>&1) && (${GIT} ls-files --deleted -z | xargs -0 ${GIT} rm) && (${GIT} commit -m "Automatic update to failed test record: $1" > /dev/null 2>&1 || /usr/bin/true) && ${GIT} push) || echo "Error in processing test record update"
+	fi
+}
+
+cp -p mutinack.jar functional_tests/
+cd functional_tests
+${MAKE} clean
+
+for target in all_failed all
+do
+#Try to run the tests three times to work around a bug in the Hotspot 1.8.0_45 and
+#1.8.0_51 JVMs that leads to occasional crashes (apparently caused by a compiler thread).
+	counter=0
+	while /usr/bin/true
+	do
+		if [ `(/usr/bin/time ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
+		then
+#success
+			break
+		fi
+
+		counter=`expr $counter + 1`
+		if [ $counter -eq 3 ]
+		then
+			if [ "$target" == "all_failed" -a $BAIL_IF_FAILED_TESTS_NOT_FIXED -ne 1 ]
+			then
+				break
+			fi
+			echo "Functional tests failed; giving up"
+			update_repo "ERROR: failed functional tests"
+			exit 1	
+		fi
+		echo "Functional tests failed; trying again"
+	done
+done
+counter=`expr $counter + 1`
+message="functional tests passed"
+if [ $counter -gt 1 ]
+then
+	message="${message}; WARNING: success only after $counter tries"
+fi
+echo "$message"
+update_repo "$message"

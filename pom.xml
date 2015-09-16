@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>uk.org.cinquin.mutinack</groupId>
+  <artifactId>mutinack.jar</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>Maven Quick Start Archetype</name>
+  <url>http://maven.apache.org</url>
+  <!--dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>-->
+  <!-- build> Not used because Maven selects the wrong Java version by default under OS X; that problem can be addressed but it is easier to just use ant.
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <target>
+		< ! - - Will run build.xml in legacy-client/ folder - - >
+                <ant dir="."/>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <configuration>
+          <reportPlugins>
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>findbugs-maven-plugin</artifactId>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build-->
+  <reporting> <!-- Only used for Jenkins integration; actually run from ant findbugs task -->
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>2.5.2</version>
+        <configuration>
+          <findbugsXmlOutput>true</findbugsXmlOutput>
+          <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
+          <xmlOutput>true</xmlOutput>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+</project>
