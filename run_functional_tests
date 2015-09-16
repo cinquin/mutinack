@@ -27,7 +27,7 @@ if [ "$uname" = FreeBSD -o "$uname" = Darwin ]; then
 	TIME=/usr/bin/time
 else
         TRUE=/bin/true
-	TIME=time
+	TIME=""
 fi
 
 GIT=${TRUE}
