@@ -22,7 +22,12 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 #make -j parameter
 N_PARALLEL_JOBS=2
 
-GIT=/usr/bin/true
+if [ "$uname" == FreeBSD ]; then
+	GIT=/usr/bin/true
+else
+        GIT=/bin/true
+fi
+
 #Uncomment line below to activate git failed test tracking functionality
 #GIT=git
 
