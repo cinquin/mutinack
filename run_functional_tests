@@ -2,7 +2,7 @@
 ulimit -c 0
 set -e
 uname=`uname`
-if [ "$uname" == FreeBSD ]; then
+if [ "$uname" = FreeBSD ]; then
 	MAKE=gmake
 else
 	MAKE=make
@@ -22,7 +22,7 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 #make -j parameter
 N_PARALLEL_JOBS=2
 
-if [ "$uname" == FreeBSD ]; then
+if [ "$uname" = FreeBSD ]; then
 	GIT=/usr/bin/true
 else
         GIT=/bin/true
@@ -58,7 +58,7 @@ do
 		counter=`expr $counter + 1`
 		if [ $counter -eq 3 ]
 		then
-			if [ "$target" == "all_failed" -a $BAIL_IF_FAILED_TESTS_NOT_FIXED -ne 1 ]
+			if [ "$target" = "all_failed" -a $BAIL_IF_FAILED_TESTS_NOT_FIXED -ne 1 ]
 			then
 				break
 			fi
