@@ -6,7 +6,7 @@ before_install:
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
   - sudo cpanm File::Grep
 install:
-script: "rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && ./run_functional_tests"
+script: "cat /home/travis/build/cinquin/mutinack/cov-int/build-log.txt ; rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && ./run_functional_tests"
 
 env:
   global:

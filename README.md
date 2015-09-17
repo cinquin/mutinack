@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/cinquin/mutinack.svg?branch=master)](https://travis-ci.org/cinquin/mutinack)
+<!---
 [![Coverity scan](https://scan.coverity.com/projects/4876/badge.svg)](https://scan.coverity.com/projects/4876)
-
+-->
 **General notes**
 
 "Mutinack" is a program that detects extraordinarily rare mutations 
