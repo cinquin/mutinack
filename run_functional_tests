@@ -7,6 +7,12 @@ if [ "$uname" = FreeBSD ]; then
 else
 	MAKE=make
 fi
+if [ "$uname" = FreeBSD -o "$uname" = Darwin ]; then
+       TIME=time
+else
+       TIME=""
+fi
+
 
 #This script assumes the presence of a Makefile in directory functional_tests,
 #with targets all_failed (to re-run failed that were marked in a previous run
@@ -44,7 +50,7 @@ do
 	counter=0
 	while true
 	do
-		if [ `(time ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
+		if [ `(${TIME} ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
 		then
 #success
 			break
