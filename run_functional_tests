@@ -22,15 +22,7 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 #make -j parameter
 N_PARALLEL_JOBS=2
 
-if [ "$uname" = FreeBSD -o "$uname" = Darwin ]; then
-	TRUE=/usr/bin/true
-	TIME=/usr/bin/time
-else
-        TRUE=/bin/true
-	TIME=""
-fi
-
-GIT=${TRUE}
+GIT=true
 #Uncomment line below to activate git failed test tracking functionality
 #GIT=git
 
@@ -50,9 +42,9 @@ do
 #Try to run the tests three times to work around a bug in the Hotspot 1.8.0_45 and
 #1.8.0_51 JVMs that leads to occasional crashes (apparently caused by a compiler thread).
 	counter=0
-	while ${TRUE}
+	while true
 	do
-		if [ `(${TIME} ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
+		if [ `(time ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
 		then
 #success
 			break
