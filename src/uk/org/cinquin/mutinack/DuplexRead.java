@@ -61,8 +61,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	SequenceLocation roughLocation;
 	float referenceDisagreementRate;
 	int averageNClipped;
-	@SuppressWarnings("unused")
-	private int position0, position1, position2, position3;
+	private int position0, position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	
 	public DuplexRead(byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode) {
@@ -72,7 +71,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	
 	public void assertAllBarcodesEqual() {
 		if (DebugControl.NONTRIVIAL_ASSERTIONS) {
-			final Collection<@NonNull ExtendedSAMRecord> allDuplexRecords =
+			final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords =
 					new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 			allDuplexRecords.addAll(topStrandRecords);
 			allDuplexRecords.addAll(bottomStrandRecords);
@@ -100,7 +99,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	
 	@SuppressWarnings("null")
 	public void computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
-		final Collection<@NonNull ExtendedSAMRecord> allDuplexRecords = 
+		final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords = 
 				new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 		allDuplexRecords.addAll(topStrandRecords);
 		allDuplexRecords.addAll(bottomStrandRecords);
@@ -136,10 +135,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return maxDistanceToLig;
 	}
 		
-	void setPositions(int position0, int position1, int position2, int position3) {
+	void setPositions(int position0, int position3) {
 		this.position0 = position0;
-		this.position1 = position1;
-		this.position2 = position2;
 		this.position3 = position3;
 	}
 

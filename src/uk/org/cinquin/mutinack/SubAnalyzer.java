@@ -329,14 +329,10 @@ final class SubAnalyzer {
 				if (matchToLeft) {
 					duplexRead.setPositions(
 							rExtended.getUnclippedStart(),
-							rExtended.getUnclippedEnd(),
-							rExtended.getMateUnclippedStart(),
 							rExtended.getMateUnclippedEnd());
 				} else {
 					duplexRead.setPositions(
 							rExtended.getMateUnclippedStart(),
-							rExtended.getMateUnclippedEnd(),
-							rExtended.getUnclippedStart(),
 							rExtended.getUnclippedEnd());
 				}
 				

@@ -39,6 +39,7 @@ update_repo () {
 	fi
 }
 
+mkdir -p target && cd target && ( [ ! -f classes ] && ln -f -s ../bin classes || true) && cd ..
 cp -p mutinack.jar functional_tests/
 cd functional_tests
 ${MAKE} clean

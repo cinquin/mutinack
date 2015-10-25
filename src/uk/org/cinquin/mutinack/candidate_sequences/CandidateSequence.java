@@ -56,7 +56,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private transient final @Nullable ExtendedSAMRecord initialConcurringRead;
 	private final int initialLigationSiteD;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
-	private @Nullable Collection<@NonNull DuplexRead> duplexes;
+	private transient @Nullable Collection<@NonNull DuplexRead> duplexes;
 	private int nGoodDuplexes;
 	private int nGoodDuplexesIgnoringDisag;
 	private int nGoodOrDubiousDuplexes;
@@ -76,7 +76,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	
 	private byte singleBasePhredQuality = -1;
 	private TByteArrayList phredQualityScores;
-	private Map<DuplexRead, DetailedQualities> issues;
+	private transient Map<DuplexRead, DetailedQualities> issues;
 	
 	//For debugging purposes
 	public int insertSize = -1;

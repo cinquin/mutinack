@@ -15,7 +15,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>-->
-  <!-- build> Not used because Maven selects the wrong Java version by default under OS X; that problem can be addressed but it is easier to just use ant.
+  <build> <!-- Not used for main build because Maven selects the wrong Java version by default under OS X; that problem can be addressed but it is easier to just use ant. -->
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -35,7 +35,7 @@
             <phase>compile</phase>
             <configuration>
               <target>
-		< ! - - Will run build.xml in legacy-client/ folder - - >
+		<!-- Will run build.xml in legacy-client/ folder -->
                 <ant dir="."/>
               </target>
             </configuration>
@@ -48,6 +48,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
+        <version>3.0</version>
         <configuration>
           <reportPlugins>
             <plugin>
@@ -57,8 +58,41 @@
           </reportPlugins>
         </configuration>
       </plugin>
-    </plugins>
-  </build-->
+  <plugin>
+      <groupId>org.jacoco</groupId>
+      <artifactId>jacoco-maven-plugin</artifactId>
+      <version>0.7.5.201505241946</version>
+      <configuration>
+         <dataFile>${basedir}/target/jacoco.exec</dataFile>
+         <sourcefiles encoding="UTF-8">
+             <fileset dir="${basedir}/src"/>
+         </sourcefiles>
+         <excludes>
+            <exclude>**/picard/**</exclude>
+            <exclude>**/samtools/**</exclude>
+         </excludes>
+      </configuration>
+    <!-- <executions>
+        <execution>
+            <id>prepare-agent</id>
+            <goals>
+                <goal>prepare-agent</goal>
+            </goals>
+        </execution>
+    </executions> -->
+  </plugin>
+  <!--<plugin>
+    <groupId>org.eluder.coveralls</groupId>
+    <artifactId>coveralls-maven-plugin</artifactId>
+    <version>4.0.0</version>
+    <configuration>
+        <sourceEncoding>UTF-8</sourceEncoding>
+        <repoToken></repoToken>
+        <sourceDirectories><sourceDirectory>src</sourceDirectory></sourceDirectories>
+    </configuration>
+  </plugin>-->
+</plugins>
+  </build>
   <reporting> <!-- Only used for Jenkins integration; actually run from ant findbugs task -->
     <plugins>
       <plugin>
@@ -69,6 +103,7 @@
           <findbugsXmlOutput>true</findbugsXmlOutput>
           <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
           <xmlOutput>true</xmlOutput>
+          <excludeFilterFile>findbugs_exclude.xml</excludeFilterFile>
         </configuration>
       </plugin>
     </plugins>
