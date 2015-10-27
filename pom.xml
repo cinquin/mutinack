@@ -70,6 +70,7 @@
          <excludes>
             <exclude>**/picard/**</exclude>
             <exclude>**/samtools/**</exclude>
+            <exclude>**/LocusByLocusProtoManipPB*</exclude>
          </excludes>
       </configuration>
     <!-- <executions>
