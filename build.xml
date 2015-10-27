@@ -3,8 +3,34 @@
               Any modifications will be overwritten.
               To include a user specific buildfile here, simply create one in the same
               directory with the processing instruction <?eclipse.ant.import?>
-              as the first entry and export the buildfile again. --><project basedir="." default="build" name="SequenceAnalysis">
-<property name="build.compiler" value="extJavac"/>
+              as the first entry and export the buildfile again. -->
+<project basedir="." default="build" name="SequenceAnalysis" xmlns:jacoco="antlib:org.jacoco.ant">
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath path="lib/org.jacoco.ant-0.7.5.201505241946.jar:lib/org.jacoco.core-0.7.5.201505241946.jar:lib/org.jacoco.report-0.7.5.201505241946.jar:lib/org.jacoco.agent-0.7.5.201505241946.jar:lib/asm-debug-all-5.0.4.jar"/>
+    </taskdef>
+
+    <target name="jacoco:report">
+        <jacoco:report>
+            <executiondata>
+                <file file="target/jacoco.exec"/>
+            </executiondata>
+            <structure name="Mutinack">
+                <classfiles>
+                    <fileset dir="bin">
+                        <exclude name="**/picard/**"/>
+                        <exclude name="**/samtools/**"/>
+                        <exclude name="**/LocusByLocusNumbersPB*"/>
+                    </fileset>
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="src"/>
+                </sourcefiles>
+            </structure>
+            <html destdir="target/site/jacoco"/>
+        </jacoco:report>
+    </target>
+
+    <property name="build.compiler" value="extJavac"/>
     <property environment="env"/>
     <property name="junit.output.dir" value="junit"/>
     <property name="debuglevel" value="source,lines,vars"/>
@@ -53,23 +79,27 @@
     </target>
     <target name="UtilTest">
         <mkdir dir="${junit.output.dir}"/>
-        <junit fork="yes" printsummary="withOutAndErr">
-            <formatter type="xml"/>
-            <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
-            <classpath refid="SequenceAnalysis.classpath"/>
-        </junit>
+        <jacoco:coverage destfile="target/jacoco.exec">
+            <junit fork="yes" printsummary="withOutAndErr">
+                <formatter type="xml"/>
+                <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
+                <classpath refid="SequenceAnalysis.classpath"/>
+            </junit>
+        </jacoco:coverage>
     </target>
     <target name="SequenceAnalysis">
         <mkdir dir="${junit.output.dir}"/>
-        <junit fork="yes" printsummary="withOutAndErr">
-            <formatter type="xml"/>
-            <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
-            <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
-            <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
-            <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
-            <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
-            <classpath refid="SequenceAnalysis.classpath"/>
-        </junit>
+        <jacoco:coverage destfile="target/jacoco.exec">
+            <junit fork="yes" printsummary="withOutAndErr">
+                <formatter type="xml"/>
+                <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
+                <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
+                <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
+                <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
+                <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
+                <classpath refid="SequenceAnalysis.classpath"/>
+            </junit>
+        </jacoco:coverage>
     </target>
     <target depends="SequenceAnalysis" name="junitreport">
         <junitreport todir="${junit.output.dir}">

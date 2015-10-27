@@ -45,12 +45,10 @@ tests when performing continuous integration builds across multiple
 machines (with e.g. Jenkins); this functionality is turned off by default
 to minimize initial configuration effort.
 
-Note that the project comes with Ant and Maven targets to run Findbugs,
-but as of version 3.0.1 Findbugs throws exceptions during analysis and
-returns a number of erroneous results.
+The project comes with Ant and Maven targets to run Findbugs.
 
-Note also that, at least on some versions of JRE 8, Mutinack can trigger
-a non-deterministic Java Virtual Machine bug, which has been
+Note that, at least on some versions of JRE 8, Mutinack can trigger a
+non-deterministic Java Virtual Machine bug, which has been
 [reported](https://bugs.openjdk.java.net/browse/JDK-8132870) to
 Oracle but apparently remains unaddressed. This bug has only been
 observed in functional tests, which work around the problem by specifying

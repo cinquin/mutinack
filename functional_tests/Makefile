@@ -4,6 +4,7 @@ MAX_MEM_OPT = -Xmx2G
 JVM_BUG_WORKAROUND = 
 #JVM_BUG_WORKAROUND = -XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey
 #https://bugs.openjdk.java.net/browse/JDK-8132870
+JACOCO := $(shell echo -javaagent:jacoco.jar=destfile=`pwd`/../target/jacoco.exec)
 
 #GIT := false
 #Uncomment the line below to allow failed functional tests to be marked in the git repository and
@@ -54,7 +55,7 @@ N_FILES = $(shell echo $(FILES) | tr ' ' '\n' | wc -l)
 RESULTS = $(FILES:args.txt=run.out) 
 OUTPUT_ALIGNMENTS = $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai)
 RESULT_CHECKS = $(FILES:args.txt=run.out.check)
-JARS = $(shell find . -mindepth 2 -name mutinack.jar -print) $(shell find . -mindepth 2 -name mutinack_2.jar -print)
+JARS = $(shell find . -mindepth 2 -name mutinack.jar -print) $(shell find . -mindepth 2 -name jacoco.jar -print)
 REFFILES = $(shell find . -mindepth 2 '(' -name ref.fa -print -or -name ref.fa.fai -print ')')
 LOGBACKCONF = $(shell find . -mindepth 2 -name logback.xml -print)
 PROGRAM_OUTPUT = $(shell find . -name control_mutations.bed -print -or -name control_top_bottom_disag.bed -print -or -name test_mutations.bed -print -or -name test_top_bottom_disag.bed -print -or -name '*_coverage.bed' -print -or -name '*_coverage.proto' -print)
@@ -125,9 +126,12 @@ clean_hardlinks: clean_jars
 #Create hardlinks to the master files present in the root functional_tests directory.
 #Symbolic links lead to undesirable complications, and independent copies lead to
 #undesirable I/O and disk space usage.
-.PRECIOUS: %/mutinack.jar %/ref.fa %/ref.fa.fai %/logback.xml
+.PRECIOUS: %/mutinack.jar %/ref.fa %/ref.fa.fai %/logback.xml %/jacoco.jar
 %/mutinack.jar:
 	@ln -f mutinack.jar $@
+
+%/jacoco.jar:
+	@ln -f ../lib/org.jacoco.agent-0.7.5.201505241946-runtime.jar $@
 
 %/logback.xml:
 	@ln -f logback.xml $@
@@ -140,10 +144,10 @@ clean_hardlinks: clean_jars
 
 #TODO: introduce optional dependency on %/alignment-2/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam
 .PRECIOUS: %.out
-%/run.out : %/mutinack.jar %/ref.fa %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
+%/run.out : %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
-	@(cd $* && java $(JVM_BUG_WORKAROUND) $(DEBUG_ATTACH) $(MAX_MEM_OPT) -jar mutinack.jar $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
+	@(cd $* && java $(JACOCO) $(JVM_BUG_WORKAROUND) $(DEBUG_ATTACH) $(MAX_MEM_OPT) -jar mutinack.jar $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
 
 .DELETE_ON_ERROR:
 %/run.out.check: %/run.out %/expected_output.txt

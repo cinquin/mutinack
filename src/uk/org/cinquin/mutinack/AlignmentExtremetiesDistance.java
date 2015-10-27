@@ -29,17 +29,12 @@ final class AlignmentExtremetiesDistance {
 		if (r.getReadPositiveStrand()) {
 			temp.setPositions(
 					r.getUnclippedStart(),
-					r.getUnclippedEnd(),
-					r.getMateUnclippedStart(),
 					r.getMateUnclippedEnd());
 		} else {
 			temp.setPositions(
 					r.getMateUnclippedStart(),
-					r.getMateUnclippedEnd(),
-					r.getUnclippedStart(),
 					r.getUnclippedEnd());			
 		}		
-
 		dr = d;
 	}
 
