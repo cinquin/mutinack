@@ -21,6 +21,6 @@ addons:
       description: "<Your project description here>"
     notification_email: olivier.cinquin@uci.edu
     build_command_prepend: "true"
-    build_command:   "ant"
+    build_command: "ant build"
     branch_pattern: "coverity"
 
