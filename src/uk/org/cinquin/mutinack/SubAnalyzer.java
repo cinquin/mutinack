@@ -408,8 +408,10 @@ final class SubAnalyzer {
 			duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength);
 		}
 
-		//Group duplexes that have matching positions and left/right consensus that differ
-		//by at most one
+		//Group duplexes that have alignment positions that differ by at most
+		//analyzer.alignmentPositionMismatchAllowed
+		//and left/right consensus that differ by at most
+		//analyzer.nVariableBarcodeMismatchesAllowed
 
 		final IntervalTree<Integer, DuplexRead> cleanedUpDuplexes = new IntervalTree<>();
 

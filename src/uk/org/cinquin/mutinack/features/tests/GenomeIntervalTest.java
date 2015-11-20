@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.features.tests;
 
 import static org.junit.Assert.assertTrue;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -121,18 +122,35 @@ public class GenomeIntervalTest {
 				new HashSet<>(id.getData()))).collect(Collectors.toList());
 	}
 	
+	private final SecureRandom random = new SecureRandom();
+	
 	private void check(IntervalTree<GenomeInterval> tree, List<IntervalData<GenomeInterval>> intervalList) {
 		for (int position = -200 ; position <= 200; position ++) {
-			int position0 = position;
+			final int position0 = position;
+			
 			Set<GenomeInterval> groundTruthSet = intervalList.stream().filter(v -> 
 					v.getStart() <= position0 && v.getEnd() >= position0).
-				flatMap(v -> v.getData().stream()).collect(Collectors.toSet());;
+					flatMap(v -> v.getData().stream()).collect(Collectors.toSet());;
 
-			Collection<GenomeInterval> data = tree.query(position).getData();
+			Collection<GenomeInterval> data = tree.query(position0).getData();
 			assertTrue(data.equals(groundTruthSet));
 			
-			data = tree.query(position).getUnprotectedData();
-			assertTrue(data.equals(groundTruthSet));			
+			data = tree.query(position0).getUnprotectedData();
+			assertTrue(data.equals(groundTruthSet));
+
+			
+			/* This part of the test disabled because of long run time (but the
+			test does pass if code is uncommented).
+			final int position1 = random.nextInt(400) - 200;
+			groundTruthSet = intervalList.stream().filter(v -> 
+				v.getStart() <= position1 && v.getEnd() >= position0).
+				flatMap(v -> v.getData().stream()).collect(Collectors.toSet());;
+
+			data = tree.query(position0, position1).getData();
+			assertTrue(data.equals(groundTruthSet));
+
+			data = tree.query(position0, position1).getUnprotectedData();
+			assertTrue(data.equals(groundTruthSet));*/
 		}
 	}
 }
