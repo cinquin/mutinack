@@ -1,9 +1,11 @@
 package com.jwetherell.algorithms.data_structures;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 
@@ -74,7 +76,9 @@ public class IntervalTree<T> implements Serializable {
 		if (intervals.size() == 0)
 			root = new Interval<>();
 		else {
-			root = createFromList(intervals);
+			List<IntervalData<T>> sortedList = new ArrayList<>(intervals);
+			sortedList.sort((i1, i2) -> Long.compare(i1.end + i1.start, i2.end + i2.start));
+			root = createFromList(sortedList);
 		}
 	}
 
@@ -85,9 +89,9 @@ public class IntervalTree<T> implements Serializable {
 			newInterval.center = ((middle.start + middle.end) / 2);
 			newInterval.add(middle);
 		} else {
-			int half = intervals.size() / 2;
-			IntervalData<T> middle = intervals.get(half);
-			newInterval.center = ((middle.start + middle.end) / 2);
+			newInterval.center = (	intervals.get(0).start +
+									intervals.get(intervals.size() - 1).end)
+								 / 2;
 			List<IntervalData<T>> leftIntervals = new ArrayList<>();
 			List<IntervalData<T>> rightIntervals = new ArrayList<>();
 			for (IntervalData<T> interval : intervals) {
@@ -193,7 +197,7 @@ public class IntervalTree<T> implements Serializable {
 		}
 
 		/**
-		 * Stabbing query
+		 * Stabbing query; WARNING: do not modify returned object
 		 * 
 		 * @param index to query for.
 		 * @return data at index.
@@ -201,56 +205,54 @@ public class IntervalTree<T> implements Serializable {
 		@SuppressWarnings({ "unchecked" })
 		public IntervalData<T> query(long index) {
 			IntervalData<T> results = null;
-			if (index < center) {
-				// overlap is sorted by start point
-				for (IntervalData<T> data : overlap) {
-					if (data.start > index)
-						break;
+			Interval<T> i = this;
+			boolean mustCopy = false;
+			while (i != null) {
+				if (index < i.center) {
+					// overlap is sorted by start point
+					for (IntervalData<T> data : i.overlap) {
+						if (data.start > index)
+							break;
 
-					if (data.hasIndex(index)) {
-						if (results == null) {
-							results = data.query(index);
-						} else {
-							results.add(data);
+						if (data.hasIndex(index)) {
+							if (results == null) {
+								results = data;
+								mustCopy = true;
+							} else {
+								if (mustCopy) {
+									mustCopy = false;
+									results = data.query(index).add(results);
+								} else {
+									results.add(data);
+								}
+							}
 						}
 					}
-				}
-			} else if (index >= center) {
-				// overlapEnd is sorted by end point
-				for (IntervalData<T> data : overlapEnd) {
-					if (data.end < index)
-						break;
+				} else if (index >= i.center) {
+					// overlapEnd is sorted by end point
+					for (IntervalData<T> data : i.overlapEnd) {
+						if (data.end < index)
+							break;
 
-					if (data.hasIndex(index)) {
-						if (results == null) {
-							results = data.query(index);
-						} else {
-							results.add(data);
+						if (data.hasIndex(index)) {
+							if (results == null) {
+								results = data;
+								mustCopy = true;
+							} else {
+								if (mustCopy) {
+									mustCopy = false;
+									results = data.query(index).add(results);
+								} else {
+									results.add(data);
+								}
+							}
 						}
 					}
 				}
-			}
-			if (index < center) {
-				if (left != null) {
-					IntervalData<T> temp = left.query(index);
-					if (temp != null) {
-						if (results == null) {
-							results = temp;
-						} else {
-							results.add(temp);
-						}
-					}
-				}
-			} else if (index >= center) {
-				if (right != null) {
-					IntervalData<T> temp = right.query(index);
-					if (temp != null) {
-						if (results == null) {
-							results = temp;
-						} else {
-							results.add(temp);
-						}
-					}
+				if (index < i.center) {
+					i = i.left;
+				} else {
+					i = i.right;
 				}
 			}
 			return results == null ? IntervalTree.IntervalData.EMPTY : results;
@@ -265,31 +267,35 @@ public class IntervalTree<T> implements Serializable {
 		 *            of range to query for.
 		 * @return data for range.
 		 */
-		@SuppressWarnings({"null", "unchecked"})
+		@SuppressWarnings({"unchecked"})
 		public IntervalData<T> query(long start, long end) {
 			IntervalData<T> results = null;
-			for (IntervalData<T> data : overlap) {
-				if (data.start > end)
-					break;
-				IntervalData<T> temp = data.query(start, end);
-				if (results == null && temp != null)
-					results = temp;
-				else if (temp != null)
-					results.add(temp);
-			}
-			if (left != null && start < center) {
-				IntervalData<T> temp = left.query(start, end);
-				if (temp != null && results == null)
-					results = temp;
-				else if (temp != null)
-					results.add(temp);
-			}
-			if (right != null && end >= center) {
-				IntervalData<T> temp = right.query(start, end);
-				if (temp != null && results == null)
-					results = temp;
-				else if (temp != null)
-					results.add(temp);
+			Deque<Interval<T>> toExplore = new ArrayDeque<>();
+			toExplore.add(this);
+			Interval<T> i;
+			boolean mustCopy = false;
+			while ((i = toExplore.poll()) != null) {
+				for (IntervalData<T> data : i.overlap) {
+					if (data.start > end)
+						break;
+					if (!data.hasInterval(start, end)) {
+						continue;
+					}
+					if (results == null) {
+						results = data;
+						mustCopy = true;
+					} else if (!mustCopy) {
+						results.add(data);
+					} else {
+						results = data.query(start, end).add(results);
+					}
+				}
+				if (i.left != null && start < i.center) {
+					toExplore.add(i.left);
+				}
+				if (i.right != null && end >= i.center) {
+					toExplore.add(i.right);
+				}
 			}
 			return results != null ? results : IntervalTree.IntervalData.EMPTY;
 		}
@@ -416,12 +422,13 @@ public class IntervalTree<T> implements Serializable {
 		 * @param data to combine with.
 		 * @return Data which represents the combination.
 		 */
-		public void add(IntervalData<T> data) {
+		public IntervalData<T> add(IntervalData<T> data) {
 			if (data.start < this.start)
 				this.start = data.start;
 			if (data.end > this.end)
 				this.end = data.end;
 			this.set.addAll(data.set);
+			return this;
 		}
 
 		/**
@@ -452,6 +459,10 @@ public class IntervalTree<T> implements Serializable {
 
 		public boolean hasIndex(long index) {
 			return index >= this.start && index <= this.end;
+		}
+		
+		public boolean hasInterval(long start1, long end1) {
+			return end1 >= this.start && start1 <= this.end;
 		}
 
 		/**
