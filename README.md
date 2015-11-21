@@ -4,7 +4,7 @@
 **General notes**
 
 "Mutinack" is a program that detects extraordinarily rare mutations 
-(with a frequency as low as ~10^-10) from Illumina paired end
+(with a frequency as low as ~10<sup>-10</sup>) from Illumina paired end
 sequencing of minute amounts of starting material, using a DNA library
 preparation protocol and an algorithm described in an upcoming
 manuscript. Mutinack can report detailed statistics on mutations and
