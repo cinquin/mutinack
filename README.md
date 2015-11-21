@@ -46,7 +46,7 @@ repository, which makes it possible to prioritize re-running of these
 tests when performing continuous integration builds across multiple
 machines (with e.g. Jenkins); this functionality is turned off by default
 to minimize initial configuration effort. Functional tests record
-code overage using JaCoCo (use `ant` target `jacoco:report` to produce a
+code coverage using JaCoCo (use `ant` target `jacoco:report` to produce a
 report).
 
 The project comes with `ant` and `maven` targets to run Findbugs, which
