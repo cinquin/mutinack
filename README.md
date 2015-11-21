@@ -9,7 +9,10 @@ sequencing of minute amounts of starting material, using a DNA library
 preparation protocol and an algorithm described in an upcoming
 manuscript. Mutinack can report detailed statistics on mutations and
 top/bottom strand disagreements over any genome region defined in a
-custom BED file.
+custom BED file. Mutinack can accessorily be used to collapse RNA-Seq
+reads to only keep one set of reads per molecule in the cDNA library,
+which minimizes noise when quantifying gene expression (see e.g.
+\[1-2\]).
 
 **Installing and building Mutinack**
 
@@ -154,3 +157,15 @@ for convenience (Eclipse Public License)
 
 Mutinack is released under the GNU Affero General Public License version
 3.
+
+**References**
+
+\[1\]: Shiroguchi, K., Jia, T.Z., Sims, P.A., Xie, X.S. (2012). Digital
+RNA sequencing minimizes sequence-dependent bias and amplification noise
+with optimized single-molecule barcodes. Proc Natl Acad Sci U S A 109,
+1347–1352.
+
+\[2\]: Fu, G.K., Xu, W., Wilhelmy, J., Mindrinos, M.N., Davis, R.W.,
+Xiao, W., Fodor, S.P.A. (2014). Molecular indexing enables quantitative
+targeted RNA sequencing and reveals poor efficiencies in standard
+library preparations. Proc Natl Acad Sci U S A 111, 1891–1896.
