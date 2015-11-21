@@ -45,16 +45,20 @@ a mechanism to mark failed tests and automatically track them in a Git
 repository, which makes it possible to prioritize re-running of these
 tests when performing continuous integration builds across multiple
 machines (with e.g. Jenkins); this functionality is turned off by default
-to minimize initial configuration effort.
+to minimize initial configuration effort. Functional tests record
+code overage using JaCoCo (use `ant` target `jacoco:report` to produce a
+report).
 
-The project comes with Ant and Maven targets to run Findbugs.
+The project comes with `ant` and `maven` targets to run Findbugs, which
+is pre-packaged in the distribution.
 
 Note that, at least on some versions of JRE 8, Mutinack can trigger a
 non-deterministic Java Virtual Machine bug, which has been
 [reported](https://bugs.openjdk.java.net/browse/JDK-8132870) to
-Oracle but apparently remains unaddressed. This bug has only been
-observed in functional tests, which work around the problem by specifying
-the following JVM option:
+Oracle but apparently remains unaddressed (the original bug report is
+possibly a duplicate of [this bug](https://bugs.openjdk.java.net/browse/JDK-6675699)).
+The JVM bug has only been observed in functional tests, which work around
+the problem by specifying the following JVM option:
 `-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey`.
 
 **Sample datasets**
@@ -145,6 +149,9 @@ The Stanford Natural Language Processing Group (GNU Public License v3)
 - [JUnit](http://http://junit.org) and [Hamcrest](https://code.google.
 com/p/hamcrest/) are used for unit testing (Eclipse Public License
 and BSD license, respectively) and have their jars included
+
+- [JaCoCo](http://eclemma.org/jacoco/), used for code coverage
+analysis (Eclipse Public License v1.0)
 
 - [Logback](http://logback.qos.ch), the [SLF4J](http://www.slf4j.org)
 API and the Lidalia extension for logging (LGLP, MIT, and MIT X11
