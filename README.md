@@ -55,7 +55,7 @@ is pre-packaged in the distribution.
 Note that, at least on some versions of JRE 8, Mutinack can trigger a
 non-deterministic Java Virtual Machine bug, which has been
 [reported](https://bugs.openjdk.java.net/browse/JDK-8132870) to
-Oracle but apparently remains unaddressed (the original bug report is
+Oracle but apparently remains unaddressed (the original bug reported is
 possibly a duplicate of [this bug](https://bugs.openjdk.java.net/browse/JDK-6675699)).
 The JVM bug has only been observed in functional tests, which work around
 the problem by specifying the following JVM option:
