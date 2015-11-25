@@ -9,10 +9,10 @@ sequencing of minute amounts of starting material, using a DNA library
 preparation protocol and an algorithm described in an upcoming
 manuscript. Mutinack can report detailed statistics on mutations and
 top/bottom strand disagreements over any genome region defined in a
-custom BED file. Mutinack can accessorily be used to collapse RNA-Seq
-reads to only keep one set of reads per molecule in the cDNA library,
-which minimizes noise when quantifying gene expression (see e.g.
-\[1-2\]).
+custom BED file. While Mutinack was primarily designed with DNA-Seq in
+mind, it can accessorily be used to collapse RNA-Seq reads to only keep
+one set of reads per molecule in a cDNA library, which minimizes noise
+when quantifying gene expression (see e.g. \[1-2\]).
 
 **Installing and building Mutinack**
 
