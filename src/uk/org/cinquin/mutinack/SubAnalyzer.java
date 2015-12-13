@@ -226,7 +226,7 @@ final class SubAnalyzer {
 	 */
 	private void loadAll(@NonNull List<DuplexRead> finalResult) {
 
-		final List<DuplexRead> resultDuplexes = new ArrayList<>(10_000);
+		final IntervalTree<Integer, DuplexRead> resultDuplexes = new IntervalTree<>();
 		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance();
 		
 		for (final ExtendedSAMRecord rExtended: extSAMCache.values()) {
@@ -257,11 +257,13 @@ final class SubAnalyzer {
 
 			boolean foundDuplexRead = false;
 			final boolean matchToLeft = r.getInferredInsertSize() > 0;
-
-			for (final DuplexRead duplexRead: resultDuplexes) {
+			
+			ed.set(rExtended);
+			
+			for (final DuplexRead duplexRead: resultDuplexes.getOverlapping(ed.temp)) {
 				//stats.nVariableBarcodeCandidateExaminations.increment(location);
 
-				ed.set(rExtended, duplexRead);
+				ed.set(duplexRead);
 
 				if (ed.getMaxDistance() > analyzer.alignmentPositionMismatchAllowed) {
 					continue;

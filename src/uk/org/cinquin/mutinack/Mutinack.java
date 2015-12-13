@@ -319,6 +319,8 @@ public class Mutinack {
 		this.constantBarcode = constantBarcode;
 		unclippedBarcodeLength = 0;
 		
+		DuplexRead.intervalSlop = argValues.alignmentPositionMismatchAllowed;
+		
 		synchronized(ExtendedSAMRecord.class) {
 			if (ExtendedSAMRecord.UNCLIPPED_BARCODE_LENGTH != Integer.MAX_VALUE) {
 				if (unclippedBarcodeLength != ExtendedSAMRecord.UNCLIPPED_BARCODE_LENGTH) {

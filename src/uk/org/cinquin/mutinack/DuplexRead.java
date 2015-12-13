@@ -51,6 +51,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public boolean invalid = false;
 	public int nReadsWrongPair = 0;
 	
+	public static int intervalSlop = 0;
+	
 	/**
 	 * Quality factoring in number of reads for top or bottom strand, percent consensus for
 	 * reads from a given strand. Minimum and maximum across all base positions in duplex.
@@ -225,8 +227,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@Override
 	public Interval<Integer> getInterval() {
 		if (interval == null) {
-			interval = Interval.toInterval(leftAlignmentStart != null ? leftAlignmentStart.position : 0,
-					leftAlignmentEnd != null ? leftAlignmentEnd.position : Integer.MAX_VALUE);
+			interval = Interval.toInterval(leftAlignmentStart != null ? leftAlignmentStart.position - intervalSlop : 0,
+					leftAlignmentEnd != null ? leftAlignmentEnd.position + intervalSlop : Integer.MAX_VALUE);
 			if (DebugControl.NONTRIVIAL_ASSERTIONS && interval == null) {
 				throw new AssertionFailedException();
 			}

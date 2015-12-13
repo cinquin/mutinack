@@ -23,9 +23,9 @@ final class AlignmentExtremetiesDistance {
 	private static final byte @NonNull[] emptyBarcode = new byte[0];
 
 	private DuplexRead dr;
-	private final @NonNull DuplexRead temp = new DuplexRead(emptyBarcode, emptyBarcode);
-		
-	public void set(ExtendedSAMRecord r, DuplexRead d) {	
+	public final @NonNull DuplexRead temp = new DuplexRead(emptyBarcode, emptyBarcode);
+	
+	public void set(ExtendedSAMRecord r) {
 		if (r.getReadPositiveStrand()) {
 			temp.setPositions(
 					r.getUnclippedStart(),
@@ -35,6 +35,9 @@ final class AlignmentExtremetiesDistance {
 					r.getMateUnclippedStart(),
 					r.getUnclippedEnd());			
 		}		
+	}
+		
+	public void set(DuplexRead d) {
 		dr = d;
 	}
 
