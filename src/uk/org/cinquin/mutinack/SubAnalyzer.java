@@ -734,11 +734,23 @@ final class SubAnalyzer {
 				if (NONTRIVIAL_ASSERTIONS && duplexRead.invalid) {
 					throw new AssertionFailedException();
 				}
-								
+				
+				Handle<Boolean> seenFirstOfPair = new Handle<>();
+				Handle<Boolean> seenSecondOfPair = new Handle<>();
 				for (CandidateSequence candidate: candidateSet) {
+					seenFirstOfPair.set(false);
+					seenSecondOfPair.set(false);
 					candidate.getNonMutableConcurringReads().forEachEntry((r, dist) -> {
 						if (r.duplexRead == duplexRead) {
 							duplexRead.acceptDistanceToLigSite(dist);
+							if (r.record.getFirstOfPairFlag()) {
+								seenFirstOfPair.set(true);
+							} else {
+								seenSecondOfPair.set(true);
+							}
+							if (seenFirstOfPair.get() && seenSecondOfPair.get()) {
+								return false;
+							}
 						}
 						return true;
 					});
