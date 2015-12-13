@@ -42,7 +42,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     private SAMFileHeader.SortOrder sortOrder;
     private SAMFileHeader header;
     private SortingCollection<SAMRecord> alignmentSorter;
-    private File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+    private File tmpDir = new File(".samtools_tmp");//new File(System.getProperty("java.io.tmpdir"));
 	private ProgressLoggerInterface progressLogger = null;
 
     // If true, records passed to addAlignment are already in the order specified by sortOrder

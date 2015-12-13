@@ -162,6 +162,10 @@ public class IOUtil {
 
         for (int i=0; i<tmpDirs.length; ++i) {
             if ( i == tmpDirs.length-1 || tmpDirs[i].getUsableSpace() > minBytesFree) {
+            	if (!tmpDirs[i].exists()) {
+            		tmpDirs[i].mkdirs();
+            		tmpDirs[i].deleteOnExit();
+            	}
                 f = File.createTempFile(prefix, suffix, tmpDirs[i]);
                 f.deleteOnExit();
                 break;
