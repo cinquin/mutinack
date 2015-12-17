@@ -20,9 +20,9 @@ import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import contrib.edu.standford.nlp.util.HasInterval;
+import contrib.edu.standford.nlp.util.Interval;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import edu.stanford.nlp.util.HasInterval;
-import edu.stanford.nlp.util.Interval;
 
 public final class GenomeInterval implements HasInterval<Integer> {
 	public final String name;

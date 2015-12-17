@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import edu.stanford.nlp.util.HasInterval;
-import edu.stanford.nlp.util.Interval;
+import contrib.edu.standford.nlp.util.HasInterval;
+import contrib.edu.standford.nlp.util.Interval;
 import uk.org.cinquin.mutinack.misc_util.DebugControl;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
@@ -63,7 +63,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 	SequenceLocation roughLocation;
 	float referenceDisagreementRate;
 	int averageNClipped;
-	private int position0, position3;
+	int position0;
+	private int position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	
 	public DuplexRead(byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode) {

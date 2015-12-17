@@ -68,6 +68,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -80,7 +81,6 @@ import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
 import contrib.net.sf.samtools.util.StringUtil;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import edu.stanford.nlp.util.IntervalTree;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TByteObjectMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
@@ -109,7 +109,7 @@ final class SubAnalyzer {
 	public int truncateProcessingAt = Integer.MAX_VALUE;
 	public int startProcessingAt = 0;
 	List<@NonNull DuplexRead> analyzedDuplexes;
-	final @NonNull Map<String, ExtendedSAMRecord> extSAMCache = new THashMap<>(50_000, 0.1f);
+	final @NonNull Map<String, @NonNull ExtendedSAMRecord> extSAMCache = new THashMap<>(50_000, 0.1f);
 	private final AtomicInteger threadCount = new AtomicInteger();
 
 	@SuppressWarnings("null")
@@ -134,6 +134,7 @@ final class SubAnalyzer {
 	SubAnalyzer(@NonNull Mutinack analyzer) {
 		this.analyzer = analyzer;
 		this.stats = analyzer.stats;
+		useHashMap = analyzer.alignmentPositionMismatchAllowed == 0;
 	}
 	
 	private boolean meetsQ2Thresholds(@NonNull ExtendedSAMRecord extendedRec) {
@@ -220,22 +221,51 @@ final class SubAnalyzer {
 		}
 	}
 
+	private final boolean useHashMap;
+
 	/**
 	 * Group reads into duplexes.
 	 * @param finalResult
 	 */
 	private void loadAll(@NonNull List<DuplexRead> finalResult) {
 
-		final IntervalTree<Integer, DuplexRead> resultDuplexes = new IntervalTree<>();
-		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance();
+		/**
+		 * Use a custom hash map type to keep track of duplexes when
+		 * alignmentPositionMismatchAllowed is 0.
+		 * This provides by far the highest performance.
+		 * When alignmentPositionMismatchAllowed is greater than 0, use
+		 * either an interval tree or a plain list. The use of an interval
+		 * tree instead of a plain list provides a speed benefit only when
+		 * there is large number of local duplexes, so switch dynamically
+		 * based on that number. The threshold was optimized empirically
+		 * and at a gross level. 
+		 */
+
+		final boolean useIntervalTree;
 		
-		for (final ExtendedSAMRecord rExtended: extSAMCache.values()) {
+		final @NonNull DuplexKeeper duplexKeeper;
+		
+		if (useHashMap) {
+			useIntervalTree = false;
+			duplexKeeper = new DuplexHashMapKeeper();
+		} else {
+			useIntervalTree = extSAMCache.size() > 5_000;
+			if (useIntervalTree) {
+				duplexKeeper = new DuplexITKeeper();
+			} else {
+				duplexKeeper = new DuplexArrayListKeeper(5_000);
+			}
+		}
+		
+		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance();
+				
+		for (final @NonNull ExtendedSAMRecord rExtended: extSAMCache.values()) {
 
 			final @NonNull SequenceLocation location = new SequenceLocation(rExtended.record);
 
 			final byte @NonNull[] barcode = rExtended.variableBarcode;
 			final byte @NonNull[] mateBarcode = rExtended.getMateVariableBarcode();
-			final SAMRecord r = rExtended.record;
+			final @NonNull SAMRecord r = rExtended.record;
 			
 			if (rExtended.getMate() == null) {
 				stats.nMateOutOfReach.add(location, 1);	
@@ -259,8 +289,8 @@ final class SubAnalyzer {
 			final boolean matchToLeft = r.getInferredInsertSize() > 0;
 			
 			ed.set(rExtended);
-			
-			for (final DuplexRead duplexRead: resultDuplexes.getOverlapping(ed.temp)) {
+
+			for (final DuplexRead duplexRead: duplexKeeper.getOverlapping(ed.temp)) {
 				//stats.nVariableBarcodeCandidateExaminations.increment(location);
 
 				ed.set(duplexRead);
@@ -268,7 +298,7 @@ final class SubAnalyzer {
 				if (ed.getMaxDistance() > analyzer.alignmentPositionMismatchAllowed) {
 					continue;
 				}
-				
+
 				final boolean barcodeMatch;
 				//During first pass, do not allow any barcode mismatches
 				if (matchToLeft) {
@@ -338,7 +368,8 @@ final class SubAnalyzer {
 							rExtended.getUnclippedEnd());
 				}
 				
-				resultDuplexes.add(duplexRead);
+				duplexKeeper.add(duplexRead);
+
 				duplexRead.roughLocation = location;
 				rExtended.duplexRead = duplexRead;
 
@@ -406,7 +437,7 @@ final class SubAnalyzer {
 		}//End loop over reads
 
 		final boolean allReadsSameBarcode = analyzer.alignmentPositionMismatchAllowed == 0;
-		for (DuplexRead duplex: resultDuplexes) {
+		for (DuplexRead duplex: duplexKeeper.getIterable()) {
 			duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength);
 		}
 
@@ -415,9 +446,17 @@ final class SubAnalyzer {
 		//and left/right consensus that differ by at most
 		//analyzer.nVariableBarcodeMismatchesAllowed
 
-		final IntervalTree<Integer, DuplexRead> cleanedUpDuplexes = new IntervalTree<>();
+		final DuplexKeeper cleanedUpDuplexes;
+		
+		if (useHashMap) {
+			cleanedUpDuplexes = new DuplexHashMapKeeper();
+		} else if (useIntervalTree) {
+			cleanedUpDuplexes = new DuplexITKeeper();
+		} else {
+			cleanedUpDuplexes = new DuplexArrayListKeeper(5_000);
+		}
 
-		resultDuplexes.stream().
+		StreamSupport.stream(duplexKeeper.getIterable().spliterator(), false).
 			sorted((d1, d2) -> Integer.compare(d2.totalNRecords, d1.totalNRecords)).forEach(duplex1 -> {
 			boolean mergedDuplex = false;
 			
@@ -426,6 +465,7 @@ final class SubAnalyzer {
 			}
 			
 			for (DuplexRead duplex2: cleanedUpDuplexes.getOverlapping(duplex1)) {
+				//cleanedUpDuplexes.getOverlapping(duplex1)) {
 				final int distance1 = duplex1.leftAlignmentStart.position - duplex2.leftAlignmentStart.position;
 				final int distance2 = analyzer.requireMatchInAlignmentEnd && duplex1.leftAlignmentEnd != null && duplex2.leftAlignmentEnd != null ?
 						duplex1.leftAlignmentEnd.position - duplex2.leftAlignmentEnd.position : 0;
@@ -464,7 +504,7 @@ final class SubAnalyzer {
 			}
 		});//End duplex grouping
 
-		for (DuplexRead duplexRead: cleanedUpDuplexes) {
+		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
 			if (duplexRead.invalid) {
 				throw new AssertionFailedException();
 			}
@@ -528,7 +568,9 @@ final class SubAnalyzer {
 			}
 		}//End duplex analysis
 		
-		finalResult.addAll(cleanedUpDuplexes);
+		for (DuplexRead dr: cleanedUpDuplexes.getIterable()) {
+			finalResult.add(dr);
+		}
 	}//End loadAll
 	
 	@SuppressWarnings({ "null"})

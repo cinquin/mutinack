@@ -122,6 +122,7 @@ public class GenomeIntervalTest {
 				new HashSet<>(id.getData()))).collect(Collectors.toList());
 	}
 	
+	@SuppressWarnings("unused")
 	private final SecureRandom random = new SecureRandom();
 	
 	private void check(IntervalTree<GenomeInterval> tree, List<IntervalData<GenomeInterval>> intervalList) {

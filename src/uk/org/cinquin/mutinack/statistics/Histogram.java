@@ -36,7 +36,7 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	public String toString() {
 		double nEntries = 0;
 		boolean medianSet = false;
-		int median = 0;
+		float median = Float.NaN;
 		long size = size();
 		double totalNEntries = 0;
 		for (LongAdderFormatter longAdderFormatter: this) {

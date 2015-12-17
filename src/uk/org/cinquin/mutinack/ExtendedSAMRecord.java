@@ -25,6 +25,8 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import contrib.edu.standford.nlp.util.HasInterval;
+import contrib.edu.standford.nlp.util.Interval;
 import contrib.net.sf.samtools.AlignmentBlock;
 import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
@@ -33,8 +35,6 @@ import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import edu.stanford.nlp.util.HasInterval;
-import edu.stanford.nlp.util.Interval;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.THashMap;
@@ -86,7 +86,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public static String getReadFullName(SAMRecord rec) {
-		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2")).intern();
+		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2"))/*.intern()*/;
 	}
 
 	public @NonNull String getFullName() {
@@ -137,7 +137,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.name = fullName;
 		this.record = rec;
 		hashCode = fullName.hashCode();
-		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1")).intern();
+		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1"))/*.intern()*/;
 		
 		final int readLength = rec.getReadLength();
 		
@@ -237,7 +237,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	@SuppressWarnings("null")
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull Mutinack analyzer, 
 			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
-		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2")).intern(), analyzer, location, extSAMCache);
+		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/, analyzer, location, extSAMCache);
 	}
 	
 	private static void checkNs() {

@@ -41,7 +41,6 @@
         <pathelement location="bin"/>
         <pathelement location="lib/jcommander-1.33-SNAPSHOT.jar"/>
         <pathelement location="lib/org.eclipse.jdt.annotation_2.0.0.v20131221-0104_beta_java8.jar"/>
-        <pathelement location="lib/stanford-corenlp-3.4.jar"/>
         <pathelement location="lib/junit-4.12.jar"/>
         <pathelement location="lib/trove-150802233617_PATCHED.jar"/>
         <pathelement location="lib/sun_tools_8_0_25.jar"/>

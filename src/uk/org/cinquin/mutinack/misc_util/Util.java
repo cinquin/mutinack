@@ -16,19 +16,6 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
-
-import contrib.net.sf.samtools.AbstractBAMFileIndex;
-import contrib.net.sf.samtools.BAMIndexMetaData;
-import contrib.net.sf.samtools.SAMFileReader;
-import contrib.net.sf.samtools.SAMRecord;
-import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
-import contrib.net.sf.samtools.util.StringUtil;
-import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -52,6 +39,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import contrib.net.sf.samtools.AbstractBAMFileIndex;
+import contrib.net.sf.samtools.BAMIndexMetaData;
+import contrib.net.sf.samtools.SAMFileReader;
+import contrib.net.sf.samtools.SAMRecord;
+import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
+import contrib.net.sf.samtools.util.StringUtil;
+import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
+
 public class Util {
 	
 	/**
@@ -74,7 +74,7 @@ public class Util {
 	public static<T> @Nullable T nullableify(@NonNull T o) {
 		return o;
 	}
-	
+		
 	public static<T> @NonNull Set<T> getDuplicates(Collection<T> collection) {
 		Set<T> set = new HashSet<>();
 		Set<T> result = new HashSet<>();
@@ -284,7 +284,7 @@ public class Util {
 	}
 	
 	public static String getRecordNameWithPairSuffix(SAMRecord record) {
-		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1")).intern();
+		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1"))/*.intern()*/;
 	}
 	
 	//Keep separate maps for variable and constant barcodes so we can have stats for each
