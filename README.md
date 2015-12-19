@@ -97,7 +97,7 @@ allocation and garbage collection can limit performance. We use the
 following JVM arguments, that were derived mostly by empirical means and
 that might need to be adapted for different architectures or usage
 patterns: `-XX:ParallelGCThreads=10 -Xmx15G`. With these settings we can
-achieve a throughput in excess of 2.5 million bases / s on our hardware
+achieve a throughput in excess of 3.5 million bases / s on our hardware
 (processing speed is data dependent). Performance can be increased by
 turning off internal assertions that provide sanity checks; these 
 assertions are kept on by default because the performance gain (which is
