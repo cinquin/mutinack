@@ -17,6 +17,8 @@
 package uk.org.cinquin.mutinack.statistics;
 
 import java.io.Serializable;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.concurrent.atomic.DoubleAdder;
 
@@ -33,7 +35,15 @@ public final class DoubleAdderFormatter extends DoubleAdder
 	}
 	
 	public static String formatDouble(double d) {
-		return NumberFormat.getInstance().format(d == Math.rint(d) ? (long) d : d);
+		NumberFormat f = NumberFormat.getInstance();
+		 if (f instanceof DecimalFormat) {
+			 DecimalFormat f2 = (DecimalFormat) f;
+			 DecimalFormatSymbols symbols = f2.getDecimalFormatSymbols();
+			 symbols.setNaN("NaN");
+			 symbols.setInfinity("Inf");
+		     f2.setDecimalFormatSymbols(symbols);
+		 }
+		return f.format(d == Math.rint(d) ? (long) d : d);
 	}
 
 	@Override
