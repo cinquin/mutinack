@@ -338,7 +338,7 @@ public class Mutinack {
 				}
 			} else {
 				ExtendedSAMRecord.VARIABLE_BARCODE_END = variableBarcodeLength - 1;
-				System.out.println("Setting variable barcode end to " + ExtendedSAMRecord.VARIABLE_BARCODE_END);
+				System.out.println("Setting variable barcode end position to " + ExtendedSAMRecord.VARIABLE_BARCODE_END);
 			}
 		}
 		
@@ -499,7 +499,15 @@ public class Mutinack {
 						currentName.set(l.substring(1, endName));
 						contigs.add(nonNullify(currentName.get()));
 					} else {
-						currentLength.addAndGet(l.replaceAll("\\s","").length());
+						int lineLength = 0;
+						int n = l.length();
+						for (int i = 0; i < n; i++) {
+							char c = l.charAt(i);
+							if (c != ' ' && c != '\t') {
+								lineLength++;
+							}
+						}
+						currentLength.addAndGet(lineLength);
 					}
 				});
 				contigSizes.put(currentName.get(), currentLength.get());

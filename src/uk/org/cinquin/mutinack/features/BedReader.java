@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,7 +56,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	public String toString() {
 		return "Tester for BED file at " + readerName;
 	}
-
+	
 	@SuppressWarnings("null")
 	public BedReader (Collection<@NonNull String> contigNames, BufferedReader reader,
 			String readerName, BufferedReader suppInfoReader) throws ParseRTException {
@@ -73,6 +74,9 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					new GenomeInterval("", s, -1, -1, null, null)));
 		}
 		
+		final Pattern underscorePattern = Pattern.compile("_");
+		final Pattern quotePattern = Pattern.compile("\"");
+
 		try(Stream<String> lines = reader.lines()) {
 			lines.forEachOrdered(l -> {
 				try {
@@ -81,8 +85,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					if (components.length < 4) {
 						throw new ParseRTException("Missing fields");
 					}
-					int start = Integer.parseInt(components[1].replaceAll("_", "")) - 1;
-					int end = Integer.parseInt(components[2].replaceAll("_", "")) - 1;
+					int start = Integer.parseInt(underscorePattern.matcher(components[1]).replaceAll("")) - 1;
+					int end = Integer.parseInt(underscorePattern.matcher(components[2]).replaceAll("")) - 1;
 					String name = components[3];
 					final Integer length;
 					final @NonNull Optional<Boolean> strandPolarity;
@@ -95,7 +99,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						}
 						try {
 							if (components.length >= 11) {
-								String[] blockLengths = components[10].replaceAll("\"", "").split(",");
+								String[] blockLengths = quotePattern.matcher(components[10]).replaceAll("").split(",");
 								int totalLength = 0;
 								boolean foundEmptyBlock = false;
 								for (String bl: blockLengths) {
