@@ -234,7 +234,6 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
 	}
 	
-	@SuppressWarnings("null")
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull Mutinack analyzer, 
 			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
 		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/, analyzer, location, extSAMCache);

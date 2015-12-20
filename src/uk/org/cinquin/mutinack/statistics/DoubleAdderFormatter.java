@@ -41,7 +41,7 @@ public final class DoubleAdderFormatter extends DoubleAdder
 			 DecimalFormatSymbols symbols = f2.getDecimalFormatSymbols();
 			 symbols.setNaN("NaN");
 			 symbols.setInfinity("Inf");
-		     f2.setDecimalFormatSymbols(symbols);
+			 f2.setDecimalFormatSymbols(symbols);
 		 }
 		return f.format(d == Math.rint(d) ? (long) d : d);
 	}
