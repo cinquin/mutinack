@@ -271,7 +271,6 @@ public class Mutinack {
 			boolean ignoreSizeOutOfRangeInserts,
 			boolean ignoreTandemRFPairs,
 			List<File> intersectAlignmentFiles,
-			int processingChunk,
 			boolean requireMatchInAlignmentEnd,
 			boolean logReadIssuesInOutputBam,
 			int maxAverageBasesClipped,
@@ -317,35 +316,14 @@ public class Mutinack {
 		this.minNumberDuplexesSisterArm = minNumberDuplexesSisterArm;
 		this.variableBarcodeLength = variableBarcodeLength;
 		this.constantBarcode = constantBarcode;
-		unclippedBarcodeLength = 0;
-		
-		DuplexRead.intervalSlop = argValues.alignmentPositionMismatchAllowed;
-		
-		synchronized(ExtendedSAMRecord.class) {
-			if (ExtendedSAMRecord.UNCLIPPED_BARCODE_LENGTH != Integer.MAX_VALUE) {
-				if (unclippedBarcodeLength != ExtendedSAMRecord.UNCLIPPED_BARCODE_LENGTH) {
-					throw new IllegalArgumentException("Incompatibe total barcode lengths " + unclippedBarcodeLength +
-							" and " + ExtendedSAMRecord.UNCLIPPED_BARCODE_LENGTH);
-				}
-			} else {
-				ExtendedSAMRecord.UNCLIPPED_BARCODE_LENGTH = unclippedBarcodeLength;
-			}
-			
-			if (ExtendedSAMRecord.VARIABLE_BARCODE_END != Integer.MAX_VALUE) {
-				if (variableBarcodeLength - 1 != ExtendedSAMRecord.VARIABLE_BARCODE_END) {
-					throw new IllegalArgumentException("Incompatibe variable barcode ends " + (variableBarcodeLength - 1) +
-							" and " + ExtendedSAMRecord.VARIABLE_BARCODE_END);
-				}
-			} else {
-				ExtendedSAMRecord.VARIABLE_BARCODE_END = variableBarcodeLength - 1;
-				System.out.println("Setting variable barcode end position to " + ExtendedSAMRecord.VARIABLE_BARCODE_END);
-			}
-		}
-		
+		this.unclippedBarcodeLength = 0;
+				
+		ExtendedSAMRecord.setBarcodePositions(0, variableBarcodeLength - 1,
+				-1, -1, unclippedBarcodeLength);
+
 		this.ignoreSizeOutOfRangeInserts = ignoreSizeOutOfRangeInserts;
 		this.ignoreTandemRFPairs = ignoreTandemRFPairs;
 		this.intersectAlignmentFiles = intersectAlignmentFiles;
-		PROCESSING_CHUNK = processingChunk;
 		this.requireMatchInAlignmentEnd = requireMatchInAlignmentEnd;
 		this.logReadIssuesInOutputBam = logReadIssuesInOutputBam;
 		this.maxAverageBasesClipped = maxAverageBasesClipped;
@@ -648,6 +626,9 @@ public class Mutinack {
 			@SuppressWarnings("null")
 			final @NonNull OutputLevel outputLevel = d[argValues.verbosity];
 			
+			Mutinack.PROCESSING_CHUNK = argValues.processingChunk;
+			DuplexRead.intervalSlop = argValues.alignmentPositionMismatchAllowed;
+			
 			//TODO Create a constructor that just takes argValues as an input,
 			//and/or use the builder pattern
 			final Mutinack analyzer = new Mutinack(
@@ -685,7 +666,6 @@ public class Mutinack {
 					argValues.ignoreSizeOutOfRangeInserts,
 					argValues.ignoreTandemRFPairs,
 					intersectFiles,
-					argValues.processingChunk,
 					argValues.requireMatchInAlignmentEnd,
 					argValues.logReadIssuesInOutputBam,
 					argValues.maxAverageBasesClipped,

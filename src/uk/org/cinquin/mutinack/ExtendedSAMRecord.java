@@ -21,6 +21,7 @@ import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -79,6 +80,39 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private static final int CONSTANT_BARCODE_START = 3;
 	private static final int CONSTANT_BARCODE_END = 5;
 	private static byte[] Ns;
+	
+	private static void checkSet(String var, int previousVal, int newVal) {
+		if (previousVal == Integer.MAX_VALUE) {
+			return;
+		}
+		if (previousVal != newVal) {
+			throw new IllegalArgumentException("Trying to set " + var +
+					" to " + newVal + " but it has already been set to " + previousVal);
+		}
+	}
+	
+	public static synchronized void setBarcodePositions(int variableStart, int variableEnd,
+			int constantStart, int constantEnd, int unclippedBarcodeLength) {
+		if (variableStart != 0) {
+			throw new IllegalArgumentException("Unimplemented");
+		}
+		checkSet("variable barcode end", VARIABLE_BARCODE_END, variableEnd);
+		checkSet("unclipped barcode length", UNCLIPPED_BARCODE_LENGTH, unclippedBarcodeLength);
+		if (VARIABLE_BARCODE_END == Integer.MAX_VALUE) {
+			VARIABLE_BARCODE_END = variableEnd;
+			UNCLIPPED_BARCODE_LENGTH = unclippedBarcodeLength;
+			System.out.println("Set variable barcode end position to " + ExtendedSAMRecord.VARIABLE_BARCODE_END);
+			//VARIABLE_BARCODE_START == 0;
+			final byte[] localNs = new byte [VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1];
+			for (int i = 0; i < VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1; i++) {
+				localNs[i] = 'N';
+			}
+			if (Ns != null) {
+				throw new AssertionFailedException();
+			}
+			Ns = localNs;
+		}
+	}
 	
 	int getnClipped() {
 		computeNClipped();
@@ -239,22 +273,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/, analyzer, location, extSAMCache);
 	}
 	
-	private static void checkNs() {
-		if (Ns == null) {
-			//There is a race condition here that is inconsequential
-			final byte[] localNs = new byte [VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1];
-			for (int i = 0; i < VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1; i++) {
-				localNs[i] = 'N';
-			}
-			Ns = localNs;
-		}
-	}
-	
 	public byte @NonNull[] getMateVariableBarcode() {
-		if (mateVariableBarcode == null) {
+		if (mateVariableBarcode == null || mateVariableBarcode == Ns) {
 			checkMate();
 			if (mate == null) {
-				checkNs();
 				mateVariableBarcode = Ns;
 			} else {
 				mateVariableBarcode = nonNullify(mate).variableBarcode;
@@ -631,9 +653,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return nonNullify(mate).getUnclippedStart();
 	}
 
-	@SuppressWarnings("null")
 	public static byte @NonNull[] getNs() {
-		checkNs();
+		Objects.requireNonNull(Ns);
 		return Ns;
 	}
 
