@@ -356,8 +356,8 @@ final class SubAnalyzer {
 
 			if (!foundDuplexRead) {
 				final DuplexRead duplexRead = matchToLeft ?
-						new DuplexRead(barcode, mateBarcode) :
-						new DuplexRead(mateBarcode, barcode);
+						new DuplexRead(barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
+						new DuplexRead(mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 				if (matchToLeft) {
 					duplexRead.setPositions(
 							rExtended.getUnclippedStart(),
@@ -479,8 +479,20 @@ final class SubAnalyzer {
 						Math.abs(distance3) <= analyzer.alignmentPositionMismatchAllowed &&
 						Math.abs(distance4) <= analyzer.alignmentPositionMismatchAllowed) {
 
-					if (basesEqual(duplex1.leftBarcode, duplex2.leftBarcode, true, analyzer.nVariableBarcodeMismatchesAllowed) &&
-							basesEqual(duplex1.rightBarcode, duplex2.rightBarcode, true, analyzer.nVariableBarcodeMismatchesAllowed)) {
+					final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, true);
+					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, true);
+					
+					if (leftMismatches > 0) {
+						registerMismatches(duplex1.roughLocation, leftMismatches, duplex1.leftBarcode, duplex2.leftBarcode,
+								duplex1.leftBarcodeNegativeStrand, duplex2.leftBarcodeNegativeStrand);
+					}
+					if (rightMismatches > 0) {
+						registerMismatches(duplex1.roughLocation, rightMismatches, duplex1.rightBarcode, duplex2.rightBarcode,
+								duplex1.rightBarcodeNegativeStrand, duplex2.rightBarcodeNegativeStrand);
+					}
+					
+					if (leftMismatches <= analyzer.nVariableBarcodeMismatchesAllowed &&
+							rightMismatches <= analyzer.nVariableBarcodeMismatchesAllowed) {
 						duplex2.bottomStrandRecords.addAll(duplex1.bottomStrandRecords);
 						duplex2.topStrandRecords.addAll(duplex1.topStrandRecords);
 
@@ -573,6 +585,33 @@ final class SubAnalyzer {
 		}
 	}//End loadAll
 	
+	private void registerMismatches(@NonNull SequenceLocation location, int nMismatches,
+			byte @NonNull [] barcode1, byte @NonNull [] barcode2, boolean negativeStrand1,
+			boolean negativeStrand2) {
+		if (nMismatches ==0) {
+			return;
+		}
+		for (int i = 0; i < barcode1.length; i++) {
+			if (barcode1[i] != barcode2[i]) {
+				byte first = negativeStrand1 ? Mutation.complement(barcode1[i]) :
+					barcode1[i];
+				byte second = negativeStrand2 ? Mutation.complement(barcode2[i]) :
+					barcode2[i];
+				
+				final ComparablePair<String, String> p = first < second ?
+						new ComparablePair<>(byteMap.get(first), byteMap.get(second)) :
+						new ComparablePair<>(byteMap.get(second), byteMap.get(first));
+				if (nMismatches == 1) {
+					stats.vBarcodeMismatches1M.accept(location, p);
+				} else if (nMismatches == 2) {
+					stats.vBarcodeMismatches2M.accept(location, p);
+				} else {
+					stats.vBarcodeMismatches3OrMore.accept(location, p);
+				}
+			}
+		}
+	}
+
 	@SuppressWarnings({ "null"})
 	/**
 	 * This method is *NOT* thread-safe (it modifies DuplexReads associated with location retrieved

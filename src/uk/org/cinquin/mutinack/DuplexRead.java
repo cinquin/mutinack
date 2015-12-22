@@ -66,10 +66,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 	int position0;
 	private int position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
+	public final boolean leftBarcodeNegativeStrand, rightBarcodeNegativeStrand;
 	
-	public DuplexRead(byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode) {
+	public DuplexRead(byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
+			boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
 		this.leftBarcode = leftBarcode;
 		this.rightBarcode = rightBarcode;
+		this.leftBarcodeNegativeStrand = leftBarcodeNegativeStrand;
+		this.rightBarcodeNegativeStrand = rightBarcodeNegativeStrand;
 	}
 	
 	public void assertAllBarcodesEqual() {

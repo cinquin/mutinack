@@ -233,6 +233,15 @@ public class AnalysisStats implements Serializable {
 	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches1M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches2M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches3OrMore = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+
+	@PrintInStatus(outputLevel = VERBOSE)
 	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
 
 	@PrintInStatus(outputLevel = VERBOSE)

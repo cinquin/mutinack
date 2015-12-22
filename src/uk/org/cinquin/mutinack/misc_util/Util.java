@@ -166,6 +166,23 @@ public class Util {
 		return true;
 	}
 	
+	public static int nMismatches(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
+		if (DebugControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
+			throw new IllegalArgumentException();
+		}
+		int nMismatches = 0;
+		try {
+			for (int i = 0; i < a.length; i++) {
+				if (!basesEqual(a[i], b[i], allowN)) {
+					++nMismatches;
+				}
+			}
+		} catch (ArrayIndexOutOfBoundsException e) {
+			throw new RuntimeException("Index out of bounds while comparing " + new String(a) + " to " + new String(b), e);
+		}
+		return nMismatches;
+	}
+	
 	private final static @NonNull AtomicInteger nRead = new AtomicInteger();
 	
 	public static void readFileIntoMap(File file, Map<String, FastQRead> rawReads, int pairID) {
