@@ -63,6 +63,7 @@ import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -488,11 +489,13 @@ final class SubAnalyzer {
 					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, true);
 					
 					if (leftMismatches > 0) {
-						registerMismatches(duplex1.roughLocation, leftMismatches, duplex1.leftBarcode, duplex2.leftBarcode,
+						registerMismatches(Objects.requireNonNull(duplex1.roughLocation), leftMismatches,
+								duplex1.leftBarcode, duplex2.leftBarcode,
 								duplex1.leftBarcodeNegativeStrand, duplex2.leftBarcodeNegativeStrand);
 					}
 					if (rightMismatches > 0) {
-						registerMismatches(duplex1.roughLocation, rightMismatches, duplex1.rightBarcode, duplex2.rightBarcode,
+						registerMismatches(Objects.requireNonNull(duplex1.roughLocation), rightMismatches,
+								duplex1.rightBarcode, duplex2.rightBarcode,
 								duplex1.rightBarcodeNegativeStrand, duplex2.rightBarcodeNegativeStrand);
 					}
 					
