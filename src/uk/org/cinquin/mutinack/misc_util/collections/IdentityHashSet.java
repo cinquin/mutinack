@@ -100,9 +100,11 @@ implements Set<E>, Cloneable, Serializable {
 	 *  the elements themselves are not cloned.
 	 *
 	 *  @return a shallow copy of this set.
+	 * @throws CloneNotSupportedException 
 	 */
 	@Override
-	public Object clone() {
+	public Object clone() throws CloneNotSupportedException {
+		super.clone();
 		Iterator<E> it = iterator();
 		IdentityHashSet<E> clone = new IdentityHashSet<>(size() * 2);
 		while (it.hasNext()) {
