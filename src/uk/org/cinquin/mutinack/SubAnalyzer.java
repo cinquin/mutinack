@@ -464,8 +464,13 @@ final class SubAnalyzer {
 				throw new AssertionFailedException();
 			}
 			
-			for (DuplexRead duplex2: cleanedUpDuplexes.getOverlapping(duplex1)) {
-				//cleanedUpDuplexes.getOverlapping(duplex1)) {
+			List<DuplexRead> overlapping = new ArrayList<>(30);
+			for (DuplexRead dr: cleanedUpDuplexes.getOverlapping(duplex1)) {
+				overlapping.add(dr);
+			}
+			Collections.sort(overlapping, (d1, d2) -> Integer.compare(d2.totalNRecords, d1.totalNRecords));
+			
+			for (DuplexRead duplex2: overlapping) {
 				final int distance1 = duplex1.leftAlignmentStart.position - duplex2.leftAlignmentStart.position;
 				final int distance2 = analyzer.requireMatchInAlignmentEnd && duplex1.leftAlignmentEnd != null && duplex2.leftAlignmentEnd != null ?
 						duplex1.leftAlignmentEnd.position - duplex2.leftAlignmentEnd.position : 0;
