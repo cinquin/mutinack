@@ -1287,8 +1287,8 @@ final class SubAnalyzer {
 
 				if (maxDuplexQ.compareTo(GOOD) >= 0) {
 					candidate.resetLigSiteDistances();
-					candidate.acceptLigSiteDistance((candidate.getDuplexes().stream().filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0)).
-							mapToInt(DuplexRead::getDistanceToLigSite).max().getAsInt());
+					candidate.getDuplexes().stream().filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).
+						forEach(d -> candidate.acceptLigSiteDistance(d.getDistanceToLigSite()));
 				}
 				
 				if (analyzer.computeSupplQuality && candidate.getQuality().getMin() == DUBIOUS &&
