@@ -1274,22 +1274,22 @@ final class SubAnalyzer {
 				candidate.getDuplexes().forEach(d -> candidate.getIssues().put(d, d.localQuality));
 
 				Quality maxQ = maxQForAllDuplexes;
-					final Quality maxDuplexQ = candidate.getDuplexes().stream().
-							map(dr -> {
-									dr.localQuality.addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxQ);
-									return dr.localQuality.getMin();
-								}).
-							max(Quality::compareTo).orElse(ATROCIOUS);
-					candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
-					candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, candidate.getDuplexes().stream().
-							map(dr -> dr.localQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
-							max(Quality::compareTo).orElse(ATROCIOUS));
-					
-					if (maxDuplexQ.compareTo(GOOD) >= 0) {
-						candidate.resetLigSiteDistances();
-						candidate.acceptLigSiteDistance((candidate.getDuplexes().stream().filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0)).
-						mapToInt(DuplexRead::getDistanceToLigSite).max().getAsInt());
-					}
+				final Quality maxDuplexQ = candidate.getDuplexes().stream().
+						map(dr -> {
+							dr.localQuality.addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxQ);
+							return dr.localQuality.getMin();
+						}).
+						max(Quality::compareTo).orElse(ATROCIOUS);
+				candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
+				candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, candidate.getDuplexes().stream().
+						map(dr -> dr.localQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
+						max(Quality::compareTo).orElse(ATROCIOUS));
+
+				if (maxDuplexQ.compareTo(GOOD) >= 0) {
+					candidate.resetLigSiteDistances();
+					candidate.acceptLigSiteDistance((candidate.getDuplexes().stream().filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0)).
+							mapToInt(DuplexRead::getDistanceToLigSite).max().getAsInt());
+				}
 				
 				if (analyzer.computeSupplQuality && candidate.getQuality().getMin() == DUBIOUS &&
 						averageClippingOfCoveringDuplexes <= analyzer.maxAverageClippingOfAllCoveringDuplexes) {
