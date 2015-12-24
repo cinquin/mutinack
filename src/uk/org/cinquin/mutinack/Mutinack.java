@@ -20,7 +20,6 @@ import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
 import static uk.org.cinquin.mutinack.MutationType.DELETION;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
-import static uk.org.cinquin.mutinack.MutationType.WILDTYPE;
 import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.Quality.GOOD;
 import static uk.org.cinquin.mutinack.Quality.POOR;
@@ -106,6 +105,7 @@ import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.hash.THashSet;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
@@ -1100,7 +1100,7 @@ public class Mutinack {
 
 									for (CandidateSequence c: examResults.analyzedCandidateSequences) {
 										if (c.getQuality().getMin().compareTo(GOOD) >= 0) {
-											if (c.getMutationType() == WILDTYPE) {
+											if (c.getMutationType().isWildtype()) {
 												a.stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
 												if (!repetitiveBEDs.isEmpty()) {
 													boolean repetitive = false;
@@ -1242,7 +1242,7 @@ public class Mutinack {
 								List<CandidateSequence> mutantCandidates = analyzerCandidateLists.stream().
 										map(c -> c.analyzedCandidateSequences).
 										flatMap(Collection::stream).filter(c -> {
-											boolean isMutant = c.getMutationType() != WILDTYPE;
+											boolean isMutant = !c.getMutationType().isWildtype();
 											return isMutant;
 										}).
 										collect(Collectors.toList());
@@ -1286,14 +1286,14 @@ public class Mutinack {
 									for (CandidateSequence candidate: distinctQ1Q2Candidates) {
 										String baseOutput0 = "";
 
-										if (candidate.getMutationType() != WILDTYPE &&
+										if (!candidate.getMutationType().isWildtype() &&
 												allCandidatesIncludingDisag.stream().filter(c -> c.equals(candidate) &&
 														(c.getQuality().getMin().compareTo(GOOD) >= 0 ||
 														(c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).compareTo(GOOD) >= 0))).count() >= 2) {
 											baseOutput0 += "!";
 										} else if (allCandidatesIncludingDisag.stream().filter(c -> c.equals(candidate)).count() == 1 &&
 												//Mutant candidate shows up only once (and therefore in only 1 analyzer)
-												candidate.getMutationType() != WILDTYPE &&
+												!candidate.getMutationType().isWildtype() &&
 												candidate.getQuality().getMin().compareTo(GOOD) >= 0 &&
 												(candidate.getnGoodDuplexes() >= argValues.minQ2DuplexesToCallMutation) &&
 												candidate.getnGoodOrDubiousDuplexes() >= argValues.minQ1Q2DuplexesToCallMutation &&
@@ -1348,18 +1348,18 @@ public class Mutinack {
 										}
 
 										if (!allQ1Q2Candidates.stream().anyMatch(c -> c.getOwningAnalyzer() == candidate.getOwningAnalyzer() &&
-												c.getMutationType() == WILDTYPE)) {
+												c.getMutationType().isWildtype())) {
 											//At least one analyzer does not have a wildtype candidate
 											baseOutput0 += "|";
 										} 
 
-										if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType() == WILDTYPE)) {
+										if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType().isWildtype())) {
 											//No wildtype candidate at this position
 											baseOutput0 += "_";
 										}
 
 										String baseOutput = baseOutput0 + "\t" + location + "\t" + candidate.getKind() + "\t" +
-												(candidate.getMutationType() != WILDTYPE ? 
+												(!candidate.getMutationType().isWildtype() ? 
 														candidate.getChange() : "");
 
 										//Now output information for each analyzer
@@ -1567,11 +1567,11 @@ public class Mutinack {
 						if (nIterations < 2) {
 							nIterations++;
 							analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
-								Iterator<Entry<SequenceLocation, Map<CandidateSequence, CandidateSequence>>> it =
+								Iterator<Entry<SequenceLocation, THashSet<CandidateSequence>>> it =
 										subAnalyzer.candidateSequences.entrySet().iterator();
 								final SequenceLocation lowerBound = new SequenceLocation(contigIndex, lastProcessedPosition.get());
 								while (it.hasNext()) {
-									Entry<SequenceLocation, Map<CandidateSequence, CandidateSequence>> v = it.next();
+									Entry<SequenceLocation, THashSet<CandidateSequence>> v = it.next();
 									if (NONTRIVIAL_ASSERTIONS && v.getKey().contigIndex != contigIndex) {
 										throw new AssertionFailedException("Problem with contig indices, " +
 												"possibly because contigs not alphabetically sorted in reference genome .fa file");

@@ -28,7 +28,7 @@ import uk.org.cinquin.mutinack.misc_util.Handle;
 public class DetailedQualities implements Serializable {
 	
 	private static final long serialVersionUID = -5423960175598403757L;
-	private final @NonNull Map<Assay, Quality> qualities = new EnumMap<>(Assay.class);
+	private final @NonNull Map<Assay, @NonNull Quality> qualities = new EnumMap<>(Assay.class);
 	private Quality min = null;
 	
 	@Override
@@ -40,14 +40,14 @@ public class DetailedQualities implements Serializable {
 		return qualities;
 	}
 
-	public void addUnique(Assay assay, Quality q) {
+	public void addUnique(Assay assay, @NonNull Quality q) {
 		if (qualities.put(assay, q) != null) {
 			throw new IllegalArgumentException(assay + " already defined");
 		}
 		updateMin(q);
 	}
 	
-	private void updateMin(Quality q) {
+	private void updateMin(@NonNull Quality q) {
 		if (min == null) {
 			min = q;
 		} else {
@@ -55,7 +55,7 @@ public class DetailedQualities implements Serializable {
 		}
 	}
 
-	public void add(Assay assay, Quality q) {
+	public void add(Assay assay, @NonNull Quality q) {
 		Quality previousQ = qualities.get(assay);
 		if (previousQ == null) {
 			qualities.put(assay, q);
@@ -70,7 +70,8 @@ public class DetailedQualities implements Serializable {
 	}
 	
 	public Quality getMinIgnoring(Set<Assay> assaysToIgnore) {
-		Handle<Quality> min1 = new Handle<>(Quality.MAXIMUM);
+		@SuppressWarnings("null")
+		Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);
 		//NB forEach does not seem to have an efficient implementation
 		//in EnumMap (it maps to the default interface implementation)
 		qualities.forEach((k, v) -> {

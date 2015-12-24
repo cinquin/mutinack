@@ -22,18 +22,23 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 
 public enum MutationType {
-	INSERTION, DELETION, SUBSTITUTION, COMBINATION, WILDTYPE;
+	INSERTION, DELETION, SUBSTITUTION, COMBINATION, WILDTYPE, WILDTYPE_ER;
 
 	@Override
 	public @NonNull String toString() {
 		switch(this) {
 			case WILDTYPE: return "wildtype";
+			case WILDTYPE_ER: return "wildtype_er";
 			case INSERTION: return "insertion";
 			case DELETION: return "deletion";
 			case SUBSTITUTION: return "substitution";
 			case COMBINATION: return "combination";
 			default: throw new AssertionFailedException();
 		}
+	}
+	
+	public boolean isWildtype() {
+		return this == WILDTYPE || this == WILDTYPE_ER;
 	}
 }
 

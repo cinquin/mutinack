@@ -16,19 +16,21 @@
  */
 package uk.org.cinquin.mutinack;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public enum Quality {
 	ATROCIOUS, POOR, DUBIOUS, GOOD;
 
-	static final Quality MINIMUM = Quality.ATROCIOUS;
-	static final Quality MAXIMUM = Quality.GOOD;
+	static final @NonNull Quality MINIMUM = Quality.ATROCIOUS;
+	static final @NonNull Quality MAXIMUM = Quality.GOOD;
 	
-	public static Quality min(Quality a, Quality b) {
+	public @NonNull static Quality min(@NonNull Quality a, @NonNull Quality b) {
 		return a.compareTo(b) < 0 ? a : b;
 	}
 
-	public static Quality max(Quality a, Quality b) {
+	public static @NonNull Quality max(@NonNull Quality a, @NonNull Quality b) {
 		return a.compareTo(b) >= 0 ? a : b;
 	}
 

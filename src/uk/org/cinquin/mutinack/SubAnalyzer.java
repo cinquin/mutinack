@@ -17,27 +17,16 @@
 package uk.org.cinquin.mutinack;
 
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
-import static uk.org.cinquin.mutinack.Assay.AVERAGE_N_CLIPPED;
-import static uk.org.cinquin.mutinack.Assay.BOTTOM_STRAND_MAP_Q2;
-import static uk.org.cinquin.mutinack.Assay.CLOSE_TO_LIG;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q0;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q1;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_THRESHOLDS_1;
 import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
 import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
 import static uk.org.cinquin.mutinack.Assay.MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES;
 import static uk.org.cinquin.mutinack.Assay.MAX_DPLX_Q_IGNORING_DISAG;
 import static uk.org.cinquin.mutinack.Assay.MAX_Q_FOR_ALL_DUPLEXES;
-import static uk.org.cinquin.mutinack.Assay.MISSING_STRAND;
 import static uk.org.cinquin.mutinack.Assay.NO_DUPLEXES;
-import static uk.org.cinquin.mutinack.Assay.N_READS_WRONG_PAIR;
-import static uk.org.cinquin.mutinack.Assay.N_STRANDS;
-import static uk.org.cinquin.mutinack.Assay.N_STRANDS_ABOVE_MIN_PHRED;
-import static uk.org.cinquin.mutinack.Assay.TOP_STRAND_MAP_Q2;
-import static uk.org.cinquin.mutinack.MutationType.DELETION;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
 import static uk.org.cinquin.mutinack.MutationType.WILDTYPE;
+import static uk.org.cinquin.mutinack.MutationType.WILDTYPE_ER;
 import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.Quality.DUBIOUS;
 import static uk.org.cinquin.mutinack.Quality.GOOD;
@@ -45,14 +34,11 @@ import static uk.org.cinquin.mutinack.Quality.MAXIMUM;
 import static uk.org.cinquin.mutinack.Quality.MINIMUM;
 import static uk.org.cinquin.mutinack.Quality.POOR;
 import static uk.org.cinquin.mutinack.Quality.max;
-import static uk.org.cinquin.mutinack.Quality.min;
 import static uk.org.cinquin.mutinack.misc_util.DebugControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
-import static uk.org.cinquin.mutinack.misc_util.Util.shortLengthFloatFormatter;
 import static uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector.uniqueValueCollector;
 
 import java.text.NumberFormat;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,7 +48,6 @@ import java.util.HashMap;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -86,13 +71,12 @@ import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TByteObjectMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDeletion;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
-import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.IdentityHashSet;
@@ -105,7 +89,7 @@ final class SubAnalyzer {
 	private final @NonNull Mutinack analyzer;
 	public final @NonNull AnalysisStats stats;
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);	
-	final @NonNull Map<SequenceLocation, Map<CandidateSequence, CandidateSequence>> candidateSequences =
+	final @NonNull Map<SequenceLocation, THashSet<CandidateSequence>> candidateSequences =
 			new THashMap<>(50_000);	
 	public int truncateProcessingAt = Integer.MAX_VALUE;
 	public int startProcessingAt = 0;
@@ -156,15 +140,17 @@ final class SubAnalyzer {
 	private CandidateSequence insertCandidateAtPosition(@NonNull CandidateSequence candidate, 
 			@NonNull SequenceLocation location) {
 
-		Map<CandidateSequence, CandidateSequence> candidates = candidateSequences.get(location);
+		THashSet<CandidateSequence> candidates = candidateSequences.get(location);
 		if (candidates == null) {//No need for synchronization since we should not be
 			//concurrently inserting two candidates in the same position
-			candidates = new THashMap<>();
+			candidates = new THashSet<>();
 			candidateSequences.put(location, candidates);
 		}
 		CandidateSequence candidateMapValue = candidates.get(candidate);
 		if (candidateMapValue == null) {
-			candidates.put(candidate, candidate);
+			if (!candidates.add(candidate)) {
+				throw new AssertionFailedException();
+			}
 		} else {
 			candidateMapValue.mergeWith(candidate);
 			candidate = candidateMapValue;
@@ -196,11 +182,11 @@ final class SubAnalyzer {
 		if (!candidateSequences.isEmpty()) {
 			final SettableInteger nLeftBehind = new SettableInteger(-1);
 			candidateSequences.forEach((k,v) -> {
-				if (!v.values().isEmpty() && (!v.values().iterator().next().getLocation().equals(k))) {
+				if (!v.isEmpty() && (!v.iterator().next().getLocation().equals(k))) {
 					throw new AssertionFailedException("Mimatched locations");
 				}
 
-				String s = v.values().stream().
+				String s = v.stream().
 						filter(c -> c.getLocation().position > truncateProcessingAt + analyzer.maxInsertSize &&
 								c.getLocation().position < startProcessingAt - analyzer.maxInsertSize).
 						flatMap(v0 -> v0.getNonMutableConcurringReads().keySet().stream()).
@@ -635,8 +621,8 @@ final class SubAnalyzer {
 		try {
 			final LocationExaminationResults result = new LocationExaminationResults();
 
-			final Map<CandidateSequence, CandidateSequence> candidates = candidateSequences.get(location);
-			if (candidates == null) {
+			final Set<CandidateSequence> candidateSet = candidateSequences.get(location);
+			if (candidateSet == null) {
 				stats.nLociUncovered.increment(location);
 				result.analyzedCandidateSequences = Collections.emptyList();
 				return result;
@@ -651,9 +637,6 @@ final class SubAnalyzer {
 			final IdentityHashSet<DuplexRead> duplexReads = new IdentityHashSet<>();
 			
 			boolean hasHiddenCandidate = false;
-
-			final Set<CandidateSequence> candidateSet = candidates.keySet();
-			
 			for (CandidateSequence candidate: candidateSet) {
 				if (candidate.isHidden()) {
 					hasHiddenCandidate = true;
@@ -671,459 +654,17 @@ final class SubAnalyzer {
 			}
 
 			float averageClippingOfCoveringDuplexes = 0;
-			CandidateCounter topCounter = new CandidateCounter(candidateSet, location);
-			CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
-			
+			//Allocate here to avoid repeated allocation in following loop
+			final CandidateCounter topCounter = new CandidateCounter(candidateSet, location);
+			final CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
+						
 			for (DuplexRead duplexRead: duplexReads) {
-				topCounter.minBasePhredScore = 0;
-				bottomCounter.minBasePhredScore = 0;
-				duplexRead.resetMaxDistanceToLigSite();
 				averageClippingOfCoveringDuplexes += duplexRead.averageNClipped;
-				final List<ComparablePair<Mutation, Mutation>> duplexDisagreements = new ArrayList<>();
-				stats.nLociDuplex.accept(location);
-				final Entry<CandidateSequence, SettableInteger> bottom, top;
-				boolean disagreement = false;
-
-				//Find if there is a clear candidate with which duplexRead is
-				//associated; if not, discard it
-				//The same reads can be associated with two or three candidates in case
-				//there is an insertion or deletion (since the wildtype base or a
-				//substitution might be present at the same position).
-				//Therefore we count the number of unique records associated with
-				//this position using Sets.
-				
-				topCounter.setRecords(duplexRead.topStrandRecords);
-				topCounter.compute();
-				
-				bottomCounter.setRecords(duplexRead.bottomStrandRecords);
-				bottomCounter.compute();
-				
-				{//Make sure we do not leak bottom0 or top0
-					final Entry<CandidateSequence, SettableInteger> bottom0 = bottomCounter.candidateCounts.entrySet().stream().
-							max((a,b) -> Integer.compare(a.getValue().get(), b.getValue().get())).
-							orElse(null);
-					bottom = bottom0 == null ? null :
-						new AbstractMap.SimpleImmutableEntry<>(bottom0.getKey(), bottom0.getValue());
-
-					final Entry<CandidateSequence, SettableInteger> top0 = topCounter.candidateCounts.entrySet().stream().
-							max((a,b) -> Integer.compare(a.getValue().get(), b.getValue().get())).
-							orElse(null);
-					top = top0 == null ? null :
-						new AbstractMap.SimpleImmutableEntry<>(top0.getKey(), top0.getValue());
-				}
-				
-				final List<ExtendedSAMRecord> allRecords = 
-						new ArrayList<>(topCounter.keptRecords.size() +
-								bottomCounter.keptRecords.size());
-				allRecords.addAll(topCounter.keptRecords);
-				allRecords.addAll(bottomCounter.keptRecords);
-
-				final int nTopStrandsWithCandidate = topCounter.keptRecords.size();				
-				final int nBottomStrandsWithCandidate = bottomCounter.keptRecords.size();
-				
-				topCounter.reset();
-				bottomCounter.reset();
-
-				stats.copyNumberOfDuplexTopStrands.insert(nTopStrandsWithCandidate);
-				stats.copyNumberOfDuplexBottomStrands.insert(nBottomStrandsWithCandidate);
-
-				final @NonNull DetailedQualities dq = new DetailedQualities();
-				
-				if (nBottomStrandsWithCandidate >= analyzer.minReadsPerStrandQ2 &&
-						nTopStrandsWithCandidate >= analyzer.minReadsPerStrandQ2) {
-					dq.addUnique(N_STRANDS, GOOD);
-				} else if (nBottomStrandsWithCandidate >= analyzer.minReadsPerStrandQ1 &&
-						nTopStrandsWithCandidate >= analyzer.minReadsPerStrandQ1) {
-					dq.addUnique(N_STRANDS, DUBIOUS);
-					stats.nLociDuplexTooFewReadsPerStrand2.increment(location);
-					result.strandCoverageImbalance = Math.max(result.strandCoverageImbalance,
-							Math.abs(duplexRead.bottomStrandRecords.size() - duplexRead.topStrandRecords.size()));
-					if (analyzer.logReadIssuesInOutputBam) {
-						if (nBottomStrandsWithCandidate < analyzer.minReadsPerStrandQ2)
-							duplexRead.issues.add(location + "TFR1B");
-						if (nTopStrandsWithCandidate < analyzer.minReadsPerStrandQ2)
-							duplexRead.issues.add(location + "TFR1T");
-					}
-				} else {
-					dq.addUnique(N_STRANDS, POOR);
-					stats.nLociDuplexTooFewReadsPerStrand1.increment(location);
-					if (duplexRead.bottomStrandRecords.size() == 0 || duplexRead.topStrandRecords.size() == 0) {
-						result.nMissingStrands++;
-					}
-					if (analyzer.logReadIssuesInOutputBam) {
-						if (nTopStrandsWithCandidate < analyzer.minReadsPerStrandQ1)
-							duplexRead.issues.add(location + "TFR0B");
-						if (nBottomStrandsWithCandidate < analyzer.minReadsPerStrandQ1)
-							duplexRead.issues.add(location + "TFR0T");
-					}
-				}
-								
-				duplexRead.nReadsWrongPair = (int) allRecords.stream().filter(ExtendedSAMRecord::formsWrongPair).
-						count();
-				
-				if (duplexRead.nReadsWrongPair > 0) {
-					dq.addUnique(N_READS_WRONG_PAIR, DUBIOUS);
-				}
-				
-				if (dq.getMin().compareTo(GOOD) >= 0) {
-					//Check if criteria are met even if ignoring bases with
-					//Phred quality scores that do not mean Q2 threshold
-					
-					topCounter.minBasePhredScore = analyzer.minBasePhredScoreQ2;
-					topCounter.compute();
-					bottomCounter.minBasePhredScore = analyzer.minBasePhredScoreQ2;
-					bottomCounter.compute();
-					if (topCounter.keptRecords.size() < analyzer.minReadsPerStrandQ2 ||
-							bottomCounter.keptRecords.size() < analyzer.minReadsPerStrandQ2) {
-						dq.addUnique(N_STRANDS_ABOVE_MIN_PHRED, DUBIOUS);
-					}
-				}
-				
-				if (duplexRead.averageNClipped > analyzer.maxAverageBasesClipped) {
-					dq.addUnique(AVERAGE_N_CLIPPED, DUBIOUS);
-				}
-				
-				dq.addUnique(TOP_STRAND_MAP_Q2, topCounter.keptRecords.stream().
-						mapToInt(r -> r.record.getMappingQuality()).
-						max().orElse(255) >= analyzer.minMappingQualityQ2 ? MAXIMUM : DUBIOUS);
-				
-				dq.addUnique(BOTTOM_STRAND_MAP_Q2, bottomCounter.keptRecords.stream().
-						mapToInt(r -> r.record.getMappingQuality()).
-						max().orElse(255) >= analyzer.minMappingQualityQ2 ? MAXIMUM : DUBIOUS);
-				
-				final boolean bothStrandsPresent = bottom != null && top != null;
-				final boolean thresholds2Met, thresholds1Met;
-
-				thresholds2Met = ((top != null) ? top.getValue().get() >= analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
-					(bottom != null ? bottom.getValue().get() >= analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate : false);
-
-				thresholds1Met = (top != null ? top.getValue().get() >= analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate : true) &&
-					(bottom != null ? bottom.getValue().get() >= analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate : true);
-				
-				if (!thresholds1Met) {
-					//TODO Following quality assignment is redundant with CONSENSUS_Q0 below
-					dq.addUnique(CONSENSUS_THRESHOLDS_1, ATROCIOUS);
-					if (analyzer.logReadIssuesInOutputBam) {
-						duplexRead.issues.add(location + " CS0Y_" + (top != null ? top.getValue().get() : "x") +
-								"_" + nTopStrandsWithCandidate + "_" +
-								(bottom != null ? bottom.getValue().get() : "x") + 
-								"_" + nBottomStrandsWithCandidate);
-					}
-				}
-
-				//TODO compute consensus insert size instead of extremes
-				final IntSummaryStatistics insertSizeStats = Stream.concat(duplexRead.bottomStrandRecords.stream(), duplexRead.topStrandRecords.stream()).
-						mapToInt(r -> Math.abs(r.getInsertSizeNoBarcodes(true))).summaryStatistics();
-
-				final int localMaxInsertSize = insertSizeStats.getMax();
-				final int localMinInsertSize = insertSizeStats.getMin();
-
-				if (localMaxInsertSize < analyzer.minInsertSize || localMinInsertSize > analyzer.maxInsertSize) {
-					dq.addUnique(INSERT_SIZE, DUBIOUS);
-				}
-				
-				if (NONTRIVIAL_ASSERTIONS && duplexRead.invalid) {
-					throw new AssertionFailedException();
-				}
-				
-				Handle<Boolean> seenFirstOfPair = new Handle<>();
-				Handle<Boolean> seenSecondOfPair = new Handle<>();
-				for (CandidateSequence candidate: candidateSet) {
-					seenFirstOfPair.set(false);
-					seenSecondOfPair.set(false);
-					candidate.getNonMutableConcurringReads().forEachEntry((r, dist) -> {
-						if (r.duplexRead == duplexRead) {
-							duplexRead.acceptDistanceToLigSite(dist);
-							if (r.record.getFirstOfPairFlag()) {
-								seenFirstOfPair.set(true);
-							} else {
-								seenSecondOfPair.set(true);
-							}
-							if (seenFirstOfPair.get() && seenSecondOfPair.get()) {
-								return false;
-							}
-						}
-						return true;
-					});
-				}
-				
-				int distanceToLigSite = duplexRead.getDistanceToLigSite();
-				if (distanceToLigSite <= analyzer.ignoreFirstNBasesQ1) {
-					dq.addUnique(CLOSE_TO_LIG, POOR);
-				} else if (distanceToLigSite <= analyzer.ignoreFirstNBasesQ2) {
-					dq.addUnique(CLOSE_TO_LIG, DUBIOUS);
-				}
-				
-				if (bottom != null && top != null) {
-					if (thresholds2Met) {
-						//localQuality = min(localQuality, GOOD);
-					} else if (thresholds1Met) {
-						dq.addUnique(CONSENSUS_Q1, DUBIOUS);
-						stats.nLociDuplexWithLackOfStrandConsensus2.increment(location);
-						if (analyzer.logReadIssuesInOutputBam) {
-							if (top.getValue().get() < analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate)
-								duplexRead.issues.add(location + " CS1T_" + shortLengthFloatFormatter.get().format
-										(((float) top.getValue().get()) / nTopStrandsWithCandidate));
-							if (bottom.getValue().get() < analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate)
-								duplexRead.issues.add(location + " CS1B_" + shortLengthFloatFormatter.get().format
-										(((float) bottom.getValue().get()) / nBottomStrandsWithCandidate));
-						}
-					} else {
-						dq.addUnique(CONSENSUS_Q0, POOR);
-						stats.nLociDuplexWithLackOfStrandConsensus1.increment(location);
-						if (analyzer.logReadIssuesInOutputBam) {
-							if (top.getValue().get() < analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate)
-								duplexRead.issues.add(location + " CS0T_" + shortLengthFloatFormatter.get().format
-										(((float) top.getValue().get()) / nTopStrandsWithCandidate));
-							if (bottom.getValue().get() < analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate)
-								duplexRead.issues.add(location + " CS0B_" + shortLengthFloatFormatter.get().format
-										(((float) bottom.getValue().get()) / nBottomStrandsWithCandidate));
-						}
-					}
-				} else {//Only the top or bottom strand is represented
-					Entry<CandidateSequence, SettableInteger> strand = top != null ? top : bottom;
-					float total = nTopStrandsWithCandidate + nBottomStrandsWithCandidate; //One is 0, doesn't matter which
-					if (strand != null && strand.getValue().get() < analyzer.minConsensusThresholdQ1 * total) {
-						if (analyzer.logReadIssuesInOutputBam) {
-							duplexRead.issues.add(location + " CS0X_" + shortLengthFloatFormatter.get().format
-									(strand.getValue().get() / total));
-						}
-					}
-					dq.addUnique(MISSING_STRAND, DUBIOUS);
-				}
-				
-				final boolean highEnoughQualForDisagreement = 
-						dq.getMin().compareTo(GOOD) >= 0 &&
-						bottom.getValue().get() >= analyzer.minReadsPerStrandForDisagreement &&
-						top.getValue().get() >= analyzer.minReadsPerStrandForDisagreement &&
-						!hasHiddenCandidate;
-				
-				if (bothStrandsPresent && highEnoughQualForDisagreement) {
-					stats.nLociDuplexesCandidatesForDisagreementQ2.accept(location);
-				}
-
-				if (bothStrandsPresent && 
-						(!Arrays.equals(bottom.getKey().getSequence(), top.getKey().getSequence()) ||
-								!bottom.getKey().getMutationType().equals(top.getKey().getMutationType()))) {
-
-					dq.addUnique(DISAGREEMENT, ATROCIOUS);
-					duplexRead.issues.add(location + " DSG");
-					disagreement = true;
-
-					if (highEnoughQualForDisagreement) {
-						final Mutation m1 = new Mutation(top.getKey());
-						final Mutation m2 = new Mutation(bottom.getKey());
-
-						if (m1.mutationType != WILDTYPE && m2.mutationType != WILDTYPE) {
-							stats.nLociDuplexWithTopBottomDuplexDisagreementNoWT.accept(location);
-						} else {
-							final Mutation actualMutant = (m1.mutationType != WILDTYPE) ? m1 : m2;
-							final Mutation wildtype = (actualMutant == m1) ? m2 : m1;
-
-							final CandidateSequence mutantCandidate;
-							if (actualMutant == m1) {
-								mutantCandidate = top.getKey();
-							} else {
-								mutantCandidate = bottom.getKey();
-							}
-							
-							//Use candidate concurring reads, and get a
-							//majority vote of whether they have a positive or
-							//negative alignment (if everything is as expected there
-							//should be a perfect consensus with respect to alignment)
-							final Set<ExtendedSAMRecord> concurringReads = mutantCandidate.
-									getNonMutableConcurringReads().keySet();
-							int pos1 = 0, pos2 = 0;
-							float total1 = 0, total2 = 0;
-							for (ExtendedSAMRecord er: concurringReads) {
-								if (!duplexRead.topStrandRecords.contains(er) && 
-									!duplexRead.bottomStrandRecords.contains(er)) {
-									continue;
-								}
-								if (er.record.getSecondOfPairFlag()) {
-									total2++;
-									if (er.record.getReadNegativeStrandFlag()) {
-										pos2++;
-									}											
-								} else {
-									total1++;
-									if (er.record.getReadNegativeStrandFlag()) {
-										pos1++;
-									}
-								}
-							}
-							//Both total1 and total2 might be >0 in case the consensus disagreement
-							//is also found at a low frequency in the strand with wildtype consensus
-							final boolean negativeStrand = !(total1 > total2 ? pos1 / total1 >= 0.5 :
-								pos2 / total2 >= 0.5);
-							
-							if (analyzer.codingStrandTester != null) {
-								Optional<Boolean> negativeCodingStrand = 
-										analyzer.codingStrandTester.getNegativeStrand(location);
-								actualMutant.setTemplateStrand(negativeCodingStrand.map(
-										b ->  b == negativeStrand ? false : true));
-								/*if (negativeCodingStrand != null) {
-									if (negativeCodingStrand.booleanValue() == negativeStrand) {
-										actualMutant.templateStrand = false;
-									} else {
-										actualMutant.templateStrand = true;
-									}
-								}*/
-							}
-							
-							if (total1 > 0 && total2 > 0) {
-								if (!(pos1 / total1 >= 0.5 ^ pos2 / total2 >= 0.5)) {
-									//This could happen in case of a read being erroneously grouped in current duplex?
-									stats.disagreementMatesSameOrientation.increment(location);
-								}
-							}
-							stats.disagreementOrientationProportions1.insert((int) (10 * pos1 / total1));
-							stats.disagreementOrientationProportions2.insert((int) (10 * pos2 / total2));
-							
-							final boolean hasDeletion;
-							final boolean hasInsertion;
-							final boolean hasSubstitution;
-							final int nKinds;
-							final Mutation simplifiedMutation;
-							
-							if (actualMutant.mutationType != SUBSTITUTION) {
-								//This case is relatively infrequent, so separate it
-								//But it would simpler not to have a special case for substitutions
-								
-								hasDeletion = mutantCandidate.containsMutationType(DELETION);
-								hasInsertion = mutantCandidate.containsMutationType(INSERTION);
-								hasSubstitution = mutantCandidate.containsMutationType(SUBSTITUTION);								
-								nKinds = (hasDeletion ? 1 : 0) + (hasInsertion ? 1 : 0) + (hasSubstitution ? 1 : 0);
-
-								if (nKinds == 1) {
-									if (hasDeletion) {
-										simplifiedMutation = new Mutation(mutantCandidate.getUniqueType(DELETION));
-									} else if (hasInsertion) {
-										simplifiedMutation = new Mutation(mutantCandidate.getUniqueType(INSERTION));
-									} else if (hasSubstitution) {
-										simplifiedMutation = new Mutation(mutantCandidate.getUniqueType(SUBSTITUTION));
-									} else {
-										throw new AssertionFailedException();
-									}
-								} else {
-									simplifiedMutation = null;
-								}
-								
-								stats.nLociDuplexWithTopBottomDuplexDisagreementNotASub.accept(location);
-								if (nKinds > 1) {
-									stats.nComplexDisagreementsQ2.increment(location);
-								} else if (nKinds == 1) {
-									simplifiedMutation.setTemplateStrand(actualMutant.getTemplateStrand());
-									ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
-											new ComparablePair<>(wildtype.reverseComplement(), simplifiedMutation.reverseComplement()) :
-												new ComparablePair<>(wildtype, simplifiedMutation);
-											if (duplexRead.getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
-												duplexDisagreements.add(mutationPair);
-											}
-								} else {
-									throw new AssertionFailedException();
-								}
-							} else {
-								nKinds = 1;
-								hasSubstitution = true;
-								hasDeletion = false;
-								hasInsertion = false;
-								simplifiedMutation = actualMutant;
-								ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
-										new ComparablePair<>(wildtype.reverseComplement(), actualMutant.reverseComplement()) :
-										new ComparablePair<>(wildtype, actualMutant);
-								if (duplexRead.getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {//TODO Check
-									//redundant with what was done earlier
-									duplexDisagreements.add(mutationPair);
-								}
-							}
-							
-							final SettableInteger minDist = new SettableInteger(99999);
-							final Handle<ExtendedSAMRecord> minDistanceRead = new Handle<>();
-							for (CandidateSequence candidate: candidateSet) {
-								if (!candidate.getMutationType().equals(actualMutant.mutationType)) {
-									continue;
-								}
-								candidate.getNonMutableConcurringReads().forEachEntry(
-									(read, dist) -> {
-										if (duplexRead.bottomStrandRecords.contains(read) ||
-												duplexRead.topStrandRecords.contains(read)) {
-											if (dist == Integer.MAX_VALUE || dist == Integer.MIN_VALUE) {
-												throw new AssertionFailedException(dist + " distance for mutation " +
-														actualMutant + " read " + read + " file " + analyzer.inputBam.getAbsolutePath());
-											}
-											if (dist < minDist.get()) {
-												minDist.set(dist);
-												minDistanceRead.set(read);
-											}
-										}
-										return true;
-									}
-								);
-								break;
-							}
-								
-							if (minDist.get() == 99999) {
-								//This means that no reads are left that support the mutation candidate
-								//This can happen in case of low Phred qualities that leads to the
-								//reads being discarded
-							} else if (minDist.get() < 0) {
-								logger.warn("Min dist = " + minDist.get() +
-										" at " + location + " " + duplexRead.topStrandRecords.
-										iterator().next() + " VS " + duplexRead.bottomStrandRecords.
-										iterator().next() + " " + analyzer.inputBam.getAbsolutePath());
-							} else if (minDist.get() > analyzer.ignoreFirstNBasesQ2) {
-								//Why not just use duplexRead.getDistanceToLigSite() <= analyzer.ignoreFirstNBasesQ2 ?
-								if (nKinds == 1) {
-									if (hasSubstitution) {
-										stats.substDisagDistanceToLigationSite.insert(minDist.get());
-									} else if (hasDeletion) {
-										stats.delDisagDistanceToLigationSite.insert(minDist.get());
-										stats.disagDelSize.insert(simplifiedMutation.mutationSequence.length);
-									} else if (hasInsertion) {
-										stats.insDisagDistanceToLigationSite.insert(minDist.get());
-									} else {
-										//Too close to ligation site; could collect statistics here
-									}
-								}
-							}//End distance to ligation site cases
-						}//End case with one wildtype candidate
-					}//End highEnoughQualForDisagreement
-				}//End candidate for disagreement
-
-				duplexRead.localQuality = dq;
-				
-				//Now remove support given to non-consensus candidate mutations by this duplex
-				for (CandidateSequence candidate: candidateSet) {
-					if ((!disagreement) && (bottom == null || candidate.equals(bottom.getKey())) &&
-							(top == null || candidate.equals(top.getKey())))
-						continue;
-
-					@NonNull TObjectIntHashMap<ExtendedSAMRecord> reads = 
-							candidate.getMutableConcurringReads();
-					for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
-						reads.remove(r);
-					}
-					for (ExtendedSAMRecord r: duplexRead.topStrandRecords) {
-						reads.remove(r);
-					}
-				}
-				
-				//Used to report global stats on duplex (including all locations), not
-				//to compute quality of candidates at this location
-				duplexRead.maxQuality = max(duplexRead.maxQuality, dq.getMin());
-				duplexRead.minQuality = min(duplexRead.minQuality, dq.getMin());
-				
-				if (NONTRIVIAL_ASSERTIONS && !duplexDisagreements.isEmpty() &&
-						dq.getMinIgnoring(assaysToIgnoreForDisagreementQuality).compareTo(GOOD) < 0) {
-					throw new AssertionFailedException(dq.getQualities().toString());
-				}
-				
-				if (!duplexDisagreements.isEmpty()) {
-					result.disagreements.addAll(duplexDisagreements);
-				}
-
-			}//End loop over duplexes covering this location
+				duplexRead.examineAtLoc(location, result, candidateSet,
+						assaysToIgnoreForDisagreementQuality, hasHiddenCandidate,
+						topCounter, bottomCounter, duplexRead.topStrandRecords,
+						duplexRead.bottomStrandRecords, analyzer, stats);
+			}
 			averageClippingOfCoveringDuplexes /= duplexReads.size();
 			
 			if (averageClippingOfCoveringDuplexes > analyzer.maxAverageClippingOfAllCoveringDuplexes) {
@@ -1332,7 +873,7 @@ final class SubAnalyzer {
 						final int refPosition = location.position;
 						final int readPosition = r.referencePositionToReadPosition(refPosition);
 						final int distance = r.tooCloseToBarcode(refPosition, readPosition, 0);
-						if (Math.abs(distance) > 150 && candidate.getMutationType() != WILDTYPE) {
+						if (Math.abs(distance) > 150 && !candidate.getMutationType().isWildtype()) {
 							throw new AssertionFailedException("Distance problem with candidate " + candidate +
 									" read at read position " + readPosition + " and refPosition " +
 									refPosition + " " + r.toString() + " in analyzer" +
@@ -1360,7 +901,7 @@ final class SubAnalyzer {
 				totalGoodOrDubiousDuplexes += candidate.getnGoodOrDubiousDuplexes();
 				totalGoodDuplexesIgnoringDisag += candidate.getnGoodDuplexesIgnoringDisag();
 
-				if (candidate.getMutationType() == WILDTYPE) {
+				if (candidate.getMutationType().isWildtype()) {
 					candidate.setSupplementalMessage(null);
 					wildtypeBase = candidate.getWildtypeSequence();
 				} else if (candidate.getQuality().getMin().compareTo(POOR) > 0) {
@@ -1479,7 +1020,7 @@ final class SubAnalyzer {
 			} else { 
 				throw new AssertionFailedException();
 			}
-			result.analyzedCandidateSequences = candidates.values();
+			result.analyzedCandidateSequences = candidateSet;
 			return result;
 		} finally {
 			threadCount.decrementAndGet();
@@ -1953,8 +1494,10 @@ final class SubAnalyzer {
 					stats.nCandidateWildtypeAfterLastNBases.increment(location);
 					continue;
 				} 
+				final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
+					readPosition == effectiveReadLength - 1;
 				final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
-						Util.nonNullify(WILDTYPE), location, extendedRec, -distance);
+						Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), location, extendedRec, -distance);
 				candidate.acceptLigSiteDistance(distance);
 				candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 				readLocalCandidates.add(candidate, location);

@@ -115,7 +115,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	}
 	
 	public byte[] getSequence() {
-		if (mutationType == MutationType.WILDTYPE) {
+		if (mutationType.isWildtype()) {
 			return new byte[] {wildtype};
 		} else {
 			return mutationSequence;
@@ -141,6 +141,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	public String toString() {
 		switch(mutationType) {
 		case WILDTYPE:
+		case WILDTYPE_ER:
 			return "wt " + new String(new byte[] {wildtype});
 		case DELETION:
 			return "del " + mutationSequenceString();

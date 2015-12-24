@@ -40,6 +40,8 @@ public interface CandidateSequenceI extends Serializable {
 	int getMinInsertSize();
 	void setMinInsertSize(int minInsertSize);
 	int getAverageMappingQuality();
+	int getPositionInRead();
+	int getReadEffectiveLength();
 	void setAverageMappingQuality(int averageMappingQuality);
 	boolean isHasFunnyInserts();
 	void setHasFunnyInserts(boolean hasFunnyInserts);

@@ -59,6 +59,15 @@ public final class CandidateSequenceCombo extends CandidateSequence implements S
 		getMutableRawMismatchesQ2().addAll(c.getRawMismatchesQ2());
 		getMutableRawDeletionsQ2().addAll(c.getRawDeletionsQ2());
 		getMutableRawInsertionsQ2().addAll(c.getRawInsertionsQ2());
+		int pos = c.getPositionInRead();
+		if (pos < positionInRead) {
+			positionInRead = pos;
+		}
+		int readEL_1 = c.getReadEffectiveLength();
+		if (readEL_1 < readEL) {
+			readEL = readEL_1;
+		}
+		
 	}
 
 	@Override
@@ -69,7 +78,7 @@ public final class CandidateSequenceCombo extends CandidateSequence implements S
 		final int prime = 31;
 		int result = 0;
 		for (CandidateSequenceI c: candidates) {
-			if (c.getMutationType() == MutationType.WILDTYPE) {
+			if (c.getMutationType().isWildtype()) {
 				continue;
 			}
 			result = prime * result + c.hashCode();
@@ -89,9 +98,9 @@ public final class CandidateSequenceCombo extends CandidateSequence implements S
 			if (obj instanceof CandidateSequence) {
 				CandidateSequence cast = (CandidateSequence) obj;
 				List<CandidateSequenceI> nonWt = getCandidates().stream().filter(
-							c -> c.getMutationType() != MutationType.WILDTYPE).
+							c -> !c.getMutationType().isWildtype()).
 						collect(Collectors.toList());
-				if (cast.getMutationType() == MutationType.WILDTYPE) {
+				if (cast.getMutationType().isWildtype()) {
 					//Returned value should always be false
 					return nonWt.size() == 0 && getCandidates().size() == 1;
 				} else {
@@ -129,7 +138,7 @@ public final class CandidateSequenceCombo extends CandidateSequence implements S
 		String result = "";
 		CandidateSequenceI wt = null;
 		for (CandidateSequenceI c: candidates) {
-			if (c.getMutationType() != MutationType.WILDTYPE) {
+			if (!c.getMutationType().isWildtype()) {
 				if (!"".equals(result)) {
 					result += "+";
 				}
