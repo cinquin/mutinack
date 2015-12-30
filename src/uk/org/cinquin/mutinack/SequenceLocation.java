@@ -31,6 +31,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	final public int contigIndex;
 	final public int position;
 	final public int hash;
+	final public boolean plusHalf;
 
 	private static final long serialVersionUID = -8294857765048137986L;
 
@@ -44,6 +45,9 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		int result = 1;
 		result = prime * result + contigIndex;
 		result = prime * result + position;
+		if (plusHalf) {
+			result = prime * result + 1;
+		}
 		return result;
 	}
 
@@ -60,16 +64,25 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 			return false;
 		if (contigIndex != other.contigIndex)
 			return false;
+		if (plusHalf != other.plusHalf) {
+			return false;
+		}
 		return true;
 	}
 	
-	public SequenceLocation(int contigIndex, int position) {
+	public SequenceLocation(int contigIndex, int position, boolean plusHalf) {
 		if (contigIndex < 0)
 			throw new AssertionFailedException();
 		this.contigIndex = contigIndex;
 		this.position = position;
+		this.plusHalf = plusHalf;
 		
 		this.hash = computeHash();
+
+	}
+	
+	public SequenceLocation(int contigIndex, int position) {
+		this(contigIndex, position, false);
 	}
 	
 	public SequenceLocation(@NonNull String contigName, int position) {
@@ -82,6 +95,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 		this.contigIndex = contigIndex1;
 		this.position = position;
+		this.plusHalf = false;
 		
 		this.hash = computeHash();
 	}
@@ -97,7 +111,8 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	@Override
 	public String toString() {
 		return Mutinack.indexContigNameMap.get(contigIndex) + ":"
-				+ nf.get().format(position + 1);//Internal indexing starts at 0
+				+ nf.get().format(position + 1) +
+				(plusHalf ? ".5" : "");//Internal indexing starts at 0
 	}
 	
 	public String getContigName() {
@@ -118,13 +133,26 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 			return contigCompare;
 		}
 		else {
-			return Integer.compare(this.position, o.position);
+			int positionCompare = Integer.compare(this.position, o.position);
+			if (positionCompare != 0) {
+				return positionCompare;
+			}
+			return Integer.compare(plusHalf ? 1 : 0, o.plusHalf ? 1 : 0);
 		}
 	}
 
 	public @Nullable Integer distanceTo(@NonNull SequenceLocation location) {
 		if (contigIndex != location.contigIndex) {
 			return null;
+		} else {
+			return this.position - location.position;
+		}
+	}
+	
+	public int distanceOnSameContig(@NonNull SequenceLocation location) {
+		if (contigIndex != location.contigIndex) {
+			throw new IllegalArgumentException("Different contigs " + location.contigIndex + 
+					" and " + contigIndex);
 		} else {
 			return this.position - location.position;
 		}

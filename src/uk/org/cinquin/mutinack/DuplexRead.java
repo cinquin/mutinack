@@ -282,6 +282,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return interval;
 	}
 	
+	@SuppressWarnings("null")
 	public void examineAtLoc(@NonNull SequenceLocation location, LocationExaminationResults result,
 			@NonNull Set<CandidateSequence> candidateSet,
 			@NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality,
@@ -638,7 +639,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 										duplexDisagreements.add(mutationPair);
 									}
 						} else {
-							throw new AssertionFailedException();
+							//throw new AssertionFailedException();
 						}
 					} else {
 						nKinds = 1;

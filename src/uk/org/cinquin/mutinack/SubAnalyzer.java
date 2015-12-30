@@ -86,8 +86,8 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 final class SubAnalyzer {
 	final static Logger logger = LoggerFactory.getLogger(SubAnalyzer.class);
 	
-	private final @NonNull Mutinack analyzer;
-	public final @NonNull AnalysisStats stats;
+	final @NonNull Mutinack analyzer;
+	public AnalysisStats stats;
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);	
 	final @NonNull Map<SequenceLocation, THashSet<CandidateSequence>> candidateSequences =
 			new THashMap<>(50_000);	
@@ -118,7 +118,6 @@ final class SubAnalyzer {
 		
 	SubAnalyzer(@NonNull Mutinack analyzer) {
 		this.analyzer = analyzer;
-		this.stats = analyzer.stats;
 		useHashMap = analyzer.alignmentPositionMismatchAllowed == 0;
 	}
 	
@@ -790,6 +789,7 @@ final class SubAnalyzer {
 			}
 			
 			for (CandidateSequence candidate: candidateSet) {
+				candidate.getQuality().reset();
 				
 				candidate.setMedianPhredAtLocus(locusMedianPhred);
 				
@@ -1213,7 +1213,7 @@ final class SubAnalyzer {
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
 							"; insert size: " + insertSize + "; localIgnoreLastNBases: " + localIgnoreLastNBases + ")");
 					}
-					location = new SequenceLocation(ref.getContigIndex(), refEndOfPreviousAlignment + 1);
+					location = new SequenceLocation(ref.getContigIndex(), refEndOfPreviousAlignment, true);
 					distance0 = extendedRec.tooCloseToBarcode(refPosition, readEndOfPreviousAlignment, 0);
 					distance1 = extendedRec.tooCloseToBarcode(refPosition, readPosition, 0);
 					distance = Math.max(distance0, distance1);
@@ -1366,6 +1366,12 @@ final class SubAnalyzer {
 			if (i == 1) {
 				forceCandidateInsertion = false;
 			}
+			final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
+				new SequenceLocation(ref.getContigIndex(), refPosition, true)
+				: null;
+			final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
+				readPosition == effectiveReadLength - 1;
+
 			location = new SequenceLocation(ref.getContigIndex(), refPosition);
 			
 			if (baseQualities[readPosition] < analyzer.minBasePhredScoreQ1 && !forceCandidateInsertion) {
@@ -1445,9 +1451,18 @@ final class SubAnalyzer {
 					candidate.readAlignmentEnd = extendedRec.getRefAlignmentEndNoBarcode();
 					candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEndNoBarcode();
 					candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-					candidate.setSequence(new byte[] {readBases[readPosition]});
+					final byte[] mutSequence = new byte[] {readBases[readPosition]};
+					candidate.setSequence(mutSequence);
 					candidate.setWildtypeSequence(wildType);
 					readLocalCandidates.add(candidate, location);
+					if (locationPH != null) {
+						final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
+								Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), locationPH, extendedRec, -distance);
+						candidate2.acceptLigSiteDistance(distance);
+						candidate2.setWildtypeSequence(wildType);
+						candidate2.setSequence(mutSequence);
+						readLocalCandidates.add(candidate2, locationPH);
+					}
 					candidate.addBasePhredQualityScore(baseQualities[readPosition]);
 					extendedRec.nReferenceDisagreements++;
 					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
@@ -1494,13 +1509,18 @@ final class SubAnalyzer {
 					stats.nCandidateWildtypeAfterLastNBases.increment(location);
 					continue;
 				} 
-				final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
-					readPosition == effectiveReadLength - 1;
 				final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
 						Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), location, extendedRec, -distance);
 				candidate.acceptLigSiteDistance(distance);
 				candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 				readLocalCandidates.add(candidate, location);
+				if (locationPH != null) {
+					final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
+							Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), locationPH, extendedRec, -distance);
+					candidate2.acceptLigSiteDistance(distance);
+					candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
+					readLocalCandidates.add(candidate2, locationPH);
+				}
 				candidate.addBasePhredQualityScore(baseQualities[readPosition]);
 				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
 					logger.warn("Recording Phred score multiple times at same position " + location);

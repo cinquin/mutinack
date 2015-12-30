@@ -243,7 +243,7 @@ public class Mutinack {
 	final byte @NonNull[] constantBarcode;
 	final int variableBarcodeLength;
 	final int unclippedBarcodeLength;
-	public final @NonNull AnalysisStats stats = new AnalysisStats();
+	public final @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
 
 	public Mutinack(Parameters argValues, String name,
 			int idx,
@@ -331,7 +331,6 @@ public class Mutinack {
 		this.minMedianPhredQualityAtLocus = minMedianPhredQualityAtLocus;
 		this.maxFractionWrongPairsAtLocus = maxFractionWrongPairsAtLocus;
 		this.maxNDuplexes = maxNDuplex;
-		this.stats.setOutputLevel(outputLevel);
 		
 		this.computeSupplQuality = promoteNQ1Duplexes != Integer.MAX_VALUE ||
 				promoteNSingleStrands != Integer.MAX_VALUE ||
@@ -340,6 +339,11 @@ public class Mutinack {
 		this.rnaSeq = rnaSeq;
 		this.excludeBEDs = excludeBEDs;
 		this.computeRawDisagreements = computeRawDisagreements;
+		
+		stats.add(new AnalysisStats("main_stats_"));
+		stats.add(new AnalysisStats("ins_stats_"));
+		this.stats.forEach(s -> s.setOutputLevel(outputLevel));
+
 	}
 	
 	public static void main(String args[]) throws InterruptedException, ExecutionException, FileNotFoundException {
@@ -520,8 +524,9 @@ public class Mutinack {
 							int columnPosition = loc.indexOf(":");
 							final String contig = loc.substring(0, columnPosition);
 							final String pos = loc.substring(columnPosition + 1);
+							double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
 							final SequenceLocation parsedLocation = new SequenceLocation(contigs.indexOf(contig),
-									NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).intValue() - 1);
+									(int) Math.floor(position), position - Math.floor(position) > 0);
 							if (!forceOutputAtLocations.add(parsedLocation)) {
 								Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 										" in list of forced output positions"));
@@ -685,46 +690,54 @@ public class Mutinack {
 
 			if (argValues.outputTopBottomDisagreementBED) {
 				String tbdName = baseName + "_top_bottom_disag.bed";
-				try {
-					analyzer.stats.topBottomDisagreementWriter = new FileWriter(tbdName);
-					analyzer.itemsToClose.add(analyzer.stats.topBottomDisagreementWriter);
-				} catch (IOException e) {
-					handleOutputException(tbdName, e, argValues);
-				}
+				analyzer.stats.forEach(s -> {
+					try {
+						s.topBottomDisagreementWriter = new FileWriter(s.getName() + tbdName);
+						analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
+					} catch (IOException e) {
+						handleOutputException(tbdName, e, argValues);
+					}
+				});
 			}
 
 			String mutName = baseName + "_mutations.bed";
-			try {
-				analyzer.stats.mutationBEDWriter = new FileWriter(mutName);
-				analyzer.itemsToClose.add(analyzer.stats.mutationBEDWriter);
-			} catch (IOException e) {
-				handleOutputException(mutName, e, argValues);
-			}
+			analyzer.stats.forEach(s -> {
+				try {
+					s.mutationBEDWriter = new FileWriter(s.getName() + mutName);
+					analyzer.itemsToClose.add(s.mutationBEDWriter);				
+				} catch (IOException e) {
+					handleOutputException(mutName, e, argValues);
+				}
+			});
 
 			if (argValues.outputCoverageProto) {
-				analyzer.stats.locusByLocusCoverage = new HashMap<>();
-				if (contigSizes.isEmpty()) {
-					throw new IllegalArgumentException("Need contig sizes for outputCoverageProto; " +
-							"set readContigsFromFile option");
-				}
-				contigSizes.forEach((k,v) -> {
-					analyzer.stats.locusByLocusCoverage.put(k, new int [v]);
+				analyzer.stats.forEach(s -> {
+					s.locusByLocusCoverage = new HashMap<>();
+					if (contigSizes.isEmpty()) {
+						throw new IllegalArgumentException("Need contig sizes for outputCoverageProto; " +
+								"set readContigsFromFile option");
+					}
+					contigSizes.forEach((k,v) -> {
+						s.locusByLocusCoverage.put(k, new int [v]);
+					});
+					Builder builder = LocusByLocusNumbersPB.GenomeNumbers.newBuilder();
+					builder.setGeneratingProgramVersion(VersionInfo.gitCommit);
+					builder.setGeneratingProgramArgs(argValues.toString());
+					builder.setSampleName(s.getName() + name + "_locus_by_locus_coverage");
+					s.locusByLocusCoverageProtobuilder = builder;
 				});
-				Builder builder = LocusByLocusNumbersPB.GenomeNumbers.newBuilder();
-				builder.setGeneratingProgramVersion(VersionInfo.gitCommit);
-				builder.setGeneratingProgramArgs(argValues.toString());
-				builder.setSampleName(name + "_locus_by_locus_coverage");
-				analyzer.stats.locusByLocusCoverageProtobuilder = builder;
 			}
 			
 			if (argValues.outputCoverageBed) {
 				String coverageName = baseName + "_coverage.bed";
-				try {					
-					analyzer.stats.coverageBEDWriter = new FileWriter(coverageName);
-					analyzer.itemsToClose.add(analyzer.stats.coverageBEDWriter);
-				} catch (IOException e) {
-					handleOutputException(coverageName, e, argValues);
-				}
+				analyzer.stats.forEach(s -> {
+					try {	
+						s.coverageBEDWriter = new FileWriter(s.getName () + coverageName);
+						analyzer.itemsToClose.add(s.coverageBEDWriter);
+					} catch (IOException e) {
+						handleOutputException(coverageName, e, argValues);
+					}
+				});
 			}
 
 			
@@ -733,16 +746,18 @@ public class Mutinack {
 				final SerializablePredicate<SequenceLocation> p = 
 						l -> l.contigIndex == finalContigIndex;
 				String contigName = argValues.contigNamesToProcess.get(contigIndex);
-				analyzer.stats.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
-				analyzer.stats.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
-				analyzer.stats.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
-				analyzer.stats.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(contigName, p);
-				analyzer.stats.codingStrandSubstQ2.addPredicate(contigName, p);
-				analyzer.stats.templateStrandSubstQ2.addPredicate(contigName, p);
-				analyzer.stats.codingStrandDelQ2.addPredicate(contigName, p);
-				analyzer.stats.templateStrandDelQ2.addPredicate(contigName, p);
-				analyzer.stats.codingStrandInsQ2.addPredicate(contigName, p);
-				analyzer.stats.templateStrandInsQ2.addPredicate(contigName, p);
+				analyzer.stats.forEach(s -> {
+					s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
+					s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
+					s.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
+					s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(contigName, p);
+					s.codingStrandSubstQ2.addPredicate(contigName, p);
+					s.templateStrandSubstQ2.addPredicate(contigName, p);
+					s.codingStrandDelQ2.addPredicate(contigName, p);
+					s.templateStrandDelQ2.addPredicate(contigName, p);
+					s.codingStrandInsQ2.addPredicate(contigName, p);
+					s.templateStrandInsQ2.addPredicate(contigName, p);
+				});
 			}
 			
 			if (argValues.bedDisagreementOrienter != null) {
@@ -758,82 +773,86 @@ public class Mutinack {
 			
 			Set<String> bedFileNames = new HashSet<>();
 
-			for (String s: argValues.reportStatsForBED) {
+			for (String fileName: argValues.reportStatsForBED) {
 				try {
-					if (!bedFileNames.add(s)) {
-						throw new IllegalArgumentException("Bed file " + s + " specified multiple times");
+					if (!bedFileNames.add(fileName)) {
+						throw new IllegalArgumentException("Bed file " + fileName + " specified multiple times");
 					}
-					final File f = new File(s);
+					final File f = new File(fileName);
 					final String filterName = f.getName();
 					final GenomeFeatureTester filter = new BedReader(indexContigNameMap.values(), 
 							new BufferedReader(new FileReader(f)), filterName, null);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
-
-					analyzer.stats.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-					analyzer.stats.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-					analyzer.stats.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-					analyzer.stats.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-					analyzer.stats.nLociCandidatesForUniqueMutation.addPredicate(filterName, filter);
-					analyzer.stats.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
-					analyzer.stats.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
-					analyzer.stats.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
-					analyzer.stats.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
-					analyzer.stats.codingStrandSubstQ2.addPredicate(filterName, filter);
-					analyzer.stats.templateStrandSubstQ2.addPredicate(filterName, filter);
-					analyzer.stats.codingStrandDelQ2.addPredicate(filterName, filter);
-					analyzer.stats.templateStrandDelQ2.addPredicate(filterName, filter);
-					analyzer.stats.codingStrandInsQ2.addPredicate(filterName, filter);
-					analyzer.stats.templateStrandInsQ2.addPredicate(filterName, filter);
-					analyzer.stats.lackOfConsensus1.addPredicate(filterName, filter);
-					analyzer.stats.lackOfConsensus2.addPredicate(filterName, filter);
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
 
-					analyzer.stats.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
-					analyzer.stats.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
-					analyzer.stats.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.nLociCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
-					analyzer.stats.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.topBottomInsDisagreementsQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.topBottomDisagreementsQ2TooHighCoverage.addPredicate(notFilterName, notFilter);
-					analyzer.stats.codingStrandSubstQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.templateStrandSubstQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.codingStrandDelQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.templateStrandDelQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.codingStrandInsQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.templateStrandInsQ2.addPredicate(notFilterName, notFilter);
-					analyzer.stats.lackOfConsensus1.addPredicate(notFilterName, notFilter);
-					analyzer.stats.lackOfConsensus2.addPredicate(notFilterName, notFilter);
-					analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
+					analyzer.stats.forEach(s -> {
+						s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
+						s.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
+						s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+						s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+						s.nLociCandidatesForUniqueMutation.addPredicate(filterName, filter);
+						s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
+						s.codingStrandSubstQ2.addPredicate(filterName, filter);
+						s.templateStrandSubstQ2.addPredicate(filterName, filter);
+						s.codingStrandDelQ2.addPredicate(filterName, filter);
+						s.templateStrandDelQ2.addPredicate(filterName, filter);
+						s.codingStrandInsQ2.addPredicate(filterName, filter);
+						s.templateStrandInsQ2.addPredicate(filterName, filter);
+						s.lackOfConsensus1.addPredicate(filterName, filter);
+						s.lackOfConsensus2.addPredicate(filterName, filter);
+
+						s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
+						s.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
+						s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
+						s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
+						s.nLociCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
+						s.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
+						s.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
+						s.topBottomInsDisagreementsQ2.addPredicate(notFilterName, notFilter);
+						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(notFilterName, notFilter);
+						s.codingStrandSubstQ2.addPredicate(notFilterName, notFilter);
+						s.templateStrandSubstQ2.addPredicate(notFilterName, notFilter);
+						s.codingStrandDelQ2.addPredicate(notFilterName, notFilter);
+						s.templateStrandDelQ2.addPredicate(notFilterName, notFilter);
+						s.codingStrandInsQ2.addPredicate(notFilterName, notFilter);
+						s.templateStrandInsQ2.addPredicate(notFilterName, notFilter);
+						s.lackOfConsensus1.addPredicate(notFilterName, notFilter);
+						s.lackOfConsensus2.addPredicate(notFilterName, notFilter);
+						analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
+					});
 				} catch (Exception e) {
-					throw new RuntimeException("Problem with BED file " + s, e);
+					throw new RuntimeException("Problem with BED file " + fileName, e);
 				}
 			}
 
-			for (String s: argValues.reportStatsForNotBED) {
+			for (String fileName: argValues.reportStatsForNotBED) {
 				try {
-					final File f = new File(s);
+					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
 					final GenomeFeatureTester filter0 = new BedReader(indexContigNameMap.values(),
 							new BufferedReader(new FileReader(f)), filterName, null);
 					final BedComplement filter = new BedComplement(filter0);
-					analyzer.stats.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-					analyzer.stats.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-					analyzer.stats.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-					analyzer.stats.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-					analyzer.stats.nLociCandidatesForUniqueMutation.addPredicate(filterName, filter);
-					analyzer.stats.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
-					analyzer.stats.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
-					analyzer.stats.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
-					analyzer.stats.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
-					analyzer.stats.lackOfConsensus1.addPredicate(filterName, filter);
-					analyzer.stats.lackOfConsensus2.addPredicate(filterName, filter);
+					analyzer.stats.forEach(s -> {
+						s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
+						s.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
+						s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+						s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+						s.nLociCandidatesForUniqueMutation.addPredicate(filterName, filter);
+						s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
+						s.lackOfConsensus1.addPredicate(filterName, filter);
+						s.lackOfConsensus2.addPredicate(filterName, filter);
+					});
 
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
 				} catch (Exception e) {
-					throw new RuntimeException("Problem with BED file " + s, e);
+					throw new RuntimeException("Problem with BED file " + fileName, e);
 				}
 			}
 
@@ -851,39 +870,47 @@ public class Mutinack {
 							new BufferedReader(new FileReader(f)), f.getName(),
 							argValues.bedFeatureSuppInfoFile == null ? null :
 							new BufferedReader(new FileReader(argValues.bedFeatureSuppInfoFile)));
-					CounterWithBedFeatureBreakdown counter = new CounterWithBedFeatureBreakdown(filter,
-							argValues.refSeqToOfficialGeneName == null ?
-								null :
-								TSVMapReader.getMap(new BufferedReader(
-										new FileReader(argValues.refSeqToOfficialGeneName))));
-					
-					String outputPath = argValues.saveBEDBreakdownTo.get(index);
-					if (!outputPaths.add(outputPath)) {
-						throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
-								" specified multiple times");
-					}
-					counter.setOutputFile(new File(outputPath + "_nLociDuplex_" + ".bed"));
-					analyzer.stats.nLociDuplex.addPredicate(f.getName(), filter, counter);
-					for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
-						for (IntervalData<GenomeInterval> loc: locs) {
-							Iterator<GenomeInterval> it = loc.getData().iterator();
-							while (it.hasNext()) {
-								GenomeInterval interval = it.next();
-								counter.accept(interval.getStartLocation(), 0);
-								if (NONTRIVIAL_ASSERTIONS && !counter.getCounter().getCounts().containsKey(interval)) {
-									throw new AssertionFailedException("Failed to add " + interval +"; matches were " +
-										counter.getBedFeatures().apply(interval.getStartLocation()));
+					int index0 = index;
+					analyzer.stats.forEach(s -> {
+						CounterWithBedFeatureBreakdown counter;
+						try {
+							counter = new CounterWithBedFeatureBreakdown(filter,
+									argValues.refSeqToOfficialGeneName == null ?
+											null :
+												TSVMapReader.getMap(new BufferedReader(
+														new FileReader(argValues.refSeqToOfficialGeneName))));
+						} catch (Exception e) {
+							throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
+						}
+
+						String outputPath = argValues.saveBEDBreakdownTo.get(index0) + s.getName();
+						if (!outputPaths.add(outputPath)) {
+							throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
+									" specified multiple times");
+						}
+						counter.setOutputFile(new File(outputPath + "_nLociDuplex_" + ".bed"));
+						s.nLociDuplex.addPredicate(f.getName(), filter, counter);
+						for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
+							for (IntervalData<GenomeInterval> loc: locs) {
+								Iterator<GenomeInterval> it = loc.getData().iterator();
+								while (it.hasNext()) {
+									GenomeInterval interval = it.next();
+									counter.accept(interval.getStartLocation(), 0);
+									if (NONTRIVIAL_ASSERTIONS && !counter.getCounter().getCounts().containsKey(interval)) {
+										throw new AssertionFailedException("Failed to add " + interval +"; matches were " +
+												counter.getBedFeatures().apply(interval.getStartLocation()));
+									}
 								}
 							}
 						}
-					}
-					counter.setNormalizedOutput(true);
-					counter.setAnalyzerName(name);
-					
-					counter = new CounterWithBedFeatureBreakdown(filter, null);
-					counter.setOutputFile(new File(argValues.saveBEDBreakdownTo.get(index) +
-							"_nLociDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
-					analyzer.stats.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
+						counter.setNormalizedOutput(true);
+						counter.setAnalyzerName(name);
+
+						counter = new CounterWithBedFeatureBreakdown(filter, null);
+						counter.setOutputFile(new File(s.getName() + argValues.saveBEDBreakdownTo.get(index0) +
+								"_nLociDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
+						s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
+					});
 				} catch (Exception e) {
 					throw new RuntimeException("Problem setting up BED file " + argValues.reportBreakdownForBED.get(index), e);
 				}
@@ -1003,6 +1030,8 @@ public class Mutinack {
 				private int nIterations = 0;
 				
 				final AtomicInteger dn = new AtomicInteger(0);
+				
+				final boolean[] falseTrue = new boolean[] {false, true};
 
 				@Override
 				protected final boolean onAdvance(int phase, int registeredParties) {
@@ -1030,15 +1059,21 @@ public class Mutinack {
 						pf0.run(true);
 
 						final int saveLastProcessedPosition = lastProcessedPosition.get();
-						outer:
 						for (int position = saveLastProcessedPosition + 1; position <= pauseAt.get() && !terminateAnalysis;
 								position ++) {
+						outer:
+						for (boolean plusHalf: falseTrue) {
+							
+							final int statsIndex = plusHalf ? 1 : 0;
+							for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
+								subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
+							}
 
 							if (position > terminateAtPosition) {
-								break;
+								break outer;
 							}
 							
-							final @NonNull SequenceLocation location = new SequenceLocation(contigIndex, position);
+							final @NonNull SequenceLocation location = new SequenceLocation(contigIndex, position, plusHalf);
 
 							for (GenomeFeatureTester tester: excludeBEDs) {
 								if (tester.test(location)) {
@@ -1072,10 +1107,10 @@ public class Mutinack {
 								final Handle<Boolean> tooHighCoverage = new Handle<>(false);
 
 								analyzers.parallelStream().forEach(a -> {
-
+									final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
 									final LocationExaminationResults examResults = analyzerCandidateLists.get(a.idx);
 									@Nullable
-									OutputStreamWriter cbw = a.stats.coverageBEDWriter;
+									OutputStreamWriter cbw = stats.coverageBEDWriter;
 									if (cbw != null) {
 										try {
 											cbw.append(	location.getContigName() + "\t" + 
@@ -1087,8 +1122,8 @@ public class Mutinack {
 										}
 									}
 
-									if (a.stats.locusByLocusCoverage != null) {
-										int[] array = a.stats.locusByLocusCoverage.get(location.getContigName());
+									if (stats.locusByLocusCoverage != null) {
+										int[] array = stats.locusByLocusCoverage.get(location.getContigName());
 										if (array.length <= location.position) {
 											throw new IllegalArgumentException("Position goes beyond end of contig " +
 													location.getContigName() + ": " + location.position +
@@ -1101,7 +1136,7 @@ public class Mutinack {
 									for (CandidateSequence c: examResults.analyzedCandidateSequences) {
 										if (c.getQuality().getMin().compareTo(GOOD) >= 0) {
 											if (c.getMutationType().isWildtype()) {
-												a.stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
+												stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
 												if (!repetitiveBEDs.isEmpty()) {
 													boolean repetitive = false;
 													for (GenomeFeatureTester t: repetitiveBEDs) {
@@ -1111,13 +1146,13 @@ public class Mutinack {
 														}
 													}
 													if (repetitive) {
-														a.stats.wtQ2CandidateQ1Q2CoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
+														stats.wtQ2CandidateQ1Q2CoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
 													} else {
-														a.stats.wtQ2CandidateQ1Q2CoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);																
+														stats.wtQ2CandidateQ1Q2CoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);																
 													}
 												}
 											} else {
-												a.stats.mutantQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
+												stats.mutantQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
 												if (!repetitiveBEDs.isEmpty()) {
 													boolean repetitive = false;
 													for (GenomeFeatureTester t: repetitiveBEDs) {
@@ -1127,9 +1162,9 @@ public class Mutinack {
 														}
 													}
 													if (repetitive) {
-														a.stats.mutantQ2CandidateQ1Q2DCoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
+														stats.mutantQ2CandidateQ1Q2DCoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
 													} else {
-														a.stats.mutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);																
+														stats.mutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);																
 													}
 												}
 											}
@@ -1139,7 +1174,7 @@ public class Mutinack {
 									final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
 
 									if (localTooHighCoverage) {
-										a.stats.nLociIgnoredBecauseTooHighCoverage.increment(location);
+										stats.nLociIgnoredBecauseTooHighCoverage.increment(location);
 										tooHighCoverage.set(true);
 									}
 
@@ -1147,36 +1182,42 @@ public class Mutinack {
 										//a.stats.nLociDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
 
 										for (@NonNull ComparablePair<String, String> var: examResults.rawMismatchesQ2) {
-											a.stats.rawMismatchesQ2.accept(location, var);
+											stats.rawMismatchesQ2.accept(location, var);
 										}
 
 										for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
-											a.stats.rawDeletionsQ2.accept(location, var);
-											a.stats.rawDeletionLengthQ2.insert(var.snd.length());
+											stats.rawDeletionsQ2.accept(location, var);
+											stats.rawDeletionLengthQ2.insert(var.snd.length());
 										}
 
 										for (@NonNull ComparablePair<String, String> var: examResults.rawInsertionsQ2) {
-											a.stats.rawInsertionsQ2.accept(location, var);
-											a.stats.rawInsertionLengthQ2.insert(var.snd.length());
+											stats.rawInsertionsQ2.accept(location, var);
+											stats.rawInsertionLengthQ2.insert(var.snd.length());
 										}
 
 										for (ComparablePair<Mutation, Mutation> d: examResults.disagreements) {
 											Mutation mutant = d.getSnd();
 											if (mutant.mutationType == SUBSTITUTION) {
-												a.stats.topBottomSubstDisagreementsQ2.accept(location, d);
-												mutant.getTemplateStrand().ifPresent( b ->
-												{if (b) a.stats.templateStrandSubstQ2.accept(location, d);
-												else a.stats.codingStrandSubstQ2.accept(location, d);});
+												stats.topBottomSubstDisagreementsQ2.accept(location, d);
+												mutant.getTemplateStrand().ifPresent(b -> {
+													if (b)
+														stats.templateStrandSubstQ2.accept(location, d);
+													else 
+														stats.codingStrandSubstQ2.accept(location, d);});
 											} else if (mutant.mutationType == DELETION) {
-												a.stats.topBottomDelDisagreementsQ2.accept(location, d);
-												mutant.getTemplateStrand().ifPresent( b ->
-												{if (b) a.stats.templateStrandDelQ2.accept(location, d);
-												else a.stats.codingStrandDelQ2.accept(location, d);});
+												stats.topBottomDelDisagreementsQ2.accept(location, d);
+												mutant.getTemplateStrand().ifPresent(b -> {
+													if (b) 
+														stats.templateStrandDelQ2.accept(location, d);
+													else 
+														stats.codingStrandDelQ2.accept(location, d);});
 											} else if (mutant.mutationType == INSERTION) {
-												a.stats.topBottomInsDisagreementsQ2.accept(location, d);
-												mutant.getTemplateStrand().ifPresent( b ->
-												{if (b) a.stats.templateStrandInsQ2.accept(location, d);
-												else a.stats.codingStrandInsQ2.accept(location, d);});
+												stats.topBottomInsDisagreementsQ2.accept(location, d);
+												mutant.getTemplateStrand().ifPresent(b -> {
+													if (b) 
+														stats.templateStrandInsQ2.accept(location, d);
+													else stats.codingStrandInsQ2.accept(location, d);
+												});
 											}
 
 											byte[] fstSeq = d.getFst().getSequence();
@@ -1190,7 +1231,7 @@ public class Mutinack {
 
 											try {
 												@Nullable
-												OutputStreamWriter tpdw = a.stats.topBottomDisagreementWriter;
+												OutputStreamWriter tpdw = stats.topBottomDisagreementWriter;
 												if (tpdw != null) {
 													tpdw.append(location.getContigName() + "\t" +
 															(location.position + 1) + "\t" + (location.position + 1) + "\t" +
@@ -1206,9 +1247,9 @@ public class Mutinack {
 											}
 										}
 									} else {
-										a.stats.nLociDuplexesCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
+										stats.nLociDuplexesCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
 										for (ComparablePair<Mutation, Mutation> d: examResults.disagreements) {
-											a.stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
+											stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
 										}
 									}
 
@@ -1223,16 +1264,16 @@ public class Mutinack {
 										examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).flatMap(c -> c.getDuplexes().stream()).
 										filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).map(DuplexRead::getDistanceToLigSite).
 										forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
-											a.stats.realQ2CandidateDistanceToLigationSite.insert(i);});
+											stats.realQ2CandidateDistanceToLigationSite.insert(i);});
 
-										a.stats.nLociDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
-										a.stats.nLociQualityQ2OthersQ1Q2.increment(location);
+										stats.nLociDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
+										stats.nLociQualityQ2OthersQ1Q2.increment(location);
 										//XXX The following includes all candidates at *all* positions considered in
 										//processing chunk 
-										a.stats.nReadsAtLociQualityQ2OthersQ1Q2.insert(
+										stats.nReadsAtLociQualityQ2OthersQ1Q2.insert(
 												examResults.analyzedCandidateSequences.
 												stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
-										a.stats.nQ1Q2AtLociQualityQ2OthersQ1Q2.insert(
+										stats.nQ1Q2AtLociQualityQ2OthersQ1Q2.insert(
 												examResults.analyzedCandidateSequences.
 												stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
 									}
@@ -1265,8 +1306,10 @@ public class Mutinack {
 									final List<CandidateSequence> allQ1Q2Candidates = analyzerCandidateLists.stream().
 											map(l -> l.analyzedCandidateSequences).
 											flatMap(Collection::stream).
-											filter(c -> {if (NONTRIVIAL_ASSERTIONS && !c.getLocation().equals(location)) {throw new AssertionFailedException();};
-											return c.getQuality().getMin().compareTo(POOR) > 0;}).
+											filter(c -> {if (NONTRIVIAL_ASSERTIONS && c.getLocation().distanceOnSameContig(location) > 0) {
+												throw new AssertionFailedException();
+												};
+												return c.getQuality().getMin().compareTo(POOR) > 0;}).
 											filter(c -> !c.isHidden()).
 											sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 											collect(Collectors.toList());
@@ -1311,12 +1354,13 @@ public class Mutinack {
 											baseOutput0 += candidate.getnGoodOrDubiousDuplexes();
 
 											analyzers.forEach(a -> {
+												final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
 												CandidateSequence c = analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 														stream().filter(cd -> cd.equals(candidate)).findAny().orElse(null);
 
 												if (c != null) {
-													a.stats.nLociCandidatesForUniqueMutation.accept(location, c.getnGoodDuplexes());
-													a.stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert((int) c.getTotalGoodOrDubiousDuplexes());
+													stats.nLociCandidatesForUniqueMutation.accept(location, c.getnGoodDuplexes());
+													stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert((int) c.getTotalGoodOrDubiousDuplexes());
 													if (!repetitiveBEDs.isEmpty()) {
 														boolean repetitive = false;
 														for (GenomeFeatureTester t: repetitiveBEDs) {
@@ -1326,22 +1370,22 @@ public class Mutinack {
 															}
 														}
 														if (repetitive) {
-															a.stats.uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());
+															stats.uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());
 														} else {
-															a.stats.uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());																
+															stats.uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());																
 														}
 													}
 												}
 											});
 											analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 													contains(candidate)).forEach(a -> {
-														a.stats.nReadsAtLociWithSomeCandidateForQ2UniqueMutation.insert(
+														a.stats.get(statsIndex).nReadsAtLociWithSomeCandidateForQ2UniqueMutation.insert(
 																analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 																stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
 													});
 											analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 													contains(candidate)).forEach(a -> {
-														a.stats.nQ1Q2AtLociWithSomeCandidateForQ2UniqueMutation.insert(
+														a.stats.get(statsIndex).nQ1Q2AtLociWithSomeCandidateForQ2UniqueMutation.insert(
 																analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 																stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
 													});
@@ -1424,7 +1468,7 @@ public class Mutinack {
 
 											try {
 												@Nullable
-												final OutputStreamWriter ambw = analyzer.stats.mutationBEDWriter;
+												final OutputStreamWriter ambw = analyzer.stats.get(statsIndex).mutationBEDWriter;
 												if (ambw != null) {
 													ambw.append(location.getContigName() + "\t" + 
 															(location.position + 1) + "\t" + (location.position + 1) + "\t" +
@@ -1516,7 +1560,7 @@ public class Mutinack {
 									}//End writing
 								});
 							}//End readsToWrite != null
-						}//End loop over positions
+						}}//End loop over positions
 						
 						if (ENABLE_TRACE && shouldLog(TRACE)) {
 							logger.trace("Going from " + saveLastProcessedPosition + " to " + lastProcessedPosition.get() + " for chunk " + analysisChunk);
@@ -1528,6 +1572,7 @@ public class Mutinack {
 							for (int position = saveLastProcessedPosition + 1; position <= lastProcessedPosition.get();
 									position ++) {
 								subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, position));
+								subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, position, true));
 							}
 							if (shouldLog(TRACE)) {
 								logger.trace("SubAnalyzer " + analysisChunk + " completed " + (saveLastProcessedPosition + 1) + " to " + lastProcessedPosition.get());
@@ -1613,6 +1658,10 @@ public class Mutinack {
 					} catch (Exception e) {
 						forceTermination();
 						throw new RuntimeException(e);
+					} finally {
+						for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
+							subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
+						}
 					}
 				}//End onAdvance
 			};//End local Phaser definition
@@ -1664,7 +1713,7 @@ public class Mutinack {
 					final Set<String> droppedReads = analyzer.dropReadProbability > 0 ? new HashSet<>(1_000_000) : null;
 					final Set<String> keptReads = analyzer.dropReadProbability > 0 ?  new HashSet<>(1_000_000) : null;
 
-					final SequenceLocation contigLocation = new SequenceLocation(contigIndex,0);
+					final SequenceLocation contigLocation = new SequenceLocation(contigIndex, 0);
 					
 					BiConsumer<PrintStream, Integer> info = (stream, userRequestNumber) -> {
 						NumberFormat formatter = NumberFormat.getInstance();
@@ -1686,7 +1735,7 @@ public class Mutinack {
 					try {
 
 						if (contigs.get(0).equals(contig)) {
-							analyzer.stats.nRecordsInFile.add(contigLocation, Util.getTotalReadCount(bamReader));
+							analyzer.stats.forEach(s -> s.nRecordsInFile.add(contigLocation, Util.getTotalReadCount(bamReader)));
 						}
 
 						int furthestPositionReadInContig = 0;
@@ -1722,10 +1771,12 @@ public class Mutinack {
 						}
 
 						boolean firstRun = true;
+						subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
+
 						try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
 								e -> {e.eagerDecode(); e.getUnclippedEnd(); e.getUnclippedStart();})) {
 						while (iterator.hasNext() && !phaser.isTerminated() && !terminateAnalysis) {
-															
+																						
 							final SAMRecord samRecord = iterator.next();
 															
 							if (alignmentWriter != null) {
@@ -1743,7 +1794,7 @@ public class Mutinack {
 								final Iterator<Entry<Pair<String, Integer>, SettableInteger>> esit = intersectReads.entrySet().iterator();
 								while (esit.hasNext()) {
 									if (esit.next().getKey().snd < current5p - 6) {
-										analyzer.stats.nRecordsNotInIntersection1.accept(location);
+										analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 										esit.remove();
 									}
 								}
@@ -1751,7 +1802,7 @@ public class Mutinack {
 										new HashSet<>(readAheadStash.entrySet());
 								for (Entry<Pair<String, Integer>, SettableInteger> e: readAheadStashEntries) {
 									if (e.getKey().getSnd() < current5p - 6) {
-										analyzer.stats.nRecordsNotInIntersection1.accept(location);
+										analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 										readAheadStash.removeAll(e.getKey());
 									} else if (e.getKey().getSnd() <= current5p + 6) {
 										readAheadStash.removeAll(e.getKey());
@@ -1767,13 +1818,13 @@ public class Mutinack {
 									while (it.hasNext()) {
 										SAMRecord ir = it.next();
 										if (ir.getMappingQuality() < argValues.minMappingQIntersect.get(i)) {
-											analyzer.stats.nTooLowMapQIntersect.accept(location);
+											analyzer.stats.forEach(s -> s.nTooLowMapQIntersect.accept(location));
 											continue;
 										}
 										int ir5p = ir.getAlignmentStart();
 										final Pair<String, Integer> pair = new Pair<>(getRecordNameWithPairSuffix(ir), ir5p);
 										if (ir5p < current5p - 6) {
-											analyzer.stats.nRecordsNotInIntersection1.accept(location);
+											analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 										} else if (ir5p <= current5p + 6) {
 											intersectReads.put(pair);
 										} else {
@@ -1789,7 +1840,7 @@ public class Mutinack {
 							if (nIntersect > 0 &&
 									intersectReads.get(new Pair<>(getRecordNameWithPairSuffix(samRecord), 
 											current5p)) < nIntersect) {
-								analyzer.stats.nRecordsNotInIntersection2.accept(location);
+								analyzer.stats.forEach(s -> s.nRecordsNotInIntersection2.accept(location));
 								continue;
 							}
 
@@ -1818,12 +1869,12 @@ public class Mutinack {
 								}
 							}
 
-							analyzer.stats.nRecordsProcessed.increment(location);
+							analyzer.stats.forEach(s -> s.nRecordsProcessed.increment(location));
 
 							if (contigs.size() < 100 && !argValues.rnaSeq) {
 								//Summing below is a bottleneck when there are a large
 								//number of contigs (tens of thousands)
-								if (analyzer.stats.nRecordsProcessed.sum() > argValues.nRecordsToProcess) {
+								if (analyzer.stats.get(0).nRecordsProcessed.sum() > argValues.nRecordsToProcess) {
 									statusLogger.info("Analysis of contig " + contig + " stopping "
 												+ "because it processed over " + argValues.nRecordsToProcess + " records");
 									break;
@@ -1832,19 +1883,19 @@ public class Mutinack {
 
 							final String refName = samRecord.getReferenceName();
 							if ("*".equals(refName)) {
-								analyzer.stats.nRecordsUnmapped.increment(location);
+								analyzer.stats.forEach(s -> s.nRecordsUnmapped.increment(location));
 								continue;
 							}
 
 							if (IGNORE_SECONDARY_MAPPINGS && samRecord.getNotPrimaryAlignmentFlag()) {
-								analyzer.stats.nRecordsIgnoredBecauseSecondary.increment(location);
+								analyzer.stats.forEach(s -> s.nRecordsIgnoredBecauseSecondary.increment(location));
 								continue;
 							}
 
 							int mappingQuality = samRecord.getMappingQuality();
-							analyzer.stats.mappingQualityAllRecords.insert(mappingQuality);
+							analyzer.stats.forEach(s -> s.mappingQualityAllRecords.insert(mappingQuality));
 							if (mappingQuality < analyzer.minMappingQualityQ1) {
-								analyzer.stats.nRecordsBelowMappingQualityThreshold.increment(location);
+								analyzer.stats.forEach(s -> s.nRecordsBelowMappingQualityThreshold.increment(location));
 								continue;
 							}
 
@@ -2022,7 +2073,7 @@ public class Mutinack {
 			//devise a better way of figuring this out
 			for (Mutinack analyzer: analyzers) {
 				final ICounterSeqLoc counter = 
-						analyzer.stats.nLociDuplex.getSeqLocCounters().get("All").snd;
+						analyzer.stats.get(0).nLociDuplex.getSeqLocCounters().get("All").snd;
 				final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
 				final Map<String, Double> allCoverage = new THashMap<>();
 				
@@ -2085,22 +2136,28 @@ public class Mutinack {
 		for (Closeable c: itemsToClose) {
 			c.close();
 		}
-		
-		if (stats.locusByLocusCoverage != null) {
-			Builder builder = stats.locusByLocusCoverageProtobuilder;
-			for (Entry<String, int[]> e: stats.locusByLocusCoverage.entrySet()) {
-				LocusByLocusNumbersPB.ContigNumbers.Builder builder2 =
-						LocusByLocusNumbersPB.ContigNumbers.newBuilder();
-				builder2.setContigName(e.getKey());
-				int [] numbers = e.getValue();
-				builder2.ensureNumbersIsMutable(numbers.length);
-				builder2.numUsedInNumbers_ = numbers.length;
-				builder2.numbers_ = numbers;
-				builder.addContigNumbers(builder2);
+
+		stats.forEach(s -> {
+			if (s.locusByLocusCoverage != null) {
+				Builder builder = s.locusByLocusCoverageProtobuilder;
+				for (Entry<String, int[]> e: s.locusByLocusCoverage.entrySet()) {
+					LocusByLocusNumbersPB.ContigNumbers.Builder builder2 =
+							LocusByLocusNumbersPB.ContigNumbers.newBuilder();
+					builder2.setContigName(e.getKey());
+					int [] numbers = e.getValue();
+					builder2.ensureNumbersIsMutable(numbers.length);
+					builder2.numUsedInNumbers_ = numbers.length;
+					builder2.numbers_ = numbers;
+					builder.addContigNumbers(builder2);
+				}
+				Path path = Paths.get(builder.getSampleName() + ".proto");
+				try {
+					Files.write(path, builder.build().toByteArray());
+				} catch (Exception e1) {
+					throw new RuntimeException(e1);
+				}
 			}
-			Path path = Paths.get(builder.getSampleName() + ".proto");
-			Files.write(path, builder.build().toByteArray());
-		}
+		});
 	}
 
 	private static void handleOutputException(String fileName, IOException e, Parameters argValues) {
@@ -2116,34 +2173,36 @@ public class Mutinack {
 	}
 	
 	private double processingThroughput() {
-		return (stats.nRecordsProcessed.sum()) / 
+		return (stats.get(0).nRecordsProcessed.sum()) / 
 				((System.nanoTime() - timeStartProcessing) / 1_000_000_000d);
 	}
 
 	private void printStatus(PrintStream stream, boolean colorize) {
-		stream.println();
-		stream.println(greenB(colorize) + "Statistics for " + inputBam.getAbsolutePath() + reset(colorize));
+		stats.forEach(s -> {
+			stream.println();
+			stream.println(greenB(colorize) + "Statistics " + s.getName() + " for " + inputBam.getAbsolutePath() + reset(colorize));
 
-		stats.print(stream, colorize);
+			s.print(stream, colorize);
 
-		NumberFormat formatter = new DecimalFormat("0.###E0");
+			NumberFormat formatter = new DecimalFormat("0.###E0");
 
-		stream.println(blueF(colorize) + "Average Phred quality: " + reset(colorize) +
-				formatter.format(stats.phredSumProcessedbases.sum() / stats.nProcessedBases.sum()));
-		
-		if (stats.outputLevel.compareTo(OutputLevel.VERBOSE) >= 0) {
-			stream.println(blueF(colorize) + "Top 100 barcode hits in cache: " + reset(colorize) +
-					internedVariableBarcodes.values().stream().sorted((ba, bb) -> - Long.compare(ba.nHits.sum(), bb.nHits.sum())).
-					limit(100).map(ByteArray::toString).collect(Collectors.toList()));
-		}
+			stream.println(blueF(colorize) + "Average Phred quality: " + reset(colorize) +
+					formatter.format(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
 
-		stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) + 
-				((int) processingThroughput()) + " records / s");
+			if (s.outputLevel.compareTo(OutputLevel.VERBOSE) >= 0) {
+				stream.println(blueF(colorize) + "Top 100 barcode hits in cache: " + reset(colorize) +
+						internedVariableBarcodes.values().stream().sorted((ba, bb) -> - Long.compare(ba.nHits.sum(), bb.nHits.sum())).
+						limit(100).map(ByteArray::toString).collect(Collectors.toList()));
+			}
 
-		for (String counter: stats.nLociCandidatesForUniqueMutation.getCounterNames()) {
-			stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) + formatter.
-					format(stats.nLociCandidatesForUniqueMutation.getSum(counter) / stats.nLociDuplexQualityQ2OthersQ1Q2.getSum(counter)));			
-		}
+			stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) + 
+					((int) processingThroughput()) + " records / s");
+
+			for (String counter: s.nLociCandidatesForUniqueMutation.getCounterNames()) {
+				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) + formatter.
+						format(s.nLociCandidatesForUniqueMutation.getSum(counter) / s.nLociDuplexQualityQ2OthersQ1Q2.getSum(counter)));			
+			}
+		});
 	}	
 	
 	@Override

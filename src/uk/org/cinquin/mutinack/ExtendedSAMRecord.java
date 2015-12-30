@@ -211,11 +211,12 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			nConsidered++;
 			byte b = baseQualities[index1];
 			sumBaseQualities += b;
-			analyzer.stats.nProcessedBases.add(location, 1);
-			analyzer.stats.phredSumProcessedbases.add(b);
+			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
+			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
-		analyzer.stats.averageReadPhredQuality0.insert(sumBaseQualities / nConsidered);
+		int avQuality = sumBaseQualities / nConsidered;
+		analyzer.stats.forEach( s-> s.averageReadPhredQuality0.insert(avQuality));
 
 		sumBaseQualities = 0;
 		nConsidered = 0;
@@ -223,17 +224,18 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			nConsidered++;
 			byte b = baseQualities[index1];
 			sumBaseQualities += b;
-			analyzer.stats.nProcessedBases.add(location, 1);
-			analyzer.stats.phredSumProcessedbases.add(b);
+			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
+			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
 		if (nConsidered > 0) {
-			analyzer.stats.averageReadPhredQuality1.insert(sumBaseQualities / nConsidered);
+			int avQuality1 = sumBaseQualities / nConsidered;
+			analyzer.stats.forEach(s -> s.averageReadPhredQuality1.insert(avQuality1));
 		}
 
 		qualities.sort();
 		medianPhred = qualities.get(qualities.size() / 2);
-		analyzer.stats.medianReadPhredQuality.insert(medianPhred);
+		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 		
 		if (DebugControl.NONTRIVIAL_ASSERTIONS && (rec.getUnclippedEnd() - rec.getAlignmentEnd() < 0 ||
 				rec.getAlignmentStart() - rec.getUnclippedStart() < 0)) {

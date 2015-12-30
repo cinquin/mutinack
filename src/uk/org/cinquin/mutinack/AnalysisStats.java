@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers.Builder;
@@ -59,6 +60,9 @@ import uk.org.cinquin.mutinack.statistics.SwitchableStats;
 
 public class AnalysisStats implements Serializable {
 	
+	public AnalysisStats(@NonNull String name) {
+		this.name = name;
+	}
 	
 	private static final long serialVersionUID = -7786797851357308577L;
 
@@ -693,4 +697,11 @@ public class AnalysisStats implements Serializable {
 			}
 		}
 	}
+
+	private final @NonNull String name;
+	
+	public @NonNull String getName() {
+		return name;
+	}
+	
 }

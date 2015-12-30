@@ -46,7 +46,7 @@ public interface CandidateSequenceI extends Serializable {
 	boolean isHasFunnyInserts();
 	void setHasFunnyInserts(boolean hasFunnyInserts);
 	int getOwningAnalyzer();
-	SequenceLocation getLocation();
+	@NonNull SequenceLocation getLocation();
 	float getTotalReadsAtPosition();
 	void setTotalReadsAtPosition(float totalReadsAtPosition);
 	float getTotalAllDuplexes();

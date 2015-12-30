@@ -271,7 +271,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public SequenceLocation getLocation() {
+	public @NonNull SequenceLocation getLocation() {
 		return location;
 	}
 
