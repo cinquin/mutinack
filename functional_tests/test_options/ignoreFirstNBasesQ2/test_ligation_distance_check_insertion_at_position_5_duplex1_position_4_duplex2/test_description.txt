@@ -1,0 +1,1 @@
+Program is expected to report insertions at distances 4 and 5 from ligation site from 2 Q2 duplexes.

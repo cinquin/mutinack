@@ -1,0 +1,1 @@
+Program is expected to report substitution at distance 5 from ligation site even though mate-pair also has substitution and is >5 from ligation site.
