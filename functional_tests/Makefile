@@ -58,7 +58,7 @@ RESULT_CHECKS = $(FILES:args.txt=run.out.check)
 JARS = $(shell find . -mindepth 2 -name mutinack.jar -print) $(shell find . -mindepth 2 -name jacoco.jar -print)
 REFFILES = $(shell find . -mindepth 2 '(' -name ref.fa -print -or -name ref.fa.fai -print ')')
 LOGBACKCONF = $(shell find . -mindepth 2 -name logback.xml -print)
-PROGRAM_OUTPUT = $(shell find . -name control_mutations.bed -print -or -name control_top_bottom_disag.bed -print -or -name test_mutations.bed -print -or -name test_top_bottom_disag.bed -print -or -name '*_coverage.bed' -print -or -name '*_coverage.proto' -print)
+PROGRAM_OUTPUT = $(shell find . -name '*control_mutations.bed' -print -or -name '*control_top_bottom_disag.bed' -print -or -name '*test_mutations.bed' -print -or -name '*test_top_bottom_disag.bed' -print -or -name '*_coverage.bed' -print -or -name '*_coverage.proto' -print)
 
 .PHONY: passed_message
 passed_message: tests
