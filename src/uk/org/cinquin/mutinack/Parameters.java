@@ -69,6 +69,11 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-parallelizationFactor", description = "Number of chunks into which to split each contig for parallel processing; setting this value too high can be highly counter-productive", required = false)
 	public int parallelizationFactor = 1;
 	
+	@Parameter(names = "-maxThreadsPerPool", description = "Maximum number of threads per pool; "
+			+ "for now, to avoid deadlocks this number should be kept higher than number of inputs *"
+			+ " number of contigs * parallelization factor", required = false)
+	public int maxThreadsPerPool = 40;
+	
 	@Parameter(names = "-terminateImmediatelyUponError", description = "If true, any error causes immediate termination of the run", required = false)
 	public boolean terminateImmediatelyUponError = true;
 

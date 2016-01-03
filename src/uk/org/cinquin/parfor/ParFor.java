@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import contrib.uk.org.lidalia.slf4jext.Logger;
@@ -45,7 +46,7 @@ public final class ParFor {
 	final private Object doneSemaphore = new Object();
 	private volatile boolean done = false;
 	
-	static public final transient ExecutorService threadPool = Executors.newCachedThreadPool();
+	static public transient ExecutorService threadPool = Executors.newCachedThreadPool();
 	private static final int nProc = Runtime.getRuntime().availableProcessors();
 
 	public interface ProgressReporter {
@@ -77,7 +78,7 @@ public final class ParFor {
 		this.progressReporter = progressBar;
 		this.stopAllUponException = stopAllUponException;
 
-		int useNThreads = nProc;
+		int useNThreads = ((ThreadPoolExecutor) threadPool).getMaximumPoolSize();
 		/*int activeThreads = ((ThreadPoolExecutor) threadPool).getActiveCount();
 		if (activeThreads > nProc) {
 			logger.warn("Capping number of parallel threads");
