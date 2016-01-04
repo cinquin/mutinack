@@ -284,7 +284,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	
 	@SuppressWarnings("null")
 	public void examineAtLoc(@NonNull SequenceLocation location, LocationExaminationResults result,
-			@NonNull Set<CandidateSequence> candidateSet,
+			@NonNull Set<@NonNull CandidateSequence> candidateSet,
 			@NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality,
 			boolean hasHiddenCandidate,
 			@NonNull CandidateCounter topCounter,
@@ -710,7 +710,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}//End candidate for disagreement
 
 		localQuality = dq;
-		
+
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		for (CandidateSequence candidate: candidateSet) {
 			if (!disagreement && (bottom == null || candidate.equals(bottom.getKey())) &&

@@ -63,13 +63,13 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final List<GenomeFeatureTester> excludeBEDs;
 	private final List<BedReader> repetitiveBEDs;
 	private final List<Mutinack> analyzers;
-	private final List<LocationExaminationResults> analyzerCandidateLists;
+	private final List<@NonNull LocationExaminationResults> analyzerCandidateLists;
 	private final int contigIndex;
 	private final Map<Object, Object> contigNames;
 	private final int PROCESSING_CHUNK;
 	
 	public SubAnalyzerPhaser(Parameters argValues, AnalysisChunk analysisChunk, 
-			List<Mutinack> analyzers, List<LocationExaminationResults> analyzerCandidateLists,
+			List<Mutinack> analyzers, List<@NonNull LocationExaminationResults> analyzerCandidateLists,
 			SAMFileWriter alignmentWriter,
 			Set<SequenceLocation> forceoutputatlocations,
 			Histogram dubiousOrGoodDuplexCovInAllInputs, Histogram goodDuplexCovInAllInputs,
@@ -187,9 +187,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 					analyzers.parallelStream().forEach(a -> {
 						final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
-						final LocationExaminationResults examResults = analyzerCandidateLists.get(a.idx);
-						@Nullable
-						OutputStreamWriter cbw = stats.coverageBEDWriter;
+						final @NonNull LocationExaminationResults examResults = analyzerCandidateLists.get(a.idx);
+						final @Nullable OutputStreamWriter cbw = stats.coverageBEDWriter;
 						if (cbw != null) {
 							try {
 								cbw.append(	location.getContigName() + "\t" + 

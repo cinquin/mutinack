@@ -612,7 +612,7 @@ final class SubAnalyzer {
 	 * @param location
 	 * @return
 	 */
-	LocationExaminationResults examineLocation(final @NonNull SequenceLocation location) {
+	@NonNull LocationExaminationResults examineLocation(final @NonNull SequenceLocation location) {
 		if (NONTRIVIAL_ASSERTIONS && threadCount.incrementAndGet() > 1) {
 			throw new AssertionFailedException();
 		}
@@ -1508,7 +1508,7 @@ final class SubAnalyzer {
 						(readOnNegativeStrand && readPosition < localIgnoreLastNBases))) {
 					stats.nCandidateWildtypeAfterLastNBases.increment(location);
 					continue;
-				} 
+				}
 				final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
 						Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), location, extendedRec, -distance);
 				candidate.acceptLigSiteDistance(distance);

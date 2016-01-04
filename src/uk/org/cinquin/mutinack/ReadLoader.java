@@ -386,9 +386,7 @@ public class ReadLoader {
 		analysisChunk.subAnalyzers.forEach(sa -> {
 			sa.extSAMCache.clear();
 			sa.candidateSequences.clear();
-			if (sa.analyzedDuplexes != null) {
-				sa.analyzedDuplexes.clear();
-			}
+			sa.analyzedDuplexes.clear();
 		});
 		//TODO Clear subAnalyzers list, but *only after* all analyzers have completed
 		//that chunk

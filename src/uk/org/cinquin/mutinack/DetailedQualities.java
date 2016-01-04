@@ -43,7 +43,7 @@ public class DetailedQualities implements Serializable {
 
 	public void addUnique(Assay assay, @NonNull Quality q) {
 		if (qualities.put(assay, q) != null) {
-			throw new IllegalArgumentException(assay + " already defined");
+			throw new IllegalStateException(assay + " already defined");
 		}
 		updateMin(q);
 	}

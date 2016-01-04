@@ -1013,7 +1013,7 @@ public class Mutinack {
 						goodDuplexCovInAllInputs,
 						contigNames, contigIndex,
 						excludeBEDs, repetitiveBEDs,
-						PROCESSING_CHUNK);//End local Phaser definition
+						PROCESSING_CHUNK);
 				analysisChunk.phaser = phaser;
 				phaser.bulkRegister(analyzers.size());
 				phasers.add(phaser);
