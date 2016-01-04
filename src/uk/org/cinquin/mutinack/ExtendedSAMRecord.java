@@ -355,7 +355,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		boolean tooCloseToBarcode;
 		if (readOnNegativeStrand) {
-			distance0 = readPosition - (record.getReadLength() - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH);
+			distance0 = readPosition - ((record.getReadLength() - 1) - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH);
 			tooCloseToBarcode = distance0 > 0;
 			if (ENABLE_TRACE && tooCloseToBarcode) {
 				logger.trace("Ignoring indel too close to barcode A " + refPosition + " " + (record.getReadLength() - 1 - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH) + "; " + getFullName() + " at " + getAlignmentStart());
@@ -418,11 +418,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 							getFullName());
 				}
 			} else {
-				distance1 = refPosition - (getMateAlignmentStart() + record.getReadLength() - ignoreFirstNBases);
+				distance1 = refPosition - (getMateAlignmentStart() + (record.getReadLength() - 1) - ignoreFirstNBases);
 				tooCloseToBarcode = distance1 > 0;
 				if (ENABLE_TRACE && tooCloseToBarcode) {
 					logger.trace("Ignoring indel too close to barcode F " +
-							(getMateAlignmentStart() + record.getReadLength()) + "; "
+							(getMateAlignmentStart() + (record.getReadLength() - 1)) + "; "
 							+ getFullName());
 				}
 			}
