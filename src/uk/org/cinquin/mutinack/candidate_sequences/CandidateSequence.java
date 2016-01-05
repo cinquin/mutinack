@@ -144,7 +144,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		String result = getMutationType().toString();
 		switch(getMutationType()) {
 			case WILDTYPE:
-			case WILDTYPE_ER:
 				break;
 			case DELETION: 
 				throw new AssertionFailedException();
@@ -210,7 +209,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				"->" + new String(getSequence());
 				break;
 			case WILDTYPE:
-			case WILDTYPE_ER:
 				result = "wt";
 				break;
 			default:

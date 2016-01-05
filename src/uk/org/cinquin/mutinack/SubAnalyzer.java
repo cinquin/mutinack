@@ -26,7 +26,6 @@ import static uk.org.cinquin.mutinack.Assay.NO_DUPLEXES;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
 import static uk.org.cinquin.mutinack.MutationType.WILDTYPE;
-import static uk.org.cinquin.mutinack.MutationType.WILDTYPE_ER;
 import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.Quality.DUBIOUS;
 import static uk.org.cinquin.mutinack.Quality.GOOD;
@@ -1369,8 +1368,8 @@ final class SubAnalyzer {
 			final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
 				new SequenceLocation(ref.getContigIndex(), refPosition, true)
 				: null;
-			final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
-				readPosition == effectiveReadLength - 1;
+			/*final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
+				readPosition == effectiveReadLength - 1;*/
 
 			location = new SequenceLocation(ref.getContigIndex(), refPosition);
 			
@@ -1457,7 +1456,7 @@ final class SubAnalyzer {
 					readLocalCandidates.add(candidate, location);
 					if (locationPH != null) {
 						final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
-								Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), locationPH, extendedRec, -distance);
+								WILDTYPE, locationPH, extendedRec, -distance);
 						candidate2.acceptLigSiteDistance(distance);
 						candidate2.setWildtypeSequence(wildType);
 						candidate2.setSequence(mutSequence);
@@ -1510,13 +1509,13 @@ final class SubAnalyzer {
 					continue;
 				}
 				final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
-						Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), location, extendedRec, -distance);
+						WILDTYPE, location, extendedRec, -distance);
 				candidate.acceptLigSiteDistance(distance);
 				candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 				readLocalCandidates.add(candidate, location);
 				if (locationPH != null) {
 					final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
-							Util.nonNullify(endOfRead ? WILDTYPE_ER : WILDTYPE), locationPH, extendedRec, -distance);
+							WILDTYPE, locationPH, extendedRec, -distance);
 					candidate2.acceptLigSiteDistance(distance);
 					candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 					readLocalCandidates.add(candidate2, locationPH);

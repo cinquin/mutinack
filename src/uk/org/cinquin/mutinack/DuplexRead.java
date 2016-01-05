@@ -714,9 +714,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		for (CandidateSequence candidate: candidateSet) {
 			if (!disagreement && (bottom == null || candidate.equals(bottom.getKey())) &&
-					(top == null || candidate.equals(top.getKey())))
+					(top == null || candidate.equals(top.getKey()))) {
 				continue;
-
+			}
+			
 			@NonNull TObjectIntHashMap<ExtendedSAMRecord> reads = 
 					candidate.getMutableConcurringReads();
 			for (ExtendedSAMRecord r: selectedBottomStrandRecords) {

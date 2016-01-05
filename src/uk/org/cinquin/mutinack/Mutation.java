@@ -141,7 +141,6 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	public String toString() {
 		switch(mutationType) {
 		case WILDTYPE:
-		case WILDTYPE_ER:
 			return "wt " + new String(new byte[] {wildtype});
 		case DELETION:
 			return "del " + mutationSequenceString();
