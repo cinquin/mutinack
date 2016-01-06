@@ -117,7 +117,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		this.rightBarcodeNegativeStrand = rightBarcodeNegativeStrand;
 	}
 	
-	public void assertAllBarcodesEqual() {
+	void assertAllBarcodesEqual() {
 		if (DebugControl.NONTRIVIAL_ASSERTIONS) {
 			final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords =
 					new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
@@ -146,7 +146,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 	
 	@SuppressWarnings("null")
-	public void computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
+	void computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
 		final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords = 
 				new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 		allDuplexRecords.addAll(topStrandRecords);
@@ -169,17 +169,17 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}		
 	}
 	
-	public void resetMaxDistanceToLigSite() {
+	private void resetMaxDistanceToLigSite() {
 		maxDistanceToLig = Integer.MIN_VALUE;
 	}
 	
-	public void acceptDistanceToLigSite(int d) {
+	private void acceptDistanceToLigSite(int d) {
 		if (d > maxDistanceToLig) {
 			maxDistanceToLig = d;
 		}
 	}
 	
-	public int getDistanceToLigSite() {
+	int getDistanceToLigSite() {
 		return maxDistanceToLig;
 	}
 		
@@ -710,7 +710,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}//End candidate for disagreement
 
 		localQuality = dq;
-
+		
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		for (CandidateSequence candidate: candidateSet) {
 			if (!disagreement && (bottom == null || candidate.equals(bottom.getKey())) &&

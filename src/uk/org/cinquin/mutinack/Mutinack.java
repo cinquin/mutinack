@@ -53,6 +53,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -101,6 +102,7 @@ import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB;
 import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.DebugControl;
+import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
@@ -451,44 +453,56 @@ public class Mutinack {
 		}
 
 		final @NonNull List<@NonNull String> contigs;
-		final @NonNull Map<String, Integer> contigSizes = new HashMap<>();
+		final @NonNull Map<@NonNull String, Integer> contigSizes;
 		
 		if (argValues.readContigsFromFile) {
-			contigs = new ArrayList<>();
-			try(Stream<String> lines = Files.lines(Paths.get(argValues.referenceGenome))) {
-				Handle<String> currentName = new Handle<>();
-				SettableInteger currentLength = new SettableInteger(0);
-				lines.forEachOrdered(l -> {
-					if (l.startsWith(">")) {
-						if (currentName.get() != null) {
-							contigSizes.put(currentName.get(), currentLength.get());
-							currentLength.set(0);
-						}
-						int endName = l.indexOf(" ");
-						if (endName == -1) {
-							endName = l.length();
-						}
-						currentName.set(l.substring(1, endName));
-						contigs.add(nonNullify(currentName.get()));
-					} else {
-						int lineLength = 0;
-						int n = l.length();
-						for (int i = 0; i < n; i++) {
-							char c = l.charAt(i);
-							if (c != ' ' && c != '\t') {
-								lineLength++;
+			contigSizes = FileCache.getCached(argValues.referenceGenome, ".info", path -> {
+				@NonNull Map<@NonNull String, Integer> contigSizes0 = new HashMap<>();
+				try(Stream<String> lines = Files.lines(Paths.get(argValues.referenceGenome))) {
+					Handle<String> currentName = new Handle<>();
+					SettableInteger currentLength = new SettableInteger(0);
+					lines.forEachOrdered(l -> {
+						if (l.startsWith(">")) {
+							String curName = currentName.get();
+							if (curName != null) {
+								contigSizes0.put(curName, currentLength.get());
+								currentLength.set(0);
 							}
+							int endName = l.indexOf(" ");
+							if (endName == -1) {
+								endName = l.length();
+							}
+							currentName.set(l.substring(1, endName));
+						} else {
+							int lineLength = 0;
+							int n = l.length();
+							for (int i = 0; i < n; i++) {
+								char c = l.charAt(i);
+								if (c != ' ' && c != '\t') {
+									lineLength++;
+								}
+							}
+							currentLength.addAndGet(lineLength);
 						}
-						currentLength.addAndGet(lineLength);
-					}
-				});
-				contigSizes.put(currentName.get(), currentLength.get());
-			}
+					});
+					String curName = currentName.get();
+					Objects.requireNonNull(curName);
+					contigSizes0.put(curName, currentLength.get());
+					return contigSizes0;
+				} catch (IOException e) {
+					throw new RuntimeException("Problem reading size of contigs from reference file " + path, e);
+				}
+			});
+			contigs = new ArrayList<>();
+			contigs.addAll(contigSizes.keySet());
+			contigs.sort(null);
+
 		} else if (!argValues.contigNamesToProcess.equals(new Parameters().contigNamesToProcess)) {
 			throw new IllegalArgumentException("Contig names specified both in file and as " +
 					"command line argument; pick only one method");
 		} else {
 			contigs = argValues.contigNamesToProcess;
+			contigSizes = Collections.emptyMap();
 		}
 				
 		final @NonNull Map<Object, @NonNull Object> contigNames = new HashMap<>();
@@ -557,25 +571,25 @@ public class Mutinack {
 		final List<GenomeFeatureTester> excludeBEDs = new ArrayList<>();
 		for (String bed: argValues.excludeRegionsInBED) {
 			try {
-				excludeBEDs.add(new BedReader(indexContigNameMap.values(), 
-						new BufferedReader(new FileReader(new File(bed))), bed, null));
+				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
+						indexContigNameMap.values(), bed);
+				excludeBEDs.add(reader);
 			} catch (Exception e) {
-				throw new RuntimeException("Problem with BED file " + 
-						bed, e);
+				throw new RuntimeException("Problem with BED file " + bed, e);
 			}
 		}
 		
 		final List<BedReader> repetitiveBEDs = new ArrayList<>();
 		for (String bed: argValues.repetiveRegionBED) {
 			try {
-				repetitiveBEDs.add(new BedReader(indexContigNameMap.values(), 
-						new BufferedReader(new FileReader(new File(bed))), bed, null));
+				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
+						indexContigNameMap.values(), bed);
+				repetitiveBEDs.add(reader);
 			} catch (Exception e) {
-				throw new RuntimeException("Problem with BED file " + 
-						bed, e);
+				throw new RuntimeException("Problem with BED file " + bed, e);
 			}
 		}
-		
+
 		IntStream.range(0, argValues.inputReads.size()).parallel().forEach(i -> {
 			final String inputReads = argValues.inputReads.get(i);
 			final File inputBam = new File(inputReads); 
@@ -623,6 +637,8 @@ public class Mutinack {
 			
 			Mutinack.PROCESSING_CHUNK = argValues.processingChunk;
 			DuplexRead.intervalSlop = argValues.alignmentPositionMismatchAllowed;
+			CounterWithSeqLocation.BIN_SIZE = argValues.contigStatsBinLength;
+			CounterWithSeqLocOnly.BIN_SIZE = argValues.contigStatsBinLength;
 			
 			//TODO Create a constructor that just takes argValues as an input,
 			//and/or use the builder pattern
@@ -752,9 +768,8 @@ public class Mutinack {
 			
 			if (argValues.bedDisagreementOrienter != null) {
 				try {
-					analyzer.codingStrandTester = new BedReader(indexContigNameMap.values(),
-							new BufferedReader(new FileReader(new File(argValues.bedDisagreementOrienter))),
-							"", null);
+					analyzer.codingStrandTester = BedReader.getCachedBedFileReader(argValues.bedDisagreementOrienter, ".cached",
+							indexContigNameMap.values(), "");
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + 
 							argValues.bedDisagreementOrienter, e);
@@ -770,8 +785,8 @@ public class Mutinack {
 					}
 					final File f = new File(fileName);
 					final String filterName = f.getName();
-					final GenomeFeatureTester filter = new BedReader(indexContigNameMap.values(), 
-							new BufferedReader(new FileReader(f)), filterName, null);
+					final GenomeFeatureTester filter = BedReader.getCachedBedFileReader(fileName, ".cached",
+							indexContigNameMap.values(), filterName);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
@@ -823,8 +838,8 @@ public class Mutinack {
 				try {
 					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
-					final GenomeFeatureTester filter0 = new BedReader(indexContigNameMap.values(),
-							new BufferedReader(new FileReader(f)), filterName, null);
+					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
+							indexContigNameMap.values(), filterName);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
 						s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);

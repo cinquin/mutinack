@@ -442,7 +442,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public void setSequence(byte[] sequence) {
+	public void setSequence(byte @Nullable[] sequence) {
 		this.sequence = sequence;
 	}
 

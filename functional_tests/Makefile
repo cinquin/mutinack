@@ -103,9 +103,9 @@ tests_no_alignment_saving: $(RESULTS) $(RESULT_CHECKS)
 
 clean: clean_jars clean_results clean_check clean_log_and_temp_files
 
-LOG_AND_TEMP_FILES = $(shell find . -name '*.log' -print -or -name '*.swp' -print -or -name '*.core' -print -or -name '*.dict' -print -or -name '*.bwt' -print -or -name '*.bt2' -print)
+LOG_AND_TEMP_FILES = $(shell find . -name '*.log' -print -or -name '*.swp' -print -or -name '*.core' -print -or -name '*.dict' -print -or -name '*.bwt' -print -or -name '*.bt2' -print -or -name '*.rbwt' -print -or -name '*.ann' -print -or -name '*.rsa' -print -or -name refBWA079.fa -print -or -name BWA_OPTIONS_FILE -print -or -name '*.amb' -print -or -name '*.rpac' -print -or -name '*.pac' -print -or -name '*.cached' -print -or -name '*.info' -print -or -name .DS_Store -print -print -or -name 'ins_stats_*' -print -or -name 'main_stats_*' -print -or -name 'coverage_*.txt' -print -or -name 'refSeq*' -print -or -name '*.sa' -print)
 
-clean_log_and_temp_files: $(LOG_AND_TEMP_FILES)
+clean_log_and_temp_files:
 	@rm -f $(LOG_AND_TEMP_FILES)
 
 clean_results:
@@ -126,7 +126,7 @@ clean_hardlinks: clean_jars
 #Create hardlinks to the master files present in the root functional_tests directory.
 #Symbolic links lead to undesirable complications, and independent copies lead to
 #undesirable I/O and disk space usage.
-.PRECIOUS: %/mutinack.jar %/ref.fa %/ref.fa.fai %/logback.xml %/jacoco.jar
+.PRECIOUS: %/mutinack.jar %/ref.fa %/ref.fa.fai %/ref.fa.info %/logback.xml %/jacoco.jar
 %/mutinack.jar:
 	@ln -f mutinack.jar $@
 
@@ -139,12 +139,19 @@ clean_hardlinks: clean_jars
 %/ref.fa:
 	@ln -f ref.fa $@
 
+%/ref.fa.info: ref.fa.info
+	@ln -f ref.fa.info $@
+
+ref.fa.info:
+	@touch ref.fa.info
+	@touch -t 198001010101 ref.fa.info
+
 %/ref.fa.fai:
 	@ln -f ref.fa.fai $@
 
 #TODO: introduce optional dependency on %/alignment-2/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam
 .PRECIOUS: %.out
-%/run.out : %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
+%/run.out : %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
 	@(cd $* && java $(JACOCO) $(JVM_BUG_WORKAROUND) $(DEBUG_ATTACH) $(MAX_MEM_OPT) -jar mutinack.jar $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 

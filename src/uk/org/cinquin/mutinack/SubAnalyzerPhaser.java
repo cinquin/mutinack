@@ -502,6 +502,9 @@ public class SubAnalyzerPhaser extends Phaser {
 								} else {//1 candidate
 									c = l.get(0);
 									NumberFormat formatter = mediumLengthFloatFormatter.get();
+									/**
+									 * Make sure this stays in sync with Mutinack.outputHeader
+									 */
 									line += c.getnGoodDuplexes() + "\t" + 
 											c.getnGoodOrDubiousDuplexes() + "\t" +
 											c.getnDuplexes() + "\t" +

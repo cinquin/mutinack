@@ -37,7 +37,7 @@ public class CounterWithSeqLocation<T> extends Counter<T> implements Serializabl
 	
 	private static final long serialVersionUID = 1472307547807376993L;
 
-	public static final int BIN_SIZE = 100_000;
+	public static int BIN_SIZE = 100_000;
 
 	public static Map<Object, @NonNull Object> contigNames;
 	

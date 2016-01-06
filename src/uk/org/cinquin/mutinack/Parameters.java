@@ -142,6 +142,9 @@ public class Parameters implements Serializable {
 	static final List<@NonNull Integer> defaultStartContigPositions = 
 			Arrays.asList(1, 1, 1, 1, 1, 1, 1);
 
+	@Parameter(names = "-contigStatsBinLength", description = "TODO", required = false)
+	public int contigStatsBinLength = 2_000_000;
+
 	@Parameter(names = "-minMappingQualityQ1", description = "Reads whose mapping quality is below this"
 			+ " threshold are discarded (best to keep this relatively low to allow non-unique mutation candidates to be identified in all samples)", required = false)
 	public int minMappingQualityQ1 = 20;

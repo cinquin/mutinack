@@ -34,15 +34,28 @@ public final class DoubleAdderFormatter extends DoubleAdder
 		return formatDouble(sum);
 	}
 	
-	public static String formatDouble(double d) {
-		NumberFormat f = NumberFormat.getInstance();
+	private static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
+		@Override
+		protected NumberFormat initialValue() {
+			return NumberFormat.getInstance();
+		}
+	};
+	
+	public static boolean setNanAndInfSymbols(NumberFormat f) {
 		 if (f instanceof DecimalFormat) {
 			 DecimalFormat f2 = (DecimalFormat) f;
 			 DecimalFormatSymbols symbols = f2.getDecimalFormatSymbols();
 			 symbols.setNaN("NaN");
 			 symbols.setInfinity("Inf");
 			 f2.setDecimalFormatSymbols(symbols);
-		 }
+			 return true;
+		 } else
+			 return false;
+	}
+
+	public static String formatDouble(double d) {
+		NumberFormat f = nf.get();
+		setNanAndInfSymbols(f);
 		return f.format(d == Math.rint(d) ? (long) d : d);
 	}
 

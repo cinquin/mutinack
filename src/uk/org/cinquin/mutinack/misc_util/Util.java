@@ -51,6 +51,7 @@ import contrib.net.sf.samtools.util.StringUtil;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
+import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class Util {
 	
@@ -339,7 +340,9 @@ public class Util {
 	public static final ThreadLocal<NumberFormat> mediumLengthFloatFormatter = new ThreadLocal<NumberFormat>() {
 		@Override
 		protected NumberFormat initialValue(){
-			return new DecimalFormat("0.0000");
+			DecimalFormat f = new DecimalFormat("0.0000");
+			DoubleAdderFormatter.setNanAndInfSymbols(f);
+			return f;
 		}
 	};
 

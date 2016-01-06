@@ -29,6 +29,10 @@ while(my $line = <STDIN>) {
 	} else {
 		print STDERR "Could not find $subset\n";
 		$subset2 = join("\t", map { (defined) ? $_ : '' } @capture[1..1]);
+		if ($subset2 eq "") {
+			$subset2 = $subset;
+		}
+		$subset2 = (split(/\s+/, $subset2))[0];
 		if ($subset2 ne "") {
 			$subset = $subset2;
 		}

@@ -17,6 +17,9 @@
 package uk.org.cinquin.mutinack.features;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +41,7 @@ import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
@@ -57,6 +61,19 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		return "Tester for BED file at " + readerName;
 	}
 	
+	@SuppressWarnings("resource")
+	public static BedReader getCachedBedFileReader(String path0, String cacheExtension,
+			Collection<@NonNull String> contigNames, String readerName) {
+		return FileCache.getCached(path0, cacheExtension, path -> {
+			try {
+				return new BedReader(contigNames, 
+						new BufferedReader(new FileReader(new File(path))), readerName, null);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
+	
 	@SuppressWarnings("null")
 	public BedReader (Collection<@NonNull String> contigNames, BufferedReader reader,
 			String readerName, BufferedReader suppInfoReader) throws ParseRTException {
@@ -71,7 +88,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		for (String s: contigNames) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", s, -1, -1, null, null)));
+					new GenomeInterval("", s, -1, -1, null, Optional.empty())));
 		}
 		
 		final Pattern underscorePattern = Pattern.compile("_");

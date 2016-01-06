@@ -16,22 +16,26 @@
  */
 package uk.org.cinquin.mutinack.features;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.edu.standford.nlp.util.HasInterval;
 import contrib.edu.standford.nlp.util.Interval;
 import uk.org.cinquin.mutinack.SequenceLocation;
 
-public final class GenomeInterval implements HasInterval<Integer> {
+public final class GenomeInterval implements HasInterval<Integer>, Serializable {
+
+	private static final long serialVersionUID = -8173244932350184778L;
 	public final String name;
 	public final @NonNull String contig;
 	private final int start, end;
 	private final int length;
 	private final double lengthInverse;
 	private final Interval<Integer> interval;
-	private @NonNull Optional<Boolean> negativeStrand;
+	private @Nullable Boolean negativeStrand;
 	
 	public GenomeInterval(String name, @NonNull String contig, int start, int end, Integer length,
 			@NonNull Optional<Boolean> negativeStrand) {
@@ -42,11 +46,15 @@ public final class GenomeInterval implements HasInterval<Integer> {
 		this.length = length == null ? (end - start + 1) : length;
 		lengthInverse = 1d / this.length;
 		interval = Interval.toInterval(start, end);
-		this.negativeStrand = negativeStrand;
+		this.negativeStrand = negativeStrand.orElse(null);
 	}
 	
+	private static final Optional<Boolean> optionalTrue = Optional.of(true);
+	private static final Optional<Boolean> optionalFalse = Optional.of(false);
+	
+	@SuppressWarnings("null")
 	public @NonNull Optional<Boolean> isNegativeStrand() {
-		return negativeStrand;
+		return negativeStrand == null ? Optional.empty() : (negativeStrand ? optionalTrue : optionalFalse);
 	}
 	
 	public @NonNull SequenceLocation getStartLocation() {
@@ -54,7 +62,7 @@ public final class GenomeInterval implements HasInterval<Integer> {
 	}
 
 	public void setNegativeStrand(@NonNull Optional<Boolean> negativeStrand) {
-		this.negativeStrand = negativeStrand;
+		this.negativeStrand = negativeStrand.orElse(null);
 	}
 
 	public int getStart() {
