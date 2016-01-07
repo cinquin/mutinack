@@ -34,10 +34,12 @@ public final class DoubleAdderFormatter extends DoubleAdder
 		return formatDouble(sum);
 	}
 	
-	private static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
+	public static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
 		@Override
 		protected NumberFormat initialValue() {
-			return NumberFormat.getInstance();
+			NumberFormat f = NumberFormat.getInstance();
+			setNanAndInfSymbols(f);
+			return f;
 		}
 	};
 	
@@ -55,7 +57,6 @@ public final class DoubleAdderFormatter extends DoubleAdder
 
 	public static String formatDouble(double d) {
 		NumberFormat f = nf.get();
-		setNanAndInfSymbols(f);
 		return f.format(d == Math.rint(d) ? (long) d : d);
 	}
 

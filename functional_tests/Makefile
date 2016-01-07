@@ -5,6 +5,8 @@ JVM_BUG_WORKAROUND =
 #JVM_BUG_WORKAROUND = -XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey
 #https://bugs.openjdk.java.net/browse/JDK-8132870
 JACOCO := $(shell echo -javaagent:jacoco.jar=destfile=`pwd`/../target/jacoco.exec)
+JVM_OPTIONS = -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3
+SUBMIT_TO_SERVER = -submitToServer localhost
 
 #GIT := false
 #Uncomment the line below to allow failed functional tests to be marked in the git repository and
@@ -154,7 +156,7 @@ ref.fa.info:
 %/run.out : %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
-	@(cd $* && java $(JACOCO) $(JVM_BUG_WORKAROUND) $(DEBUG_ATTACH) $(MAX_MEM_OPT) -jar mutinack.jar $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
+	@(cd $* && java $(JVM_OPTIONS) $(JACOCO) $(JVM_BUG_WORKAROUND) $(DEBUG_ATTACH) $(MAX_MEM_OPT) -jar mutinack.jar $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
 
 .DELETE_ON_ERROR:
 %/run.out.check: %/run.out %/expected_output.txt

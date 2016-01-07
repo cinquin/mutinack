@@ -16,6 +16,7 @@
  */
 package uk.org.cinquin.mutinack;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Phaser;
@@ -30,6 +31,7 @@ public class AnalysisChunk {
 	SettableInteger lastProcessedPosition = new SettableInteger();
 	Phaser phaser;
 	final List<SubAnalyzer> subAnalyzers = new ArrayList<>();
+	public PrintStream out = System.out;
 
 	@Override
 	public String toString() {

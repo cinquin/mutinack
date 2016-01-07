@@ -561,7 +561,7 @@ public class SubAnalyzerPhaser extends Phaser {
 									throw new RuntimeException(e);
 								}
 
-								System.out.println(line);
+								analysisChunk.out.println(line);
 							}//End loop over analyzers
 						}//End loop over mutation candidates
 					}//End of candidate reporting

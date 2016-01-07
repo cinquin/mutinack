@@ -28,6 +28,18 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 #make -j parameter
 N_PARALLEL_JOBS=2
 
+server_pid=`./run_server`
+echo Started server $server_pid
+sleep 5
+
+worker_pids=''
+for i in `seq 1 $N_PARALLEL_JOBS`
+do
+	worker_pid=`./run_worker`
+	echo Started worker $worker_pid
+	worker_pids=`echo $worker_pids $worker_pid`
+done
+
 GIT=true
 #Uncomment line below to activate git failed test tracking functionality
 #GIT=git
@@ -66,7 +78,9 @@ do
 			fi
 			echo "Functional tests failed; giving up"
 			update_repo "ERROR: failed functional tests"
-			exit 1	
+			kill -9 $server_pid
+			kill -9 $worker_pids
+			exit 1
 		fi
 		echo "Functional tests failed; trying again"
 	done
@@ -79,3 +93,6 @@ then
 fi
 echo "$message"
 update_repo "$message"
+kill -9 $server_pid
+kill -9 $worker_pids
+

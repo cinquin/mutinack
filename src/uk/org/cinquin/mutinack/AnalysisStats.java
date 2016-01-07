@@ -613,6 +613,7 @@ public class AnalysisStats implements Serializable {
 			turnOnMethod = SwitchableStats.class.getDeclaredMethod("turnOn");
 			turnOffMethod = SwitchableStats.class.getDeclaredMethod("turnOff");
 		} catch (NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
 	}

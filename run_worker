@@ -1,0 +1,3 @@
+#!/bin/bash
+(nohup java -Djava.security.policy==java.policy -jar mutinack.jar -startWorker localhost &> run_worker_out) &
+echo $!

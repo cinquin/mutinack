@@ -16,6 +16,8 @@
  */
 package uk.org.cinquin.mutinack;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -37,6 +39,7 @@ import com.beust.jcommander.WrappedParameter;
 import com.beust.jcommander.converters.BaseConverter;
 
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class Parameters implements Serializable {
 
@@ -72,7 +75,7 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-maxThreadsPerPool", description = "Maximum number of threads per pool; "
 			+ "for now, to avoid deadlocks this number should be kept higher than number of inputs *"
 			+ " number of contigs * parallelization factor", required = false)
-	public int maxThreadsPerPool = 40;
+	public int maxThreadsPerPool = 64;
 	
 	@Parameter(names = "-terminateImmediatelyUponError", description = "If true, any error causes immediate termination of the run", required = false)
 	public boolean terminateImmediatelyUponError = true;
@@ -83,6 +86,7 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-processingChunk", description = "Size of sliding windows used to synchronize analysis in different samples", required = false)
 	public int processingChunk = 160;
 	
+	@FilePathList
 	@Parameter(names = "-inputReads", description = "Input BAM read file, sorted and with an index; repeat as many times as there are samples", required = true)
 	public List<@NonNull String> inputReads = new ArrayList<>();
 	
@@ -90,9 +94,11 @@ public class Parameters implements Serializable {
 			+ " alignments produced by BWA", required = false)
 	public boolean lenientSamValidation = true;
 	
+	@FilePathList
 	@Parameter(names = "-originalReadFile1", description = "Fastq-formatted raw read data", required = false, hidden = true)
 	public List<@NonNull String> originalReadFile1 = new ArrayList<>();
 
+	@FilePathList
 	@Parameter(names = "-originalReadFile2", description = "Fastq-formatted raw read data", required = false, hidden = true)
 	public List<@NonNull String> originalReadFile2 = new ArrayList<>();
 	
@@ -102,12 +108,14 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-dropReadProbability", description = "Reads will be randomly ignored with a probability given by this number")
 	public float dropReadProbability = 0;
 	
+	@FilePathList
 	@Parameter(names = "-intersectAlignment", description = "List of BAM files with which alignments in inputReads must agree; each file must be sorted", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> intersectAlignment = new ArrayList<>();
 	
 	@Parameter(names = "-minMappingQIntersect", description = "Minimum mapping quality for reads in intersection files", required = false, hidden = hideInProgressParameters)
 	public List<Integer> minMappingQIntersect = new ArrayList<>();
 
+	@FilePath
 	@Parameter(names = "-referenceGenome", description = "Reference genome in FASTA format; index file must be present and for now contigs must appear in alphabetical order",
 			required = true)
 	public String referenceGenome = "";
@@ -273,12 +281,14 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-requireMatchInAlignmentEnd", description = "Used while grouping reads into duplexes; turn off if alignments were aggregated from sequencing runs with different read lengths", required = false)
 	public boolean requireMatchInAlignmentEnd = false;
 
+	@FilePathList
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> saveFilteredReadsTo = new ArrayList<>();
 	
 	@Parameter(names = "-collapseFilteredReads", description = "Only write one (randomly-chosen) read per duplex", required = false, hidden = false)
 	public boolean collapseFilteredReads = false;
 	
+	@FilePathList
 	@Parameter(names = "-bamReadsWithBarcodeField", description = "BAM/SAM file saved from previous run with barcodes stored as attributes", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> bamReadsWithBarcodeField = new ArrayList<>();
 
@@ -303,9 +313,11 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-sampleName", description = "Used to name samples in output file; can be repeated as many times as there are inputReads", required = false)
 	List<@NonNull String> sampleNames = new ArrayList <> ();
 	
+	@FilePath
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
 	public String forceOutputAtPositionsFile = null;
 
+	@FilePath
 	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags; " +
 			"note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold, if predicted insert size is 0, "
 			+ "and under some circumstances if the mate mapping quality is below Q1 threshold, if the mate is mapped further away "
@@ -313,6 +325,7 @@ public class Parameters implements Serializable {
 			+ "relatively rare but possible for a read to be omitted even though it counts toward coverage).", required = false)
 	public String outputAlignmentFile = null;
 
+	@FilePath
 	@Parameter(names = "-discardedReadFile", description = "Write discarded reads to BAM file specified by parameter", required = false, hidden = hideInProgressParameters)
 	public String discardedReadFile = null;
 
@@ -325,44 +338,63 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-outputTopBottomDisagreementBED", description = "Output to file specified by option -topBottomDisagreementFileBaseName", required = false, arity = 1)
 	public boolean outputTopBottomDisagreementBED = true;
 	
+	@FilePathList
 	@Parameter(names = "-reportStatsForBED", description = "Report number of observations that fall within " +
 			"the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForBED = new ArrayList<>();
 	
+	@FilePathList
 	@Parameter(names = "-reportStatsForNotBED", description = "Report number of observations that do *not* fall within " +
 			"the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForNotBED = new ArrayList<>();
 	
+	@FilePathList
 	@Parameter(names = "-excludeRegionsInBED", description = "Loci covered by this BED file will be completely ignored in the analysis", required = false)
 	public List<@NonNull String> excludeRegionsInBED = new ArrayList<>();
 	
+	@FilePathList
 	@Parameter(names = "-repetiveRegionBED", description = "If specified, used for stats (mutant|wt)Q2CandidateQ1Q2DCoverage[Non]Repetitive", required = false)
 	public List<@NonNull String> repetiveRegionBED = new ArrayList<>();
 	
+	@FilePath
 	@Parameter(names = "-bedDisagreementOrienter", description = "Gene orientation read from this file "
 			+ "is used to orient top/bottom strand disagreements with respect to transcribed strand", required = false)
 	public String bedDisagreementOrienter = null;
-		
+	
+	@FilePathList
 	@Parameter(names = "-reportBreakdownForBED", description = "Report number of observations that fall within " +
 			"each of the regions defined by BED file whose path follows", required = false)
 	public List<@NonNull String> reportBreakdownForBED = new ArrayList<>();
 	
+	@FilePathList
 	@Parameter(names = "-saveBEDBreakdownTo", description = "Path for saving of BED region counts; argument " +
 			"list must match that given to -reportBreakdownForBED", required = false)
 	public List<@NonNull String> saveBEDBreakdownTo = new ArrayList<>();
 	
+	@FilePath
 	@Parameter(names = "-bedFeatureSuppInfoFile", description = "Read genome annotation supplementary info, used in output of counter with BED feature breakdown")
 	public String bedFeatureSuppInfoFile = null;
 
+	@FilePath
 	@Parameter(names = "-refSeqToOfficialGeneName", description = "Tab separated text file with RefSeq ID, tab, and official gene name and any other useful info; " +
 			"counts will be reported both by RefSeq ID and official gene name")
 	public String refSeqToOfficialGeneName = null;
 	
+	@FilePath
 	@Parameter(names = "-auxOutputFileBaseName", description = "Base name of files to which to record mutations, disagreements between top and bottom strands, etc.", required = false)
 	public String auxOutputFileBaseName = null;
 	
 	@Parameter(names = "-rnaSeq", description = "Ignore deletions and turn off checks that do not make sense for RNAseq data", required = false)
 	public boolean rnaSeq = false;
+	
+	@Parameter(names = "-submitToServer", description = "RMI address", required = false, hidden = hideInProgressParameters)
+	public String submitToServer = null;
+	
+	@Parameter(names = "-startServer", help = true, description = "RMI address", required = false, hidden = hideInProgressParameters)
+	public String startServer = null;
+	
+	@Parameter(names = "-startWorker", help = true, description = "RMI server address", required = false, hidden = hideInProgressParameters)
+	public String startWorker = null;
 	
 	@Retention(RetentionPolicy.RUNTIME)
 	/**
@@ -372,6 +404,51 @@ public class Parameters implements Serializable {
 	 */
 	public @interface HideInToString {}
 	
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface FilePath {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface FilePathList {}
+	
+	public void canonifyFilePaths() {
+		for (Field field: Parameters.class.getDeclaredFields()) {
+			try {
+				if (field.getAnnotation(FilePath.class) != null) {
+					Object fieldValue = field.get(this);
+					if (fieldValue == null) {
+						continue;
+					}
+					if (!(fieldValue instanceof String)) {
+						throw new AssertionFailedException("Field " + field + " is not String");
+					}
+					String path = (String) fieldValue;
+					String canonical = new File(path).getCanonicalPath();
+					field.set(this, canonical);
+				} else if (field.getAnnotation(FilePathList.class) != null) {
+					Object fieldValue = field.get(this);
+					if (fieldValue == null) {
+						continue;
+					}
+					if (!(fieldValue instanceof List)) {
+						throw new AssertionFailedException("Field " + field + " is not List");
+					}
+					@SuppressWarnings("unchecked")
+					List<String> paths = (List<String>) fieldValue;
+					for (int i = 0; i < paths.size(); i++) {
+						String path = paths.get(i);
+						String canonical = new File(path).getCanonicalPath();
+						paths.set(i, canonical);
+					}
+				} else {
+					continue;
+				}
+			} catch (IllegalArgumentException | IllegalAccessException | 
+					SecurityException | IOException e) {
+				throw new RuntimeException(e);
+			} 
+		}
+	}
+
 	/**
 	 * Used to make JCommander ignore commas in genome locations.
 	 * @author olivier
@@ -513,6 +590,381 @@ public class Parameters implements Serializable {
 			sb.replace(i, i + 1, "\n");
 		}
 		return sb.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (acceptNInBarCode ? 1231 : 1237);
+		result = prime * result + alignmentPositionMismatchAllowed;
+		result = prime * result + ((auxOutputFileBaseName == null) ? 0 : auxOutputFileBaseName.hashCode());
+		result = prime * result + ((bamReadsWithBarcodeField == null) ? 0 : bamReadsWithBarcodeField.hashCode());
+		result = prime * result + ((bedDisagreementOrienter == null) ? 0 : bedDisagreementOrienter.hashCode());
+		result = prime * result + ((bedFeatureSuppInfoFile == null) ? 0 : bedFeatureSuppInfoFile.hashCode());
+		result = prime * result + (collapseFilteredReads ? 1231 : 1237);
+		result = prime * result + (computeRawDisagreements ? 1231 : 1237);
+		result = prime * result + constantBarcode.hashCode();
+		result = prime * result + contigNamesToProcess.hashCode();
+		result = prime * result + contigStatsBinLength;
+		result = prime * result + Float.floatToIntBits(disagreementConsensusThreshold);
+		result = prime * result + ((discardedReadFile == null) ? 0 : discardedReadFile.hashCode());
+		result = prime * result + Float.floatToIntBits(dropReadProbability);
+		result = prime * result + ((excludeRegionsInBED == null) ? 0 : excludeRegionsInBED.hashCode());
+		result = prime * result + ((forceOutputAtPositionsFile == null) ? 0 : forceOutputAtPositionsFile.hashCode());
+		result = prime * result + (help ? 1231 : 1237);
+		result = prime * result + ignoreFirstNBasesQ1;
+		result = prime * result + ignoreFirstNBasesQ2;
+		result = prime * result + ignoreLastNBases;
+		result = prime * result + (ignoreSizeOutOfRangeInserts ? 1231 : 1237);
+		result = prime * result + (ignoreTandemRFPairs ? 1231 : 1237);
+		result = prime * result + ((inputReads == null) ? 0 : inputReads.hashCode());
+		result = prime * result + ((intersectAlignment == null) ? 0 : intersectAlignment.hashCode());
+		result = prime * result + (lenientSamValidation ? 1231 : 1237);
+		result = prime * result + (logReadIssuesInOutputBam ? 1231 : 1237);
+		result = prime * result + maxAverageBasesClipped;
+		result = prime * result + maxAverageClippingOfAllCoveringDuplexes;
+		result = prime * result + Float.floatToIntBits(maxFractionWrongPairsAtLocus);
+		result = prime * result + maxInsertSize;
+		result = prime * result + ((maxNDuplexes == null) ? 0 : maxNDuplexes.hashCode());
+		result = prime * result + maxThreadsPerPool;
+		result = prime * result + minBasePhredScoreQ1;
+		result = prime * result + minBasePhredScoreQ2;
+		result = prime * result + Float.floatToIntBits(minConsensusThresholdQ1);
+		result = prime * result + Float.floatToIntBits(minConsensusThresholdQ2);
+		result = prime * result + minInsertSize;
+		result = prime * result + ((minMappingQIntersect == null) ? 0 : minMappingQIntersect.hashCode());
+		result = prime * result + minMappingQualityQ1;
+		result = prime * result + minMappingQualityQ2;
+		result = prime * result + minMedianPhredQualityAtLocus;
+		result = prime * result + minNumberDuplexesSisterArm;
+		result = prime * result + minQ1Q2DuplexesToCallMutation;
+		result = prime * result + minQ2DuplexesToCallMutation;
+		result = prime * result + minReadMedianPhredScore;
+		result = prime * result + minReadsPerStrandForDisagreement;
+		result = prime * result + minReadsPerStrandQ1;
+		result = prime * result + minReadsPerStrandQ2;
+		result = prime * result + nConstantBarcodeMismatchesAllowed;
+		result = prime * result + (int) (nRecordsToProcess ^ (nRecordsToProcess >>> 32));
+		result = prime * result + nVariableBarcodeMismatchesAllowed;
+		result = prime * result + (noStatusMessages ? 1231 : 1237);
+		result = prime * result + ((originalReadFile1 == null) ? 0 : originalReadFile1.hashCode());
+		result = prime * result + ((originalReadFile2 == null) ? 0 : originalReadFile2.hashCode());
+		result = prime * result + ((outputAlignmentFile == null) ? 0 : outputAlignmentFile.hashCode());
+		result = prime * result + (outputCoverageBed ? 1231 : 1237);
+		result = prime * result + (outputCoverageProto ? 1231 : 1237);
+		result = prime * result + (outputDuplexDetails ? 1231 : 1237);
+		result = prime * result + (outputTopBottomDisagreementBED ? 1231 : 1237);
+		result = prime * result + parallelizationFactor;
+		result = prime * result + processingChunk;
+		result = prime * result + Float.floatToIntBits(promoteFractionReads);
+		result = prime * result + promoteNQ1Duplexes;
+		result = prime * result + promoteNSingleStrands;
+		result = prime * result + (readContigsFromFile ? 1231 : 1237);
+		result = prime * result + ((refSeqToOfficialGeneName == null) ? 0 : refSeqToOfficialGeneName.hashCode());
+		result = prime * result + ((referenceGenome == null) ? 0 : referenceGenome.hashCode());
+		result = prime * result + ((repetiveRegionBED == null) ? 0 : repetiveRegionBED.hashCode());
+		result = prime * result + ((reportBreakdownForBED == null) ? 0 : reportBreakdownForBED.hashCode());
+		result = prime * result + ((reportStatsForBED == null) ? 0 : reportStatsForBED.hashCode());
+		result = prime * result + ((reportStatsForNotBED == null) ? 0 : reportStatsForNotBED.hashCode());
+		result = prime * result + (requireMatchInAlignmentEnd ? 1231 : 1237);
+		result = prime * result + (rnaSeq ? 1231 : 1237);
+		result = prime * result + ((sampleNames == null) ? 0 : sampleNames.hashCode());
+		result = prime * result + ((saveBEDBreakdownTo == null) ? 0 : saveBEDBreakdownTo.hashCode());
+		result = prime * result + ((saveFilteredReadsTo == null) ? 0 : saveFilteredReadsTo.hashCode());
+		result = prime * result + (saveRawReadsDB ? 1231 : 1237);
+		result = prime * result + (saveRawReadsMVDB ? 1231 : 1237);
+		result = prime * result + (skipVersionCheck ? 1231 : 1237);
+		result = prime * result + (sortOutputAlignmentFile ? 1231 : 1237);
+		result = prime * result + ((startAtPositions == null) ? 0 : startAtPositions.hashCode());
+		result = prime * result + ((startServer == null) ? 0 : startServer.hashCode());
+		result = prime * result + ((startWorker == null) ? 0 : startWorker.hashCode());
+		result = prime * result + ((stopAtPositions == null) ? 0 : stopAtPositions.hashCode());
+		result = prime * result + ((submitToServer == null) ? 0 : submitToServer.hashCode());
+		result = prime * result + (terminateImmediatelyUponError ? 1231 : 1237);
+		result = prime * result + (terminateUponOutputFileError ? 1231 : 1237);
+		result = prime * result + variableBarcodeLength;
+		result = prime * result + verbosity;
+		result = prime * result + (version ? 1231 : 1237);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Parameters other = (Parameters) obj;
+		if (acceptNInBarCode != other.acceptNInBarCode)
+			return false;
+		if (alignmentPositionMismatchAllowed != other.alignmentPositionMismatchAllowed)
+			return false;
+		if (auxOutputFileBaseName == null) {
+			if (other.auxOutputFileBaseName != null)
+				return false;
+		} else if (!auxOutputFileBaseName.equals(other.auxOutputFileBaseName))
+			return false;
+		if (bamReadsWithBarcodeField == null) {
+			if (other.bamReadsWithBarcodeField != null)
+				return false;
+		} else if (!bamReadsWithBarcodeField.equals(other.bamReadsWithBarcodeField))
+			return false;
+		if (bedDisagreementOrienter == null) {
+			if (other.bedDisagreementOrienter != null)
+				return false;
+		} else if (!bedDisagreementOrienter.equals(other.bedDisagreementOrienter))
+			return false;
+		if (bedFeatureSuppInfoFile == null) {
+			if (other.bedFeatureSuppInfoFile != null)
+				return false;
+		} else if (!bedFeatureSuppInfoFile.equals(other.bedFeatureSuppInfoFile))
+			return false;
+		if (collapseFilteredReads != other.collapseFilteredReads)
+			return false;
+		if (computeRawDisagreements != other.computeRawDisagreements)
+			return false;
+		if (!constantBarcode.equals(other.constantBarcode))
+			return false;
+		if (!contigNamesToProcess.equals(other.contigNamesToProcess))
+			return false;
+		if (contigStatsBinLength != other.contigStatsBinLength)
+			return false;
+		if (Float.floatToIntBits(disagreementConsensusThreshold) != Float.floatToIntBits(
+				other.disagreementConsensusThreshold))
+			return false;
+		if (discardedReadFile == null) {
+			if (other.discardedReadFile != null)
+				return false;
+		} else if (!discardedReadFile.equals(other.discardedReadFile))
+			return false;
+		if (Float.floatToIntBits(dropReadProbability) != Float.floatToIntBits(other.dropReadProbability))
+			return false;
+		if (excludeRegionsInBED == null) {
+			if (other.excludeRegionsInBED != null)
+				return false;
+		} else if (!excludeRegionsInBED.equals(other.excludeRegionsInBED))
+			return false;
+		if (forceOutputAtPositionsFile == null) {
+			if (other.forceOutputAtPositionsFile != null)
+				return false;
+		} else if (!forceOutputAtPositionsFile.equals(other.forceOutputAtPositionsFile))
+			return false;
+		if (help != other.help)
+			return false;
+		if (ignoreFirstNBasesQ1 != other.ignoreFirstNBasesQ1)
+			return false;
+		if (ignoreFirstNBasesQ2 != other.ignoreFirstNBasesQ2)
+			return false;
+		if (ignoreLastNBases != other.ignoreLastNBases)
+			return false;
+		if (ignoreSizeOutOfRangeInserts != other.ignoreSizeOutOfRangeInserts)
+			return false;
+		if (ignoreTandemRFPairs != other.ignoreTandemRFPairs)
+			return false;
+		if (inputReads == null) {
+			if (other.inputReads != null)
+				return false;
+		} else if (!inputReads.equals(other.inputReads))
+			return false;
+		if (intersectAlignment == null) {
+			if (other.intersectAlignment != null)
+				return false;
+		} else if (!intersectAlignment.equals(other.intersectAlignment))
+			return false;
+		if (lenientSamValidation != other.lenientSamValidation)
+			return false;
+		if (logReadIssuesInOutputBam != other.logReadIssuesInOutputBam)
+			return false;
+		if (maxAverageBasesClipped != other.maxAverageBasesClipped)
+			return false;
+		if (maxAverageClippingOfAllCoveringDuplexes != other.maxAverageClippingOfAllCoveringDuplexes)
+			return false;
+		if (Float.floatToIntBits(maxFractionWrongPairsAtLocus) != Float.floatToIntBits(
+				other.maxFractionWrongPairsAtLocus))
+			return false;
+		if (maxInsertSize != other.maxInsertSize)
+			return false;
+		if (maxNDuplexes == null) {
+			if (other.maxNDuplexes != null)
+				return false;
+		} else if (!maxNDuplexes.equals(other.maxNDuplexes))
+			return false;
+		if (maxThreadsPerPool != other.maxThreadsPerPool)
+			return false;
+		if (minBasePhredScoreQ1 != other.minBasePhredScoreQ1)
+			return false;
+		if (minBasePhredScoreQ2 != other.minBasePhredScoreQ2)
+			return false;
+		if (Float.floatToIntBits(minConsensusThresholdQ1) != Float.floatToIntBits(other.minConsensusThresholdQ1))
+			return false;
+		if (Float.floatToIntBits(minConsensusThresholdQ2) != Float.floatToIntBits(other.minConsensusThresholdQ2))
+			return false;
+		if (minInsertSize != other.minInsertSize)
+			return false;
+		if (minMappingQIntersect == null) {
+			if (other.minMappingQIntersect != null)
+				return false;
+		} else if (!minMappingQIntersect.equals(other.minMappingQIntersect))
+			return false;
+		if (minMappingQualityQ1 != other.minMappingQualityQ1)
+			return false;
+		if (minMappingQualityQ2 != other.minMappingQualityQ2)
+			return false;
+		if (minMedianPhredQualityAtLocus != other.minMedianPhredQualityAtLocus)
+			return false;
+		if (minNumberDuplexesSisterArm != other.minNumberDuplexesSisterArm)
+			return false;
+		if (minQ1Q2DuplexesToCallMutation != other.minQ1Q2DuplexesToCallMutation)
+			return false;
+		if (minQ2DuplexesToCallMutation != other.minQ2DuplexesToCallMutation)
+			return false;
+		if (minReadMedianPhredScore != other.minReadMedianPhredScore)
+			return false;
+		if (minReadsPerStrandForDisagreement != other.minReadsPerStrandForDisagreement)
+			return false;
+		if (minReadsPerStrandQ1 != other.minReadsPerStrandQ1)
+			return false;
+		if (minReadsPerStrandQ2 != other.minReadsPerStrandQ2)
+			return false;
+		if (nConstantBarcodeMismatchesAllowed != other.nConstantBarcodeMismatchesAllowed)
+			return false;
+		if (nRecordsToProcess != other.nRecordsToProcess)
+			return false;
+		if (nVariableBarcodeMismatchesAllowed != other.nVariableBarcodeMismatchesAllowed)
+			return false;
+		if (noStatusMessages != other.noStatusMessages)
+			return false;
+		if (originalReadFile1 == null) {
+			if (other.originalReadFile1 != null)
+				return false;
+		} else if (!originalReadFile1.equals(other.originalReadFile1))
+			return false;
+		if (originalReadFile2 == null) {
+			if (other.originalReadFile2 != null)
+				return false;
+		} else if (!originalReadFile2.equals(other.originalReadFile2))
+			return false;
+		if (outputAlignmentFile == null) {
+			if (other.outputAlignmentFile != null)
+				return false;
+		} else if (!outputAlignmentFile.equals(other.outputAlignmentFile))
+			return false;
+		if (outputCoverageBed != other.outputCoverageBed)
+			return false;
+		if (outputCoverageProto != other.outputCoverageProto)
+			return false;
+		if (outputDuplexDetails != other.outputDuplexDetails)
+			return false;
+		if (outputTopBottomDisagreementBED != other.outputTopBottomDisagreementBED)
+			return false;
+		if (parallelizationFactor != other.parallelizationFactor)
+			return false;
+		if (processingChunk != other.processingChunk)
+			return false;
+		if (Float.floatToIntBits(promoteFractionReads) != Float.floatToIntBits(other.promoteFractionReads))
+			return false;
+		if (promoteNQ1Duplexes != other.promoteNQ1Duplexes)
+			return false;
+		if (promoteNSingleStrands != other.promoteNSingleStrands)
+			return false;
+		if (readContigsFromFile != other.readContigsFromFile)
+			return false;
+		if (refSeqToOfficialGeneName == null) {
+			if (other.refSeqToOfficialGeneName != null)
+				return false;
+		} else if (!refSeqToOfficialGeneName.equals(other.refSeqToOfficialGeneName))
+			return false;
+		if (referenceGenome == null) {
+			if (other.referenceGenome != null)
+				return false;
+		} else if (!referenceGenome.equals(other.referenceGenome))
+			return false;
+		if (repetiveRegionBED == null) {
+			if (other.repetiveRegionBED != null)
+				return false;
+		} else if (!repetiveRegionBED.equals(other.repetiveRegionBED))
+			return false;
+		if (reportBreakdownForBED == null) {
+			if (other.reportBreakdownForBED != null)
+				return false;
+		} else if (!reportBreakdownForBED.equals(other.reportBreakdownForBED))
+			return false;
+		if (reportStatsForBED == null) {
+			if (other.reportStatsForBED != null)
+				return false;
+		} else if (!reportStatsForBED.equals(other.reportStatsForBED))
+			return false;
+		if (reportStatsForNotBED == null) {
+			if (other.reportStatsForNotBED != null)
+				return false;
+		} else if (!reportStatsForNotBED.equals(other.reportStatsForNotBED))
+			return false;
+		if (requireMatchInAlignmentEnd != other.requireMatchInAlignmentEnd)
+			return false;
+		if (rnaSeq != other.rnaSeq)
+			return false;
+		if (sampleNames == null) {
+			if (other.sampleNames != null)
+				return false;
+		} else if (!sampleNames.equals(other.sampleNames))
+			return false;
+		if (saveBEDBreakdownTo == null) {
+			if (other.saveBEDBreakdownTo != null)
+				return false;
+		} else if (!saveBEDBreakdownTo.equals(other.saveBEDBreakdownTo))
+			return false;
+		if (saveFilteredReadsTo == null) {
+			if (other.saveFilteredReadsTo != null)
+				return false;
+		} else if (!saveFilteredReadsTo.equals(other.saveFilteredReadsTo))
+			return false;
+		if (saveRawReadsDB != other.saveRawReadsDB)
+			return false;
+		if (saveRawReadsMVDB != other.saveRawReadsMVDB)
+			return false;
+		if (skipVersionCheck != other.skipVersionCheck)
+			return false;
+		if (sortOutputAlignmentFile != other.sortOutputAlignmentFile)
+			return false;
+		if (startAtPositions == null) {
+			if (other.startAtPositions != null)
+				return false;
+		} else if (!startAtPositions.equals(other.startAtPositions))
+			return false;
+		if (startServer == null) {
+			if (other.startServer != null)
+				return false;
+		} else if (!startServer.equals(other.startServer))
+			return false;
+		if (startWorker == null) {
+			if (other.startWorker != null)
+				return false;
+		} else if (!startWorker.equals(other.startWorker))
+			return false;
+		if (stopAtPositions == null) {
+			if (other.stopAtPositions != null)
+				return false;
+		} else if (!stopAtPositions.equals(other.stopAtPositions))
+			return false;
+		if (submitToServer == null) {
+			if (other.submitToServer != null)
+				return false;
+		} else if (!submitToServer.equals(other.submitToServer))
+			return false;
+		if (terminateImmediatelyUponError != other.terminateImmediatelyUponError)
+			return false;
+		if (terminateUponOutputFileError != other.terminateUponOutputFileError)
+			return false;
+		if (variableBarcodeLength != other.variableBarcodeLength)
+			return false;
+		if (verbosity != other.verbosity)
+			return false;
+		if (version != other.version)
+			return false;
+		return true;
 	}
 
 }

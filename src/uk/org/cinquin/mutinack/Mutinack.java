@@ -25,6 +25,7 @@ import static uk.org.cinquin.mutinack.misc_util.Util.reset;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,10 +36,13 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DecimalFormat;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
@@ -95,6 +99,10 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
+import uk.org.cinquin.mutinack.distributed.EvaluationResult;
+import uk.org.cinquin.mutinack.distributed.Job;
+import uk.org.cinquin.mutinack.distributed.RemoteMethods;
+import uk.org.cinquin.mutinack.distributed.Server;
 import uk.org.cinquin.mutinack.features.BedComplement;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
@@ -117,6 +125,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocation;
+import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.ICounter;
 import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
@@ -331,7 +340,7 @@ public class Mutinack {
 	
 	public static void main(String args[]) throws InterruptedException, ExecutionException, FileNotFoundException {
 		try {
-			realMain(args);
+			realMain0(args);
 		} catch (ParameterException e) {
 			if (System.console() == null) {
 				System.err.println(e.getMessage());
@@ -354,9 +363,21 @@ public class Mutinack {
 	}
 	
 	private static ExecutorService executorService;
-
-	@SuppressWarnings("resource")
-	private static void realMain(String args[]) throws InterruptedException, IOException {
+	
+	private static RemoteMethods getServer(String hostName) throws MalformedURLException, RemoteException {
+		//if (System.getSecurityManager() == null) {
+		//	System.setSecurityManager(new SecurityManager());
+		//}
+		RemoteMethods server;
+		try {
+			server = (RemoteMethods) Naming.lookup("//" + hostName + "/mutinack");
+		} catch (NotBoundException e) {
+			throw new RuntimeException(e);
+		}
+		return server;
+	}
+	
+	private static void realMain0(String args[]) throws InterruptedException, IOException {
 		final Parameters argValues = new Parameters();
 		JCommander commander = new JCommander();
 		commander.setAcceptUnknownOptions(false);
@@ -370,21 +391,62 @@ public class Mutinack {
 			StringBuilder b = new StringBuilder();
 			try {
 				Parameters.getUnsortedUsage(commander, Parameters.class, b);
-			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			} catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
 			//commander.usage();
 			System.out.println(b);
 			return;
+		} else if (argValues.startServer != null) {
+			Server.createRegistry(argValues.startServer);
+			new Server(0, argValues.startServer);
+			return;
+		} else if (argValues.submitToServer != null) {
+			RemoteMethods server = getServer(argValues.submitToServer);
+			Job job = new Job();
+			argValues.submitToServer = null;
+			argValues.canonifyFilePaths();
+			job.parameters = argValues;
+			EvaluationResult result = server.submitJob("client", job);
+			if (result.runtimeException != null) {
+				throw new RuntimeException(result.runtimeException);
+			} else {
+				System.out.println("RESULT: \n" + result.output);
+			}
+			return;
+		} else if (argValues.startWorker != null) {
+			RemoteMethods server = getServer(argValues.startWorker);
+			while (true) {
+				Job job = server.getMoreWork("worker");
+				job.result = new EvaluationResult();
+				ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+				PrintStream outPS = new PrintStream(outStream);
+				ByteArrayOutputStream errStream = new ByteArrayOutputStream();
+				PrintStream errPS = new PrintStream(errStream);
+				try {
+					realMain1(job.parameters, outPS, errPS);
+				} catch (Throwable t) {
+					job.result.runtimeException = t;
+				}
+				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
+						errStream.toString("UTF8");
+				server.submitWork("worker", job);
+			}
 		}
 		
 		if (argValues.version) {
 			System.out.println(VersionInfo.gitCommit);
 			return;
 		}
-		
-		//System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
-		
+
+		realMain1(argValues, System.out, System.err);
+		PoolController.shutdown();
+	}
+
+	@SuppressWarnings("resource")
+	private static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
+				System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
+
 		executorService = new ThreadPoolExecutor(0, argValues.maxThreadsPerPool,
                 60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
 		ParFor.threadPool = new ThreadPoolExecutor(0, argValues.maxThreadsPerPool,
@@ -414,8 +476,8 @@ public class Mutinack {
 		if (!argValues.noStatusMessages) {
 			Util.printUserMustSeeMessage("Host: " + hostName);
 		}
-		System.out.println(argValues.toString());
-		System.out.println("Non-trivial assertions " +
+		out.println(argValues.toString());
+		out.println("Non-trivial assertions " +
 				(DebugControl.NONTRIVIAL_ASSERTIONS ? 
 				"on" : "off"));
 
@@ -543,11 +605,11 @@ public class Mutinack {
 			}
 			@SuppressWarnings("null")
 			@NonNull String forceOutputString = forceOutputAtLocations.toString();
-			System.out.println("Forcing output at locations " + 
+			out.println("Forcing output at locations " + 
 					Util.truncateString(forceOutputString));
 		}
 
-		System.out.println(outputHeader.stream().collect(Collectors.joining("\t")));
+		out.println(outputHeader.stream().collect(Collectors.joining("\t")));
 
 		//Used to ensure that different analyzers do not use same output files
 		final Set<String> names = new HashSet<>();
@@ -615,7 +677,7 @@ public class Mutinack {
 			for (int k = i * nIntersectFilesPerAnalyzer ; k < (i+1) * nIntersectFilesPerAnalyzer ; k++) {
 				File f = new File(argValues.intersectAlignment.get(k));
 				intersectFiles.add(f);
-				System.out.println("Intersecting " + inputBam.getAbsolutePath() + " with " +
+				out.println("Intersecting " + inputBam.getAbsolutePath() + " with " +
 						f.getAbsolutePath());
 			}
 
@@ -701,7 +763,7 @@ public class Mutinack {
 						s.topBottomDisagreementWriter = new FileWriter(s.getName() + tbdName);
 						analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
 					} catch (IOException e) {
-						handleOutputException(tbdName, e, argValues);
+						handleOutputException(s.getName() + tbdName, e, argValues);
 					}
 				});
 			}
@@ -712,7 +774,7 @@ public class Mutinack {
 					s.mutationBEDWriter = new FileWriter(s.getName() + mutName);
 					analyzer.itemsToClose.add(s.mutationBEDWriter);				
 				} catch (IOException e) {
-					handleOutputException(mutName, e, argValues);
+					handleOutputException(s.getName() + mutName, e, argValues);
 				}
 			});
 
@@ -741,7 +803,7 @@ public class Mutinack {
 						s.coverageBEDWriter = new FileWriter(s.getName () + coverageName);
 						analyzer.itemsToClose.add(s.coverageBEDWriter);
 					} catch (IOException e) {
-						handleOutputException(coverageName, e, argValues);
+						handleOutputException(s.getName () + coverageName, e, argValues);
 					}
 				});
 			}
@@ -932,7 +994,7 @@ public class Mutinack {
 		final Histogram goodDuplexCovInAllInputs = new Histogram(500);
 
 		SignalProcessor infoSignalHandler = signal -> {
-            PrintStream printStream = (signal == null) ? System.out : System.err;
+            PrintStream printStream = (signal == null) ? out : err;
             for (Mutinack analyzer: analyzers) {
                 analyzer.printStatus(printStream, signal != null);
             }
@@ -997,6 +1059,7 @@ public class Mutinack {
 					argValues.parallelizationFactor;
 			for (int p = 0 ; p < argValues.parallelizationFactor; p++) {
 				final AnalysisChunk analysisChunk = new AnalysisChunk();
+				analysisChunk.out = out;
 				analysisChunks.add(analysisChunk);
 
 				final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
@@ -1159,8 +1222,6 @@ public class Mutinack {
 			analyzer.subAnalyzers.stream().filter(sa -> sa != null).forEach(SubAnalyzer::checkAllDone);
 			analyzer.closeOutputs();
 		}
-		
-		PoolController.shutdown();
 	}
 	
 	private void closeOutputs() throws IOException {
@@ -1191,7 +1252,7 @@ public class Mutinack {
 		});
 	}
 
-	private static void handleOutputException(String fileName, IOException e, Parameters argValues) {
+	private static void handleOutputException(String fileName, Throwable e, Parameters argValues) {
 		String baseMessage = "Could not open file " + fileName;
 		if (argValues.terminateUponOutputFileError) {
 			throw new RuntimeException(baseMessage, e);
@@ -1215,10 +1276,8 @@ public class Mutinack {
 
 			s.print(stream, colorize);
 
-			NumberFormat formatter = new DecimalFormat("0.###E0");
-
 			stream.println(blueF(colorize) + "Average Phred quality: " + reset(colorize) +
-					formatter.format(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
+					DoubleAdderFormatter.formatDouble(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
 
 			if (s.outputLevel.compareTo(OutputLevel.VERBOSE) >= 0) {
 				stream.println(blueF(colorize) + "Top 100 barcode hits in cache: " + reset(colorize) +
@@ -1230,11 +1289,11 @@ public class Mutinack {
 					((int) processingThroughput()) + " records / s");
 
 			for (String counter: s.nLociCandidatesForUniqueMutation.getCounterNames()) {
-				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) + formatter.
-						format(s.nLociCandidatesForUniqueMutation.getSum(counter) / s.nLociDuplexQualityQ2OthersQ1Q2.getSum(counter)));			
+				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) + DoubleAdderFormatter.
+						formatDouble(s.nLociCandidatesForUniqueMutation.getSum(counter) / s.nLociDuplexQualityQ2OthersQ1Q2.getSum(counter)));
 			}
 		});
-	}	
+	}
 	
 	@Override
 	public String toString() {
