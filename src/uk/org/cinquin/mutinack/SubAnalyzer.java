@@ -1171,7 +1171,10 @@ final class SubAnalyzer {
 		
 		if (refEndOfPreviousAlignment != -1) {
 
-			final boolean tooLate = (readOnNegativeStrand ? readPosition <= analyzer.ignoreLastNBases :
+			final boolean insertion = refPosition == refEndOfPreviousAlignment + 1;
+			
+			final boolean tooLate = (readOnNegativeStrand ? 
+					(insertion ? readPosition <= analyzer.ignoreLastNBases : readPosition < analyzer.ignoreLastNBases) :
 				readPosition > rec.getReadLength() - analyzer.ignoreLastNBases) && notRnaSeq;
 
 			if (tooLate) {
@@ -1180,7 +1183,7 @@ final class SubAnalyzer {
 				}
 				stats.nCandidateIndelAfterLastNBases.increment(location);
 			} else {
-				if (refPosition == refEndOfPreviousAlignment + 1) {
+				if (insertion) {
 					//Insertion
 					stats.nCandidateInsertions.increment(location);
 					if (Mutinack.shouldLog(TRACE)) {
