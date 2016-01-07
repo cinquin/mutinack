@@ -103,25 +103,25 @@ tests_no_alignment_saving: $(RESULTS) $(RESULT_CHECKS)
 
 clean: clean_jars clean_results clean_check clean_log_and_temp_files
 
-LOG_AND_TEMP_FILES = $(shell find . -name '*.log' -print -or -name '*.swp' -print -or -name '*.core' -print -or -name '*.dict' -print -or -name '*.bwt' -print -or -name '*.bt2' -print -or -name '*.rbwt' -print -or -name '*.ann' -print -or -name '*.rsa' -print -or -name refBWA079.fa -print -or -name BWA_OPTIONS_FILE -print -or -name '*.amb' -print -or -name '*.rpac' -print -or -name '*.pac' -print -or -name '*.cached' -print -or -name '*.info' -print -or -name .DS_Store -print -print -or -name 'ins_stats_*' -print -or -name 'main_stats_*' -print -or -name 'coverage_*.txt' -print -or -name 'refSeq*' -print -or -name '*.sa' -print)
+LOG_AND_TEMP_FILES = $(shell find . -name '*.log' -print0 -or -name '*.swp' -print0 -or -name '*.core' -print0 -or -name '*.dict' -print0 -or -name '*.bwt' -print0 -or -name '*.bt2' -print0 -or -name '*.rbwt' -print0 -or -name '*.ann' -print0 -or -name '*.rsa' -print0 -or -name refBWA079.fa -print0 -or -name BWA_OPTIONS_FILE -print0 -or -name '*.amb' -print0 -or -name '*.rpac' -print0 -or -name '*.pac' -print0 -or -name '*.cached' -print0 -or -name '*.info' -print0 -or -name .DS_Store -print0 -or -name 'ins_stats_*' -print0 -or -name 'main_stats_*' -print0 -or -name 'coverage_*.txt' -print0 -or -name 'refSeq*' -print0 -or -name '*.sa' -print0 | xxd -p)
 
 clean_log_and_temp_files:
-	@rm -f $(LOG_AND_TEMP_FILES)
+	@echo "$(LOG_AND_TEMP_FILES)" | xxd -p -r | xargs -0 -n200 rm -f
 
 clean_results:
-	@rm -f $(RESULTS) $(OUTPUT_ALIGNMENTS) $(PROGRAM_OUTPUT)
+	@echo "$(RESULTS) $(OUTPUT_ALIGNMENTS) $(PROGRAM_OUTPUT)" | xargs -n200 rm -f
 
 clean_check:
-	@rm -f $(RESULT_CHECKS)
+	@echo "$(RESULT_CHECKS)" | xargs -n200 rm -f
 
 clean_jars:
-	@rm -f $(JARS)
+	@echo "$(JARS)" | xargs -n200 rm -f
 
 clean_FAILED:
-	@rm -f $(FAILED_TESTS)
+	@echo "$(FAILED_TESTS)" | xargs -n200 rm -f
 
 clean_hardlinks: clean_jars
-	@rm -f $(REFFILES) $(LOGBACKCONF)
+	@echo "$(REFFILES) $(LOGBACKCONF)" | xargs -n200 rm -f
 
 #Create hardlinks to the master files present in the root functional_tests directory.
 #Symbolic links lead to undesirable complications, and independent copies lead to
