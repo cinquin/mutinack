@@ -431,6 +431,7 @@ public class Mutinack {
 				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
 				server.submitWork("worker", job);
+				Signals.clearSignalProcessors();
 			}
 		}
 		

@@ -46,6 +46,11 @@ public class Signals {
 		}
 		list.add(p);
 	}
+	
+	public static void clearSignalProcessors() {
+		processors.clear();
+		initialize();
+	}
 
 	public synchronized static void removeSignalProcessor(String name, SignalProcessor p) {
 		List<SignalProcessor> list = processors.get(name);
