@@ -51,6 +51,7 @@ import uk.org.cinquin.parfor.ParFor;
 public class SubAnalyzerPhaser extends Phaser {
 	
 	private final static Logger logger = LoggerFactory.getLogger("SubAnalyzerPhaser");
+	private static final boolean[] falseTrue = new boolean[] {false, true};
 
 	private final AnalysisChunk analysisChunk;
 	private final SettableInteger lastProcessedPosition;
@@ -67,6 +68,13 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final int contigIndex;
 	private final Map<Object, Object> contigNames;
 	private final int PROCESSING_CHUNK;
+	
+	private final ConcurrentHashMap<String, SAMRecord> readsToWrite;
+	private final SAMFileWriter outputAlignment;
+	private final int nSubAnalyzers;
+
+	private int nIterations = 0;	
+	private final AtomicInteger dn = new AtomicInteger(0);
 	
 	public SubAnalyzerPhaser(Parameters argValues, AnalysisChunk analysisChunk, 
 			List<Mutinack> analyzers, List<@NonNull LocationExaminationResults> analyzerCandidateLists,
@@ -102,15 +110,6 @@ public class SubAnalyzerPhaser extends Phaser {
 		this.repetitiveBEDs = repetitiveBEDs;
 		this.PROCESSING_CHUNK = PROCESSING_CHUNK;
 	}
-
-	private static final boolean[] falseTrue = new boolean[] {false, true};
-
-	private final ConcurrentHashMap<String, SAMRecord> readsToWrite;
-	private final SAMFileWriter outputAlignment;
-	private final int nSubAnalyzers;
-
-	private int nIterations = 0;	
-	private final AtomicInteger dn = new AtomicInteger(0);
 	
 	@Override
 	protected final boolean onAdvance(int phase, int registeredParties) {

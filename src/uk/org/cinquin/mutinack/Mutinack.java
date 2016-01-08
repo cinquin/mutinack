@@ -155,6 +155,8 @@ public class Mutinack {
 			"positionInRead", "readEffectiveLength", "nameOfOneRead", "readAlignmentStart", "mateAlignmentStart",
 			"readAlignmentEnd", "mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtLocus", "minInsertSize", "maxInsertSize", "supplementalMessage"
 	));
+	
+	private static ExecutorService executorService;
 
 	static final Collection<BiConsumer<PrintStream, Integer>> statusUpdateTasks = new ArrayList<>();
 	static final Map<Integer, @NonNull String> indexContigNameMap = new ConcurrentHashMap<>();
@@ -361,9 +363,7 @@ public class Mutinack {
 		}
 		ParFor.threadPool.shutdown();
 	}
-	
-	private static ExecutorService executorService;
-	
+		
 	private static RemoteMethods getServer(String hostName) throws MalformedURLException, RemoteException {
 		//if (System.getSecurityManager() == null) {
 		//	System.setSecurityManager(new SecurityManager());
@@ -432,6 +432,9 @@ public class Mutinack {
 						errStream.toString("UTF8");
 				server.submitWork("worker", job);
 				Signals.clearSignalProcessors();
+				if (!statusUpdateTasks.isEmpty()) {
+					throw new AssertionFailedException();
+				}
 			}
 		}
 		
@@ -580,6 +583,7 @@ public class Mutinack {
 		CounterWithSeqLocation.contigNames = contigNamesUnmod;
 		CounterWithSeqLocOnly.contigNames = contigNamesUnmod;
 
+		forceOutputAtLocations.clear();
 		if (argValues.forceOutputAtPositionsFile != null) {
 			try(Stream<String> lines = Files.lines(Paths.get(argValues.forceOutputAtPositionsFile))) {
 				lines.forEach(l -> {

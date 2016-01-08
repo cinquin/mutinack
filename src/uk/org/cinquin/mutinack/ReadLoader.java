@@ -63,7 +63,7 @@ public class ReadLoader {
 
 		final Phaser phaser = analysisChunk.phaser;
 		String lastReferenceName = null;
-
+		BiConsumer<PrintStream, Integer> info = null;
 		try {
 			final String contig = contigs.get(contigIndex);
 			final int truncateAtPosition = analysisChunk.terminateAtPosition;
@@ -73,7 +73,7 @@ public class ReadLoader {
 
 			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, 0);
 
-			BiConsumer<PrintStream, Integer> info = (stream, userRequestNumber) -> {
+			info = (stream, userRequestNumber) -> {
 				NumberFormat formatter = NumberFormat.getInstance();
 				stream.println("Analyzer " + analyzer.name +
 						" contig " + contig + 
@@ -378,6 +378,13 @@ public class ReadLoader {
 			throw new RuntimeException("Exception while processing contig " + lastReferenceName + 
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
 		} finally {
+			if (info != null) {
+				synchronized(Mutinack.statusUpdateTasks) {
+					if (!Mutinack.statusUpdateTasks.remove(info)) {
+						System.err.println("Could not remove status udpate task");
+					};
+				}
+			}
 			//phaser.arriveAndDeregister();
 		}
 		//Ensure that there is no memory leak (references are kept to subAnalyzers,
