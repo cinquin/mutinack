@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.ref.SoftReference;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
@@ -23,7 +24,7 @@ public class FileCache<T extends Serializable> {
 
 	private static final FSTConfiguration conf = FSTConfiguration.createFastBinaryConfiguration();
 	
-	private static final Map<String, Object> cache = new ConcurrentHashMap<>();
+	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
 
 	@SuppressWarnings("unchecked")
 	public static <T> T getCached(String path, String cacheExtension, Function<String, T> processor) {
@@ -33,7 +34,14 @@ public class FileCache<T extends Serializable> {
 		} catch (IOException e) {
 			throw new RuntimeException("Error getting canonical path for cache for " + path);
 		}
-		return (T) cache.computeIfAbsent(canonicalPath, s -> getCached0(path, cacheExtension, processor));
+		SoftReference<Object> sr = cache.get(canonicalPath);
+		Object o = sr != null ? sr.get() : null;
+		if (o != null) {
+			return (T) o;
+		}
+		T result = getCached0(path, cacheExtension, processor);
+		cache.put(canonicalPath, new SoftReference<Object> (result));
+		return result;
 	}
 	
 	@SuppressWarnings("unchecked")
