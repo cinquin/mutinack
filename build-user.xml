@@ -8,7 +8,7 @@
     <echo level="info" message="git.present is set ${git.present}"/>
     <exec executable="bash" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
       <arg value="-c"/>
-      <arg value="echo `git rev-parse --abbrev-ref HEAD` branch\; last commit message: `git status -s | sed  -E 's/^ //g' | grep '^M' | cut -f2 -d ' ' | xargs ls -lt | head -1|awk '{print $6, $7, $8}'` `git log -1 --pretty=%B | sed -e 's/&quot;/\\\\\\&quot;/g'`\;  last commit and subsequent changes: `git log -1 --format=%cd` `git rev-parse HEAD` `git diff-index HEAD | tr '\n' ' '`"/>
+      <arg value="echo `git rev-parse --abbrev-ref HEAD` branch\; last commit message: `git status -s | sed  -E 's/^ //g' | grep '^M' | cut -f2 -d ' ' | xargs ls -lt | head -1|awk '{print $6, $7, $8}'` `git log -1 --pretty=%B | sed -e 's/&quot;/\\\\\\&quot;/g'`\;  last commit and subsequent changes: `git log -1 --format=%cd` `git rev-parse HEAD` `git diff-index HEAD | tr '\n' ' ' | cut -c1-2000`"/>
     </exec>
     <echo level="info" message="git.revision is set ${git.revision}"/>
     <condition property="repository.version" value="${git.revision}" else="unknown">
