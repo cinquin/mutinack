@@ -81,7 +81,7 @@ do
 			fi
 			echo "Functional tests failed; giving up"
 			update_repo "ERROR: failed functional tests"
-			kill -9 $server_pid $nailgun_server_pid $worker_pids
+			kill $server_pid $nailgun_server_pid $worker_pids
 			exit 1
 		fi
 		echo "Functional tests failed; trying again"
@@ -95,5 +95,5 @@ then
 fi
 echo "$message"
 update_repo "$message"
-kill -9 $server_pid $nailgun_server_pid $worker_pids || true
+kill $server_pid $nailgun_server_pid $worker_pids || true
 
