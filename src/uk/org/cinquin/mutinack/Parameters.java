@@ -396,6 +396,9 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-startWorker", help = true, description = "RMI server address", required = false, hidden = hideInProgressParameters)
 	public String startWorker = null;
 	
+	@Parameter(names = "-workingDirectory", help = true, description = "TODO", required = false, hidden = hideInProgressParameters)
+	public String workingDirectory = null;
+	
 	@Retention(RetentionPolicy.RUNTIME)
 	/**
 	 * Used to mark parameters that it is not useful to print in toString method.

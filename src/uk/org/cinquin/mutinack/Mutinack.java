@@ -112,6 +112,7 @@ import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers.Buil
 import uk.org.cinquin.mutinack.misc_util.DebugControl;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
@@ -405,7 +406,16 @@ public class Mutinack {
 			RemoteMethods server = getServer(argValues.submitToServer);
 			Job job = new Job();
 			argValues.submitToServer = null;
-			argValues.canonifyFilePaths();
+			if (argValues.workingDirectory != null) {
+				synchronized(Runtime.getRuntime()) {
+					String saveUserDir = System.getProperty("user.dir");
+					System.setProperty("user.dir", argValues.workingDirectory);
+					argValues.canonifyFilePaths();
+					System.setProperty("user.dir", saveUserDir);
+				}
+			} else {
+				argValues.canonifyFilePaths();
+			}
 			job.parameters = argValues;
 			EvaluationResult result = server.submitJob("client", job);
 			if (result.runtimeException != null) {
@@ -416,6 +426,7 @@ public class Mutinack {
 			return;
 		} else if (argValues.startWorker != null) {
 			RemoteMethods server = getServer(argValues.startWorker);
+			instantiateThreadPools(argValues.maxThreadsPerPool);
 			while (true) {
 				Job job = server.getMoreWork("worker");
 				job.result = new EvaluationResult();
@@ -442,20 +453,22 @@ public class Mutinack {
 			System.out.println(VersionInfo.gitCommit);
 			return;
 		}
-
+		instantiateThreadPools(argValues.maxThreadsPerPool);
 		realMain1(argValues, System.out, System.err);
-		PoolController.shutdown();
+	}
+
+	private static void instantiateThreadPools(int nMaxThreads) {
+		executorService = new ThreadPoolExecutor(0, nMaxThreads,
+                60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), 
+                new NamedPoolThreadFactory("Mutinack executor pool - "));
+		ParFor.threadPool = new ThreadPoolExecutor(0, nMaxThreads,
+                60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+                new NamedPoolThreadFactory("Mutinack ParFor pool - "));	
 	}
 
 	@SuppressWarnings("resource")
 	private static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
-				System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
 
-		executorService = new ThreadPoolExecutor(0, argValues.maxThreadsPerPool,
-                60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
-		ParFor.threadPool = new ThreadPoolExecutor(0, argValues.maxThreadsPerPool,
-                60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
-		
 		if (!argValues.noStatusMessages && !argValues.skipVersionCheck) {
 			executorService.submit(() -> Util.versionCheck());
 		}
@@ -1227,6 +1240,7 @@ public class Mutinack {
 			analyzer.subAnalyzers.stream().filter(sa -> sa != null).forEach(SubAnalyzer::checkAllDone);
 			analyzer.closeOutputs();
 		}
+		PoolController.shutdown();
 	}
 	
 	private void closeOutputs() throws IOException {

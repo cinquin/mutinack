@@ -16,7 +16,7 @@ fi
 
 #This script assumes the presence of a Makefile in directory functional_tests,
 #with targets all_failed (to re-run failed that were marked in a previous run
-#as having hailed) and all. Target all_failed is invoked first; if it fails,
+#as having failed) and all. Target all_failed is invoked first; if it fails,
 #and BAIL_IF_FAILED_TESTS_NOT_FIXED is equal to 1, the script exits with an
 #error. If not, target all is invoked next.
 
@@ -26,11 +26,13 @@ fi
 BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 
 #make -j parameter
-N_PARALLEL_JOBS=1
+N_PARALLEL_JOBS=2
 
 server_pid=`./run_server`
 echo Started server $server_pid
-sleep 5
+nailgun_server_pid=`./run_nailgun_server`
+echo Started nailgun server $nailgun_server_pid
+sleep 3
 
 worker_pids=''
 for i in `seq 1 $N_PARALLEL_JOBS`
@@ -54,6 +56,7 @@ update_repo () {
 mkdir -p target && cd target && ( [ ! -f classes ] && ln -f -s ../bin classes || true) && cd ..
 cp -p mutinack.jar functional_tests/
 cd functional_tests
+ln -s -f ../nailgun/ng
 ${MAKE} clean
 
 for target in all_failed all
@@ -78,8 +81,7 @@ do
 			fi
 			echo "Functional tests failed; giving up"
 			update_repo "ERROR: failed functional tests"
-			kill -9 $server_pid
-			kill -9 $worker_pids
+			kill -9 $server_pid $nailgun_server_pid $worker_pids
 			exit 1
 		fi
 		echo "Functional tests failed; trying again"
@@ -93,6 +95,5 @@ then
 fi
 echo "$message"
 update_repo "$message"
-kill -9 $server_pid
-kill -9 $worker_pids
+kill -9 $server_pid $nailgun_server_pid $worker_pids || true
 

@@ -1,3 +1,3 @@
 #!/bin/bash
-(nohup java -Xmx3G -Djava.security.policy==java.policy -jar mutinack.jar -startWorker localhost &> run_worker_out) &
+(nohup java -Djava.security.policy==java.policy -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3 -jar mutinack.jar -startWorker localhost &> run_worker_out) &
 echo $!
