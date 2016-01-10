@@ -89,17 +89,43 @@
     </target>
     <target name="SequenceAnalysis">
         <mkdir dir="${junit.output.dir}"/>
-        <jacoco:coverage destfile="target/jacoco.exec">
-            <junit fork="yes" printsummary="withOutAndErr">
-                <formatter type="xml"/>
-                <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
-                <classpath refid="SequenceAnalysis.classpath"/>
-            </junit>
-        </jacoco:coverage>
+        <parallel>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+        </parallel>
     </target>
     <target depends="SequenceAnalysis" name="junitreport">
         <junitreport todir="${junit.output.dir}">

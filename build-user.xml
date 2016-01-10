@@ -22,7 +22,12 @@
   <target name="insert-git-info" depends="git.revision">
     <replaceregexp file="src/uk/org/cinquin/mutinack/misc_util/VersionInfo.java" match="@GITCOMMIT@.*&quot;" replace="@GITCOMMIT@ ${repository.version}&quot;"/>
   </target>
-  <target name="unjar_dependencies">
+  <fileset id="lib-files" dir="."> <include name="lib/**/*"/> <include name="lib"/> <!--The latter include does not do what it is supposed to with respect to uptodate--> </fileset> 
+  <uptodate property="unjar.notRequired" targetfile="lib_unjarred">
+    <srcfiles refid="lib-files"/>
+  </uptodate>
+  <target name="unjar_dependencies" unless="unjar.notRequired">
+    <delete dir="lib_unjarred" failonerror="false"/>
     <mkdir dir="lib_unjarred"/>
     <unzip dest="lib_unjarred">
       <fileset dir="lib">
@@ -30,26 +35,12 @@
       </fileset>
     </unzip>
   </target>
-  <target name="copy_files">
-    <copy todir="build">
-      <fileset dir="lib_unjarred">
-        <exclude name="**/.DS_Store"/>
-        <exclude name="**/*.RSA"/>
-        <exclude name="**/*.DSA"/>
-        <exclude name="**/*.SF"/>
-        <include name="**/*.class"/>
-      </fileset>
-      <fileset dir="bin">
-        <exclude name="**/.DS_Store"/>
-        <exclude name="**/*.RSA"/>
-        <exclude name="**/*.DSA"/>
-        <exclude name="**/*.SF"/>
-        <include name="**/*"/>
-      </fileset>
-    </copy>
-  </target>
-  <target name="jar" depends="insert-git-info,build,copy_files" description="Generate the distribution">
-    <property name="builder.name" value="Daily Build"/>
+  <fileset id="to-jar-files" dir="."> <include name="lib/**/*"/> <include name="bin/**/*.class"/> <include name="src/**/*.java"/> </fileset>
+  <uptodate property="jar.notRequired" targetfile="mutinack.jar">
+    <srcfiles refid="to-jar-files"/>
+  </uptodate>
+  <target name="jar" depends="insert-git-info,build,unjar_dependencies" description="Generate the distribution" unless="jar.notRequired">
+    <property name="builder.name" value=""/>
     <property name="version.num" value="0.99"/>
     <buildnumber file="build.num"/>
     <tstamp>
@@ -62,7 +53,8 @@
       <attribute name="Main-Class" value="uk.org.cinquin.mutinack.Mutinack"/>
     </manifest>
     <jar jarfile="mutinack.jar" manifest="MANIFEST.MF">
-      <fileset dir="build" includes="**/*" excludes="**/.DS_Store"/>
+      <fileset dir="bin" includes="**/*" excludes="**/.DS_Store"/>
+      <fileset dir="lib_unjarred"> <exclude name="**/.DS_Store"/> <exclude name="**/*.RSA"/> <exclude name="**/*.DSA"/> <exclude name="**/*.SF"/> <include name="**/*.class"/> </fileset>
     </jar>
   </target>
   <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpath="findbugs-3.0.1/lib/findbugs-ant.jar"/>
