@@ -42,7 +42,7 @@ do
 	worker_pids=`echo $worker_pids $worker_pid`
 done
 
-trap 'code=$?; kill $server_pid $nailgun_server_pid $worker_pids || true; exit $code' SIGINT SIGQUIT SIGTERM EXIT
+trap 'code=$?; kill $server_pid $nailgun_server_pid $worker_pids || true; exit $code' INT QUIT TERM EXIT
 
 GIT=true
 #Uncomment line below to activate git failed test tracking functionality
