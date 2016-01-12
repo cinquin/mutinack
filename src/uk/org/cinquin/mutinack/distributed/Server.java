@@ -58,6 +58,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			throw new RuntimeException("Could not save cached data to "
 					+ recordRunsTo, e);
 		}
+		System.err.println("Dumped " + recordedRuns.size() + " runs to file " + recordRunsTo);
 	}
 	
 	public static void createRegistry(String suggestedHostName) {
@@ -140,6 +141,8 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		rebindTimer.start();
 		
 		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
+		Thread shutdownHook = new Thread(() -> dumpRecordedRuns());
+		Runtime.getRuntime().addShutdownHook(shutdownHook);
 	}
 
 	@Override

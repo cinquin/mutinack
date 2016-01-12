@@ -83,7 +83,6 @@ do
 			fi
 			echo "Functional tests failed; giving up"
 			update_repo "ERROR: failed functional tests"
-			kill $server_pid $nailgun_server_pid $worker_pids
 			exit 1
 		fi
 		echo "Functional tests failed; trying again"
@@ -97,8 +96,3 @@ then
 fi
 echo "$message"
 update_repo "$message"
-#INFO signal does not exist under Linux; need to find an alternative
-#kill -INFO $server_pid
-#sleep 10
-kill $server_pid $nailgun_server_pid $worker_pids || true
-
