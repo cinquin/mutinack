@@ -2,13 +2,18 @@ package uk.org.cinquin.mutinack.distributed;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,14 +23,42 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.Timer;
 
+import org.nustaq.serialization.FSTConfiguration;
+
+import uk.org.cinquin.mutinack.Parameters;
+import uk.org.cinquin.mutinack.misc_util.Signals;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+
 public class Server extends UnicastRemoteObject implements RemoteMethods {
 	
 	private static final long serialVersionUID = 7331182254489507945L;
 	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
 
-	Map<Job, Job> jobs = new ConcurrentHashMap<>();
+	private final Map<Job, Job> jobs = new ConcurrentHashMap<>();
+	private final String recordRunsTo;
+	private final Map<String, Parameters> recordedRuns;
 	
 	private static Registry registry;
+	
+	private static final FSTConfiguration conf = FSTConfiguration.createFastBinaryConfiguration();
+
+	private void dumpRecordedRuns() {
+		if (recordedRuns == null) {
+			return;
+		}
+		try (FileOutputStream os = new FileOutputStream(recordRunsTo)) {
+			try (FileLock lock = os.getChannel().tryLock()) {
+				if (lock != null) {
+					os.write(conf.asByteArray(recordedRuns));
+				}
+			}
+		} catch (OverlappingFileLockException e) {
+			throw new AssertionFailedException("Concurrent write attempt when dumping recorded runs");
+		} catch (IOException e) {
+			throw new RuntimeException("Could not save cached data to "
+					+ recordRunsTo, e);
+		}
+	}
 	
 	public static void createRegistry(String suggestedHostName) {
 		String hostName = getHostName(suggestedHostName);
@@ -67,8 +100,14 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	private Timer rebindTimer;
 
-	public Server(int port, String hostName0) throws RemoteException {
+	public Server(int port, String hostName0, String recordRunsTo) throws RemoteException {
 		super(port);
+		this.recordRunsTo = recordRunsTo;
+		if (recordRunsTo != null) {
+			recordedRuns = new HashMap<>();
+		} else {
+			recordedRuns = null;
+		}
 		final AtomicBoolean firstRun = new AtomicBoolean(true);
 		
 		String hostName1 = getHostName(hostName0);
@@ -99,6 +138,8 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		rebindTimer = new Timer(300 * 1000, rebindRunnable); //Run every 5min
 		rebindTimer.setInitialDelay(0);
 		rebindTimer.start();
+		
+		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
 	}
 
 	@Override
@@ -132,6 +173,12 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		}
 		jobs.put(job, job);
 		queue.put(job);
+		
+		if (recordedRuns != null) {
+			recordedRuns.put(job.parameters.runName, job.parameters);
+			System.err.println("Recorded job " + job.parameters.runName);
+		}
+		
 		synchronized(job) {
 			while (!job.completed) {
 				job.wait();

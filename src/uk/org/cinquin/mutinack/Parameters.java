@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -396,8 +397,20 @@ public class Parameters implements Serializable {
 	@Parameter(names = "-startWorker", help = true, description = "RMI server address", required = false, hidden = hideInProgressParameters)
 	public String startWorker = null;
 	
+	@FilePath
 	@Parameter(names = "-workingDirectory", help = true, description = "TODO", required = false, hidden = hideInProgressParameters)
 	public String workingDirectory = null;
+	
+	@FilePath
+	@Parameter(names = "-referenceOutput", description = "TODO", required = false, hidden = hideInProgressParameters)
+	public String referenceOutput = null;
+	
+	@FilePath
+	@Parameter(names = "-recordRunsTo", description = "TODO", required = false, hidden = hideInProgressParameters)
+	public String recordRunsTo = null;
+
+	@Parameter(names = "-runName", description = "TODO", required = false, hidden = hideInProgressParameters)
+	public String runName = null;
 	
 	@Retention(RetentionPolicy.RUNTIME)
 	/**
@@ -414,6 +427,16 @@ public class Parameters implements Serializable {
 	public @interface FilePathList {}
 	
 	public void canonifyFilePaths() {
+			transformFilePaths(s -> {
+				try {
+					return new File(s).getCanonicalPath();
+				} 	catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+	}
+	
+	public void transformFilePaths(Function<String, String> transformer) {
 		for (Field field: Parameters.class.getDeclaredFields()) {
 			try {
 				if (field.getAnnotation(FilePath.class) != null) {
@@ -425,8 +448,8 @@ public class Parameters implements Serializable {
 						throw new AssertionFailedException("Field " + field + " is not String");
 					}
 					String path = (String) fieldValue;
-					String canonical = new File(path).getCanonicalPath();
-					field.set(this, canonical);
+					String transformed = transformer.apply(path);
+					field.set(this, transformed);
 				} else if (field.getAnnotation(FilePathList.class) != null) {
 					Object fieldValue = field.get(this);
 					if (fieldValue == null) {
@@ -439,19 +462,19 @@ public class Parameters implements Serializable {
 					List<String> paths = (List<String>) fieldValue;
 					for (int i = 0; i < paths.size(); i++) {
 						String path = paths.get(i);
-						String canonical = new File(path).getCanonicalPath();
-						paths.set(i, canonical);
+						String transformed = transformer.apply(path);
+						paths.set(i, transformed);
 					}
 				} else {
 					continue;
 				}
 			} catch (IllegalArgumentException | IllegalAccessException | 
-					SecurityException | IOException e) {
+					SecurityException e) {
 				throw new RuntimeException(e);
 			} 
 		}
 	}
-
+	
 	/**
 	 * Used to make JCommander ignore commas in genome locations.
 	 * @author olivier

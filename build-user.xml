@@ -72,4 +72,18 @@
 	</class>
     </findbugs>
   </target>
+  <path id="pit.path"> <pathelement location="lib/pitest-1.1.8.jar"/> <pathelement location="lib/pitest-ant-1.1.8.jar"/> <pathelement location="lib/junit-4.12.jar"/> </path>
+  <taskdef name="pitest" classname="org.pitest.ant.PitestTask" classpathref="pit.path" />
+  <target name="mutationCoverage">
+    <pitest
+      pitClasspath="pit.path"
+      classPath="SequenceAnalysis.classpath"
+      targetClasses="uk.org.cinquin.mutinack.*"
+      targetTests="uk.org.cinquin.mutinack.*"
+      reportDir="PIT_output"
+      sourceDir="src"
+      threads="10"
+      timeoutConst="15000"
+      jvmArgs="-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey -XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3" />
+  </target>
 </project>

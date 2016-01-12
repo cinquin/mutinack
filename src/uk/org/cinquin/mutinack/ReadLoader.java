@@ -374,6 +374,7 @@ public class ReadLoader {
 				t.printStackTrace();
 				System.exit(1);
 			}
+			Mutinack.terminateAnalysis = true;
 			phaser.forceTermination();
 			throw new RuntimeException("Exception while processing contig " + lastReferenceName + 
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);

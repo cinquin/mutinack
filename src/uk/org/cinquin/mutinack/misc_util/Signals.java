@@ -34,29 +34,35 @@ public class Signals {
 	
 	static boolean initialized = false;
 
-	public synchronized static void registerSignalProcessor(String name, SignalProcessor p) {
-		if (!initialized) {
-			initialize();
-			initialized = true;
+	public static void registerSignalProcessor(String name, SignalProcessor p) {
+		synchronized(processors) {
+			if (!initialized) {
+				initialize();
+				initialized = true;
+			}
+			List<SignalProcessor> list = processors.get(name);
+			if (list == null) {
+				list = new ArrayList<>();
+				processors.put(name, list);
+			}
+			list.add(p);
 		}
-		List<SignalProcessor> list = processors.get(name);
-		if (list == null) {
-			list = new ArrayList<>();
-			processors.put(name, list);
-		}
-		list.add(p);
 	}
 	
 	public static void clearSignalProcessors() {
-		processors.clear();
-		initialize();
+		synchronized(processors) {
+			processors.clear();
+			initialize();
+		}
 	}
 
 	public synchronized static void removeSignalProcessor(String name, SignalProcessor p) {
-		List<SignalProcessor> list = processors.get(name);
-		if (list == null)
-			throw new IllegalArgumentException();
-		list.remove(p);
+		synchronized(processors) {
+			List<SignalProcessor> list = processors.get(name);
+			if (list == null)
+				throw new IllegalArgumentException();
+			list.remove(p);
+		}
 	}
 
 	private static class Handler {

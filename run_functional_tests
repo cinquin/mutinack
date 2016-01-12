@@ -42,6 +42,8 @@ do
 	worker_pids=`echo $worker_pids $worker_pid`
 done
 
+trap 'code=$?; kill $server_pid $nailgun_server_pid $worker_pids || true; exit $code' SIGINT SIGQUIT SIGTERM EXIT
+
 GIT=true
 #Uncomment line below to activate git failed test tracking functionality
 #GIT=git
@@ -95,5 +97,8 @@ then
 fi
 echo "$message"
 update_repo "$message"
+#INFO signal does not exist under Linux; need to find an alternative
+#kill -INFO $server_pid
+#sleep 10
 kill $server_pid $nailgun_server_pid $worker_pids || true
 
