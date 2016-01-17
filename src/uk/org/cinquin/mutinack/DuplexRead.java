@@ -38,7 +38,6 @@ import static uk.org.cinquin.mutinack.Quality.MAXIMUM;
 import static uk.org.cinquin.mutinack.Quality.POOR;
 import static uk.org.cinquin.mutinack.Quality.max;
 import static uk.org.cinquin.mutinack.Quality.min;
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.Util.shortLengthFloatFormatter;
 
@@ -48,10 +47,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.IntSummaryStatistics;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,8 +64,9 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
@@ -82,6 +82,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	
 	final static Logger logger = LoggerFactory.getLogger(DuplexRead.class);
 	
+	private final MutinackGroup groupSettings;
 	public byte @NonNull[] leftBarcode, rightBarcode;
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
 	public final @NonNull List<@NonNull ExtendedSAMRecord> topStrandRecords = new ArrayList<>(100), 
@@ -92,8 +93,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 	//Only used for debugging
 	public boolean invalid = false;
 	public int nReadsWrongPair = 0;
-	
-	public static int intervalSlop = 0;
 	
 	/**
 	 * Quality factoring in number of reads for top or bottom strand, percent consensus for
@@ -109,8 +108,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	public final boolean leftBarcodeNegativeStrand, rightBarcodeNegativeStrand;
 	
-	public DuplexRead(byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
+	public DuplexRead(MutinackGroup groupSettings, byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
 			boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
+		this.groupSettings = groupSettings;
 		this.leftBarcode = leftBarcode;
 		this.rightBarcode = rightBarcode;
 		this.leftBarcodeNegativeStrand = leftBarcodeNegativeStrand;
@@ -118,7 +118,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 	
 	void assertAllBarcodesEqual() {
-		if (DebugControl.NONTRIVIAL_ASSERTIONS) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
 			final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords =
 					new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 			allDuplexRecords.addAll(topStrandRecords);
@@ -155,10 +155,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 		if (allReadsSameBarcode) {
 			leftBarcode = (allDuplexRecords.stream().
 					filter(rExt -> rExt.record.getInferredInsertSize() >= 0).
-					findAny().map(r -> r.variableBarcode).orElse(ExtendedSAMRecord.getNs()));
+					findAny().map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
 			rightBarcode = (allDuplexRecords.stream().
 					filter(rExt -> rExt.record.getInferredInsertSize() < 0).
-					findAny().map(r -> r.variableBarcode).orElse(ExtendedSAMRecord.getNs()));
+					findAny().map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
 		} else {
 			leftBarcode = SimpleCounter.getBarcodeConsensus(allDuplexRecords.stream().
 					filter(rExt -> rExt.record.getInferredInsertSize() >= 0).
@@ -273,11 +273,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@Override
 	public Interval<Integer> getInterval() {
 		if (interval == null) {
-			interval = Interval.toInterval(leftAlignmentStart != null ? leftAlignmentStart.position - intervalSlop : 0,
-					leftAlignmentEnd != null ? leftAlignmentEnd.position + intervalSlop : Integer.MAX_VALUE);
-			if (DebugControl.NONTRIVIAL_ASSERTIONS && interval == null) {
-				throw new AssertionFailedException();
-			}
+			interval = Interval.toInterval(leftAlignmentStart != null ? leftAlignmentStart.position - groupSettings.INTERVAL_SLOP : 0,
+					leftAlignmentEnd != null ? leftAlignmentEnd.position + groupSettings.INTERVAL_SLOP : Integer.MAX_VALUE);
+			Assert.isNonNull(interval);
 		}
 		return interval;
 	}
@@ -440,9 +438,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			dq.addUnique(INSERT_SIZE, DUBIOUS);
 		}
 		
-		if (NONTRIVIAL_ASSERTIONS && invalid) {
-			throw new AssertionFailedException();
-		}
+		Assert.isFalse(invalid);
 		
 		Handle<Boolean> seenFirstOfPair = new Handle<>();
 		Handle<Boolean> seenSecondOfPair = new Handle<>();
@@ -601,52 +597,29 @@ public final class DuplexRead implements HasInterval<Integer> {
 					final boolean hasDeletion;
 					final boolean hasInsertion;
 					final boolean hasSubstitution;
-					final int nKinds;
-					final Mutation simplifiedMutation;
+					final Mutation simplifiedMutation = actualMutant;
 					
 					if (actualMutant.mutationType != SUBSTITUTION) {
 						//This case is relatively infrequent, so separate it
 						//But it would simpler not to have a special case for substitutions
 						
-						hasDeletion = mutantCandidate.containsMutationType(DELETION);
-						hasInsertion = mutantCandidate.containsMutationType(INSERTION);
-						hasSubstitution = mutantCandidate.containsMutationType(SUBSTITUTION);								
-						nKinds = (hasDeletion ? 1 : 0) + (hasInsertion ? 1 : 0) + (hasSubstitution ? 1 : 0);
-
-						if (nKinds == 1) {
-							if (hasDeletion) {
-								simplifiedMutation = new Mutation(mutantCandidate.getUniqueType(DELETION));
-							} else if (hasInsertion) {
-								simplifiedMutation = new Mutation(mutantCandidate.getUniqueType(INSERTION));
-							} else if (hasSubstitution) {
-								simplifiedMutation = new Mutation(mutantCandidate.getUniqueType(SUBSTITUTION));
-							} else {
-								throw new AssertionFailedException();
-							}
-						} else {
-							simplifiedMutation = null;
-						}
+						hasDeletion = mutantCandidate.getMutationType() == DELETION;
+						hasInsertion = mutantCandidate.getMutationType() == INSERTION;
+						hasSubstitution = mutantCandidate.getMutationType() == SUBSTITUTION;								
 						
 						stats.nLociDuplexWithTopBottomDuplexDisagreementNotASub.accept(location);
-						if (nKinds > 1) {
-							stats.nComplexDisagreementsQ2.increment(location);
-						} else if (nKinds == 1) {
-							simplifiedMutation.setTemplateStrand(actualMutant.getTemplateStrand());
-							ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
-									new ComparablePair<>(wildtype.reverseComplement(), simplifiedMutation.reverseComplement()) :
-										new ComparablePair<>(wildtype, simplifiedMutation);
-									if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
-										duplexDisagreements.add(mutationPair);
-									}
-						} else {
-							//throw new AssertionFailedException();
+
+						simplifiedMutation.setTemplateStrand(actualMutant.getTemplateStrand());
+						ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
+								new ComparablePair<>(wildtype.reverseComplement(), simplifiedMutation.reverseComplement()) :
+									new ComparablePair<>(wildtype, simplifiedMutation);
+						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
+								duplexDisagreements.add(mutationPair);
 						}
 					} else {
-						nKinds = 1;
 						hasSubstitution = true;
 						hasDeletion = false;
 						hasInsertion = false;
-						simplifiedMutation = actualMutant;
 						ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
 								new ComparablePair<>(wildtype.reverseComplement(), actualMutant.reverseComplement()) :
 								new ComparablePair<>(wildtype, actualMutant);
@@ -666,10 +639,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 							(read, dist) -> {
 								if (selectedBottomStrandRecords.contains(read) ||
 										selectedTopStrandRecords.contains(read)) {
-									if (dist == Integer.MAX_VALUE || dist == Integer.MIN_VALUE) {
-										throw new AssertionFailedException(dist + " distance for mutation " +
-												actualMutant + " read " + read + " file " + analyzer.inputBam.getAbsolutePath());
-									}
+									Assert.isFalse(dist == Integer.MAX_VALUE || dist == Integer.MIN_VALUE,
+											"%s distance for mutation %s read %s file %s" ,
+												dist, actualMutant, read, analyzer.inputBam.getAbsolutePath());
 									if (dist < minDist.get()) {
 										minDist.set(dist);
 										minDistanceRead.set(read);
@@ -692,17 +664,15 @@ public final class DuplexRead implements HasInterval<Integer> {
 								iterator().next() + " " + analyzer.inputBam.getAbsolutePath());
 					} else if (minDist.get() > analyzer.ignoreFirstNBasesQ2) {
 						//Why not just use getDistanceToLigSite() <= analyzer.ignoreFirstNBasesQ2 ?
-						if (nKinds == 1) {
-							if (hasSubstitution) {
-								stats.substDisagDistanceToLigationSite.insert(minDist.get());
-							} else if (hasDeletion) {
-								stats.delDisagDistanceToLigationSite.insert(minDist.get());
-								stats.disagDelSize.insert(simplifiedMutation.mutationSequence.length);
-							} else if (hasInsertion) {
-								stats.insDisagDistanceToLigationSite.insert(minDist.get());
-							} else {
-								//Too close to ligation site; could collect statistics here
-							}
+						if (hasSubstitution) {
+							stats.substDisagDistanceToLigationSite.insert(minDist.get());
+						} else if (hasDeletion) {
+							stats.delDisagDistanceToLigationSite.insert(minDist.get());
+							stats.disagDelSize.insert(simplifiedMutation.mutationSequence.length);
+						} else if (hasInsertion) {
+							stats.insDisagDistanceToLigationSite.insert(minDist.get());
+						} else {
+							//Too close to ligation site; could collect statistics here
 						}
 					}//End distance to ligation site cases
 				}//End case with one wildtype candidate
@@ -733,10 +703,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 		maxQuality = max(maxQuality, Objects.requireNonNull(dq.getMin()));
 		minQuality = min(minQuality, Objects.requireNonNull(dq.getMin()));
 		
-		if (NONTRIVIAL_ASSERTIONS && !duplexDisagreements.isEmpty() &&
-				dq.getMinIgnoring(assaysToIgnoreForDisagreementQuality).compareTo(GOOD) < 0) {
-			throw new AssertionFailedException(dq.getQualities().toString());
-		}
+		Assert.isFalse(!duplexDisagreements.isEmpty() &&
+				dq.getMinIgnoring(assaysToIgnoreForDisagreementQuality).compareTo(GOOD) < 0,
+				dq.getQualities().toString());
 		
 		if (!duplexDisagreements.isEmpty()) {
 			result.disagreements.addAll(duplexDisagreements);

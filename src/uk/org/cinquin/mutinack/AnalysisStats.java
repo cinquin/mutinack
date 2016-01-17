@@ -50,6 +50,7 @@ import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocation;
 import uk.org.cinquin.mutinack.statistics.DivideByTwo;
+import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.LongAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.MultiCounter;
@@ -60,16 +61,140 @@ import uk.org.cinquin.mutinack.statistics.SwitchableStats;
 
 public class AnalysisStats implements Serializable {
 	
-	public AnalysisStats(@NonNull String name) {
+	private final @NonNull String name;
+	OutputLevel outputLevel;
+	final MutinackGroup groupSettings;
+	
+	public AnalysisStats(@NonNull String name, MutinackGroup groupSettings) {
 		this.name = name;
+		this.groupSettings = groupSettings;
+		
+		nRecordsNotInIntersection1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nRecordsNotInIntersection2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nTooLowMapQIntersect = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nLociDuplex = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nReadMedianPhredBelowThreshold = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nDuplexesTooMuchClipping = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nDuplexesNoStats = new DoubleAdder();
+		nDuplexesWithStats = new DoubleAdder();
+		nLociDuplexTooFewReadsPerStrand1 = new StatsCollector();
+		nLociDuplexTooFewReadsPerStrand2 = new StatsCollector();
+		nLociIgnoredBecauseTooHighCoverage = new StatsCollector();
+		nLociDuplexWithTopBottomDuplexDisagreementNoWT = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nLociDuplexWithTopBottomDuplexDisagreementNotASub = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		rawMismatchesQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		vBarcodeMismatches1M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		vBarcodeMismatches2M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		vBarcodeMismatches3OrMore = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		rawDeletionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		rawDeletionLengthQ1 = new Histogram(200);	
+		rawInsertionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		rawInsertionLengthQ1 = new Histogram(200);	
+		rawMismatchesQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		rawDeletionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		rawDeletionLengthQ2 = new Histogram(200);	
+		rawInsertionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		rawInsertionLengthQ2 = new Histogram(200);	
+		topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
+		topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
+		topBottomInsDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
+		codingStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
+		templateStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
+		codingStrandDelQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		templateStrandDelQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		codingStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		templateStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		topBottomDisagreementsQ2TooHighCoverage = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		lackOfConsensus1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		lackOfConsensus2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		nLociDuplexesCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nLociDuplexesCandidatesForDisagreementQ2TooHighCoverage = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nLociDuplexWithLackOfStrandConsensus1 = new StatsCollector();
+		nLociDuplexWithLackOfStrandConsensus2 = new StatsCollector();
+		nLociDuplexRescuedFromLeftRightBarcodeEquality = new StatsCollector();
+		nLociDuplexCompletePairOverlap = new StatsCollector();
+		nLociUncovered = new StatsCollector();
+		nQ2PromotionsBasedOnFractionReads = new StatsCollector();
+		nLociQualityPoor = new StatsCollector();
+		nLociQualityPoorA = new StatsCollector();
+		nLociQualityPoorT = new StatsCollector();
+		nLociQualityPoorG = new StatsCollector();
+		nLociQualityPoorC = new StatsCollector();
+		nMedianPhredAtLocusTooLow = new StatsCollector();
+		nFractionWrongPairsAtLocusTooHigh = new StatsCollector();
+		nLociQualityQ1 = new StatsCollector();
+		nLociQualityQ2 = new StatsCollector();
+		nLociQualityQ2OthersQ1Q2 = new StatsCollector();
+		nLociDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nLociCandidatesForUniqueMutation = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+
+		
+		{	//Force output of fields annotated with AddChromosomeBins to be broken down by
+			//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
+			//TODO Base this on the actual contigs the program is run on, not the default contigs
+			List<String> contigNames = Parameters.defaultTruncateContigNames;
+			for (Field field : AnalysisStats.class.getDeclaredFields()) {
+				AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
+				if (annotation != null) {
+					for (int contig = 0; contig < contigNames.size(); contig++) {
+						int contigCopy = contig;
+						for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / groupSettings.BIN_SIZE; c++) {
+							int cCopy = c;
+							try {
+								MultiCounter <?> counter = ((MultiCounter<?>) field.get(this));
+								counter.addPredicate(contigNames.get(contig) + "_bin_" + String.format("%03d", c), 
+										loc -> {
+											final int min = groupSettings.BIN_SIZE * cCopy;
+											final int max = groupSettings.BIN_SIZE * (cCopy + 1);
+											return loc.contigIndex == contigCopy &&
+													loc.position >= min &&
+													loc.position < max;
+										});
+								counter.accept(new SequenceLocation(contig, contigNames.get(contig), c * groupSettings.BIN_SIZE), 0);
+							} catch (IllegalArgumentException | IllegalAccessException e) {
+								throw new RuntimeException(e);
+							}
+						}
+					}
+				}
+			}
+		}
+
+
+		{
+			//Force initialization of counters for all possible substitutions:
+			//it is easier to put the output of multiple samples together if
+			//unencountered substitutions have a 0-count entry
+			for (byte mut: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
+				for (byte wt: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
+					if (wt == mut) {
+						continue;
+					}
+					Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
+					Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
+
+					List<String> contigNames = Parameters.defaultTruncateContigNames;
+					for (int contig = 0; contig < contigNames.size(); contig++) {
+						for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / groupSettings.BIN_SIZE; c++) {
+							SequenceLocation location = new SequenceLocation(contig, contigNames.get(contig), c * groupSettings.BIN_SIZE);
+							topBottomSubstDisagreementsQ2.accept(location, new ComparablePair<>(wtM, to), 0);
+							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
+							templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
+						}
+					}
+				}
+			}
+		}
 	}
 	
+	public @NonNull String getName() {
+		return name;
+	}
+
 	private static final long serialVersionUID = -7786797851357308577L;
 
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface AddChromosomeBins {};
-
-	OutputLevel outputLevel;
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	final Histogram rejectedIndelDistanceToLigationSite = new Histogram(200);	
@@ -195,182 +320,182 @@ public class AnalysisStats implements Serializable {
 	public final StatsCollector nRecordsIgnoredBecauseSecondary = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nRecordsNotInIntersection1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nRecordsNotInIntersection1;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nRecordsNotInIntersection2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nRecordsNotInIntersection2;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nTooLowMapQIntersect = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nTooLowMapQIntersect;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nLociDuplex = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociDuplex;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nReadMedianPhredBelowThreshold = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nReadMedianPhredBelowThreshold;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nDuplexesTooMuchClipping = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nDuplexesTooMuchClipping;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final DoubleAdder nDuplexesNoStats = new DoubleAdder();
+	public final DoubleAdder nDuplexesNoStats;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final DoubleAdder nDuplexesWithStats = new DoubleAdder();
+	public final DoubleAdder nDuplexesWithStats;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nLociDuplexTooFewReadsPerStrand1 = new StatsCollector();
+	public final StatsCollector nLociDuplexTooFewReadsPerStrand1;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nLociDuplexTooFewReadsPerStrand2 = new StatsCollector();
+	public final StatsCollector nLociDuplexTooFewReadsPerStrand2;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nLociIgnoredBecauseTooHighCoverage = new StatsCollector();
+	public final StatsCollector nLociIgnoredBecauseTooHighCoverage;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nLociDuplexWithTopBottomDuplexDisagreementNoWT = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociDuplexWithTopBottomDuplexDisagreementNoWT;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nLociDuplexWithTopBottomDuplexDisagreementNotASub = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociDuplexWithTopBottomDuplexDisagreementNotASub;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches1M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches1M;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches2M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches2M;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches3OrMore = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches3OrMore;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawDeletionLengthQ1 = new Histogram(200);	
+	final Histogram rawDeletionLengthQ1;	
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawInsertionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> rawInsertionsQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawInsertionLengthQ1 = new Histogram(200);	
+	final Histogram rawInsertionLengthQ1;	
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawDeletionLengthQ2 = new Histogram(200);	
+	final Histogram rawDeletionLengthQ2;	
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawInsertionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null, true);
+	public final MultiCounter<ComparablePair<String, String>> rawInsertionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawInsertionLengthQ2 = new Histogram(200);	
+	final Histogram rawInsertionLengthQ2;	
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomSubstDisagreementsQ2;
 	
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomDelDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomInsDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomInsDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandSubstQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandSubstQ2;
 	
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandDelQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandDelQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandDelQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandDelQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandInsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandInsQ2;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomDisagreementsQ2TooHighCoverage = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomDisagreementsQ2TooHighCoverage;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> lackOfConsensus1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> lackOfConsensus1;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> lackOfConsensus2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(), null);
+	public final MultiCounter<ComparablePair<Mutation, Mutation>> lackOfConsensus2;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<?> nLociDuplexesCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociDuplexesCandidatesForDisagreementQ2;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nLociDuplexesCandidatesForDisagreementQ2TooHighCoverage = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociDuplexesCandidatesForDisagreementQ2TooHighCoverage;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociDuplexWithLackOfStrandConsensus1 = new StatsCollector();
+	public final StatsCollector nLociDuplexWithLackOfStrandConsensus1;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociDuplexWithLackOfStrandConsensus2 = new StatsCollector();
+	public final StatsCollector nLociDuplexWithLackOfStrandConsensus2;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociDuplexRescuedFromLeftRightBarcodeEquality = new StatsCollector();
+	public final StatsCollector nLociDuplexRescuedFromLeftRightBarcodeEquality;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociDuplexCompletePairOverlap = new StatsCollector();
+	public final StatsCollector nLociDuplexCompletePairOverlap;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nLociUncovered = new StatsCollector();
+	public final StatsCollector nLociUncovered;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nQ2PromotionsBasedOnFractionReads = new StatsCollector();
+	public final StatsCollector nQ2PromotionsBasedOnFractionReads;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nLociQualityPoor = new StatsCollector();
+	public final StatsCollector nLociQualityPoor;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociQualityPoorA = new StatsCollector();
+	public final StatsCollector nLociQualityPoorA;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociQualityPoorT = new StatsCollector();
+	public final StatsCollector nLociQualityPoorT;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociQualityPoorG = new StatsCollector();
+	public final StatsCollector nLociQualityPoorG;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nLociQualityPoorC = new StatsCollector();
+	public final StatsCollector nLociQualityPoorC;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nMedianPhredAtLocusTooLow = new StatsCollector();
+	public final StatsCollector nMedianPhredAtLocusTooLow;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nFractionWrongPairsAtLocusTooHigh = new StatsCollector();
+	public final StatsCollector nFractionWrongPairsAtLocusTooHigh;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nLociQualityQ1 = new StatsCollector();
+	public final StatsCollector nLociQualityQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nLociQualityQ2 = new StatsCollector();
+	public final StatsCollector nLociQualityQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nLociQualityQ2OthersQ1Q2 = new StatsCollector();
+	public final StatsCollector nLociQualityQ2OthersQ1Q2;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nLociDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociDuplexQualityQ2OthersQ1Q2;
 
 	@PrintInStatus(color = "greenBackground", outputLevel = TERSE)
-	public final MultiCounter<?> nLociCandidatesForUniqueMutation = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false));
+	public final MultiCounter<?> nLociCandidatesForUniqueMutation;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public final Histogram nReadsAtLociQualityQ2OthersQ1Q2 = new Histogram(500);
@@ -556,7 +681,7 @@ public class AnalysisStats implements Serializable {
 	@SuppressWarnings("null")
 	public void print(PrintStream stream, boolean colorize) {
 		stream.println();
-		NumberFormat formatter = NumberFormat.getInstance();
+		NumberFormat formatter = DoubleAdderFormatter.nf.get();
 		for (Field field : AnalysisStats.class.getDeclaredFields()) {
 			PrintInStatus annotation = field.getAnnotation(PrintInStatus.class);
 			if ((annotation != null && annotation.outputLevel().compareTo(outputLevel) <= 0) || 
@@ -640,69 +765,6 @@ public class AnalysisStats implements Serializable {
 				throw new RuntimeException(e);
 			}
 		} 
-	}
-	
-	{	//Force output of fields annotated with AddChromosomeBins to be broken down by
-		//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
-		//TODO Base this on the actual contigs the program is run on, not the default contigs
-		List<String> contigNames = Parameters.defaultTruncateContigNames;
-		for (Field field : AnalysisStats.class.getDeclaredFields()) {
-			AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
-			if (annotation != null) {
-				for (int contig = 0; contig < contigNames.size(); contig++) {
-					int contigCopy = contig;
-					for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / CounterWithSeqLocation.BIN_SIZE; c++) {
-						int cCopy = c;
-						try {
-							MultiCounter <?> counter = ((MultiCounter<?>) field.get(this));
-							counter.addPredicate(contigNames.get(contig) + "_bin_" + String.format("%03d", c), 
-									loc -> {
-										final int min = CounterWithSeqLocation.BIN_SIZE * cCopy;
-										final int max = CounterWithSeqLocation.BIN_SIZE * (cCopy + 1);
-										return loc.contigIndex == contigCopy &&
-												loc.position >= min &&
-												loc.position < max;
-									});
-							counter.accept(new SequenceLocation(contig, c * CounterWithSeqLocation.BIN_SIZE), 0);
-						} catch (IllegalArgumentException | IllegalAccessException e) {
-							throw new RuntimeException(e);
-						}
-					}
-				}
-			}
-		}
-	}
-	
-
-	{
-		//Force initialization of counters for all possible substitutions:
-		//it is easier to put the output of multiple samples together if
-		//unencountered substitutions have a 0-count entry
-		for (byte mut: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
-			for (byte wt: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
-				if (wt == mut) {
-					continue;
-				}
-				Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
-				Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
-
-				List<String> contigNames = Parameters.defaultTruncateContigNames;
-				for (int contig = 0; contig < contigNames.size(); contig++) {
-					for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / CounterWithSeqLocation.BIN_SIZE; c++) {
-							SequenceLocation location = new SequenceLocation(contig, c * CounterWithSeqLocation.BIN_SIZE);
-							topBottomSubstDisagreementsQ2.accept(location, new ComparablePair<>(wtM, to), 0);
-							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
-							templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
-					}
-				}
-			}
-		}
-	}
-
-	private final @NonNull String name;
-	
-	public @NonNull String getName() {
-		return name;
 	}
 	
 }

@@ -148,8 +148,6 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			return "ins " + mutationSequenceString();
 		case SUBSTITUTION:
 			return "subst " + mutationSequenceString();
-		case COMBINATION:
-			return "combo " + mutationSequenceString();
 		default : throw new AssertionFailedException();
 		}
 	}

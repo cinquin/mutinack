@@ -33,7 +33,7 @@ import static uk.org.cinquin.mutinack.Quality.MAXIMUM;
 import static uk.org.cinquin.mutinack.Quality.MINIMUM;
 import static uk.org.cinquin.mutinack.Quality.POOR;
 import static uk.org.cinquin.mutinack.Quality.max;
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.NONTRIVIAL_ASSERTIONS;
+import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector.uniqueValueCollector;
 
@@ -75,14 +75,16 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDeletion;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.IdentityHashSet;
-import uk.org.cinquin.mutinack.misc_util.collections.TIntListCollector;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
-final class SubAnalyzer {
+public final class SubAnalyzer {
 	private final static Logger logger = LoggerFactory.getLogger(SubAnalyzer.class);
 	
 	final @NonNull Mutinack analyzer;
@@ -147,9 +149,8 @@ final class SubAnalyzer {
 		}
 		CandidateSequence candidateMapValue = candidates.get(candidate);
 		if (candidateMapValue == null) {
-			if (!candidates.add(candidate)) {
-				throw new AssertionFailedException();
-			}
+			boolean added = candidates.add(candidate);
+			Assert.isTrue(added);
 		} else {
 			candidateMapValue.mergeWith(candidate);
 			candidate = candidateMapValue;
@@ -161,11 +162,7 @@ final class SubAnalyzer {
 	 * Load all reads currently referred to by candidate sequences and group them into DuplexReads
 	 */
 	void load() {
-		if (NONTRIVIAL_ASSERTIONS) {
-			if (threadCount.incrementAndGet() > 1) {
-				throw new AssertionFailedException();
-			}
-		}
+		Assert.isFalse(threadCount.incrementAndGet() > 1);
 		try {
 			final List<@NonNull DuplexRead> resultDuplexes = new ArrayList<>(10_000);
 			loadAll(resultDuplexes);
@@ -181,9 +178,8 @@ final class SubAnalyzer {
 		if (!candidateSequences.isEmpty()) {
 			final SettableInteger nLeftBehind = new SettableInteger(-1);
 			candidateSequences.forEach((k,v) -> {
-				if (!v.isEmpty() && (!v.iterator().next().getLocation().equals(k))) {
-					throw new AssertionFailedException("Mimatched locations");
-				}
+				Assert.isTrue(v.isEmpty() || (v.iterator().next().getLocation().equals(k)),
+						"Mimatched locations");
 
 				String s = v.stream().
 						filter(c -> c.getLocation().position > truncateProcessingAt + analyzer.maxInsertSize &&
@@ -201,13 +197,44 @@ final class SubAnalyzer {
 				}
 			});
 			
-			if (nLeftBehind.get() > 0) {
-				throw new AssertionFailedException();
-			}
+			Assert.isFalse(nLeftBehind.get() > 0);
 		}
 	}
 
 	private final boolean useHashMap;
+	public static String forceKeeperType = null;
+	
+	private @NonNull DuplexKeeper getDuplexKeeper(boolean fallBackOnIntervalTree) {
+		final @NonNull DuplexKeeper result;
+		if (forceKeeperType != null) {
+			switch(forceKeeperType) {
+				case "DuplexHashMapKeeper":
+					if (useHashMap) {
+						result = new DuplexHashMapKeeper();
+					} else {
+						result = new DuplexArrayListKeeper(5_000);
+					}
+					break;
+				case "DuplexITKeeper":
+					result = new DuplexITKeeper();
+					break;
+				case "DuplexArrayListKeeper":
+					result = new DuplexArrayListKeeper(5_000);
+					break;
+				default:
+					throw new AssertionFailedException();
+			}
+		} else {
+			if (useHashMap) {
+				result = new DuplexHashMapKeeper();
+			} else if (fallBackOnIntervalTree) {
+				result = new DuplexITKeeper();
+			} else {
+				result = new DuplexArrayListKeeper(5_000);
+			}
+		}
+		return result;
+	}
 
 	/**
 	 * Group reads into duplexes.
@@ -227,23 +254,12 @@ final class SubAnalyzer {
 		 * and at a gross level. 
 		 */
 
-		final boolean useIntervalTree;
-		
-		final @NonNull DuplexKeeper duplexKeeper;
-		
-		if (useHashMap) {
-			useIntervalTree = false;
-			duplexKeeper = new DuplexHashMapKeeper();
-		} else {
-			useIntervalTree = extSAMCache.size() > 5_000;
-			if (useIntervalTree) {
-				duplexKeeper = new DuplexITKeeper();
-			} else {
-				duplexKeeper = new DuplexArrayListKeeper(5_000);
-			}
-		}
-		
-		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance();
+		final boolean fallBackOnIntervalTree = extSAMCache.size() > 5_000;
+		final @NonNull DuplexKeeper duplexKeeper =
+				getDuplexKeeper(fallBackOnIntervalTree);
+				
+		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance(
+				analyzer.groupSettings);
 				
 		for (final @NonNull ExtendedSAMRecord rExtended: extSAMCache.values()) {
 
@@ -302,30 +318,22 @@ final class SubAnalyzer {
 				if (barcodeMatch) {
 					if (r.getInferredInsertSize() >= 0) {
 						if (r.getFirstOfPairFlag()) {
-							if (NONTRIVIAL_ASSERTIONS && duplexRead.topStrandRecords.contains(rExtended)) {
-								throw new AssertionFailedException();
-							}
+							Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
 							duplexRead.topStrandRecords.add(rExtended);
 						} else {
-							if (NONTRIVIAL_ASSERTIONS && duplexRead.bottomStrandRecords.contains(rExtended)) {
-								throw new AssertionFailedException();
-							}
+							Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
 							duplexRead.bottomStrandRecords.add(rExtended);
 						}
 					} else {
 						if (r.getFirstOfPairFlag()) {
-							if (NONTRIVIAL_ASSERTIONS && duplexRead.bottomStrandRecords.contains(rExtended)) {
-								throw new AssertionFailedException();
-							}
+							Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
 							duplexRead.bottomStrandRecords.add(rExtended);
 						} else {
-							if (NONTRIVIAL_ASSERTIONS && duplexRead.topStrandRecords.contains(rExtended)) {
-								throw new AssertionFailedException();
-							}
+							Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
 							duplexRead.topStrandRecords.add(rExtended);
 						}
 					}
-					duplexRead.assertAllBarcodesEqual();
+					Assert.noException(() -> duplexRead.assertAllBarcodesEqual());
 					rExtended.duplexRead = duplexRead;
 					//stats.nVariableBarcodeMatchAfterPositionCheck.increment(location);
 					foundDuplexRead = true;
@@ -342,8 +350,8 @@ final class SubAnalyzer {
 
 			if (!foundDuplexRead) {
 				final DuplexRead duplexRead = matchToLeft ?
-						new DuplexRead(barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
-						new DuplexRead(mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
+						new DuplexRead(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
+						new DuplexRead(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 				if (matchToLeft) {
 					duplexRead.setPositions(
 							rExtended.getUnclippedStart(),
@@ -360,9 +368,7 @@ final class SubAnalyzer {
 				rExtended.duplexRead = duplexRead;
 
 				if (!matchToLeft) {
-					if (NONTRIVIAL_ASSERTIONS && !r.getReferenceIndex().equals(r.getMateReferenceIndex())) {
-						throw new AssertionFailedException();
-					}
+					Assert.isTrue(r.getReferenceIndex().equals(r.getMateReferenceIndex()));
 
 					if (rExtended.getMateAlignmentStartNoBarcode() == rExtended.getAlignmentStartNoBarcode()) {
 						//Reads that completely overlap because of short insert size
@@ -378,16 +384,16 @@ final class SubAnalyzer {
 						duplexRead.bottomStrandRecords.add(rExtended);
 					}
 					
-					duplexRead.assertAllBarcodesEqual();
+					Assert.noException( () -> duplexRead.assertAllBarcodesEqual());
 
-					duplexRead.rightAlignmentStart = new SequenceLocation(r.getReferenceName(), 
-							rExtended.getUnclippedStart());
-					duplexRead.rightAlignmentEnd =  new SequenceLocation(r.getReferenceName(), 
-							rExtended.getUnclippedEnd());
-					duplexRead.leftAlignmentStart = new SequenceLocation(r.getReferenceName(), 
-							rExtended.getMateUnclippedStart());
-					duplexRead.leftAlignmentEnd = new SequenceLocation(r.getReferenceName(),
-							rExtended.getMateUnclippedEnd());					
+					duplexRead.rightAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getUnclippedStart());
+					duplexRead.rightAlignmentEnd =  new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getUnclippedEnd());
+					duplexRead.leftAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getMateUnclippedStart());
+					duplexRead.leftAlignmentEnd = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getMateUnclippedEnd());					
 				} else {//Read on positive strand
 
 					if (rExtended.getMateAlignmentStartNoBarcode() == rExtended.getAlignmentStartNoBarcode()) {
@@ -403,22 +409,21 @@ final class SubAnalyzer {
 						duplexRead.bottomStrandRecords.add(rExtended);
 					}
 					
-					duplexRead.assertAllBarcodesEqual();
+					Assert.noException(() -> duplexRead.assertAllBarcodesEqual());
 
-					duplexRead.leftAlignmentStart = new SequenceLocation(r.getReferenceName(), 
-							rExtended.getUnclippedStart());
-					duplexRead.leftAlignmentEnd = new SequenceLocation(r.getReferenceName(), 
-							rExtended.getUnclippedEnd());
-					duplexRead.rightAlignmentStart = new SequenceLocation(r.getReferenceName(), 
-							rExtended.getMateUnclippedStart());
-					duplexRead.rightAlignmentEnd = new SequenceLocation(r.getReferenceName(), 
-							rExtended.getMateUnclippedEnd());
+					duplexRead.leftAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getUnclippedStart());
+					duplexRead.leftAlignmentEnd = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getUnclippedEnd());
+					duplexRead.rightAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getMateUnclippedStart());
+					duplexRead.rightAlignmentEnd = new SequenceLocation(r.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getMateUnclippedEnd());
 				}
-				if (duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0) {
-					throw new AssertionFailedException("Misordered duplex: " + duplexRead.leftAlignmentStart + " -- " +
-							duplexRead.leftAlignmentEnd + " " + duplexRead.toString() + " " + rExtended.getFullName());
-					//duplexRead.leftAlignmentStart = duplexRead.leftAlignmentEnd;
-				}
+				Assert.isFalse(
+					duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0,
+					"Misordered duplex: %s -- %s %s %s", duplexRead.leftAlignmentStart,
+					duplexRead.leftAlignmentEnd, duplexRead.toString(), rExtended.getFullName());
 			}//End new duplex creation
 		}//End loop over reads
 
@@ -432,23 +437,13 @@ final class SubAnalyzer {
 		//and left/right consensus that differ by at most
 		//analyzer.nVariableBarcodeMismatchesAllowed
 
-		final DuplexKeeper cleanedUpDuplexes;
+		final DuplexKeeper cleanedUpDuplexes = getDuplexKeeper(fallBackOnIntervalTree);
 		
-		if (useHashMap) {
-			cleanedUpDuplexes = new DuplexHashMapKeeper();
-		} else if (useIntervalTree) {
-			cleanedUpDuplexes = new DuplexITKeeper();
-		} else {
-			cleanedUpDuplexes = new DuplexArrayListKeeper(5_000);
-		}
-
 		StreamSupport.stream(duplexKeeper.getIterable().spliterator(), false).
 			sorted((d1, d2) -> Integer.compare(d2.totalNRecords, d1.totalNRecords)).forEach(duplex1 -> {
 			boolean mergedDuplex = false;
 			
-			if (NONTRIVIAL_ASSERTIONS && duplex1.getInterval() == null) {
-				throw new AssertionFailedException();
-			}
+			Assert.isNonNull(duplex1.getInterval());
 			
 			List<DuplexRead> overlapping = new ArrayList<>(30);
 			for (DuplexRead dr: cleanedUpDuplexes.getOverlapping(duplex1)) {
@@ -510,15 +505,11 @@ final class SubAnalyzer {
 		});//End duplex grouping
 
 		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
-			if (duplexRead.invalid) {
-				throw new AssertionFailedException();
-			}
+			Assert.isFalse(duplexRead.invalid);
 			final @NonNull SequenceLocation roughLocation;
-			if (duplexRead.roughLocation != null) {
-				roughLocation = duplexRead.roughLocation;
-			} else {
-				throw new AssertionFailedException();
-			}
+			Objects.requireNonNull(duplexRead.roughLocation);
+			roughLocation = duplexRead.roughLocation;
+
 			if (Arrays.equals(duplexRead.leftBarcode, duplexRead.rightBarcode)) {
 				duplexRead.issues.add("BREQ");
 				stats.nLociDuplexRescuedFromLeftRightBarcodeEquality.increment(roughLocation);
@@ -542,9 +533,7 @@ final class SubAnalyzer {
 			double sumDisagreementRates = 0d;
 			int sumNClipped = 0;
 			for (ExtendedSAMRecord r: allDuplexRecords) {
-				if (r.getnClipped() < 0) {
-					throw new AssertionFailedException();
-				}
+				Assert.isFalse(r.getnClipped() < 0);
 				sumNClipped += r.getnClipped();
 				i++;
 				sumDisagreementRates += (r.nReferenceDisagreements / ((float) (r.effectiveLength)));
@@ -613,10 +602,8 @@ final class SubAnalyzer {
 	 * @return
 	 */
 	@NonNull LocationExaminationResults examineLocation(final @NonNull SequenceLocation location) {
-		if (NONTRIVIAL_ASSERTIONS && threadCount.incrementAndGet() > 1) {
-			throw new AssertionFailedException();
-		}
-
+		Assert.isFalse(threadCount.incrementAndGet() > 1);
+		
 		try {
 			final LocationExaminationResults result = new LocationExaminationResults();
 
@@ -673,7 +660,7 @@ final class SubAnalyzer {
 				}
 			}
 
-			if (NONTRIVIAL_ASSERTIONS) {
+			Assert.noException(() -> {
 				for (DuplexRead duplexRead: duplexReads) {
 					for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
 						if (r.duplexRead != duplexRead) {
@@ -714,9 +701,9 @@ final class SubAnalyzer {
 						);
 					}
 				}
-			}//End assertion block
+			});//End assertion block
 
-			if (NONTRIVIAL_ASSERTIONS) {
+			Assert.noException(() -> {
 				for (DuplexRead duplexRead: duplexReads) {
 					for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
 						if (r.duplexRead != duplexRead) {
@@ -735,7 +722,7 @@ final class SubAnalyzer {
 						}
 					}
 				}
-			}
+			});
 
 			Quality maxQuality = MINIMUM;
 
@@ -796,9 +783,7 @@ final class SubAnalyzer {
 				candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
 						map(r -> {
 								DuplexRead d = r.duplexRead;
-								if (NONTRIVIAL_ASSERTIONS && d.invalid) {
-									throw new AssertionFailedException();
-								}
+								Assert.isFalse(d.invalid);
 								return d;
 							}
 						).collect(uniqueValueCollector()));//Collect *unique* duplexes
@@ -867,8 +852,6 @@ final class SubAnalyzer {
 				candidate.setnGoodDuplexes(count.get());
 				
 				if (!analyzer.rnaSeq) {
-					candidate.setDistancesToLigSite(candidate.getDuplexes().stream().map(DuplexRead::getDistanceToLigSite).
-						collect(TIntListCollector.tIntListCollector()));
 					candidate.getNonMutableConcurringReads().forEachKey(r -> {
 						final int refPosition = location.position;
 						final int readPosition = r.referencePositionToReadPosition(refPosition);
@@ -941,30 +924,31 @@ final class SubAnalyzer {
 					candidate.setMaxInsertSize(localMaxInsertSize);
 
 					if (localMaxInsertSize < analyzer.minInsertSize || localMinInsertSize > analyzer.maxInsertSize) {
-						candidate.setHasFunnyInserts(true);
 						candidate.getQuality().add(INSERT_SIZE, DUBIOUS);
 					}
 					
 					final boolean has0PredictedInsertSize = localMinInsertSize == 0;
+					
+					final NumberFormat nf = DoubleAdderFormatter.nf.get();
 
 					final boolean hasNoMate = candidate.getNonMutableConcurringReads().keySet().stream().map(er -> er.record.
 							getMateReferenceName() == null).reduce(false, Boolean::logicalOr);
 
 					if (localMaxInsertSize > analyzer.maxInsertSize) {
 						supplementalMessage.append("one predicted insert size is " + 
-								NumberFormat.getInstance().format(localMaxInsertSize)).append("; ");
+								nf.format(localMaxInsertSize)).append("; ");
 					}
 
 					if (localMinInsertSize < analyzer.minInsertSize) {
 						supplementalMessage.append("one predicted insert size is " + 
-								NumberFormat.getInstance().format(localMinInsertSize)).append("; ");
+								nf.format(localMinInsertSize)).append("; ");
 					}
 
 					candidate.setAverageMappingQuality((int) candidate.getNonMutableConcurringReads().keySet().stream().
 							mapToInt(r -> r.record.getMappingQuality()).summaryStatistics().getAverage());
 
 					if (!"".equals(hasMateOnOtherChromosome)) {
-						supplementalMessage.append ("pair elements map to other chromosomes: " + hasMateOnOtherChromosome).append("; ");
+						supplementalMessage.append("pair elements map to other chromosomes: " + hasMateOnOtherChromosome).append("; ");
 					}
 
 					if (hasNoMate) {
@@ -1043,7 +1027,7 @@ final class SubAnalyzer {
 	ExtendedSAMRecord getExtended(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
 		@NonNull final String readFullName = ExtendedSAMRecord.getReadFullName(record);
 		return extSAMCache.computeIfAbsent(readFullName, s ->
-			new ExtendedSAMRecord(record, readFullName, analyzer, location, extSAMCache));
+			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, extSAMCache));
 	}
 
 	/**
@@ -1057,9 +1041,8 @@ final class SubAnalyzer {
 		@NonNull SequenceLocation location = new SequenceLocation(rec);
 
 		final ExtendedSAMRecord extendedRec = getExtended(rec, location);
-		if (extendedRec.processed) {
-			throw new AssertionFailedException("Double processing of record " + extendedRec.getFullName());
-		}
+		Assert.isFalse(extendedRec.processed, "Double processing of record %s", extendedRec.getFullName());
+		
 		extendedRec.processed = true;
 		
 		final boolean readOnNegativeStrand = rec.getReadNegativeStrandFlag();
@@ -1178,7 +1161,7 @@ final class SubAnalyzer {
 				readPosition > rec.getReadLength() - analyzer.ignoreLastNBases) && notRnaSeq;
 
 			if (tooLate) {
-				if (Mutinack.shouldLog(TRACE)) {
+				if (DebugLogControl.shouldLog(TRACE, logger)) {
 					logger.trace("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + " " + (rec.getReadLength() - 1) + " " + extendedRec.getFullName());
 				}
 				stats.nCandidateIndelAfterLastNBases.increment(location);
@@ -1186,12 +1169,12 @@ final class SubAnalyzer {
 				if (insertion) {
 					//Insertion
 					stats.nCandidateInsertions.increment(location);
-					if (Mutinack.shouldLog(TRACE)) {
+					if (DebugLogControl.shouldLog(TRACE, logger)) {
 						logger.trace("Insertion at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
 							"; insert size: " + insertSize + "; localIgnoreLastNBases: " + localIgnoreLastNBases + ")");
 					}
-					location = new SequenceLocation(ref.getContigIndex(), refEndOfPreviousAlignment, true);
+					location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment, true);
 					int distance0 = extendedRec.tooCloseToBarcode(refPosition, readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
 					int distance1 = extendedRec.tooCloseToBarcode(refPosition, readPosition, analyzer.ignoreFirstNBasesQ1);
 					int distance = Math.max(distance0, distance1);
@@ -1250,12 +1233,12 @@ final class SubAnalyzer {
 									}
 						}
 
-						if (Mutinack.shouldLog(TRACE)) {
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
 							logger.trace("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
 						}
 						readLocalCandidates.add(candidate, location);
 						forceCandidateInsertion = true;
-						if (Mutinack.shouldLog(TRACE)) {
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
 							logger.trace("Added candidate at " + location + "; readLocalCandidates now " + readLocalCandidates.build());
 						}
 						extendedRec.nReferenceDisagreements++;
@@ -1289,15 +1272,16 @@ final class SubAnalyzer {
 						distance = Math.min(distance0, distance1) + 1;
 
 						stats.nCandidateDeletions.increment(location);
-						if (Mutinack.shouldLog(TRACE)) {
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
 							logger.trace("Deletion at position " + readPosition + " for read " + rec.getReadName() +
 									" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
 									"; insert size: " + insertSize + "; localIgnoreLastNBases: " + localIgnoreLastNBases + ")");
 						}
 
 						final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
-						location = new SequenceLocation(ref.getContigIndex(), refEndOfPreviousAlignment + 1);
-						final @NonNull SequenceLocation deletionEnd = new SequenceLocation(ref.getContigIndex(), location.position + deletionLength);
+						location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment + 1);
+						final @NonNull SequenceLocation deletionEnd = new SequenceLocation(ref.getContigIndex(),
+								ref.getName(), location.position + deletionLength);
 
 						final byte @Nullable[] deletedSequence = notRnaSeq 	? Arrays.copyOfRange(ref.getBases(),
 								refEndOfPreviousAlignment + 1, refPosition)
@@ -1307,7 +1291,8 @@ final class SubAnalyzer {
 						//So disagreements between deletions that have only overlapping
 						//spans are detected.
 						for (int i = 1; i < deletionLength; i++) {
-							SequenceLocation location2 = new SequenceLocation(ref.getContigIndex(), refEndOfPreviousAlignment + 1 + i);
+							SequenceLocation location2 = new SequenceLocation(ref.getContigIndex(),
+									ref.getName(), refEndOfPreviousAlignment + 1 + i);
 							CandidateSequence hiddenCandidate = new CandidateDeletion(analyzer.idx, location2, extendedRec, Integer.MAX_VALUE,
 									location, deletionEnd);
 							hiddenCandidate.setHidden(true);
@@ -1327,7 +1312,7 @@ final class SubAnalyzer {
 						}
 
 						final CandidateSequence candidate = new CandidateDeletion(analyzer.idx, location, extendedRec, distance,
-								location, new SequenceLocation(ref.getContigIndex(), refPosition));
+								location, new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition));
 
 						candidate.acceptLigSiteDistance(distance);
 
@@ -1376,12 +1361,12 @@ final class SubAnalyzer {
 			}
 			boolean insertCandidateAtRegularPosition = true;
 			final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
-				new SequenceLocation(ref.getContigIndex(), refPosition, true)
+				new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition, true)
 				: null;
 			/*final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
 				readPosition == effectiveReadLength - 1;*/
 
-			location = new SequenceLocation(ref.getContigIndex(), refPosition);
+			location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition);
 			
 			if (baseQualities[readPosition] < analyzer.minBasePhredScoreQ1) {
 				stats.nBasesBelowPhredScore.increment(location);
@@ -1413,19 +1398,19 @@ final class SubAnalyzer {
 							stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
 						}
 					}
-					if (Mutinack.shouldLog(TRACE)) {
+					if (DebugLogControl.shouldLog(TRACE, logger)) {
 						logger.trace("Ignoring subst too close to barcode for read " + rec.getReadName());
 					}
 					insertCandidateAtRegularPosition = false;
 				} else if (tooLate && insertCandidateAtRegularPosition) {
 					stats.nCandidateSubstitutionsAfterLastNBases.increment(location);
-					if (Mutinack.shouldLog(TRACE)) {
+					if (DebugLogControl.shouldLog(TRACE, logger)) {
 						logger.trace("Ignoring subst too close to read end for read " + rec.getReadName());
 					}
 					insertCandidateAtRegularPosition = false;
 				}
 				if (goodToInsert || forceCandidateInsertion) {
-					if (Mutinack.shouldLog(TRACE)) {
+					if (DebugLogControl.shouldLog(TRACE, logger)) {
 						logger.trace("Substitution at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
 							"; insert size: " + insertSize + "; localIgnoreLastNBases: " + localIgnoreLastNBases + ")");

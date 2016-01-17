@@ -40,11 +40,7 @@ public interface CandidateSequenceI extends Serializable {
 	int getMinInsertSize();
 	void setMinInsertSize(int minInsertSize);
 	int getAverageMappingQuality();
-	int getPositionInRead();
-	int getReadEffectiveLength();
 	void setAverageMappingQuality(int averageMappingQuality);
-	boolean isHasFunnyInserts();
-	void setHasFunnyInserts(boolean hasFunnyInserts);
 	int getOwningAnalyzer();
 	@NonNull SequenceLocation getLocation();
 	float getTotalReadsAtPosition();
@@ -77,9 +73,6 @@ public interface CandidateSequenceI extends Serializable {
 	String getChange();
 	@NonNull TByteArrayList getPhredQualityScores();
 	void addPhredQualitiesToList(@NonNull TByteCollection ql);
-	CandidateSequenceI getUniqueType(@NonNull Class<? extends CandidateSequence> class1);
-	CandidateSequenceI getUniqueType(@NonNull MutationType type);
-	boolean containsMutationType(@NonNull MutationType type);
 	void mergeWith(@NonNull CandidateSequenceI c);
 	@Nullable Quality getSupplQuality();
 	void setSupplQuality(@Nullable Quality supplQuality);

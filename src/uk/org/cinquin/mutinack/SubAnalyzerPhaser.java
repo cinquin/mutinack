@@ -7,8 +7,8 @@ import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
 import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.Quality.GOOD;
 import static uk.org.cinquin.mutinack.Quality.POOR;
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.ENABLE_TRACE;
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.NONTRIVIAL_ASSERTIONS;
+import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
+import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.mediumLengthFloatFormatter;
 import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
@@ -18,8 +18,8 @@ import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Phaser;
@@ -41,6 +41,7 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.features.BedComplement;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
@@ -54,6 +55,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private static final boolean[] falseTrue = new boolean[] {false, true};
 
 	private final AnalysisChunk analysisChunk;
+	private final MutinackGroup groupSettings;
 	private final SettableInteger lastProcessedPosition;
 	private final SettableInteger pauseAt;
 	private final SettableInteger previousLastProcessable;
@@ -66,7 +68,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final List<Mutinack> analyzers;
 	private final List<@NonNull LocationExaminationResults> analyzerCandidateLists;
 	private final int contigIndex;
-	private final Map<Object, Object> contigNames;
+	private final String contigName;
 	private final int PROCESSING_CHUNK;
 	
 	private final ConcurrentHashMap<String, SAMRecord> readsToWrite;
@@ -81,13 +83,14 @@ public class SubAnalyzerPhaser extends Phaser {
 			SAMFileWriter alignmentWriter,
 			Set<SequenceLocation> forceoutputatlocations,
 			Histogram dubiousOrGoodDuplexCovInAllInputs, Histogram goodDuplexCovInAllInputs,
-			@NonNull Map<Object, @NonNull Object> contigNames,
+			String contigName,
 			int contigIndex,
 			List<GenomeFeatureTester> excludeBEDs,
 			List<BedReader> repetitiveBEDs,
 			int PROCESSING_CHUNK) {
 		this.argValues = argValues;
 		this.analysisChunk = analysisChunk;
+		this.groupSettings = analysisChunk.groupSettings;
 		this.analyzers = analyzers;
 		this.analyzerCandidateLists = analyzerCandidateLists;
 		lastProcessedPosition = analysisChunk.lastProcessedPosition;
@@ -104,7 +107,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		nSubAnalyzers = analysisChunk.subAnalyzers.size();
 		
 		this.contigIndex = contigIndex;
-		this.contigNames = contigNames;
+		this.contigName = contigName;
 		
 		this.excludeBEDs = excludeBEDs;
 		this.repetitiveBEDs = repetitiveBEDs;
@@ -120,13 +123,13 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 		
 		try {
-			final ParFor pf0 = new ParFor("Load " + contigNames.get(analysisChunk.contig) + " " + lastProcessedPosition.get() +
+			final ParFor pf0 = new ParFor("Load " + contigName + " " + lastProcessedPosition.get() +
 					"-" + pauseAt.get(), 0, nSubAnalyzers - 1 , null, true);
 			for (int worker = 0; worker < nSubAnalyzers; worker++) {
 				pf0.addLoopWorker((loopIndex, j) -> {
 					SubAnalyzer sub = analysisChunk.subAnalyzers.get(loopIndex);
 					if (NONTRIVIAL_ASSERTIONS && nIterations > 1 && sub.candidateSequences.containsKey(
-							new SequenceLocation(contigIndex, lastProcessedPosition.get()))) {
+							new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get()))) {
 						throw new AssertionFailedException();
 					}
 					sub.load();
@@ -137,8 +140,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			pf0.run(true);
 
 			final int saveLastProcessedPosition = lastProcessedPosition.get();
-			for (int position = saveLastProcessedPosition + 1; position <= pauseAt.get() && !Mutinack.terminateAnalysis;
-					position ++) {
+			for (int position = saveLastProcessedPosition + 1; position <= pauseAt.get() &&
+					!groupSettings.terminateAnalysis; position ++) {
 			outer:
 			for (boolean plusHalf: falseTrue) {
 				
@@ -151,7 +154,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					break outer;
 				}
 				
-				final @NonNull SequenceLocation location = new SequenceLocation(contigIndex, position, plusHalf);
+				final @NonNull SequenceLocation location = new SequenceLocation(contigIndex, 
+						contigName, position, plusHalf);
 
 				for (GenomeFeatureTester tester: excludeBEDs) {
 					if (tester.test(location)) {
@@ -200,7 +204,8 @@ public class SubAnalyzerPhaser extends Phaser {
 						}
 
 						if (stats.locusByLocusCoverage != null) {
-							int[] array = stats.locusByLocusCoverage.get(location.getContigName());
+							int[] array = Objects.requireNonNull(stats.locusByLocusCoverage.get(
+									location.getContigName()));
 							if (array.length <= location.position) {
 								throw new IllegalArgumentException("Position goes beyond end of contig " +
 										location.getContigName() + ": " + location.position +
@@ -373,9 +378,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					//Only report details when at least one mutant candidate is of Q2 quality
 					if (forceReporting || (maxCandMutQuality.compareTo(GOOD) >= 0)) {
 						if (NONTRIVIAL_ASSERTIONS) for (GenomeFeatureTester t: excludeBEDs) {
-							if (t.test(location)) {
-								throw new AssertionFailedException(location + " excluded by " + t);
-							}
+							Assert.isFalse(t.test(location), "%s excluded by %s", location, t);
 						}
 
 						//Refilter also allowing Q1 candidates to compare output of different
@@ -383,9 +386,8 @@ public class SubAnalyzerPhaser extends Phaser {
 						final List<CandidateSequence> allQ1Q2Candidates = analyzerCandidateLists.stream().
 								map(l -> l.analyzedCandidateSequences).
 								flatMap(Collection::stream).
-								filter(c -> {if (NONTRIVIAL_ASSERTIONS && c.getLocation().distanceOnSameContig(location) > 0) {
-									throw new AssertionFailedException();
-									};
+								filter(c -> {
+									Assert.isFalse(c.getLocation().distanceOnSameContig(location) > 0);
 									return c.getQuality().getMin().compareTo(POOR) > 0;}).
 								filter(c -> !c.isHidden()).
 								sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
@@ -651,8 +653,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				for (int position = saveLastProcessedPosition + 1; position <= lastProcessedPosition.get();
 						position ++) {
-					subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, position));
-					subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, position, true));
+					subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, contigName, position));
+					subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, contigName, position, true));
 				}
 				if (shouldLog(TRACE)) {
 					logger.trace("SubAnalyzer " + analysisChunk + " completed " + (saveLastProcessedPosition + 1) + " to " + lastProcessedPosition.get());
@@ -694,13 +696,12 @@ public class SubAnalyzerPhaser extends Phaser {
 				analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
 					Iterator<Entry<SequenceLocation, THashSet<CandidateSequence>>> it =
 							subAnalyzer.candidateSequences.entrySet().iterator();
-					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, lastProcessedPosition.get());
+					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get());
 					while (it.hasNext()) {
 						Entry<SequenceLocation, THashSet<CandidateSequence>> v = it.next();
-						if (NONTRIVIAL_ASSERTIONS && v.getKey().contigIndex != contigIndex) {
-							throw new AssertionFailedException("Problem with contig indices, " +
+						Assert.isFalse(v.getKey().contigIndex != contigIndex,
+								"Problem with contig indices, " +
 									"possibly because contigs not alphabetically sorted in reference genome .fa file");
-						}
 						if (v.getKey().compareTo(lowerBound) < 0) {
 							it.remove();
 						}
@@ -708,20 +709,18 @@ public class SubAnalyzerPhaser extends Phaser {
 				});
 			}
 
-			if (NONTRIVIAL_ASSERTIONS) {
+			Assert.noException(() -> {
 				//Check no sequences have been left behind
 				analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
-					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, lastProcessedPosition.get());
+					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get());
 					subAnalyzer.candidateSequences.keySet().parallelStream().forEach(
 							e -> {
-								if (e.contigIndex != contigIndex) {
-									throw new AssertionFailedException();
-								}
-								if (e.compareTo(lowerBound) < 0)
-									throw new AssertionFailedException("pauseAt:" + pauseAt.get() + "; lastProcessedPosition:" + lastProcessedPosition +
-											" but found: " + e + " for chunk " + analysisChunk);});
+								Assert.isFalse(e.contigIndex != contigIndex);
+								Assert.isFalse(e.compareTo(lowerBound) < 0,
+										"pauseAt: %s; lastProcessedPosition: %s but found: %s for chunk %s",
+											pauseAt.get(), lastProcessedPosition, e, analysisChunk);});
 				});
-			}
+			});
 
 			final int maxLastProcessable = analysisChunk.subAnalyzers.stream().mapToInt(a -> a.lastProcessablePosition.get()).
 					max().getAsInt();

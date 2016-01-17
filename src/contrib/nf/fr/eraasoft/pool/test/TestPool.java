@@ -30,7 +30,7 @@ public class TestPool extends TestCase {
 
 		// Get the objectPool instance using a Singleton Design Pattern is a
 		// good idea
-		ObjectPool<StringBuilder> objectPool = poolSettings.pool();
+		ObjectPool<StringBuilder> objectPool = poolSettings.pool(true);
 
 		// Use your pool
 		StringBuilder buffer = null;

@@ -16,7 +16,7 @@
  */
 package uk.org.cinquin.mutinack;
 
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.ENABLE_TRACE;
+import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
 import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
 import java.util.List;
@@ -39,7 +39,8 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
+import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
@@ -73,47 +74,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private Boolean formsWrongPair;
 	public boolean processed = false;
 	public boolean duplexAlreadyVisitedForStats = false;
-	
-	static int UNCLIPPED_BARCODE_LENGTH = Integer.MAX_VALUE;
-	private static final int VARIABLE_BARCODE_START = 0;
-	static int VARIABLE_BARCODE_END = Integer.MAX_VALUE;
-	private static final int CONSTANT_BARCODE_START = 3;
-	private static final int CONSTANT_BARCODE_END = 5;
-	private static byte[] Ns;
-	
-	private static void checkSet(String var, int previousVal, int newVal) {
-		if (previousVal == Integer.MAX_VALUE) {
-			return;
-		}
-		if (previousVal != newVal) {
-			throw new IllegalArgumentException("Trying to set " + var +
-					" to " + newVal + " but it has already been set to " + previousVal);
-		}
-	}
-	
-	public static synchronized void setBarcodePositions(int variableStart, int variableEnd,
-			int constantStart, int constantEnd, int unclippedBarcodeLength) {
-		if (variableStart != 0) {
-			throw new IllegalArgumentException("Unimplemented");
-		}
-		checkSet("variable barcode end", VARIABLE_BARCODE_END, variableEnd);
-		checkSet("unclipped barcode length", UNCLIPPED_BARCODE_LENGTH, unclippedBarcodeLength);
-		if (VARIABLE_BARCODE_END == Integer.MAX_VALUE) {
-			VARIABLE_BARCODE_END = variableEnd;
-			UNCLIPPED_BARCODE_LENGTH = unclippedBarcodeLength;
-			System.out.println("Set variable barcode end position to " + ExtendedSAMRecord.VARIABLE_BARCODE_END);
-			//VARIABLE_BARCODE_START == 0;
-			final byte[] localNs = new byte [VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1];
-			for (int i = 0; i < VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1; i++) {
-				localNs[i] = 'N';
-			}
-			if (Ns != null) {
-				throw new AssertionFailedException();
-			}
-			Ns = localNs;
-		}
-	}
-	
+
+	private final @NonNull MutinackGroup groupSettings;
+			
 	int getnClipped() {
 		computeNClipped();
 		return nClipped;
@@ -148,7 +111,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		
 		int nClippedLeft = Math.max(0, (!getReadNegativeStrandFlag() ? 
 								/* positive strand */
-								getAlignmentStart() - getUnclippedStart() - UNCLIPPED_BARCODE_LENGTH :
+								getAlignmentStart() - getUnclippedStart() - groupSettings.getUnclippedBarcodeLength() :
 								/* negative strand */
 								/* Note: getMateAlignmentEndNoBarcode will return Integer.MAX_INT if mate not loaded*/
 								(getMateAlignmentEndNoBarcode() >= getAlignmentStartNoBarcode() /* adapter run through, causes clipping we should ignore */ ? 0 :
@@ -157,7 +120,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		
 		int nClippedRight =	Math.max(0, (getReadNegativeStrandFlag() ? 
 						/* negative strand */
-						record.getUnclippedEnd() - record.getAlignmentEnd() -UNCLIPPED_BARCODE_LENGTH :
+						record.getUnclippedEnd() - record.getAlignmentEnd() -groupSettings.getUnclippedBarcodeLength() :
 						/* positive strand */
 						( getAlignmentEnd() >= getMateAlignmentStartNoBarcode() /* adapter run through, causes clipping we should ignore */ ? 0 :
 						record.getUnclippedEnd() - record.getAlignmentEnd() - adapterClipped)));
@@ -165,8 +128,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		nClipped = nClippedLeft + nClippedRight;	
 	}
 
-	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName, @NonNull Mutinack analyzer,
+	@SuppressWarnings("static-access")
+	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName,
+			@NonNull MutinackGroup groupSettings, @NonNull Mutinack analyzer,
 			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+		this.groupSettings = groupSettings;
 		this.extSAMCache = extSAMCache;
 		this.name = fullName;
 		this.record = rec;
@@ -197,9 +163,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			}
 		}
 		
-		if (effectiveLength < 0) {
-			throw new AssertionFailedException();
-		}
+		Assert.isFalse(effectiveLength < 0);
 		
 		this.effectiveLength = effectiveLength;
 		
@@ -237,7 +201,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		medianPhred = qualities.get(qualities.size() / 2);
 		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 		
-		if (DebugControl.NONTRIVIAL_ASSERTIONS && (rec.getUnclippedEnd() - rec.getAlignmentEnd() < 0 ||
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && (rec.getUnclippedEnd() - rec.getAlignmentEnd() < 0 ||
 				rec.getAlignmentStart() - rec.getUnclippedStart() < 0)) {
 			throw new AssertionFailedException();
 		}
@@ -264,31 +228,31 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		} else {
 			fullBarcodeString = bcAttr;
 		}
-		variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(VARIABLE_BARCODE_START, VARIABLE_BARCODE_END + 1).getBytes()));
-		constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(CONSTANT_BARCODE_START, CONSTANT_BARCODE_END + 1).getBytes()));
+		variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(
+				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes()));
+		constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(
+				groupSettings.getConstantBarcodeStart(), groupSettings.getConstantBarcodeEnd() + 1).getBytes()));
 
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
 	}
 	
-	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull Mutinack analyzer, 
-			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
-		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/, analyzer, location, extSAMCache);
+	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull MutinackGroup groupSettings,
+			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
+			@NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/,
+				groupSettings, analyzer, location, extSAMCache);
 	}
 	
 	public byte @NonNull[] getMateVariableBarcode() {
-		if (mateVariableBarcode == null || mateVariableBarcode == Ns) {
+		if (mateVariableBarcode == null || mateVariableBarcode == groupSettings.getNs()) {
 			checkMate();
 			if (mate == null) {
-				mateVariableBarcode = Ns;
+				mateVariableBarcode = groupSettings.getNs();
 			} else {
 				mateVariableBarcode = nonNullify(mate).variableBarcode;
 			}
 		}
-		if (mateVariableBarcode != null) {
-			return mateVariableBarcode;
-		} else {
-			throw new AssertionFailedException();
-		}
+		return Objects.requireNonNull(mateVariableBarcode);
 	}
 		
 	@Override
@@ -355,16 +319,16 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		boolean tooCloseToBarcode;
 		if (readOnNegativeStrand) {
-			distance0 = readPosition - ((record.getReadLength() - 1) - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH);
+			distance0 = readPosition - ((record.getReadLength() - 1) - ignoreFirstNBases - groupSettings.getUnclippedBarcodeLength());
 			tooCloseToBarcode = distance0 > 0;
 			if (ENABLE_TRACE && tooCloseToBarcode) {
-				logger.trace("Ignoring indel too close to barcode A " + refPosition + " " + (record.getReadLength() - 1 - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH) + "; " + getFullName() + " at " + getAlignmentStart());
+				logger.trace("Ignoring indel too close to barcode A " + refPosition + " " + (record.getReadLength() - 1 - ignoreFirstNBases - groupSettings.getUnclippedBarcodeLength()) + "; " + getFullName() + " at " + getAlignmentStart());
 			}
 		} else {
-			distance0 = ignoreFirstNBases + UNCLIPPED_BARCODE_LENGTH - readPosition;
+			distance0 = ignoreFirstNBases + groupSettings.getUnclippedBarcodeLength() - readPosition;
 			tooCloseToBarcode = distance0 > 0;
 			if (ENABLE_TRACE && tooCloseToBarcode) {
-				logger.trace("Ignoring indel too close to barcode B " + refPosition + " " + readPosition + " vs "  + (ignoreFirstNBases + UNCLIPPED_BARCODE_LENGTH) + "; " + getFullName() + " at " + getAlignmentStart());
+				logger.trace("Ignoring indel too close to barcode B " + refPosition + " " + readPosition + " vs "  + (ignoreFirstNBases + groupSettings.getUnclippedBarcodeLength()) + "; " + getFullName() + " at " + getAlignmentStart());
 			}
 		}
 		
@@ -454,34 +418,31 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		while (true) {
 			CigarElement c = cElmnts.get(ceIndex);
 			int blockLength = c.getLength();
-			int nTakenBases = Math.min(blockLength, UNCLIPPED_BARCODE_LENGTH - nProcessedBases);
+			int nTakenBases = Math.min(blockLength, groupSettings.getUnclippedBarcodeLength() - nProcessedBases);
 			nProcessedBases += nTakenBases;
 			
 			if (c.getOperator() == CigarOperator.INSERTION) {
 				nInsertedBases += nTakenBases;
 			}
 			
-			if (nProcessedBases == UNCLIPPED_BARCODE_LENGTH) {
+			if (nProcessedBases == groupSettings.getUnclippedBarcodeLength()) {
 				break;	
-			} else if (nProcessedBases > UNCLIPPED_BARCODE_LENGTH) {
-				throw new AssertionFailedException("Problem with cigar " + record.getCigarString() + "; " + c.toString() + "; " + nProcessedBases + "; " + nTakenBases);
-			}
+			} else Assert.isFalse(nProcessedBases > groupSettings.getUnclippedBarcodeLength(),
+				"Problem with cigar %s; %s; %s; %s", record.getCigarString(), c, nProcessedBases, nTakenBases);
 			ceIndex++;
 		}
 
 		List<AlignmentBlock> alignmentBlocks = record.getAlignmentBlocks();
 		int readStart = alignmentBlocks.get(0).getReadStart() - 1;
 		
-		int adjustment = readStart < (UNCLIPPED_BARCODE_LENGTH - nInsertedBases) ? 
-				(UNCLIPPED_BARCODE_LENGTH - nInsertedBases) - readStart : 0;
+		int adjustment = readStart < (groupSettings.getUnclippedBarcodeLength() - nInsertedBases) ? 
+				(groupSettings.getUnclippedBarcodeLength() - nInsertedBases) - readStart : 0;
 		return adjustment;
 	}
 	
 	public int getRefAlignmentStartNoBarcode() {
 		int referenceStart = getAlignmentStart();
-		if (referenceStart < 0) {
-			throw new AssertionFailedException();
-		}
+		Assert.isFalse(referenceStart < 0);
 		if (getReadNegativeStrandFlag()) {
 			return referenceStart;
 		} else {
@@ -492,9 +453,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	
 	public int getRefAlignmentEndNoBarcode() {
 		int referenceEnd = getAlignmentEnd();
-		if (referenceEnd < 0) {
-			throw new AssertionFailedException();
-		}
+		Assert.isFalse(referenceEnd < 0);
 		if (getReadNegativeStrandFlag()) {
 			int adjustment = getNBarcodeBasesAtAlignmentEnd();
 			return referenceEnd - adjustment;
@@ -561,7 +520,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		if (mateReferenceIndex == -1) {
 			return null;
 		}
-		return new SequenceLocation(record.getMateReferenceName(), getMateAlignmentStart());
+		return new SequenceLocation(record.getMateReferenceIndex(), 
+				record.getMateReferenceName(), getMateAlignmentStart());
 	}
 
 	public boolean getReadNegativeStrandFlag() {
@@ -653,11 +613,6 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			return Integer.MAX_VALUE;
 		}
 		return nonNullify(mate).getUnclippedStart();
-	}
-
-	public static byte @NonNull[] getNs() {
-		Objects.requireNonNull(Ns);
-		return Ns;
 	}
 
 	public int getMappingQuality() {

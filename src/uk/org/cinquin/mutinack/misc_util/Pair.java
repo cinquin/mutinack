@@ -34,7 +34,7 @@ public class Pair<A,B> implements Serializable {
     }
 
     @Override
-	public int hashCode() {
+	public final int hashCode() {
     	int hashFirst = fst != null ? fst.hashCode() : 0;
     	int hashSecond = snd != null ? snd.hashCode() : 0;
 
@@ -42,7 +42,7 @@ public class Pair<A,B> implements Serializable {
     }
 
     @Override
-	public boolean equals(Object other) {
+	public final boolean equals(Object other) {
     	if (other instanceof Pair) {
     		Pair<?, ?> otherPair = (Pair<?, ?>) other;
     		return 

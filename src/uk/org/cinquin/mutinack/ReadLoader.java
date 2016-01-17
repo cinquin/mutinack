@@ -1,7 +1,7 @@
 package uk.org.cinquin.mutinack;
 
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.ENABLE_TRACE;
+import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
 import static uk.org.cinquin.mutinack.misc_util.Util.getRecordNameWithPairSuffix;
 
 import java.io.File;
@@ -13,21 +13,21 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.Phaser;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
 
 import contrib.net.sf.picard.reference.ReferenceSequence;
-import contrib.net.sf.picard.reference.ReferenceSequenceFile;
 import contrib.net.sf.samtools.SAMFileReader;
-import contrib.net.sf.samtools.SAMRecord;
-import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.net.sf.samtools.SAMFileReader.QueryInterval;
 import contrib.net.sf.samtools.SAMFileWriter;
+import contrib.net.sf.samtools.SAMRecord;
+import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
@@ -36,6 +36,7 @@ import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.sequence_IO.IteratorPrefetcher;
+import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class ReadLoader {
 	
@@ -45,11 +46,10 @@ public class ReadLoader {
 	private final static Logger statusLogger = LoggerFactory.getLogger("ReadLoaderStatus");
 	
 	@SuppressWarnings("resource")
-	public static void load (Mutinack analyzer, SubAnalyzer subAnalyzer, AnalysisChunk analysisChunk,
+	public static void load(Mutinack analyzer, SubAnalyzer subAnalyzer, AnalysisChunk analysisChunk,
 			Parameters argValues, List<AnalysisChunk> analysisChunks,
 			final int PROCESSING_CHUNK, @NonNull List<@NonNull String> contigs, final int contigIndex,
-			SAMFileWriter alignmentWriter, Map<String, ReferenceSequence> refMap,
-			ReferenceSequenceFile refFile) {
+			SAMFileWriter alignmentWriter, Function<String, ReferenceSequence> contigSequences) {
 
 		final SettableInteger lastProcessable = subAnalyzer.lastProcessablePosition;
 		final int startAt = analysisChunk.startAtPosition;
@@ -62,7 +62,7 @@ public class ReadLoader {
 
 
 		final Phaser phaser = analysisChunk.phaser;
-		String lastReferenceName = null;
+		String lastContigName = null;
 		BiConsumer<PrintStream, Integer> info = null;
 		try {
 			final String contig = contigs.get(contigIndex);
@@ -71,10 +71,10 @@ public class ReadLoader {
 			final Set<String> droppedReads = analyzer.dropReadProbability > 0 ? new HashSet<>(1_000_000) : null;
 			final Set<String> keptReads = analyzer.dropReadProbability > 0 ?  new HashSet<>(1_000_000) : null;
 
-			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, 0);
+			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigs.get(contigIndex), 0);
 
 			info = (stream, userRequestNumber) -> {
-				NumberFormat formatter = NumberFormat.getInstance();
+				NumberFormat formatter = DoubleAdderFormatter.nf.get();
 				stream.println("Analyzer " + analyzer.name +
 						" contig " + contig + 
 						" range: " + (analysisChunk.startAtPosition + "-" + analysisChunk.terminateAtPosition) +
@@ -84,8 +84,8 @@ public class ReadLoader {
 								(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
 						);
 			};
-			synchronized(Mutinack.statusUpdateTasks) {
-				Mutinack.statusUpdateTasks.add(info);
+			synchronized(analyzer.groupSettings.statusUpdateTasks) {
+				analyzer.groupSettings.statusUpdateTasks.add(info);
 			}
 
 			final SAMFileReader bamReader = analyzer.readerPool.getObj();
@@ -134,7 +134,8 @@ public class ReadLoader {
 
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
 						e -> {e.eagerDecode(); e.getUnclippedEnd(); e.getUnclippedStart();})) {
-					while (iterator.hasNext() && !phaser.isTerminated() && !Mutinack.terminateAnalysis) {
+					while (iterator.hasNext() && !phaser.isTerminated() && !analyzer.
+							groupSettings.terminateAnalysis) {
 
 						final SAMRecord samRecord = iterator.next();
 
@@ -170,7 +171,7 @@ public class ReadLoader {
 							}
 
 							for (int i = 0; i < nIntersect; i++) {
-								if (current5p + 6 < intersectionWaitUntil.get(i)) {
+								if (current5p + 6 < Objects.requireNonNull(intersectionWaitUntil.get(i))) {
 									continue;
 								}
 								Iterator<SAMRecord> it = intersectionIterators.get(i);
@@ -242,8 +243,8 @@ public class ReadLoader {
 							}
 						}
 
-						final String refName = samRecord.getReferenceName();
-						if ("*".equals(refName)) {
+						final String contigName = samRecord.getReferenceName();
+						if ("*".equals(contigName)) {
 							analyzer.stats.forEach(s -> s.nRecordsUnmapped.increment(location));
 							continue;
 						}
@@ -260,10 +261,10 @@ public class ReadLoader {
 							continue;
 						}
 
-						if (lastReferenceName != null && !refName.equals(lastReferenceName)) {
+						if (lastContigName != null && !contigName.equals(lastContigName)) {
 							furthestPositionReadInContig = 0;
 						}
-						lastReferenceName = refName;
+						lastContigName = contigName;
 
 						lastProcessable.set(samRecord.getAlignmentStart() - 2);
 
@@ -276,19 +277,7 @@ public class ReadLoader {
 							finishUp = false;
 						}
 
-						ReferenceSequence ref = refMap.get(refName);
-						if (ref == null) {
-							try {
-								ref = refFile.getSequence(refName);
-								if (ref.getBases()[0] == 0) {
-									throw new RuntimeException("Found null byte in " + refName +
-											"; contig might not exist in reference file");
-								}
-							} catch (Exception e) {
-								throw new RuntimeException("Problem reading reference file " + argValues.referenceGenome, e);
-							}
-							refMap.put(refName, ref);
-						}
+						ReferenceSequence ref = Objects.requireNonNull(contigSequences.apply(contigName));
 
 						//Put samRecord into the cache
 						ExtendedSAMRecord extended = subAnalyzer.getExtended(samRecord, location);
@@ -355,7 +344,7 @@ public class ReadLoader {
 					lastProcessable.set(truncateAtPosition + 1);
 				}
 
-				while (!phaser.isTerminated() && !Mutinack.terminateAnalysis) {
+				while (!phaser.isTerminated() && !analyzer.groupSettings.terminateAnalysis) {
 					phaser.arriveAndAwaitAdvance();
 				}
 
@@ -374,15 +363,15 @@ public class ReadLoader {
 				t.printStackTrace();
 				System.exit(1);
 			}
-			Mutinack.terminateAnalysis = true;
+			analyzer.groupSettings.terminateAnalysis = true;
 			phaser.forceTermination();
-			throw new RuntimeException("Exception while processing contig " + lastReferenceName + 
+			throw new RuntimeException("Exception while processing contig " + lastContigName + 
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
 		} finally {
 			if (info != null) {
-				synchronized(Mutinack.statusUpdateTasks) {
-					if (!Mutinack.statusUpdateTasks.remove(info)) {
-						System.err.println("Could not remove status udpate task");
+				synchronized(analyzer.groupSettings.statusUpdateTasks) {
+					if (!analyzer.groupSettings.statusUpdateTasks.remove(info)) {
+						logger.warn("Could not remove status udpate task");
 					};
 				}
 			}
@@ -394,7 +383,11 @@ public class ReadLoader {
 		analysisChunk.subAnalyzers.forEach(sa -> {
 			sa.extSAMCache.clear();
 			sa.candidateSequences.clear();
-			sa.analyzedDuplexes.clear();
+			if (sa.analyzedDuplexes != null) {
+				//An exception may have occurred before analyzedDuplexes was allocated,
+				//so check for null
+				sa.analyzedDuplexes.clear();
+			}
 		});
 		//TODO Clear subAnalyzers list, but *only after* all analyzers have completed
 		//that chunk

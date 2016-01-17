@@ -16,7 +16,7 @@
  */
 package uk.org.cinquin.mutinack;
 
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.NONTRIVIAL_ASSERTIONS;
+import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.blueF;
 import static uk.org.cinquin.mutinack.misc_util.Util.greenB;
 import static uk.org.cinquin.mutinack.misc_util.Util.internedVariableBarcodes;
@@ -36,13 +36,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
@@ -59,14 +55,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -82,23 +73,18 @@ import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
-import contrib.net.sf.picard.reference.ReferenceSequence;
-import contrib.net.sf.picard.reference.ReferenceSequenceFile;
-import contrib.net.sf.picard.reference.ReferenceSequenceFileFactory;
 import contrib.net.sf.samtools.SAMFileHeader;
 import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMFileWriterFactory;
+import contrib.net.sf.samtools.util.RuntimeIOException;
 import contrib.nf.fr.eraasoft.pool.ObjectPool;
 import contrib.nf.fr.eraasoft.pool.PoolSettings;
 import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.nf.fr.eraasoft.pool.impl.PoolController;
-import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 import uk.org.cinquin.mutinack.distributed.EvaluationResult;
 import uk.org.cinquin.mutinack.distributed.Job;
 import uk.org.cinquin.mutinack.distributed.RemoteMethods;
@@ -109,23 +95,21 @@ import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB;
 import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers.Builder;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
-import uk.org.cinquin.mutinack.misc_util.FileCache;
-import uk.org.cinquin.mutinack.misc_util.Handle;
-import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
+import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Signals.SignalProcessor;
+import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.VersionInfo;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
-import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
-import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocation;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.ICounter;
@@ -146,7 +130,7 @@ public class Mutinack {
 		}
 	}
 	
-	final static Logger logger = LoggerFactory.getLogger("Mutinack");
+	public final static Logger logger = LoggerFactory.getLogger("Mutinack");
 	final static Logger statusLogger = LoggerFactory.getLogger("MutinackStatus");
 	
 	private final static List<String> outputHeader = Collections.unmodifiableList(Arrays.asList(
@@ -156,22 +140,11 @@ public class Mutinack {
 			"positionInRead", "readEffectiveLength", "nameOfOneRead", "readAlignmentStart", "mateAlignmentStart",
 			"readAlignmentEnd", "mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtLocus", "minInsertSize", "maxInsertSize", "supplementalMessage"
 	));
-	
-	private static ExecutorService executorService;
-
-	static final Collection<BiConsumer<PrintStream, Integer>> statusUpdateTasks = new ArrayList<>();
-	static final Map<Integer, @NonNull String> indexContigNameMap = new ConcurrentHashMap<>();
-	static final Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
-	private static final Set<SequenceLocation> forceOutputAtLocations = new HashSet<>();
-	private static int PROCESSING_CHUNK;
-	/**
-	 * Terminate analysis but finish writing output BAM file.
-	 */
-	volatile static boolean terminateAnalysis = false;
-	
-	private final Collection<Closeable> itemsToClose = new ArrayList<>();
 		
-	final int ignoreFirstNBasesQ1, ignoreFirstNBasesQ2, ignoreFirstNBaseQ1mQ2;
+	private final Collection<Closeable> itemsToClose = new ArrayList<>();
+	
+	final MutinackGroup groupSettings;
+	final int ignoreFirstNBasesQ1, ignoreFirstNBasesQ2;
 	final int ignoreLastNBases;
 	final int minInsertSize;
 	final int maxInsertSize;
@@ -219,11 +192,21 @@ public class Mutinack {
 
 				@Override
 				public SAMFileReader make() {
-					SAMFileReader reader = new SAMFileReader(inputBam);
-					if (!reader.hasIndex()) {
-						throw new IllegalArgumentException("File " + inputBam + " does not have index");
+					Assert.isNonNull(inputBam, "Trying to open null inputBam");
+					try {
+						SAMFileReader reader = new SAMFileReader(inputBam);
+						if (!reader.hasIndex()) {
+							throw new IllegalArgumentException("File " + inputBam + " does not have index");
+						}
+						return reader;
+					} catch (RuntimeIOException e) {
+						try {
+							throw new RuntimeException("Error opening read file with canonical path " +
+									inputBam.getCanonicalPath(), e);
+						} catch (IOException e1) {
+							throw new RuntimeException("Error opening read file " + inputBam.getAbsolutePath(), e);
+						}
 					}
-					return reader;
 				}
 
 				@Override
@@ -235,7 +218,7 @@ public class Mutinack {
 				public void destroy(SAMFileReader t) {
 					t.close();
 				}
-			}).min(0).max(300).pool(); 	//Need min(0) so inputBam is set before first
+			}).min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
 	final @NonNull Collection<File> intersectAlignmentFiles;
 	final @NonNull Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
@@ -244,8 +227,12 @@ public class Mutinack {
 	final int variableBarcodeLength;
 	final int unclippedBarcodeLength;
 	public final @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
+	private String finalOutputBaseName;
 
-	public Mutinack(Parameters argValues, String name,
+	public Mutinack(
+			MutinackGroup groupSettings,
+			Parameters argValues,
+			String name,
 			int idx,
 			@NonNull File inputBam,
 			int ignoreFirstNBasesQ1, int ignoreFirstNBasesQ2, 
@@ -282,13 +269,13 @@ public class Mutinack {
 			boolean rnaSeq,
 			List<GenomeFeatureTester> excludeBEDs,
 			boolean computeRawDisagreements) {
+		this.groupSettings = groupSettings;
 		this.name = name;
 		this.inputBam = inputBam;
 		this.idx = idx;
 		this.ignoreFirstNBasesQ1 = ignoreFirstNBasesQ1;
 		this.ignoreFirstNBasesQ2 = ignoreFirstNBasesQ2;
-		ignoreFirstNBaseQ1mQ2 = ignoreFirstNBasesQ2 - ignoreFirstNBasesQ1;
-		if (ignoreFirstNBaseQ1mQ2 < 0) {
+		if (ignoreFirstNBasesQ2 < ignoreFirstNBasesQ1) {
 			throw new IllegalArgumentException("Parameter ignoreFirstNBasesQ2 must be greater than ignoreFirstNBasesQ1");
 		}
 		this.ignoreLastNBases = ignoreLastNBases;
@@ -318,9 +305,6 @@ public class Mutinack {
 		this.constantBarcode = constantBarcode;
 		this.unclippedBarcodeLength = 0;
 				
-		ExtendedSAMRecord.setBarcodePositions(0, variableBarcodeLength - 1,
-				-1, -1, unclippedBarcodeLength);
-
 		this.ignoreSizeOutOfRangeInserts = ignoreSizeOutOfRangeInserts;
 		this.ignoreTandemRFPairs = ignoreTandemRFPairs;
 		this.intersectAlignmentFiles = intersectAlignmentFiles;
@@ -340,8 +324,8 @@ public class Mutinack {
 		this.excludeBEDs = excludeBEDs;
 		this.computeRawDisagreements = computeRawDisagreements;
 		
-		stats.add(new AnalysisStats("main_stats_"));
-		stats.add(new AnalysisStats("ins_stats_"));
+		stats.add(new AnalysisStats("main_stats", groupSettings));
+		stats.add(new AnalysisStats("ins_stats", groupSettings));
 		this.stats.forEach(s -> s.setOutputLevel(outputLevel));
 
 	}
@@ -364,36 +348,9 @@ public class Mutinack {
 			//Make sure to return a non-0 value so "make" sees the run failed
 			System.exit(1);
 		}
-		if (executorService != null) {
-			executorService.shutdown();
-		}
-		ParFor.threadPool.shutdown();
 	}
 		
-	private static RemoteMethods getServer(String hostName) throws MalformedURLException, RemoteException {
-		//if (System.getSecurityManager() == null) {
-		//	System.setSecurityManager(new SecurityManager());
-		//}
-		RemoteMethods server;
-		try {
-			server = (RemoteMethods) Naming.lookup("//" + hostName + "/mutinack");
-		} catch (NotBoundException e) {
-			throw new RuntimeException(e);
-		}
-		return server;
-	}
-	
 	private static void realMain0(String args[]) throws InterruptedException, IOException {
-		
-		if (hostName == null)
-			try {
-				hostName = Util.convertStreamToString(
-						Runtime.getRuntime().exec("hostname").getInputStream());
-			} catch (Throwable t) {
-				hostName = "Could not retrieve hostname";
-				t.printStackTrace();
-			}
-
 		
 		final Parameters argValues = new Parameters();
 		JCommander commander = new JCommander();
@@ -413,13 +370,16 @@ public class Mutinack {
 			}
 			//commander.usage();
 			System.out.println(b);
+			StaticStuffToAvoidMutating.shutdown();
 			return;
 		} else if (argValues.startServer != null) {
 			Server.createRegistry(argValues.startServer);
-			new Server(0, argValues.startServer, argValues.recordRunsTo);
+			@SuppressWarnings("unused")
+			Server unusedVariable = 
+					new Server(0, argValues.startServer, argValues.recordRunsTo);
 			return;
 		} else if (argValues.submitToServer != null) {
-			RemoteMethods server = getServer(argValues.submitToServer);
+			RemoteMethods server = Server.getServer(argValues.submitToServer);
 			Job job = new Job();
 			argValues.submitToServer = null;
 			if (argValues.workingDirectory != null) {
@@ -439,9 +399,11 @@ public class Mutinack {
 			} else {
 				System.out.println("RESULT: \n" + result.output);
 			}
+			//Do not perform shutdown as a submission to the server is likely
+			//handled through NGServer
 			return;
 		} else if (argValues.startWorker != null) {
-			RemoteMethods server = getServer(argValues.startWorker);
+			RemoteMethods server = Server.getServer(argValues.startWorker);
 			while (true) {
 				Job job = server.getMoreWork("worker");
 				job.result = new EvaluationResult();
@@ -457,43 +419,30 @@ public class Mutinack {
 				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
 				server.submitWork("worker", job);
-				Signals.clearSignalProcessors();
-				if (!statusUpdateTasks.isEmpty()) {
-					throw new AssertionFailedException();
-				}
+				Signals.clearSignalProcessors();//Should be unnecessary
 			}
+			//Worker never leaves this loop; it just gets killed when its services
+			//are no longer required
 		}
 		
 		if (argValues.version) {
 			System.out.println(VersionInfo.gitCommit);
+			StaticStuffToAvoidMutating.shutdown();
 			return;
 		}
 		realMain1(argValues, System.out, System.err);
 	}
-
-	private static void instantiateThreadPools(int nMaxThreads) {
-		if (executorService != null) {
-			return;
-		}
-		executorService = new ThreadPoolExecutor(0, nMaxThreads,
-                60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), 
-                new NamedPoolThreadFactory("Mutinack executor pool - "));
-		ParFor.threadPool = new ThreadPoolExecutor(0, nMaxThreads,
-                60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-                new NamedPoolThreadFactory("Mutinack ParFor pool - "));	
-	}
-
-	private static String hostName;
+	
 	private static boolean versionChecked = false;
-
+	
 	@SuppressWarnings("resource")
 	public static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
-
-		instantiateThreadPools(argValues.maxThreadsPerPool);
+		
+		StaticStuffToAvoidMutating.instantiateThreadPools(argValues.maxThreadsPerPool);
 
 		if (!versionChecked && !argValues.noStatusMessages && !argValues.skipVersionCheck) {
 			versionChecked = true;
-			executorService.submit(() -> Util.versionCheck());
+			StaticStuffToAvoidMutating.getExecutorService().submit(() -> Util.versionCheck());
 		}
 		
 		if (!versionChecked && !argValues.noStatusMessages) {
@@ -506,26 +455,24 @@ public class Mutinack {
 		}
 		
 		if (!argValues.noStatusMessages) {
-			Util.printUserMustSeeMessage("Host: " + hostName);
+			Util.printUserMustSeeMessage("Host: " + StaticStuffToAvoidMutating.hostName);
 		}
 		
 		out.println(argValues.toString());
 		out.println("Non-trivial assertions " +
-				(DebugControl.NONTRIVIAL_ASSERTIONS ? 
+				(DebugLogControl.NONTRIVIAL_ASSERTIONS ? 
 				"on" : "off"));
 
 		final List<Mutinack> analyzers = new ArrayList<>();
 
-		final ReferenceSequenceFile refFile = 
-				ReferenceSequenceFileFactory.getReferenceSequenceFile(
-						new File(argValues.referenceGenome));
-
-		for (int i = 0; i< argValues.inputReads.size(); i++) {
+		for (int i = 0; i < argValues.inputReads.size(); i++) {
 			analyzers.add(null);
 		}
 
 		SAMFileWriter alignmentWriter = null;
 		SignalProcessor infoSignalHandler = null;
+		final MutinackGroup groupSettings = new MutinackGroup();
+		groupSettings.registerInterruptSignalProcessor();
 
 		try {
 			final SAMFileWriter alignmentWriter0;
@@ -546,8 +493,6 @@ public class Mutinack {
 				}
 				alignmentWriter = factory.
 						makeBAMWriter(header, false, new File(argValues.outputAlignmentFile), 0);
-			} else {
-				alignmentWriter = null;
 			}
 			alignmentWriter0 = alignmentWriter;
 
@@ -555,47 +500,10 @@ public class Mutinack {
 			final @NonNull Map<@NonNull String, Integer> contigSizes;
 
 			if (argValues.readContigsFromFile) {
-				contigSizes = FileCache.getCached(argValues.referenceGenome, ".info", path -> {
-					@NonNull Map<@NonNull String, Integer> contigSizes0 = new HashMap<>();
-					try(Stream<String> lines = Files.lines(Paths.get(argValues.referenceGenome))) {
-						Handle<String> currentName = new Handle<>();
-						SettableInteger currentLength = new SettableInteger(0);
-						lines.forEachOrdered(l -> {
-							if (l.startsWith(">")) {
-								String curName = currentName.get();
-								if (curName != null) {
-									contigSizes0.put(curName, currentLength.get());
-									currentLength.set(0);
-								}
-								int endName = l.indexOf(" ");
-								if (endName == -1) {
-									endName = l.length();
-								}
-								currentName.set(l.substring(1, endName));
-							} else {
-								int lineLength = 0;
-								int n = l.length();
-								for (int i = 0; i < n; i++) {
-									char c = l.charAt(i);
-									if (c != ' ' && c != '\t') {
-										lineLength++;
-									}
-								}
-								currentLength.addAndGet(lineLength);
-							}
-						});
-						String curName = currentName.get();
-						Objects.requireNonNull(curName);
-						contigSizes0.put(curName, currentLength.get());
-						return contigSizes0;
-					} catch (IOException e) {
-						throw new RuntimeException("Problem reading size of contigs from reference file " + path, e);
-					}
-				});
+				contigSizes = StaticStuffToAvoidMutating.loadContigsFromFile(argValues.referenceGenome);
 				contigs = new ArrayList<>();
 				contigs.addAll(contigSizes.keySet());
 				contigs.sort(null);
-
 			} else if (!argValues.contigNamesToProcess.equals(new Parameters().contigNamesToProcess)) {
 				throw new IllegalArgumentException("Contig names specified both in file and as " +
 						"command line argument; pick only one method");
@@ -604,19 +512,18 @@ public class Mutinack {
 				contigSizes = Collections.emptyMap();
 			}
 
-			final @NonNull Map<Object, @NonNull Object> contigNames = new HashMap<>();
+			@NonNull Map<Integer, @NonNull String> contigNames = new HashMap<>();
 			for (int i = 0; i < contigs.size(); i++) {
 				contigNames.put(i, contigs.get(i));
-				indexContigNameMap.put(i, contigs.get(i));
-				indexContigNameReverseMap.put(contigs.get(i), i);
+				groupSettings.indexContigNameReverseMap.put(contigs.get(i), i);
 			}
-			@SuppressWarnings("null")
-			final @NonNull Map<Object, @NonNull Object> contigNamesUnmod = 
-			Collections.unmodifiableMap(contigNames);
-			CounterWithSeqLocation.contigNames = contigNamesUnmod;
-			CounterWithSeqLocOnly.contigNames = contigNamesUnmod;
+			contigNames = Collections.unmodifiableMap(contigNames);
+			groupSettings.setIndexContigNameMap(contigNames);
+			
+			StaticStuffToAvoidMutating.loadContigs(argValues.referenceGenome,
+					contigNames);
 
-			forceOutputAtLocations.clear();
+			groupSettings.forceOutputAtLocations.clear();
 			if (argValues.forceOutputAtPositionsFile != null) {
 				try(Stream<String> lines = Files.lines(Paths.get(argValues.forceOutputAtPositionsFile))) {
 					lines.forEach(l -> {
@@ -629,9 +536,9 @@ public class Mutinack {
 								final String contig = loc.substring(0, columnPosition);
 								final String pos = loc.substring(columnPosition + 1);
 								double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
-								final SequenceLocation parsedLocation = new SequenceLocation(contigs.indexOf(contig),
+								final SequenceLocation parsedLocation = new SequenceLocation(contigs.indexOf(contig), contig,
 										(int) Math.floor(position), position - Math.floor(position) > 0);
-								if (!forceOutputAtLocations.add(parsedLocation)) {
+								if (!groupSettings.forceOutputAtLocations.add(parsedLocation)) {
 									Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 											" in list of forced output positions"));
 								}
@@ -642,7 +549,7 @@ public class Mutinack {
 					});
 				}
 				@SuppressWarnings("null")
-				@NonNull String forceOutputString = forceOutputAtLocations.toString();
+				@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
 				out.println("Forcing output at locations " + 
 						Util.truncateString(forceOutputString));
 			}
@@ -672,7 +579,7 @@ public class Mutinack {
 			for (String bed: argValues.excludeRegionsInBED) {
 				try {
 					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							indexContigNameMap.values(), bed);
+							groupSettings.getIndexContigNameMap(), bed);
 					excludeBEDs.add(reader);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + bed, e);
@@ -683,7 +590,7 @@ public class Mutinack {
 			for (String bed: argValues.repetiveRegionBED) {
 				try {
 					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							indexContigNameMap.values(), bed);
+							groupSettings.getIndexContigNameMap(), bed);
 					repetitiveBEDs.add(reader);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + bed, e);
@@ -735,14 +642,17 @@ public class Mutinack {
 				@SuppressWarnings("null")
 				final @NonNull OutputLevel outputLevel = d[argValues.verbosity];
 
-				Mutinack.PROCESSING_CHUNK = argValues.processingChunk;
-				DuplexRead.intervalSlop = argValues.alignmentPositionMismatchAllowed;
-				CounterWithSeqLocation.BIN_SIZE = argValues.contigStatsBinLength;
-				CounterWithSeqLocOnly.BIN_SIZE = argValues.contigStatsBinLength;
+				groupSettings.PROCESSING_CHUNK = argValues.processingChunk;
+				groupSettings.INTERVAL_SLOP = argValues.alignmentPositionMismatchAllowed;
+				groupSettings.BIN_SIZE = argValues.contigStatsBinLength;
+				
+				groupSettings.setBarcodePositions(0, argValues.variableBarcodeLength - 1,
+						3, 5, 0);
 
 				//TODO Create a constructor that just takes argValues as an input,
 				//and/or use the builder pattern
 				final Mutinack analyzer = new Mutinack(
+						groupSettings,
 						argValues,
 						name,
 						i,
@@ -790,12 +700,12 @@ public class Mutinack {
 						argValues.computeRawDisagreements);
 				analyzers.set(i,analyzer);
 
-				String baseName = (argValues.auxOutputFileBaseName != null ?
-						argValues.auxOutputFileBaseName : "") +
+				analyzer.finalOutputBaseName = (argValues.auxOutputFileBaseName != null ?
+						(argValues.auxOutputFileBaseName) : "") +
 						name;
 
 				if (argValues.outputTopBottomDisagreementBED) {
-					String tbdName = baseName + "top_bottom_disag_";
+					String tbdName = analyzer.finalOutputBaseName + "_top_bottom_disag_";
 					analyzer.stats.forEach(s -> {
 						String path = tbdName + s.getName() + ".bed";
 						try {
@@ -807,7 +717,7 @@ public class Mutinack {
 					});
 				}
 
-				String mutName = baseName + "mutations_";
+				String mutName = analyzer.finalOutputBaseName + "_mutations_";
 				analyzer.stats.forEach(s -> {
 					String path = mutName + s.getName() + ".bed";
 					try {
@@ -837,7 +747,7 @@ public class Mutinack {
 				}
 
 				if (argValues.outputCoverageBed) {
-					String coverageName = baseName + "_coverage_";
+					String coverageName = analyzer.finalOutputBaseName + "_coverage_";
 					analyzer.stats.forEach(s -> {
 						String path = coverageName + s.getName() + ".bed";
 						try {	
@@ -872,7 +782,7 @@ public class Mutinack {
 				if (argValues.bedDisagreementOrienter != null) {
 					try {
 						analyzer.codingStrandTester = BedReader.getCachedBedFileReader(argValues.bedDisagreementOrienter, ".cached",
-								indexContigNameMap.values(), "");
+								groupSettings.getIndexContigNameMap(), "");
 					} catch (Exception e) {
 						throw new RuntimeException("Problem with BED file " + 
 								argValues.bedDisagreementOrienter, e);
@@ -889,7 +799,7 @@ public class Mutinack {
 						final File f = new File(fileName);
 						final String filterName = f.getName();
 						final GenomeFeatureTester filter = BedReader.getCachedBedFileReader(fileName, ".cached",
-								indexContigNameMap.values(), filterName);
+								groupSettings.getIndexContigNameMap(), filterName);
 						final BedComplement notFilter = new BedComplement(filter);
 						final String notFilterName = "NOT " + f.getName();
 						analyzer.filtersForCandidateReporting.put(filterName, filter);
@@ -942,7 +852,7 @@ public class Mutinack {
 						final File f = new File(fileName);
 						final String filterName = "NOT " + f.getName();
 						final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-								indexContigNameMap.values(), filterName);
+								groupSettings.getIndexContigNameMap(), filterName);
 						final BedComplement filter = new BedComplement(filter0);
 						analyzer.stats.forEach(s -> {
 							s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
@@ -974,7 +884,7 @@ public class Mutinack {
 				for (index = 0; index < argValues.reportBreakdownForBED.size(); index++) {
 					try {
 						final File f = new File(argValues.reportBreakdownForBED.get(index));
-						final BedReader filter = new BedReader(indexContigNameMap.values(), 
+						final BedReader filter = new BedReader(groupSettings.getIndexContigNameMap(), 
 								new BufferedReader(new FileReader(f)), f.getName(),
 								argValues.bedFeatureSuppInfoFile == null ? null :
 									new BufferedReader(new FileReader(argValues.bedFeatureSuppInfoFile)));
@@ -986,7 +896,8 @@ public class Mutinack {
 										argValues.refSeqToOfficialGeneName == null ?
 												null :
 													TSVMapReader.getMap(new BufferedReader(
-															new FileReader(argValues.refSeqToOfficialGeneName))));
+															new FileReader(argValues.refSeqToOfficialGeneName))),
+													groupSettings);
 							} catch (Exception e) {
 								throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
 							}
@@ -996,7 +907,7 @@ public class Mutinack {
 								throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
 										" specified multiple times");
 							}
-							counter.setOutputFile(new File(outputPath + "_nLociDuplex_" + ".bed"));
+							counter.setOutputFile(new File(outputPath + "_nLociDuplex.bed"));
 							s.nLociDuplex.addPredicate(f.getName(), filter, counter);
 							for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
 								for (IntervalData<GenomeInterval> loc: locs) {
@@ -1014,8 +925,8 @@ public class Mutinack {
 							counter.setNormalizedOutput(true);
 							counter.setAnalyzerName(name);
 
-							counter = new CounterWithBedFeatureBreakdown(filter, null);
-							counter.setOutputFile(new File(s.getName() + argValues.saveBEDBreakdownTo.get(index0) +
+							counter = new CounterWithBedFeatureBreakdown(filter, null, groupSettings);
+							counter.setOutputFile(new File(argValues.saveBEDBreakdownTo.get(index0) + s.getName() +
 									"_nLociDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
 							s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
 						});
@@ -1041,8 +952,8 @@ public class Mutinack {
 				}
 
 				if (signal != null) {
-					synchronized(statusUpdateTasks) {
-						for (BiConsumer<PrintStream, Integer> update: statusUpdateTasks) {
+					synchronized(groupSettings.statusUpdateTasks) {
+						for (BiConsumer<PrintStream, Integer> update: groupSettings.statusUpdateTasks) {
 							update.accept(System.err, 0);
 						}
 					}
@@ -1059,7 +970,7 @@ public class Mutinack {
 			};
 			Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
-			statusLogger.info("Starting sequence analysis");		
+			statusLogger.info("Starting sequence analysis");
 
 			final List<AnalysisChunk> analysisChunks = new ArrayList<>();
 
@@ -1069,7 +980,7 @@ public class Mutinack {
 				final int startContigAtPosition;
 				final int terminateContigAtPosition;
 				{
-					final String contigName = (String) contigNames.get(contigIndex);
+					final String contigName = contigNames.get(contigIndex);
 					int idx = truncateAtContigs.indexOf(contigName);
 					if (idx > -1) {
 						terminateContigAtPosition = truncateAtPositions.get(idx);
@@ -1077,7 +988,8 @@ public class Mutinack {
 						idx = Parameters.defaultTruncateContigNames.indexOf(contigName);
 						if (idx == -1) {
 							//TODO Make this less ad-hoc
-							terminateContigAtPosition = contigSizes.get(contigName) - 1;
+							terminateContigAtPosition = 
+									Objects.requireNonNull(contigSizes.get(contigName)) - 1;
 						} else {
 							terminateContigAtPosition = Parameters.defaultTruncateContigPositions.get(idx) - 1;
 						}
@@ -1109,30 +1021,29 @@ public class Mutinack {
 							: startSubAt + subAnalyzerSpan - 1;
 
 					analysisChunk.contig = contigIndex;
+					analysisChunk.contigName = contigs.get(contigIndex);
 					analysisChunk.startAtPosition = startSubAt;
 					analysisChunk.terminateAtPosition = terminateAtPosition;
 					analysisChunk.pauseAtPosition = new SettableInteger();
 					analysisChunk.lastProcessedPosition = new SettableInteger();
+					analysisChunk.groupSettings = groupSettings;
 
 					final List<LocationExaminationResults> analyzerCandidateLists = new ArrayList<>();
 					analyzers.forEach(a -> {
-						if (a == null) {
-							throw new AssertionFailedException();
-						}
 						analyzerCandidateLists.add(null);
-						final SubAnalyzer subAnalyzer = new SubAnalyzer(a);
+						final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a));
 						a.subAnalyzers.add(subAnalyzer);
 						analysisChunk.subAnalyzers.add(subAnalyzer);
 					});
 
 					final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(argValues,
 							analysisChunk, analyzers, analyzerCandidateLists,
-							alignmentWriter, forceOutputAtLocations,
+							alignmentWriter, groupSettings.forceOutputAtLocations,
 							dubiousOrGoodDuplexCovInAllInputs,
 							goodDuplexCovInAllInputs,
-							contigNames, contigIndex,
+							contigNames.get(contigIndex), contigIndex,
 							excludeBEDs, repetitiveBEDs,
-							PROCESSING_CHUNK);
+							groupSettings.PROCESSING_CHUNK);
 					analysisChunk.phaser = phaser;
 					phaser.bulkRegister(analyzers.size());
 					phasers.add(phaser);
@@ -1145,49 +1056,50 @@ public class Mutinack {
 			for (int worker = 0; worker < parFor.getNThreads(); worker++) 
 				parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
 
-					final Map<String, ReferenceSequence> refMap = new ConcurrentHashMap<>();
 					final List<Future<?>> futures = new ArrayList<>();
 					int analyzerIndex = -1;
-					final List<Throwable> exceptionList = new ArrayList<>();
 
 					for (Mutinack analyzer: analyzers) {
-
 						analyzerIndex++;
 
 						for (int p = 0; p < argValues.parallelizationFactor; p++) {
-
 							final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex * argValues.parallelizationFactor + p);				
 							final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
 
 							Runnable r = () -> {
 								ReadLoader.load(analyzer, subAnalyzer, analysisChunk,
 										argValues, analysisChunks,
-										PROCESSING_CHUNK, contigs, contigIndex,
-										alignmentWriter0, refMap, refFile);
+										groupSettings.PROCESSING_CHUNK, contigs, contigIndex,
+										alignmentWriter0, StaticStuffToAvoidMutating::getContigSequence);
 							};
-							futures.add(executorService.submit(r));
+							futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
 						}//End loop over parallelization factor
 					}//End loop over analyzers
 
+					MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
+					
+					//Catch all the exceptions because the exceptions throw by
+					//some threads may be secondary to the primary exception
+					//but still be examined before the primary exception
 					for (Future<?> f: futures) {
-						try {
-							f.get();
-						} catch (ExecutionException e) {
-							synchronized(exceptionList) {
-								exceptionList.add(e);
+						gatherer.tryAdd(() -> {
+							try {
+								f.get();
+							} catch (ExecutionException | InterruptedException e) {
+								throw new RuntimeException(e);
 							}
-						}
+						});
 					}
 
-					if (exceptionList.size() > 0) {
-						synchronized(exceptionList) {
-							throw new RuntimeException(exceptionList.get(0));
-						}
-					}
+					gatherer.throwIfPresent();
 
 					for (int p = 0 ; p < argValues.parallelizationFactor; p++) {
 						for (Mutinack analyzer: analyzers) {
-							analyzer.subAnalyzers.set(contigIndex * argValues.parallelizationFactor + p, null);
+							int subAnalyzerIndex = contigIndex * argValues.parallelizationFactor + p;
+							Assert.noException(() -> {
+								analyzer.subAnalyzers.get(subAnalyzerIndex).checkAllDone();
+							});
+							analyzer.subAnalyzers.set(subAnalyzerIndex, null);
 						}
 					}
 
@@ -1200,7 +1112,8 @@ public class Mutinack {
 			if (!argValues.noStatusMessages) {
 				Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name
 						+ " at " + ((int) a.processingThroughput()) + " records / s").
-						collect(Collectors.joining(", ")) + " completed on host " + hostName +
+						collect(Collectors.joining(", ")) + " completed on host " + 
+						StaticStuffToAvoidMutating.hostName +
 						" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 			}
 
@@ -1208,18 +1121,21 @@ public class Mutinack {
 				//devise a better way of figuring this out
 				for (Mutinack analyzer: analyzers) {
 					final ICounterSeqLoc counter = 
-							analyzer.stats.get(0).nLociDuplex.getSeqLocCounters().get("All").snd;
+							Objects.requireNonNull(
+									analyzer.stats.get(0).nLociDuplex.getSeqLocCounters().get("All")).
+							snd;
 					final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
 					final Map<String, Double> allCoverage = new THashMap<>();
 
 					for (Entry<String, Integer> e: contigSizes.entrySet()) {
 						//TODO Need to design a better API to retrieve the counts
-						ICounter<?> c = Util.nullableify(((ICounter<?>) m.get(indexContigNameReverseMap.get(e.getKey()))));
+						ICounter<?> c = ((ICounter<?>) m.get(
+								groupSettings.indexContigNameReverseMap.get(e.getKey())));
 						final double d;
 						if (c == null) {
 							d = 0;	
 						} else {
-							Object o = Util.nullableify(c.getCounts().get(0));
+							Object o = c.getCounts().get(0);
 							if (o == null) {
 								d = 0;
 							} else {
@@ -1235,7 +1151,8 @@ public class Mutinack {
 					final double percentileCoverage80 = nElements == 0 ? Double.NaN : allValues.get((int) (nElements * 0.8));
 					final double percentileCoverage95 = nElements == 0 ? Double.NaN : allValues.get((int) (nElements * 0.95));
 
-					try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("coverage_" + analyzer.name + ".txt"), "utf-8"))) {
+					try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+							new FileOutputStream(analyzer.finalOutputBaseName + "_coverage.txt"), "utf-8"))) {
 						List<Entry<String, Double>> sortedEntries = 
 								allCoverage.entrySet().stream().map(entry ->
 								new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue())).
@@ -1254,50 +1171,81 @@ public class Mutinack {
 					}  
 				}
 			}
-			for (Mutinack analyzer: analyzers) {
-				analyzer.subAnalyzers.stream().filter(sa -> sa != null).forEach(SubAnalyzer::checkAllDone);
-			}
 		} finally {
-			if (alignmentWriter != null) {
-				alignmentWriter.close();
-			}
-
-			for (Mutinack analyzer: analyzers) {
-				analyzer.closeOutputs();
-			}
-			PoolController.shutdown();
-			if (infoSignalHandler != null) {
-				Signals.removeSignalProcessor("INFO", infoSignalHandler);
-			}
+			close(alignmentWriter, analyzers, infoSignalHandler, groupSettings);
 		}
 	}
-	
-	private void closeOutputs() throws IOException {
-		for (Closeable c: itemsToClose) {
-			c.close();
+		
+	private static void close(SAMFileWriter alignmentWriter, List<Mutinack> analyzers,
+			SignalProcessor infoSignalHandler, MutinackGroup groupSettings) {
+		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
+		
+		if (alignmentWriter != null) {
+			gatherer.tryAdd(() -> alignmentWriter.close());
 		}
 
-		stats.forEach(s -> {
-			if (s.locusByLocusCoverage != null) {
-				Builder builder = s.locusByLocusCoverageProtobuilder;
-				for (Entry<String, int[]> e: s.locusByLocusCoverage.entrySet()) {
-					LocusByLocusNumbersPB.ContigNumbers.Builder builder2 =
-							LocusByLocusNumbersPB.ContigNumbers.newBuilder();
-					builder2.setContigName(e.getKey());
-					int [] numbers = e.getValue();
-					builder2.ensureNumbersIsMutable(numbers.length);
-					builder2.numUsedInNumbers_ = numbers.length;
-					builder2.numbers_ = numbers;
-					builder.addContigNumbers(builder2);
-				}
-				Path path = Paths.get(builder.getSampleName() + ".proto");
-				try {
-					Files.write(path, builder.build().toByteArray());
-				} catch (Exception e1) {
-					throw new RuntimeException(e1);
-				}
+		for (Mutinack analyzer: analyzers) {
+			if (analyzer != null) {
+				gatherer.tryAdd(() -> {
+					try {
+						analyzer.closeOutputs();
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				});
 			}
+		}
+		
+		gatherer.tryAdd(() -> PoolController.shutdown());
+		
+		if (infoSignalHandler != null) {
+			gatherer.tryAdd(() -> 
+				Signals.removeSignalProcessor("INFO", infoSignalHandler));
+		}
+		
+		gatherer.tryAdd(() -> groupSettings.close());
+		
+		gatherer.throwIfPresent();
+	}
+
+	private void closeOutputs() throws IOException {
+		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
+		for (Closeable c: itemsToClose) {
+			gatherer.tryAdd(() ->
+			{
+				try {
+					c.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+		}
+
+		gatherer.tryAdd(() -> {
+			stats.forEach(s -> {
+				if (s.locusByLocusCoverage != null) {
+					Builder builder = s.locusByLocusCoverageProtobuilder;
+					for (Entry<String, int[]> e: s.locusByLocusCoverage.entrySet()) {
+						LocusByLocusNumbersPB.ContigNumbers.Builder builder2 =
+								LocusByLocusNumbersPB.ContigNumbers.newBuilder();
+						builder2.setContigName(e.getKey());
+						int [] numbers = e.getValue();
+						builder2.ensureNumbersIsMutable(numbers.length);
+						builder2.numUsedInNumbers_ = numbers.length;
+						builder2.numbers_ = numbers;
+						builder.addContigNumbers(builder2);
+					}
+					Path path = Paths.get(builder.getSampleName() + ".proto");
+					try {
+						Files.write(path, builder.build().toByteArray());
+					} catch (Exception e1) {
+						throw new RuntimeException(e1);
+					}
+				}
+			});
 		});
+		
+		gatherer.throwIfPresent();
 	}
 
 	private static void handleOutputException(String fileName, Throwable e, Parameters argValues) {
@@ -1308,10 +1256,6 @@ public class Mutinack {
 		Util.printUserMustSeeMessage(baseMessage + "; keeping going anyway");
 	}
 
-	static final boolean shouldLog(Level level) {
-		return logger.isEnabled(level);
-	}
-	
 	private double processingThroughput() {
 		return (stats.get(0).nRecordsProcessed.sum()) / 
 				((System.nanoTime() - timeStartProcessing) / 1_000_000_000d);
@@ -1348,14 +1292,4 @@ public class Mutinack {
 		return name + " (" + inputBam.getAbsolutePath() + ")";
 	}
 
-	static {
-		SignalHandler sigINTHandler = new SignalHandler() {
-			@Override
-			public void handle(Signal signal) {
-				Util.printUserMustSeeMessage("Writing output files and terminating");
-				terminateAnalysis = true;
-			}
-		};
-		Signal.handle(new Signal("URG"), sigINTHandler);
-	}
 }

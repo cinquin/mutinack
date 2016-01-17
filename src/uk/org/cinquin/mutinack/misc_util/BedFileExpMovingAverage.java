@@ -40,7 +40,7 @@ public class BedFileExpMovingAverage {
 
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
 
-			BedReader bedReader = new BedReader(indexContigNameMap.values(), 
+			BedReader bedReader = new BedReader(indexContigNameMap, 
 					new BufferedReader(fileReader), refFile, null);
 
 			for (int contig = 0; contig < contigNames.size(); contig++) {
@@ -50,7 +50,7 @@ public class BedFileExpMovingAverage {
 					int l = c * BIN_SIZE; 
 					for (; l < (c + 1) * BIN_SIZE; l++) {
 						double vl = 0;
-						final SequenceLocation loc = new SequenceLocation(contig, l);
+						final SequenceLocation loc = new SequenceLocation(contig, contigName, l);
 						if (parseExpressionLevel) {
 							if (bedReader.apply(loc).size() > 1) {
 								System.err.println("Warning: " + bedReader.apply(loc).size() + " values at " + loc);

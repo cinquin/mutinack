@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 
 @SuppressWarnings("static-method")
@@ -16,7 +17,8 @@ public class CounterTest {
 	public void testMain() {
 		//TODO Should update this test to read the counter's contents, once an
 		//API for that is put together, and not just check String output
-		Counter<Object> c = new Counter<>(false);
+		@SuppressWarnings("resource")
+		Counter<Object> c = new Counter<>(false, new MutinackGroup());
 		SerializableFunction<Object, Object> map = (o -> o.equals(3) ? "trois" : o);
 		c.setKeyNamePrintingProcessor(Arrays.asList(null, map, null));
 		c.accept(CompositeIndex.asCompositeIndex(new Object[] {2,3,4}), 10);

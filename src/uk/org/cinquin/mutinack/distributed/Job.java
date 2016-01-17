@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import uk.org.cinquin.mutinack.Parameters;
 
-public class Job implements Serializable {
+public final class Job implements Serializable {
 	
 	private static final long serialVersionUID = 2926806228113642260L;
 	

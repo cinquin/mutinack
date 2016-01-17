@@ -30,17 +30,19 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 
 	private static final long serialVersionUID = -8173244932350184778L;
 	public final String name;
-	public final @NonNull String contig;
+	public final @NonNull String contigName;
+	public final int contigIndex;
 	private final int start, end;
 	private final int length;
 	private final double lengthInverse;
 	private final Interval<Integer> interval;
 	private @Nullable Boolean negativeStrand;
 	
-	public GenomeInterval(String name, @NonNull String contig, int start, int end, Integer length,
+	public GenomeInterval(String name, int contigIndex, @NonNull String contigName, int start, int end, Integer length,
 			@NonNull Optional<Boolean> negativeStrand) {
 		this.name = name;
-		this.contig = contig;
+		this.contigName = contigName;
+		this.contigIndex = contigIndex;
 		this.start = start;
 		this.end = end;
 		this.length = length == null ? (end - start + 1) : length;
@@ -58,7 +60,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	}
 	
 	public @NonNull SequenceLocation getStartLocation() {
-		return new SequenceLocation(contig, start);
+		return new SequenceLocation(contigIndex, contigName, start);
 	}
 
 	public void setNegativeStrand(@NonNull Optional<Boolean> negativeStrand) {
@@ -80,7 +82,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + contig.hashCode();
+		result = prime * result + contigName.hashCode();
 		result = prime * result + end;
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + start;
@@ -102,7 +104,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 			return false;
 		}
 		GenomeInterval other = (GenomeInterval) obj;
-		if (!contig.equals(other.contig)) {
+		if (!contigName.equals(other.contigName)) {
 			return false;
 		}
 		if (end != other.end) {
@@ -123,7 +125,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	
 	@Override
 	public String toString() {
-		return name + " on contig " + contig + " " + start + " to " + end;
+		return name + " on contig " + contigName + " " + start + " to " + end;
 	}
 
 	public double getLength() {

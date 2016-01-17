@@ -26,6 +26,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -149,7 +150,7 @@ public class Util {
 	}
 
 	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN, int nMismatchesAllowed) {
-		if (DebugControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
 			throw new IllegalArgumentException();
 		}
 		try {
@@ -168,7 +169,7 @@ public class Util {
 	}
 	
 	public static int nMismatches(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
-		if (DebugControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
 			throw new IllegalArgumentException();
 		}
 		int nMismatches = 0;
@@ -189,7 +190,7 @@ public class Util {
 	public static void readFileIntoMap(File file, Map<String, FastQRead> rawReads, int pairID) {
 		Signals.SignalProcessor infoSignalHandler = signal ->
 				System.err.println("Currently reading records from file " + file.getAbsolutePath() + "; " +
-                NumberFormat.getInstance().format(rawReads.size()) + " total so far");
+                DoubleAdderFormatter.nf.get().format(rawReads.size()) + " total so far");
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
 		final SettableInteger lineModulo = new SettableInteger(0);
@@ -431,5 +432,14 @@ public class Util {
 			System.err.println("Could not perform update check: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
+	}
+
+	public static Map<Integer, @NonNull String> indexNameMap(List<@NonNull String> names) {
+		Map<Integer, @NonNull String> indexMap = new HashMap<>();
+		int index = 0;
+		for (String name: names) {
+			indexMap.put(index, name);
+		}
+		return indexMap;
 	}
 }

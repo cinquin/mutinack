@@ -15,8 +15,8 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Pair;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class TSVMapReader {
 	final static Logger logger = LoggerFactory.getLogger(TSVMapReader.class);
@@ -52,11 +52,8 @@ public class TSVMapReader {
 		for (Entry<String, Pair<Set<String>, Set<String>>> e: tempMap.entrySet()) {
 			Set<String> geneNames = e.getValue().fst;
 			final String name;
-			if (geneNames.size() == 0) {
-				throw new AssertionFailedException();
-			} else {
-				name = geneNames.stream().collect(Collectors.joining("="));
-			}
+			Assert.isFalse(geneNames.size() == 0);
+			name = geneNames.stream().collect(Collectors.joining("="));
 			result.put(e.getKey(), name + "\t" + e.getValue().snd);
 		}
 		

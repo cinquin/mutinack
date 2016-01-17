@@ -16,17 +16,14 @@
  */
 package uk.org.cinquin.mutinack.candidate_sequences;
 
+import java.util.Map;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
-import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-
-import java.util.Map;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 
 
 public final class CandidateBuilder {
@@ -36,40 +33,9 @@ public final class CandidateBuilder {
 
 	public CandidateBuilder add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
 		c.setNegativeStrand(negativeStrand);
-		@Nullable CandidateSequence previousCandidate = Util.nullableify(candidates.get(l));
-		
-		if (previousCandidate == null) {
-			candidates.put(l, c);
-		} else {
-			CandidateSequenceCombo combo;
-			if (previousCandidate instanceof CandidateSequenceCombo) {
-				throw new AssertionFailedException("Merging new candidate " + c + "to combo " + this);
-			} else {
-				combo = new CandidateSequenceCombo(c.getOwningAnalyzer(), l, null, Integer.MAX_VALUE);
-				combo.mergeCandidate(previousCandidate);
-				combo.mergeCandidate(c);
-				//TODO Ad-hoc cases below should be streamlined, and ideally just all handled by
-				//combo.mergeCandidate
-				if (previousCandidate.getMutationType() == MutationType.INSERTION) {
-					combo.readName = previousCandidate.readName;
-					combo.getMutableConcurringReads().putAll(previousCandidate.getNonMutableConcurringReads());
-					combo.acceptLigSiteDistance(Math.max(c.minDistanceToLigSite, previousCandidate.minDistanceToLigSite));
-				} else if (c.getMutationType() == MutationType.INSERTION) {
-					combo.readName = c.readName;
-					combo.getMutableConcurringReads().putAll(c.getNonMutableConcurringReads());
-					combo.acceptLigSiteDistance(Math.max(c.minDistanceToLigSite, previousCandidate.minDistanceToLigSite));
-				} else {
-					combo.acceptLigSiteDistance(c.minDistanceToLigSite);
-					combo.acceptLigSiteDistance(previousCandidate.minDistanceToLigSite);
-					combo.getMutableConcurringReads().putAll(previousCandidate.getNonMutableConcurringReads());
-					combo.getMutableConcurringReads().putAll(c.getNonMutableConcurringReads());					
-				}
-				if (DebugControl.NONTRIVIAL_ASSERTIONS && c.getOwningAnalyzer() != previousCandidate.getOwningAnalyzer()) {
-					throw new AssertionFailedException();
-				}
-				candidates.put(l, combo);
-			}
-		}
+		@Nullable CandidateSequence previousCandidate = candidates.get(l);
+		Assert.isNull(previousCandidate);
+		candidates.put(l, c);
 		return this;
 	}
 	

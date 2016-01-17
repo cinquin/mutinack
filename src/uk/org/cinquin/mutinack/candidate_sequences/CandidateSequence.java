@@ -15,23 +15,31 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package uk.org.cinquin.mutinack.candidate_sequences;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gnu.trove.TByteCollection;
-import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import uk.org.cinquin.mutinack.*;
+import uk.org.cinquin.mutinack.DetailedQualities;
+import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.ExtendedSAMRecord;
+import uk.org.cinquin.mutinack.MutationType;
+import uk.org.cinquin.mutinack.Quality;
+import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
 import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-
-import java.io.Serializable;
-import java.util.*;
 
 
 /**
@@ -44,7 +52,6 @@ import java.util.*;
 public class CandidateSequence implements CandidateSequenceI, Serializable {
 	
 	private static final long serialVersionUID = 8222086925028013360L;
-	private @Nullable TIntList distancesToLigSite;
 	private @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
 	private final @NonNull MutationType mutationType;
@@ -67,7 +74,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float totalReadsAtPosition;
 	private final @NonNull SequenceLocation location;
 	private final int owningAnalyzer;
-	private boolean hasFunnyInserts = false;
 	private int averageMappingQuality = -1;
 	private int minInsertSize = -1;
 	private int maxInsertSize = -1;
@@ -176,10 +182,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (obj == null) {
 			return false;
 		}
-		if (obj instanceof CandidateSequenceCombo) {
-			return obj.equals(this);
-		}
-		if (!(obj.getClass().equals(CandidateSequence.class))) {
+		if (!(obj instanceof CandidateSequence)) {
 			return false;
 		}
 		CandidateSequence other = (CandidateSequence) obj;
@@ -196,8 +199,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public String getChange() {
 		final String result;
 		switch (getMutationType()) {
-			case COMBINATION:
-				throw new AssertionFailedException();
 			case DELETION:
 				result = "-" + new String(getSequence()) + "-";
 				break;
@@ -251,16 +252,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setAverageMappingQuality(int averageMappingQuality) {
 		this.averageMappingQuality = averageMappingQuality;
-	}
-
-	@Override
-	public boolean isHasFunnyInserts() {
-		return hasFunnyInserts;
-	}
-
-	@Override
-	public void setHasFunnyInserts(boolean hasFunnyInserts) {
-		this.hasFunnyInserts = hasFunnyInserts;
 	}
 
 	@Override
@@ -457,9 +448,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 	
 	public void addBasePhredQualityScore(byte q) {
-		if (q < 0) {
-			throw new IllegalArgumentException("Negative Phred quality score: " + q);
-		}
+		Assert.isFalse(q < 0, "Negative Phred quality score: %s", q);
 		if (phredQualityScores == null && singleBasePhredQuality == -1) {
 			singleBasePhredQuality = q;
 		} else {
@@ -472,9 +461,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (phredQualityScores != null) {
 			return;
 		}
-		if (singleBasePhredQuality == -2) {
-			throw new AssertionFailedException();
-		}
+		Assert.isFalse(singleBasePhredQuality == -2);
 		phredQualityScores = new TByteArrayList(1000);
 		if (singleBasePhredQuality != -1) {
 			phredQualityScores.add(singleBasePhredQuality);
@@ -546,34 +533,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public boolean containsType(Class<? extends CandidateSequence> class1) {
 		return class1.isInstance(this);
 	}
-	
-	@Override
-	public CandidateSequenceI getUniqueType(@NonNull Class<? extends CandidateSequence> class1) {
-		if (class1.isInstance(this)) {
-			return this;
-		} else {
-			return null;
-		}
-	}
-	
-	@Override
-	public CandidateSequenceI getUniqueType(@NonNull MutationType type) {
-		if (mutationType == type) {
-			return this;
-		} else {
-			return null;
-		}
-	}
 
 	@Override
 	public void mergeWith(@NonNull CandidateSequenceI candidate) {
-		if (DebugControl.NONTRIVIAL_ASSERTIONS && !this.getClass().isInstance(candidate)) {
-			throw new IllegalArgumentException("Cannot merge " + this + " to " + candidate +
-					" " + candidate.getNonMutableConcurringReads());
-		}
-		if (getSupplQuality() != null || candidate.getSupplQuality() != null) {
-			throw new AssertionFailedException();
-		}
+		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s",
+				this, candidate, candidate.getNonMutableConcurringReads());
+		Assert.isFalse(getSupplQuality() != null || candidate.getSupplQuality() != null);
 		getMutableConcurringReads().putAll(candidate.getNonMutableConcurringReads());
 		candidate.addPhredQualitiesToList(getPhredQualityScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
@@ -603,14 +568,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return issues;
 	}
 
-	public void setIssues(@NonNull Map<DuplexRead, DetailedQualities> issues) {
-		this.issues = issues;
-	}
-	
-	public TIntList getDistancesToLigSite() {
-		return distancesToLigSite;
-	}
-	
 	@Override
 	@SuppressWarnings("null")
 	public @NonNull Collection<ComparablePair<String, String>> getMutableRawMismatchesQ2() {
@@ -665,22 +622,4 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return rawInsertionsQ2;
 	}
 
-	public void setDistancesToLigSite(TIntList listDistancesToLigSite) {
-		this.distancesToLigSite = listDistancesToLigSite;
-	}
-
-	@Override
-	public boolean containsMutationType(@NonNull MutationType type) {
-		return type == mutationType;
-	}
-
-	@Override
-	public int getPositionInRead() {
-		return positionInRead;
-	}
-
-	@Override
-	public int getReadEffectiveLength() {
-		return readEL;
-	}
 }

@@ -25,7 +25,7 @@ public class FileCache<T extends Serializable> {
 	private static final FSTConfiguration conf = FSTConfiguration.createFastBinaryConfiguration();
 	
 	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
-
+	
 	@SuppressWarnings("unchecked")
 	public static <T> T getCached(String path, String cacheExtension, Function<String, T> processor) {
 		String canonicalPath;
@@ -84,4 +84,5 @@ public class FileCache<T extends Serializable> {
 		}
 		return result;
 	}
+
 }

@@ -25,17 +25,19 @@ import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 
 public class AnalysisChunk {
 	int contig;
+	String contigName;
 	int startAtPosition;
 	int terminateAtPosition;
-	SettableInteger pauseAtPosition = new SettableInteger();
-	SettableInteger lastProcessedPosition = new SettableInteger();
+	SettableInteger pauseAtPosition;
+	SettableInteger lastProcessedPosition;
 	Phaser phaser;
 	final List<SubAnalyzer> subAnalyzers = new ArrayList<>();
-	public PrintStream out = System.out;
+	public PrintStream out;
+	public MutinackGroup groupSettings;
 
 	@Override
 	public String toString() {
-		return new SequenceLocation(contig, startAtPosition) + " -> " +
-			new SequenceLocation(contig, terminateAtPosition);
+		return new SequenceLocation(contig, contigName, startAtPosition) + " -> " +
+			new SequenceLocation(contig, contigName, terminateAtPosition);
 	}
 }

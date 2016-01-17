@@ -55,8 +55,8 @@ public class PoolSettings<T> {
 	/** Return the ObjectPool associated with this PoolSetting
 	 *  
 	 **/
-	public ObjectPool<T> pool() {
-		return poolFactory.getPool();
+	public ObjectPool<T> pool(boolean createIfNecessary) {
+		return poolFactory.getPool(createIfNecessary);
 	}
 
 	@SuppressWarnings("hiding")

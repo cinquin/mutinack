@@ -52,6 +52,7 @@
 	<pathelement location="lib/logback-classic-1.1.3.jar"/>
 	<pathelement location="lib/protobuf-java-2.4.1_PATCHED.jar"/>
 	<pathelement location="lib/fst-2.43-onejar.jar"/>
+        <pathelement location="lib/equalsverifier-1.7.6.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -64,6 +65,7 @@
     </target>
     <target name="clean">
         <delete dir="bin"/>
+        <delete dir="{junit.output.dir}" failonerror="false"/>
     </target>
     <target depends="clean" name="cleanall"/>
     <target depends="build-subprojects,build-project" name="build"/>
@@ -77,6 +79,7 @@
         </javac>
     </target>
     <target name="UtilTest">
+        <delete dir="{junit.output.dir}" failonerror="false"/>
         <mkdir dir="${junit.output.dir}"/>
         <jacoco:coverage destfile="target/jacoco.exec">
             <junit fork="yes" printsummary="withOutAndErr">
@@ -121,6 +124,13 @@
                 <junit fork="yes" printsummary="withOutAndErr">
                     <formatter type="xml"/>
                     <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.tests.TestEqualsHashcodeContracts" todir="${junit.output.dir}"/>
                     <classpath refid="SequenceAnalysis.classpath"/>
                 </junit>
             </jacoco:coverage>

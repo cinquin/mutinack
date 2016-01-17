@@ -17,7 +17,10 @@
 
 package uk.org.cinquin.mutinack.misc_util;
 
-public class DebugControl {
+import contrib.uk.org.lidalia.slf4jext.Level;
+import contrib.uk.org.lidalia.slf4jext.Logger;
+
+public class DebugLogControl {
 
 	//It turns out that, for many sample types, having both switches
 	//below on does not result in a substantial performance cost.
@@ -29,5 +32,9 @@ public class DebugControl {
 	 * Used to optimize out TRACE-level log statements at compile time.
 	 */
 	public static final boolean ENABLE_TRACE = true;
+
+	public static final boolean shouldLog(Level level, Logger logger) {
+		return logger.isEnabled(level);
+	}
 
 }

@@ -18,7 +18,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
@@ -55,7 +55,7 @@ public final class CandidateCounter {
 	
 	public void compute() {
 		reset();
-		if (DebugControl.NONTRIVIAL_ASSERTIONS) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
 			if (keptRecords.size() > 0 || candidateCounts.size() > 0) {
 				throw new AssertionFailedException();
 			}

@@ -15,5 +15,6 @@
 	<classpathentry kind="lib" path="lib/protobuf-java-2.4.1_PATCHED.jar"/>
 	<classpathentry kind="lib" path="lib/trove-150802233617_PATCHED.jar" sourcepath="lib/trove-150802233617_PATCHED_source.jar"/>
 	<classpathentry kind="lib" path="lib/fst-2.43-onejar.jar" sourcepath="lib/fst-2.43-sources.zip"/>
+        <classpathentry kind="lib" path="lib/equalsverifier-1.7.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

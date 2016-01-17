@@ -24,7 +24,7 @@ import contrib.nf.fr.eraasoft.pool.PoolableObject;
  */
 public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
 	final PoolSettings<T> settings;
-	final PoolableObject<T> poolableObject;
+	PoolableObject<T> poolableObject;
 	Queue<T> queue;
 	final AtomicInteger totalSize = new AtomicInteger(0);
 
@@ -52,7 +52,11 @@ public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
 	public void returnObj(final T t) {
 		if (t == null)
 			return;
-		
+		if (poolableObject == null) {
+			throw new IllegalStateException();
+			//Note that it's still possible for object to be returned
+			//and added back while pool is in the process of being destroyed 
+		}
 		if (!settings.validateWhenReturn() || poolableObject.validate(t)) {
 			poolableObject.passivate(t);
 			queue.add(t);
@@ -98,8 +102,10 @@ public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
 	}
 
 	@Override
-	public void destroy() {
+	//Synchronized to avoid interference from validateIdles 
+	public synchronized void destroy() {
 		clear();
+		poolableObject = null;
 
 	}
 
@@ -122,7 +128,7 @@ public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
 	}
 
 	@Override
-	public void validateIdles() {
+	public synchronized void validateIdles() {
 		List<T> listT = new ArrayList<>(queue.size());
 		int queueSise = queue.size();
 

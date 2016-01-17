@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,6 +35,7 @@ import com.beust.jcommander.Parameter;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters.HideInToString;
 import uk.org.cinquin.mutinack.Parameters.SwallowCommasConverter;
 import uk.org.cinquin.mutinack.SequenceLocation;
@@ -213,10 +215,10 @@ public class LocusByLocusProtoManip {
 				finalI = stopAtPositions.get(stopAtContigs.indexOf(contigName));
 			}
 
-			final int contigId = contigIndices.get(contigName);
+			final int contigId = Objects.requireNonNull(contigIndices.get(contigName));
 
 			for (int i = initialI; i <= finalI; i++) {
-				processor.accept(new SequenceLocation(contigId, i), numbers1[i]);
+				processor.accept(new SequenceLocation(contigId, contigName, i), numbers1[i]);
 			}
 		}
 	}
@@ -238,12 +240,13 @@ public class LocusByLocusProtoManip {
 		SettableInteger nLoci = new SettableInteger(0);
 		
 		GenomeNumbers gn1 = getFromFile(argValues.inputs.get(0));
-		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(cn -> cn.getContigName()).
-				collect(Collectors.toList());
+		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().
+				map(cn -> cn.getContigName()).collect(Collectors.toList());
 		contigNames0.sort(null);
+		Map<Integer, @NonNull String> contigNameMap = Util.indexNameMap(contigNames0);
 		GenomeFeatureTester reader;
 		try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
-			GenomeFeatureTester reader0 = new BedReader(contigNames0, 
+			GenomeFeatureTester reader0 = new BedReader(contigNameMap, 
 					new BufferedReader(fileReader),
 					argValues.domainBedFile, null);
 			if (argValues.invertInputs) {
@@ -278,14 +281,15 @@ public class LocusByLocusProtoManip {
 		final MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>>
 			bedFileIntervals = new MapOfLists<>();		
 		AtomicInteger lineCount = new AtomicInteger(0);
+		int contigIndex = 0;
 		for (String s: contigNames0) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", s, -1, -1, null, Util.emptyOptional())));
+					new GenomeInterval("", contigIndex++, s, -1, -1, null, Util.emptyOptional())));
 		}
 		
 		for (GenomeInterval interval: resultIntervals) {
-			bedFileIntervals.addAt(interval.contig, 
+			bedFileIntervals.addAt(interval.contigName, 
 					new IntervalTree.IntervalData<>(interval.getStart(), interval.getEnd(), interval));
 		}
 		
@@ -325,6 +329,7 @@ public class LocusByLocusProtoManip {
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(cn -> cn.getContigName()).
 				collect(Collectors.toList());
 		contigNames0.sort(null);
+		Map<Integer, @NonNull String> nameMap = Util.indexNameMap(contigNames0);
 		Map<String, Integer> contigIndices = new HashMap<>();
 		for (int i = 0; i < contigNames0.size(); i++) {
 			contigIndices.put(contigNames0.get(i), i);
@@ -343,14 +348,15 @@ public class LocusByLocusProtoManip {
 		
 		String output = argValues.output;
 
-		Counter<Integer> counter = new Counter<>(false);
+		@SuppressWarnings("resource")
+		Counter<Integer> counter = new Counter<>(false, new MutinackGroup());
 
 		int nLoci = 0;
 
 		final GenomeFeatureTester reader;
 		if (argValues.domainBedFile.length() > 0) {
 			try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
-				GenomeFeatureTester reader0 = new BedReader(contigNames0, 
+				GenomeFeatureTester reader0 = new BedReader(nameMap, 
 						new BufferedReader(fileReader),
 						argValues.domainBedFile, null);
 				if (argValues.invertInputs) {
@@ -389,11 +395,11 @@ public class LocusByLocusProtoManip {
 					finalI = stopAtPositions.get(stopAtContigs.indexOf(contigName));
 				}
 				
-				final int contigId = contigIndices.get(contigName);
+				final int contigId = Objects.requireNonNull(contigIndices.get(contigName));
 
 				for (int i = initialI; i <= finalI; i++) {
 					if (reader != null) {
-						if (!reader.test(new SequenceLocation(contigId, i))) {
+						if (!reader.test(new SequenceLocation(contigId, contigName, i))) {
 							continue;
 						}
 					}
@@ -413,7 +419,7 @@ public class LocusByLocusProtoManip {
 					max().getAsInt();
 
 			for (int i = 0; i <= max; i++) {
-				Object o = Util.nullableify(counts.get(i));
+				Object o = counts.get(i);
 				final int value;
 				if (o == null) {
 					value = 0;

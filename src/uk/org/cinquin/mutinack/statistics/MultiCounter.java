@@ -181,6 +181,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable {
 			accept(loc, (double) l);
 	}
 	
+	@SuppressWarnings("null")
 	public double getSum(String predicateName) {
 		if (counters.containsKey(predicateName)) {
 			return counters.get(predicateName).getSnd().sum();

@@ -39,10 +39,10 @@ import com.beust.jcommander.ParameterDescription;
 import com.beust.jcommander.WrappedParameter;
 import com.beust.jcommander.converters.BaseConverter;
 
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
-public class Parameters implements Serializable {
+public final class Parameters implements Serializable {
 
 	public static final long serialVersionUID = 1L;
 	private static final boolean hideInProgressParameters = true;
@@ -429,7 +429,13 @@ public class Parameters implements Serializable {
 	public void canonifyFilePaths() {
 			transformFilePaths(s -> {
 				try {
-					return new File(s).getCanonicalPath();
+					File f = new File(s);
+					String canonical = f.getCanonicalPath();
+					if (f.isDirectory()) {
+						return canonical + "/";
+					} else {
+						return canonical;
+					}
 				} 	catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -444,9 +450,7 @@ public class Parameters implements Serializable {
 					if (fieldValue == null) {
 						continue;
 					}
-					if (!(fieldValue instanceof String)) {
-						throw new AssertionFailedException("Field " + field + " is not String");
-					}
+					Assert.isTrue(fieldValue instanceof String, "Field %s not string", field);
 					String path = (String) fieldValue;
 					String transformed = transformer.apply(path);
 					field.set(this, transformed);
@@ -455,9 +459,7 @@ public class Parameters implements Serializable {
 					if (fieldValue == null) {
 						continue;
 					}
-					if (!(fieldValue instanceof List)) {
-						throw new AssertionFailedException("Field " + field + " is not List");
-					}
+					Assert.isTrue(fieldValue instanceof List, "Field %s not list", field);
 					@SuppressWarnings("unchecked")
 					List<String> paths = (List<String>) fieldValue;
 					for (int i = 0; i < paths.size(); i++) {

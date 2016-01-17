@@ -19,20 +19,24 @@ package uk.org.cinquin.mutinack;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.net.sf.samtools.SAMRecord;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 
 public final class SequenceLocation implements Comparable<SequenceLocation>, Serializable {
 	
-	final public int contigIndex;
-	final public int position;
-	final public int hash;
-	final public boolean plusHalf;
+	public final int contigIndex;
+	public final String contigName;
+	public final int position;
+	public final boolean plusHalf;
 
+	private final int hash;
+	
 	private static final long serialVersionUID = -8294857765048137986L;
 
 	@Override
@@ -70,53 +74,63 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		return true;
 	}
 	
-	public SequenceLocation(int contigIndex, int position, boolean plusHalf) {
-		if (contigIndex < 0)
-			throw new AssertionFailedException();
+	public SequenceLocation(int contigIndex, String contigName, int position, boolean plusHalf) {
+		Assert.isFalse(contigIndex < 0);
+		this.contigName = contigName;
 		this.contigIndex = contigIndex;
 		this.position = position;
 		this.plusHalf = plusHalf;
 		
 		this.hash = computeHash();
+	}
+	
+	public SequenceLocation(int contigIndex, Map<Integer, String> nameMap, int position, boolean plusHalf) {
+		this(contigIndex, nameMap.get(contigIndex), position, plusHalf);
+	}
+	
+	public SequenceLocation(int contigIndex, String contigName, int position) {
+		this(contigIndex, contigName, position, false);
+	}
 
+	public SequenceLocation(int contigIndex, Map<Integer, String> nameMap, int position) {
+		this(contigIndex, nameMap.get(contigIndex), position, false);
 	}
 	
-	public SequenceLocation(int contigIndex, int position) {
-		this(contigIndex, position, false);
-	}
-	
-	public SequenceLocation(@NonNull String contigName, int position) {
+	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
+			int position) {
 		final int contigIndex1;
 		try {
-			contigIndex1 = Mutinack.indexContigNameReverseMap.get(contigName);
+			contigIndex1 = Objects.requireNonNull(
+					indexContigNameReverseMap.get(contigName));
 		} catch (NullPointerException e) {
 			throw new RuntimeException("Could not retrieve contig index for " + contigName +
-					" in " + Mutinack.indexContigNameReverseMap);
+					" in " + indexContigNameReverseMap);
 		}
 		this.contigIndex = contigIndex1;
 		this.position = position;
 		this.plusHalf = false;
+		this.contigName = contigName;
 		
 		this.hash = computeHash();
 	}
 	
 	public @NonNull SequenceLocation add(int offset) {
-		return new SequenceLocation(contigIndex, position + offset);
+		return new SequenceLocation(contigIndex, contigName, position + offset, plusHalf);
 	}
 	
 	public SequenceLocation(SAMRecord rec) {
-		this(rec.getReferenceName(), rec.getAlignmentStart());
+		this(rec.getReferenceIndex() , rec.getReferenceName(), rec.getAlignmentStart());
 	}
 
 	@Override
 	public String toString() {
-		return Mutinack.indexContigNameMap.get(contigIndex) + ":"
-				+ nf.get().format(position + 1) +
+		return getContigName() + ":" +
+				nf.get().format(position + 1) +
 				(plusHalf ? ".5" : "");//Internal indexing starts at 0
 	}
 	
 	public String getContigName() {
-		return Mutinack.indexContigNameMap.get(contigIndex);
+		return contigName;
 	}
 	
 	private static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {

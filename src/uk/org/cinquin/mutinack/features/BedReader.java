@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,12 +42,12 @@ import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class BedReader implements GenomeFeatureTester, Serializable {
 
@@ -63,10 +64,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	
 	@SuppressWarnings("resource")
 	public static BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			Collection<@NonNull String> contigNames, String readerName) {
+			Map<Integer, @NonNull String> indexContigNameMap, String readerName) {
 		return FileCache.getCached(path0, cacheExtension, path -> {
 			try {
-				return new BedReader(contigNames, 
+				return new BedReader(indexContigNameMap, 
 						new BufferedReader(new FileReader(new File(path))), readerName, null);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -75,20 +76,27 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	}
 	
 	@SuppressWarnings("null")
-	public BedReader (Collection<@NonNull String> contigNames, BufferedReader reader,
+	public BedReader(Map<Integer, @NonNull String> indexContigNameMap, BufferedReader reader,
 			String readerName, BufferedReader suppInfoReader) throws ParseRTException {
+		
+		Map<String, Integer> reverseIndex = new HashMap<>();
+		for (Entry<Integer, @NonNull String> e: indexContigNameMap.entrySet()) {
+			if (reverseIndex.put(e.getValue(), e.getKey()) != null) {
+				throw new IllegalArgumentException("Repeated contig name " + e.getValue());
+			}
+		}
 		
 		this.readerName = readerName;
 		bedFileIntervals = new MapOfLists<>();
 		
 		int entryCount = 0;
 
-		AtomicInteger lineCount = new AtomicInteger(0);
+		final AtomicInteger lineCount = new AtomicInteger(0);
 
-		for (String s: contigNames) {
+		for (Entry<Integer, @NonNull String> s: indexContigNameMap.entrySet()) {
 			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", s, -1, -1, null, Optional.empty())));
+			bedFileIntervals.addAt(s.getValue(), new IntervalTree.IntervalData<>(-1, -1, 
+					new GenomeInterval("", s.getKey(), s.getValue(), -1, -1, null, Optional.empty())));
 		}
 		
 		final Pattern underscorePattern = Pattern.compile("_");
@@ -139,9 +147,9 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						length = null;
 						strandPolarity = Optional.empty();
 					}
-					GenomeInterval interval = new GenomeInterval(name, /*contig*/ components[0], 
-							start, end, length, strandPolarity);
-					bedFileIntervals.addAt(interval.contig, new IntervalTree.IntervalData<>(start, end, interval));
+					GenomeInterval interval = new GenomeInterval(name, reverseIndex.get(components[0]), 
+							/*contig*/ components[0], start, end, length, strandPolarity);
+					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
 				} catch (NumberFormatException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);
 				}
@@ -165,9 +173,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
 		
-		if (entryCount != lineCount.get()) {
-			throw new AssertionFailedException("Incorrect number of entries after BED file reading: " + entryCount + " vs " + lineCount.get());
-		}
+		Assert.isFalse(entryCount != lineCount.get(),
+				"Incorrect number of entries after BED file reading: %s vs %s", entryCount, lineCount.get());
 		
 		if (suppInfoReader == null) {
 			suppInfo = Collections.emptyMap();

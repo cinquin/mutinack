@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +45,8 @@ public final class ParFor {
 	final private Object doneSemaphore = new Object();
 	private volatile boolean done = false;
 	
-	static public transient ExecutorService threadPool = Executors.newCachedThreadPool();
+	static public ExecutorService threadPool;
+	@SuppressWarnings("unused")
 	private static final int nProc = Runtime.getRuntime().availableProcessors();
 
 	public interface ProgressReporter {
@@ -211,10 +211,9 @@ public final class ParFor {
 										synchronized(doneSemaphore) {
 											doneSemaphore.notifyAll();
 										}
-									}
-									else if (!printedMissingExceptionWarning) {
+									} else if (!printedMissingExceptionWarning) {
 										printedMissingExceptionWarning = true;
-										logger.error(name + "Multiple exceptions caught in ParFor(1); only 1 will be rethrown");
+										logger.error(name + ": multiple exceptions caught in ParFor");
 									}
 								}
 								logger.error(name + "Aborting ParFor run");
@@ -315,7 +314,7 @@ public final class ParFor {
 							}
 						}
 						else
-							logger.error(name + "Multiple exceptions caught in ParFor(2); only 1 will be rethrown");
+							logger.error(name + ": multiple exceptions caught in ParFor; only 1 will be rethrown");
 					}
 					logger.error(name + "Aborting ParFor run");
 				}
@@ -359,6 +358,12 @@ public final class ParFor {
 
 	public void setName(String name) {
 		this.name = name + ": ";
+	}
+
+	public static void shutdownExecutor() {
+		if (threadPool != null) {
+			threadPool.shutdown();
+		}
 	}
 
 }

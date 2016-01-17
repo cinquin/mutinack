@@ -18,6 +18,8 @@ package uk.org.cinquin.mutinack.statistics;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
@@ -49,7 +51,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 
 	protected boolean on = true;
 	
-	private final @NonNull Counter<GenomeInterval> counter = new Counter<>(false);
+	private final @NonNull Counter<GenomeInterval> counter;
 	private final @NonNull BedReader bedFeatures;
 	private @Nullable File outputFile;
 	private final @Nullable Function<@NonNull String, @NonNull String> supplementaryInfoProvider;
@@ -58,8 +60,9 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 	private boolean normalizedOutput = false;
 	
 	public CounterWithBedFeatureBreakdown(@NonNull BedReader bedFeatures, 
-			Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName) {
-		super();
+			Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName,
+			MutinackGroup groupSettings) {
+		counter = new Counter<>(false, groupSettings);
 		this.bedFeatures = bedFeatures;
 		supplementaryInfoProvider = name -> bedFeatures.getSuppInfo(name);
 		this.refSeqToOfficialGeneName = refSeqToOfficialGeneName;				

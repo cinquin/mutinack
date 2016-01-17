@@ -5,10 +5,12 @@ import java.awt.event.ActionListener;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -38,6 +40,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	private final String recordRunsTo;
 	private final Map<String, Parameters> recordedRuns;
 	
+	@SuppressWarnings("unused")
 	private static Registry registry;
 	
 	private static final FSTConfiguration conf = FSTConfiguration.createFastBinaryConfiguration();
@@ -55,8 +58,19 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		} catch (OverlappingFileLockException e) {
 			throw new AssertionFailedException("Concurrent write attempt when dumping recorded runs");
 		} catch (IOException e) {
-			throw new RuntimeException("Could not save cached data to "
-					+ recordRunsTo, e);
+			//An IOException can be thrown if locking is not supported by
+			//the OS / filesystem. In that case, try again without lock
+			if ("Operation not supported".equals(e.getMessage())) {
+				try (FileOutputStream os = new FileOutputStream(recordRunsTo)) {
+					os.write(conf.asByteArray(recordedRuns));
+				} catch (IOException e1) {
+					throw new RuntimeException("Could not save cached data to "
+							+ recordRunsTo, e1);
+				}
+			} else {
+				throw new RuntimeException("Could not save cached data to "
+						+ recordRunsTo, e);
+			}
 		}
 		System.err.println("Dumped " + recordedRuns.size() + " runs to file " + recordRunsTo);
 	}
@@ -203,6 +217,19 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	public String getServerUUID() throws RemoteException {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public static RemoteMethods getServer(String hostName) throws MalformedURLException, RemoteException {
+		//if (System.getSecurityManager() == null) {
+		//	System.setSecurityManager(new SecurityManager());
+		//}
+		RemoteMethods server;
+		try {
+			server = (RemoteMethods) Naming.lookup("//" + hostName + "/mutinack");
+		} catch (NotBoundException e) {
+			throw new RuntimeException(e);
+		}
+		return server;
 	}
 
 }

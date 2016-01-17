@@ -16,18 +16,17 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
-import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-
 import java.io.Serializable;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
+
+import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.Util;
 
 
 public class StatsCollector implements Serializable {
@@ -49,9 +48,7 @@ public class StatsCollector implements Serializable {
 			synchronized(values) {
 				result = Util.nullableify(values.get(index));
 			}
-			if (result == null) {
-				throw new AssertionFailedException();
-			}
+			Objects.requireNonNull(result);
 		}
 		return result;
 	}
@@ -80,7 +77,7 @@ public class StatsCollector implements Serializable {
 	}
 	
 	public String toString(@NonNull Function<Long, Long> transformer) {
-		return values.toString() + "; total: " + NumberFormat.getInstance().format(
+		return values.toString() + "; total: " + DoubleAdderFormatter.nf.get().format(
 				transformer.apply(sum()));
 	}
 }

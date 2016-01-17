@@ -44,7 +44,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
  * @param <K>
  * @param <V>
  */
-public class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Closeable {
+public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Closeable {
 		
 	private volatile RuntimeException storageException = null;
 	private volatile boolean terminated = false;

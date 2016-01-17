@@ -16,7 +16,6 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
-import java.text.NumberFormat;
 import java.util.concurrent.atomic.LongAdder;
 
 
@@ -26,6 +25,6 @@ public final class LongAdderFormatter extends LongAdder implements Serializable 
 
 	@Override
 	public String toString(){
-		return NumberFormat.getInstance().format(sum());
+		return DoubleAdderFormatter.nf.get().format(sum());
 	}
 }

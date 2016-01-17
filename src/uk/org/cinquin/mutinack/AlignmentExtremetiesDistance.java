@@ -23,8 +23,12 @@ final class AlignmentExtremetiesDistance {
 	private static final byte @NonNull[] emptyBarcode = new byte[0];
 
 	private DuplexRead dr;
-	public final @NonNull DuplexRead temp = new DuplexRead(emptyBarcode, emptyBarcode, false, false);
+	public final @NonNull DuplexRead temp;
 	
+	public AlignmentExtremetiesDistance(MutinackGroup groupSettings) {
+		temp = new DuplexRead(groupSettings, emptyBarcode, emptyBarcode, false, false);
+	}
+
 	public void set(ExtendedSAMRecord r) {
 		if (r.getReadPositiveStrand()) {
 			temp.setPositions(

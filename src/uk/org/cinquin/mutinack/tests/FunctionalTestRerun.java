@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,6 +24,8 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Parameters;
+import uk.org.cinquin.mutinack.SubAnalyzer;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
@@ -35,7 +39,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
  */
 @RunWith(Parameterized.class)
 public class FunctionalTestRerun {
-
+	
 	private final static Logger logger = LoggerFactory.getLogger(FileCache.class);
 
 	public static Map<String, Parameters> testArguments;
@@ -46,20 +50,40 @@ public class FunctionalTestRerun {
 		try (DataInputStream dataIS = new DataInputStream(new FileInputStream(pathToRecordedTests))) {
 			byte [] bytes = new byte [(int) new File(pathToRecordedTests).length()];
 			dataIS.readFully(bytes);
-			testArguments = (Map<String, Parameters>) conf.asObject(bytes);
+			@SuppressWarnings("unchecked")
+			Map<String, Parameters> testArgs = (Map<String, Parameters>) conf.asObject(bytes);
+			testArguments = testArgs;
 		} catch (IOException e) {
 			logger.error("Problem reading data from " + new File(pathToRecordedTests).getAbsolutePath(), e);
 		}
 	}
 	
-	@org.junit.runners.Parameterized.Parameters(name = "{0}")
+	private final static List<String> listDuplexKeepTypes = Arrays.asList(new String [] 
+			{"DuplexHashMapKeeper", "DuplexITKeeper", "DuplexArrayListKeeper", null});
+	
+	private final static List<String> dontForceDuplexKeepTypes = Arrays.asList(new String []
+			{null});
+	
+	@org.junit.runners.Parameterized.Parameters(name = "{0}-{1}-{2}")
     public static Iterable<Object[]> data() {
-    	return testArguments.keySet().stream().map(s -> new Object [] {s}).
+    	List<String> param2List = false ? dontForceDuplexKeepTypes : listDuplexKeepTypes ;
+    	List<Object[]> result = testArguments.keySet().stream().flatMap(s -> param2List.
+    			stream().map(duplex -> new Object [] {s, duplex, true})).
         		collect(Collectors.toList());
+    	if (result.size() > 0) {
+    		result.get(0)[2] = false;
+    	}
+    	return result;
     }
 
-	@Parameter
+	@Parameter(0)
 	public String testName;
+	
+	@Parameter(1)
+	public String duplexKeeperType;
+	
+	@Parameter(2)
+	public boolean suppressAlignmentOutput;
 	
 	Parameters param;
 	
@@ -67,25 +91,27 @@ public class FunctionalTestRerun {
 	public void test() throws InterruptedException, IOException {
 		if (param == null) {
 			param = testArguments.get(testName);
-			if (param == null) {
-				throw new AssertionFailedException("Could not find parameters for test " +
-						testName + " within " + 
+			Assert.isNonNull(param, "Could not find parameters for test %s within %s",
+						testName, 
 						testArguments.keySet().stream().collect(Collectors.joining("\t")));
-			}
-			if (param.referenceOutput == null) {
-				throw new AssertionFailedException("No reference output specified for test GenericTest");
-			}
-			if (! new File(param.referenceOutput).exists()) {
-				throw new AssertionFailedException("File " + new File(param.referenceOutput).getAbsolutePath() + " does not exist");
-			}
+			Assert.isNonNull(param.referenceOutput,
+					"No reference output specified for test GenericTest");
+			Assert.isTrue(new File(param.referenceOutput).exists(),
+					"File %s does not exist", new File(param.referenceOutput).getAbsolutePath());
 			param.terminateImmediatelyUponError = false;
+			if (suppressAlignmentOutput) {
+				param.outputAlignmentFile = null;
+			}
 		}
-
+		
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream outPS = new PrintStream(outStream);
 		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
 		PrintStream errPS = new PrintStream(errStream);
+		
+		SubAnalyzer.forceKeeperType = duplexKeeperType;
 		Mutinack.realMain1(param, outPS, errPS);
+		SubAnalyzer.forceKeeperType = null;
 		
 		final String out = outStream.toString();
 		

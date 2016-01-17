@@ -16,6 +16,7 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ import sun.misc.SignalHandler;
 
 public class Signals {
 
-	public interface SignalProcessor {
+	public interface SignalProcessor extends Serializable {
 		void handle(Signal signal);
 	}
 

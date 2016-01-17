@@ -48,6 +48,7 @@ public class DetailedQualities implements Serializable {
 		updateMin(q);
 	}
 	
+	@SuppressWarnings("null")
 	private void updateMin(@NonNull Quality q) {
 		if (min == null) {
 			min = q;

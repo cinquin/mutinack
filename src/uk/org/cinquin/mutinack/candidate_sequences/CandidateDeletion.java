@@ -53,9 +53,6 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 	public final boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj instanceof CandidateSequenceCombo) {
-			return obj.equals(this);
-		}
 		if (!(obj instanceof CandidateDeletion))
 			return false;
 		CandidateDeletion other = (CandidateDeletion) obj;
@@ -74,11 +71,6 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 			initialLigationSiteD);
 		this.deletionStart = deletionStart;
 		this.deletionEnd = deletionEnd;
-	}
-	
-	@Override
-	public boolean containsMutationType(@NonNull MutationType type) {
-		return type == MutationType.DELETION;
 	}
 
 }
