@@ -1,11 +1,13 @@
 package uk.org.cinquin.mutinack.tests;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -27,7 +29,7 @@ import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.FunctionalTestFailed;
 
 /**
  * The "recordedFunctionalTestRuns.bin" file must have been created prior to running
@@ -91,6 +93,7 @@ public class FunctionalTestRerun {
 	public void test() throws InterruptedException, IOException {
 		if (param == null) {
 			param = testArguments.get(testName);
+			//TODO Switch to throwing TestRunFailure
 			Assert.isNonNull(param, "Could not find parameters for test %s within %s",
 						testName, 
 						testArguments.keySet().stream().collect(Collectors.joining("\t")));
@@ -116,8 +119,8 @@ public class FunctionalTestRerun {
 		final String out = outStream.toString();
 		
 		try(Stream<String> lines = Files.lines(Paths.get(param.referenceOutput))) {
-			lines.forEach(l -> {
-				String[] split = l.split("\t");
+			lines.forEach((final String line) -> {
+				String[] split = line.split("\t");
 				StringBuilder headSB = new StringBuilder();
 				for (int i = 0; i < Math.min(8, split.length); i++) {
 					if (i > 0) {
@@ -131,21 +134,26 @@ public class FunctionalTestRerun {
 					if (split.length > 1 && !split[1].equals("")) {
 						subset = split[1];
 					} else {
-						split = l.split("\\s+");
+						split = line.split("\\s+");
 						subset = split[0];
 					}
-					final String suppMessage;
-					final int i = out.indexOf(subset);
-					if (i > -1) {
-						int lineEnd = out.indexOf("\n", i);
-						if (lineEnd == -1) {
-							lineEnd = out.length() - 2;
-						}
-						suppMessage = "\nDid find\n" + out.substring(i, lineEnd + 1);
-					} else {
-						suppMessage = "\n";
+					final StringBuilder suppMessage = new StringBuilder();
+					try (final BufferedReader reader = new BufferedReader(
+							new StringReader(out))) {
+							String outLine;
+							while((outLine = reader.readLine()) != null) {
+								if (outLine.indexOf(subset) > -1) {
+									if (suppMessage.length() == 0) {
+										suppMessage.append("Did find\n");
+									}
+									suppMessage.append(outLine).append("\n");
+								}
+							}
+					} catch (IOException e) {
+						throw new RuntimeException(e);
 					}
-					throw new AssertionFailedException("Could not find " + l + suppMessage);
+					throw new FunctionalTestFailed("Could not find " + line + 
+							"\n" + suppMessage);
 				}
 			});
 		}

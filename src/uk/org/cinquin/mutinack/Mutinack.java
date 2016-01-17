@@ -512,7 +512,8 @@ public class Mutinack {
 				contigSizes = Collections.emptyMap();
 			}
 
-			@NonNull Map<Integer, @NonNull String> contigNames = new HashMap<>();
+			@NonNull Map<@NonNull Integer, @NonNull String> contigNames =
+					new HashMap<>();
 			for (int i = 0; i < contigs.size(); i++) {
 				contigNames.put(i, contigs.get(i));
 				groupSettings.indexContigNameReverseMap.put(contigs.get(i), i);
