@@ -59,7 +59,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private @Nullable ExtendedSAMRecord mate;
 	private final @Nullable String mateName;
 	private final int hashCode;
-	public transient @Nullable DuplexRead duplexRead;
+	public @Nullable DuplexRead duplexRead;
 	private byte @Nullable[] mateVariableBarcode; //TODO Could probably be made final
 	public final byte @NonNull[] variableBarcode;
 	final byte @Nullable[] constantBarcode;
