@@ -113,7 +113,7 @@ clean_log_and_temp_files:
 	@echo "$(LOG_AND_TEMP_FILES)" | xxd -p -r | xargs -0 -n200 rm -f
 
 clean_results:
-	@echo "$(RESULTS) $(OUTPUT_ALIGNMENTS) $(PROGRAM_OUTPUT)" | xargs -n200 rm -f
+	$(shell find . -name .\*control_mutations.bed -delete -or -name .\*control_top_bottom_disag.bed -delete -or -name .\*test_mutations.bed -delete -or -name .\*test_top_bottom_disag.bed -delete -or -name '*_coverage.bed' -delete -or -name '*_coverage.proto' -delete -or -name '*main_stats_.bed' -delete -or -name '*main_stats.bed' -delete -or -name '*ins_stats_.bed' -delete -or -name '*ins_stats.bed' -not -name 'expected_*' -delete -or -name '*_coverage.txt' -not -name 'expected_*' -delete -or -name '*_nLociDuplex.bed' -not -name 'expected_*' -delete)
 
 clean_check:
 	@echo "$(RESULT_CHECKS)" | xargs -n200 rm -f
