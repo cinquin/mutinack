@@ -7,6 +7,7 @@ if (! -e $ARGV[0]) {
 }
 my $found = 1;
 my $n_lines = 0;
+my $n_columns_to_check = 18;
 while(my $line = <STDIN>) {
 	chomp($line);
 	if ($line eq "") {
@@ -14,8 +15,8 @@ while(my $line = <STDIN>) {
 	}
 	my @capture = split(/\t/, $line);
 	my $subset;
-	if (scalar(@capture) >= 8) {
-		$subset = join("\t", map { (defined) ? $_ : '' } @capture[0..7]);
+	if (scalar(@capture) >= $n_columns_to_check) {
+		$subset = join("\t", map { (defined) ? $_ : '' } @capture[0..$n_columns_to_check - 1]);
 	} else {
 		$subset = $line;
 	}
