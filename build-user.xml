@@ -20,7 +20,15 @@
     <echo level="info" message="repository.version is set ${repository.version}"/>
   </target>
   <target name="insert-git-info" depends="git.revision">
-    <replaceregexp file="src/uk/org/cinquin/mutinack/misc_util/VersionInfo.java" match="@GITCOMMIT@.*&quot;" replace="@GITCOMMIT@ ${repository.version}&quot;"/>
+    <tstamp>
+      <format property="buildtime" pattern="MM/dd/yyyy hh:mm aa"/>
+    </tstamp>
+    <mkdir dir="bin"/>
+    <propertyfile file="bin/build.info">
+      <entry key="version" value="${repository.version}"/>
+      <entry key="buildtime" value="${buildtime}"/>
+      <entry key="builder" value="${user.name}"/>
+    </propertyfile>
   </target>
   <fileset id="lib-files" dir="."> <include name="lib/**/*"/> <include name="lib"/> <!--The latter include does not do what it is supposed to with respect to uptodate--> </fileset> 
   <uptodate property="unjar.notRequired" targetfile="lib_unjarred">
@@ -35,7 +43,7 @@
       </fileset>
     </unzip>
   </target>
-  <fileset id="to-jar-files" dir="."> <include name="lib/**/*"/> <include name="bin/**/*.class"/> <include name="src/**/*.java"/> </fileset>
+  <fileset id="to-jar-files" dir="."> <include name="lib/**/*"/> <include name="bin/**/*"/> <include name="src/**/*.java"/> </fileset>
   <uptodate property="jar.notRequired" targetfile="mutinack.jar">
     <srcfiles refid="to-jar-files"/>
   </uptodate>
@@ -51,6 +59,7 @@
       <attribute name="Implementation-Version" value="${version.num}-b${build.number}"/>
       <attribute name="Built-Date" value="${TODAY}"/>
       <attribute name="Main-Class" value="uk.org.cinquin.mutinack.Mutinack"/>
+      <attribute name="Git-version" value="${repository.version}"/>
     </manifest>
     <jar jarfile="mutinack.jar" manifest="MANIFEST.MF">
       <fileset dir="bin" includes="**/*" excludes="**/.DS_Store"/>
@@ -74,7 +83,7 @@
   </target>
   <path id="pit.path"> <pathelement location="lib/pitest-1.1.8.jar"/> <pathelement location="lib/pitest-ant-1.1.8.jar"/> <pathelement location="lib/junit-4.12.jar"/> </path>
   <taskdef name="pitest" classname="org.pitest.ant.PitestTask" classpathref="pit.path" />
-  <target name="mutationCoverage">
+  <target name="mutationCoverage" depends="build">
     <pitest
       pitClasspath="pit.path"
       classPath="SequenceAnalysis.classpath"
@@ -82,13 +91,12 @@
       targetTests="uk.org.cinquin.mutinack.*"
       reportDir="PIT_output"
       sourceDir="src"
-      threads="1"
+      threads="20"
       timeoutConst="25000"
-      maxMutationsPerClass="1"
       mutators="INVERT_NEGS,RETURN_VALS,INLINE_CONSTS,MATH,VOID_METHOD_CALLS,NEGATE_CONDITIONALS,CONDITIONALS_BOUNDARY,INCREMENTS,REMOVE_INCREMENTS,NON_VOID_METHOD_CALLS,REMOVE_CONDITIONALS_EQ_IF,REMOVE_CONDITIONALS_EQ_ELSE,REMOVE_CONDITIONALS_ORD_IF,REMOVE_CONDITIONALS_ORD_ELSE,REMOVE_CONDITIONALS,EXPERIMENTAL_MEMBER_VARIABLE,EXPERIMENTAL_SWITCH,EXPERIMENTAL_ARGUMENT_PROPAGATION"
-      avoidCallsTo="contrib.uk.org.lidalia.slf4jext,uk.org.cinquin.mutinack.misc_util.Assert,uk.org.cinquin.mutinack.misc_util.DebugLogControl,uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating,contrib.nf.fr.eraasoft.pool.impl"
+      avoidCallsTo="contrib.uk.org.lidalia.slf4jext,uk.org.cinquin.mutinack.misc_util.Assert,uk.org.cinquin.mutinack.misc_util.DebugLogControl,uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating,contrib.nf.fr.eraasoft.pool.impl,uk.org.cinquin.mutinack.misc_util.Util,java.util.Objects"
       excludedClasses="uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating,uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer,uk.org.cinquin.mutinack.misc_util.Util,uk.org.cinquin.mutinack.misc_util.FileCache"
-      excludedMethods="uk.org.cinquin.mutinack.AnalysisChunk.toString,uk.org.cinquin.mutinack.Mutinack.close,uk.org.cinquin.mutinack.Mutinack.closeOutputs,uk.org.cinquin.mutinack.misc_util.Util.nonNullify,uk.org.cinquin.mutinack.misc_util.Util.nullableify,Objects.requireNonNull"
+      excludedMethods="uk.org.cinquin.mutinack.AnalysisChunk.toString,uk.org.cinquin.mutinack.ExtendedSAMRecord.toString,uk.org.cinquin.mutinack.Mutinack.close,uk.org.cinquin.mutinack.Mutinack.closeOutputs,uk.org.cinquin.mutinack.misc_util.Util.nonNullify,uk.org.cinquin.mutinack.misc_util.Util.nullableify"
       jvmArgs="-Xmx5G -XX:-OmitStackTraceInFastThrow -XX:CICompilerCount=3 -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey -XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey" />
   </target>
 </project>

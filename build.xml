@@ -51,8 +51,15 @@
 	<pathelement location="lib/logback-core-1.1.3.jar"/>
 	<pathelement location="lib/logback-classic-1.1.3.jar"/>
 	<pathelement location="lib/protobuf-java-2.4.1_PATCHED.jar"/>
-	<pathelement location="lib/fst-2.43-onejar.jar"/>
         <pathelement location="lib/equalsverifier-1.7.6.jar"/>
+        <pathelement location="lib/jmockit-1.21.jar"/>
+        <pathelement location="findbugs-3.0.1/lib/findbugs.jar"/>
+        <pathelement location="lib/commons-io-2.4.jar"/>
+        <pathelement location="lib/pitest-1.1.8.jar"/>
+        <pathelement location="lib/jackson-core-2.7.0.jar"/>
+        <pathelement location="lib/jackson-databind-2.7.0.jar"/>
+        <pathelement location="lib/jackson-annotations-2.7.0.jar"/>
+        <pathelement location="lib/fst-2.43-onejar.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -89,7 +96,21 @@
             </junit>
         </jacoco:coverage>
     </target>
-    <target name="SequenceAnalysis">
+    <target name="FunctionalTests">
+        <delete dir="{junit.output.dir}" failonerror="false"/>
+        <mkdir dir="${junit.output.dir}"/>
+        <jacoco:coverage destfile="target/jacoco.exec">
+            <junit fork="yes" printsummary="withOutAndErr">
+                <jvmarg value="-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey"/>
+                <jvmarg value="-XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey"/>
+
+                <formatter type="xml"/>
+                <test name="uk.org.cinquin.mutinack.tests.FunctionalTestRerun" todir="${junit.output.dir}"/>
+                <classpath refid="SequenceAnalysis.classpath"/>
+            </junit>
+        </jacoco:coverage>
+    </target>
+    <target name="SequenceAnalysis" depends="build">
         <mkdir dir="${junit.output.dir}"/>
         <parallel>
             <jacoco:coverage destfile="target/jacoco.exec">
@@ -132,6 +153,17 @@
                     <formatter type="xml"/>
                     <test name="uk.org.cinquin.mutinack.tests.TestEqualsHashcodeContracts" todir="${junit.output.dir}"/>
                     <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                     <classpath refid="SequenceAnalysis.classpath"/>
+                     <batchtest todir="${junit.output.dir}">
+                         <fileset dir="bin/">
+                             <include name="uk/org/cinquin/mutinack/tests/*Test.class" />
+                         </fileset>
+                     </batchtest>
+                    <formatter type="xml"/>
                 </junit>
             </jacoco:coverage>
         </parallel>
