@@ -26,10 +26,10 @@ import uk.org.cinquin.mutinack.misc_util.collections.MapBalancer;
 @RunWith(Parameterized.class)
 public class TestEqualsHashcodeContracts {
 	
-	private final static List<Class<?>> classes = 
-			Arrays.asList(new Class<?>[] {Mutation.class, DuplexRead.class, Job.class,
-				Pair.class, ByteArray.class, MapBalancer.class,
-				GenomeInterval.class, Parameters.class});
+	private static final List<Class<?>> classes =
+			Arrays.asList(Mutation.class, Job.class,
+					Pair.class, ByteArray.class, MapBalancer.class,
+					GenomeInterval.class, Parameters.class);
 	
 	@org.junit.runners.Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data() {
@@ -51,5 +51,13 @@ public class TestEqualsHashcodeContracts {
 	public void seqLocEqualsContract1() {
 		EqualsVerifier.forClass(SequenceLocation.class).withCachedHashCode(
 				"hash", "computeHash", new SequenceLocation(0, "", 0)).verify();
+	}
+	
+	@SuppressWarnings("static-method")
+	@Test
+	public void duplexReadEqualsContract1() {
+		EqualsVerifier.forClass(DuplexRead.class).withPrefabValues(
+				Thread.class, new Thread(), new Thread()).
+				suppress(Warning.NONFINAL_FIELDS).verify();
 	}
 }

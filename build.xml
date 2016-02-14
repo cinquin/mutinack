@@ -19,7 +19,7 @@
                     <fileset dir="bin">
                         <exclude name="**/picard/**"/>
                         <exclude name="**/samtools/**"/>
-                        <exclude name="**/LocusByLocusNumbersPB*"/>
+                        <exclude name="**/PosByPosNumbersPB*"/>
                     </fileset>
                 </classfiles>
                 <sourcefiles encoding="UTF-8">

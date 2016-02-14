@@ -52,7 +52,7 @@ public class BedReaderTest {
 	
 	private final @NonNull Map<Integer, @NonNull String>  mapNames;
 
-	private final static String bed = "chrI	6_029_950	6_033_366	NM_001025782	0	+	6029950	6033366	0	4	\"707,586,522,138,\"	\"0,1110,2238,3278,\"	B0025.1	Caenorhabditis elegans	related to yeast Vacuolar Protein Sorting factor\n" +
+	private static final String bed = "chrI	6_029_950	6_033_366	NM_001025782	0	+	6029950	6033366	0	4	\"707,586,522,138,\"	\"0,1110,2238,3278,\"	B0025.1	Caenorhabditis elegans	related to yeast Vacuolar Protein Sorting factor\n" +
 			"chrI	6_028_501	6_033_366	NM_001025783	0	+	6028501	6033366	0	6	\"150,591,707,586,522,138,\"	\"0,659,1449,2559,3687,4727,\"	B0025.1	Caenorhabditis elegans	related to yeast Vacuolar Protein Sorting factor\n" + 
 			"chrI	4_655_370	4_659_318	NM_001025786	0	+	4655370	4659318	0	7	\"127,738,270,276,317,78,309,\"	\"0,351,1141,1842,2569,3315,3639,\"	B0041.2	Caenorhabditis elegans	B0041.2\n" + 
 			"chrX	7_823_625	7_825_216	NM_182442	0	+	7823625	7825216	0	2	\"192,42,\"	\"0,1549,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" + 

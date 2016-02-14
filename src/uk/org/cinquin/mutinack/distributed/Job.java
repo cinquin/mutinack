@@ -40,7 +40,7 @@ public final class Job implements Serializable {
 	}
 	public Parameters parameters;
 	public String pathToWorkDir;
-	public boolean completed;
+	public volatile boolean completed;
 	public EvaluationResult result;
 	public long timeSubmitted;
 	public long timeGivenToWorker;

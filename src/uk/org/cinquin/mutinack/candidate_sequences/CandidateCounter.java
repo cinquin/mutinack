@@ -39,6 +39,8 @@ public final class CandidateCounter {
 	public final @NonNull Map<@NonNull CandidateSequence,
 		@NonNull SettableInteger> candidateCounts;			
 	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
+	
+	public long nPhreds, sumPhreds;
 
 	public CandidateCounter(@NonNull Set<CandidateSequence> candidates,
 			@NonNull SequenceLocation location) {
@@ -60,11 +62,17 @@ public final class CandidateCounter {
 				throw new AssertionFailedException();
 			}
 		}
+		sumPhreds = 0;
+		nPhreds = 0;
 		for (CandidateSequence candidate: candidates) {
 			for (ExtendedSAMRecord r: records) {
 				if (candidate.getNonMutableConcurringReads().containsKey(r)) {
+					Byte phredScore = r.basePhredScores.get(location);
+					if (phredScore != null) {
+						sumPhreds += phredScore;
+						nPhreds++;
+					}
 					if (minBasePhredScore > 0) {
-						Byte phredScore = r.basePhredScores.get(location);
 						if (phredScore != null && phredScore < minBasePhredScore) {
 							continue;
 						}

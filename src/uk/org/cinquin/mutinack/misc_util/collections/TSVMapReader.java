@@ -19,14 +19,14 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 
 public class TSVMapReader {
-	final static Logger logger = LoggerFactory.getLogger(TSVMapReader.class);
+	static final Logger logger = LoggerFactory.getLogger(TSVMapReader.class);
 
 	@SuppressWarnings("null")
 	public static Map<@NonNull String, @NonNull String> getMap(BufferedReader r) {
 		Map<String, Pair<Set<String>, Set<String>>> tempMap = new HashMap<>();
 		try(Stream<String> lines = r.lines()) {
 			lines.forEachOrdered(l -> {
-				@NonNull String[] components = (@NonNull String @NonNull[]) l.split("\t");
+				@NonNull String[] components = l.split("\t");
 				List<String> suppInfo = new ArrayList<>();
 				for (int i = 2; i < components.length; i++) {
 					suppInfo.add(components[i]);

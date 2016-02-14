@@ -5,9 +5,9 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 
-public class PitestTest {
+public class PitestTestHelper {
 
-	private final static Logger logger = LoggerFactory.getLogger(PitestTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(PitestTestHelper.class);
 
 	public boolean b;
 	

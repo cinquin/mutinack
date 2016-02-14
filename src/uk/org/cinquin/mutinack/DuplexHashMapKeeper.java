@@ -16,4 +16,19 @@ public class DuplexHashMapKeeper extends TIntObjectListHashMap<DuplexRead> imple
 		return add(d.position0, d);
 	}
 
+	@Override
+	public DuplexRead getAndRemove(DuplexRead d) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean supportsMutableDuplexes() {
+		return true;
+	}
+
+	@Override
+	public boolean contains(DuplexRead duplexRead) {
+		return containsValue(duplexRead);
+	}
+
 }

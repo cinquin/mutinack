@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import contrib.net.sf.picard.util.IterableAdapter;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
 public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
@@ -28,7 +27,7 @@ public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 	
 	public @NonNull Iterable<V> getIterable() {
 	
-		return new IterableAdapter<>(new Iterator<V>() {
+		return new IterableAdapter<>(() -> new Iterator<V>() {
 			final Iterator<List<V>> listIt = 
 					TIntObjectListHashMap.this.valueCollection().iterator();
 			

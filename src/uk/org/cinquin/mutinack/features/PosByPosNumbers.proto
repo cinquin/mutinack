@@ -1,5 +1,5 @@
 option optimize_for = LITE_RUNTIME;
-option java_outer_classname = "LocusByLocusNumbersPB";
+option java_outer_classname = "PosByPosNumbersPB";
 option java_package = "uk.org.cinquin.mutinack.features";
 
 message ContigNumbers {

@@ -16,12 +16,11 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
-
-import uk.org.cinquin.mutinack.misc_util.Util;
 
 public interface CompositeIndex {
 	List<@NonNull Object> getIndices();
@@ -35,14 +34,13 @@ public interface CompositeIndex {
 
 				@Override
 				public @NonNull CompositeIndex pop() {
-					return asCompositeIndex(Util.nonNullify(l.subList(1, l.size())));
+					return asCompositeIndex(new ArrayList<>(l.subList(1, l.size())));
 				}
 			};
 	}
 	
-	@SuppressWarnings("null")
 	static @NonNull CompositeIndex asCompositeIndex(@NonNull Object @NonNull[] a) {
-		return asCompositeIndex(Util.nonNullify(Arrays.asList(a)));
+		return asCompositeIndex(Arrays.asList(a));
 	}
 
 	@NonNull CompositeIndex pop();

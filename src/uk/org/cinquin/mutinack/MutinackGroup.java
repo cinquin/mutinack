@@ -5,10 +5,9 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
@@ -16,9 +15,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import sun.misc.Signal;
 import uk.org.cinquin.mutinack.misc_util.Assert;
-import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Util;
 
 /**
@@ -31,24 +28,24 @@ import uk.org.cinquin.mutinack.misc_util.Util;
 public class MutinackGroup implements Closeable, Serializable {
 	private static final long serialVersionUID = 4569342905242962301L;
 	
-	final static Logger logger = LoggerFactory.getLogger(MutinackGroup.class);
+	static final Logger logger = LoggerFactory.getLogger(MutinackGroup.class);
 
 	/**
 	 * Terminate analysis but finish writing output BAM file.
 	 */
-	public volatile boolean terminateAnalysis = false;
+	public volatile transient boolean terminateAnalysis = false;
 
-	private int UNCLIPPED_BARCODE_LENGTH = Integer.MAX_VALUE;
 	private static final int VARIABLE_BARCODE_START = 0;
 	private int VARIABLE_BARCODE_END = Integer.MAX_VALUE;
 	private static final int CONSTANT_BARCODE_START = 3;
 	private static final int CONSTANT_BARCODE_END = 5;
 	private byte[] Ns;
 	
-	public final Collection<BiConsumer<PrintStream, Integer>> statusUpdateTasks = new ArrayList<>();
+	public final transient Collection<BiConsumer<PrintStream, Integer>>
+		statusUpdateTasks = new ArrayList<>();
 	private Map<Integer, @NonNull String> indexContigNameMap;
 	public final Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
-	public final Set<SequenceLocation> forceOutputAtLocations = new HashSet<>();
+	public final Map<SequenceLocation, Boolean> forceOutputAtLocations = new HashMap<>();
 	public int PROCESSING_CHUNK;
 
 	public int INTERVAL_SLOP;
@@ -63,15 +60,13 @@ public class MutinackGroup implements Closeable, Serializable {
 	}
 	
 	public synchronized void setBarcodePositions(int variableStart, int variableEnd,
-			int constantStart, int constantEnd, int unclippedBarcodeLength) {
+			int constantStart, int constantEnd) {
 		Assert.isTrue(variableStart == 0, "Unimplemented");
 		Assert.isTrue(constantStart == 3, "Unimplemented");
 		Assert.isTrue(constantEnd == 5, "Unimplemented");
 		checkSet("variable barcode end", getVariableBarcodeEnd(), variableEnd);
-		checkSet("unclipped barcode length", getUnclippedBarcodeLength(), unclippedBarcodeLength);
 		if (getVariableBarcodeEnd() == Integer.MAX_VALUE) {
 			setVariableBarcodeEnd(variableEnd);
-			setUnclippedBarcodeLength(unclippedBarcodeLength);
 			logger.info("Set variable barcode end position to " + getVariableBarcodeEnd());
 			//VARIABLE_BARCODE_START == 0;
 			final byte[] localNs = new byte [getVariableBarcodeEnd() - getVariableBarcodeStart() + 1];
@@ -88,26 +83,26 @@ public class MutinackGroup implements Closeable, Serializable {
 		return Ns;
 	}
 
-	Signals.SignalProcessor sigINTHandler = new Signals.SignalProcessor() {
-		private static final long serialVersionUID = -1666210584038132608L;
-
-		@Override
-		public void handle(Signal signal) {
+	private transient Thread hook = new Thread(() -> {
 			Util.printUserMustSeeMessage("Writing output files and terminating");
 			terminateAnalysis = true;
 		}
-	};
+	);
+
+	public boolean terminateImmediatelyUponError = true;
+
+	public static String forceKeeperType = null;
 
 	public MutinackGroup() {
 	}
 	
 	public void registerInterruptSignalProcessor() {
-		Signals.registerSignalProcessor("URG", sigINTHandler);
+		Runtime.getRuntime().addShutdownHook(hook);
 	}
 
 	@Override
 	public void close() {
-		Signals.removeSignalProcessor("URG", sigINTHandler);
+		Runtime.getRuntime().removeShutdownHook(hook);
 	}
 
 	public static int getVariableBarcodeStart() {
@@ -130,14 +125,6 @@ public class MutinackGroup implements Closeable, Serializable {
 		this.VARIABLE_BARCODE_END = variableBarcodeEnd;
 	}
 
-	public int getUnclippedBarcodeLength() {
-		return UNCLIPPED_BARCODE_LENGTH;
-	}
-
-	private void setUnclippedBarcodeLength(int unclippedBarcodeLength) {
-		this.UNCLIPPED_BARCODE_LENGTH = unclippedBarcodeLength;
-	}
-
 	public Map<Integer, @NonNull String> getIndexContigNameMap() {
 		Assert.isNonNull(indexContigNameMap, "Uninitialized indexContigNameMap");
 		return indexContigNameMap;
@@ -145,5 +132,11 @@ public class MutinackGroup implements Closeable, Serializable {
 
 	public void setIndexContigNameMap(Map<Integer, @NonNull String> indexContigNameMap) {
 		this.indexContigNameMap = indexContigNameMap;
+	}
+
+	public void errorOccurred() {
+		if (terminateImmediatelyUponError) {
+			terminateAnalysis = true;
+		}
 	}
 }

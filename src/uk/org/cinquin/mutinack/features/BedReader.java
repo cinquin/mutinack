@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
@@ -52,8 +53,11 @@ import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 public class BedReader implements GenomeFeatureTester, Serializable {
 
 	private static final long serialVersionUID = 7826378727266972258L;
+	@JsonIgnore
 	public final MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
+	@JsonIgnore
 	private final List<IntervalTree<GenomeInterval>> contigTrees = new ArrayList<>();
+	@JsonIgnore
 	private final @NonNull Map<@NonNull String, @NonNull String> suppInfo;
 	private final String readerName;
 		
@@ -106,7 +110,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			lines.forEachOrdered(l -> {
 				try {
 					lineCount.incrementAndGet();
-					@NonNull String[] components = (@NonNull String @NonNull[]) l.split("\t");
+					@NonNull String[] components = l.split("\t");
 					if (components.length < 4) {
 						throw new ParseRTException("Missing fields");
 					}
@@ -132,6 +136,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 										if (foundEmptyBlock) {
 											throw new ParseRTException("Two empty block length items");
 										}
+										foundEmptyBlock = true;
 									} else {
 										totalLength += Integer.parseInt(bl);
 									}

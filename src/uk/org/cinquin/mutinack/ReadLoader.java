@@ -40,10 +40,10 @@ import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class ReadLoader {
 	
-	private final static boolean IGNORE_SECONDARY_MAPPINGS = true;
+	private static final boolean IGNORE_SECONDARY_MAPPINGS = true;
 	
-	private final static Logger logger = LoggerFactory.getLogger("ReadLoader");
-	private final static Logger statusLogger = LoggerFactory.getLogger("ReadLoaderStatus");
+	private static final Logger logger = LoggerFactory.getLogger("ReadLoader");
+	private static final Logger statusLogger = LoggerFactory.getLogger("ReadLoaderStatus");
 	
 	@SuppressWarnings("resource")
 	public static void load(Mutinack analyzer, SubAnalyzer subAnalyzer, AnalysisChunk analysisChunk,
@@ -98,7 +98,7 @@ public class ReadLoader {
 
 				int furthestPositionReadInContig = 0;
 				final int maxInsertSize = analyzer.maxInsertSize;
-				final QueryInterval[] bamContig = new QueryInterval[] {
+				final QueryInterval[] bamContig = {
 						bamReader.makeQueryInterval(contig, Math.max(1, startAt - maxInsertSize + 1))};
 				analyzer.timeStartProcessing = System.nanoTime();
 				final Map<String, Pair<ExtendedSAMRecord, @NonNull ReferenceSequence>> readsToProcess =
@@ -308,7 +308,7 @@ public class ReadLoader {
 							while (it.hasNext()) {
 								Pair<ExtendedSAMRecord, @NonNull ReferenceSequence> rec = it.next();
 								final ExtendedSAMRecord read = rec.fst;
-								if (firstRun && read.getAlignmentStartNoBarcode() + maxInsertSize < startAt) {
+								if (firstRun && read.getAlignmentStart() + maxInsertSize < startAt) {
 									//The purpose of this was to make runs reproducible irrespective of
 									//the way contigs are broken up for parallelization; probably largely redundant now
 									it.remove();
@@ -359,11 +359,11 @@ public class ReadLoader {
 			Util.printUserMustSeeMessage("Exception " + t.getMessage() + " " +
 					(t.getCause() != null ? (t.getCause() + " ") : "") + 
 					"on thread " + Thread.currentThread());
-			if (argValues.terminateImmediatelyUponError) {
+			/*if (argValues.terminateImmediatelyUponError) {
 				t.printStackTrace();
 				System.exit(1);
-			}
-			analyzer.groupSettings.terminateAnalysis = true;
+			}*/
+			analyzer.groupSettings.errorOccurred();
 			phaser.forceTermination();
 			throw new RuntimeException("Exception while processing contig " + lastContigName + 
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
@@ -379,7 +379,7 @@ public class ReadLoader {
 		}
 		//Ensure that there is no memory leak (references are kept to subAnalyzers,
 		//at least through the status update handlers; XXX not clear if the maps
-		//should already have been completely cleared as part of locus examination.
+		//should already have been completely cleared as part of position examination.
 		analysisChunk.subAnalyzers.forEach(sa -> {
 			sa.extSAMCache.clear();
 			sa.candidateSequences.clear();

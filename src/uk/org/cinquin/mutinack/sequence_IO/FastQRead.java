@@ -24,7 +24,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import uk.org.cinquin.mutinack.misc_util.Util;
 
 public final class FastQRead implements Serializable {
-	final public byte @NonNull[] bases;
+	public final byte @NonNull[] bases;
 	public byte @Nullable[] qualities;
 
 	private static final long serialVersionUID = 2266195648270695631L;

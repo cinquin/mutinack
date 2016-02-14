@@ -18,6 +18,7 @@ package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -88,7 +90,7 @@ public class Util {
 		return result;
 	}
 	
-	public static Pair<List<String>, List<Integer>> parseListLoci(List<String> l,
+	public static Pair<List<String>, List<Integer>> parseListPositions(List<String> l,
 			boolean noContigRepeat, String errorMessagePrefix) {
 		final List<String> contigNames = l.stream().map
 				(s -> s.split(":")[0]).collect(Collectors.toList());
@@ -185,7 +187,7 @@ public class Util {
 		return nMismatches;
 	}
 	
-	private final static @NonNull AtomicInteger nRead = new AtomicInteger();
+	private static final @NonNull AtomicInteger nRead = new AtomicInteger();
 	
 	public static void readFileIntoMap(File file, Map<String, FastQRead> rawReads, int pairID) {
 		Signals.SignalProcessor infoSignalHandler = signal ->
@@ -298,7 +300,7 @@ public class Util {
 		}
 	}
 	
-	private final static class FourLines {
+	private static final class FourLines {
 		final @NonNull List<String> lines = new ArrayList<>(4);
 	}
 	
@@ -365,8 +367,8 @@ public class Util {
 			this.alignmentStart = alignmentStart;
 		}
 		
-		final public boolean negativeStrand;
-		final public int alignmentStart;
+		public final boolean negativeStrand;
+		public final int alignmentStart;
 	}
 	
 	/**
@@ -442,4 +444,17 @@ public class Util {
 		}
 		return indexMap;
 	}
+	
+	public static boolean isSerializable(Object o) {
+		NullOutputStream os = new NullOutputStream();
+		try {
+			try(ObjectOutputStream out = new ObjectOutputStream(os)) {
+				out.writeObject(o);
+			}
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+	
 }

@@ -19,7 +19,7 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 
 public final class ParFor {
 	
-	final static Logger logger = LoggerFactory.getLogger("Parfor");
+	static final Logger logger = LoggerFactory.getLogger("Parfor");
 	/**
 	 * Profiling suggests setting thread names represents a substantial
 	 * cost when doing many short Parfor runs.
@@ -33,7 +33,7 @@ public final class ParFor {
 	
 	private ILoopWorker[] workers = null;
 	private int workerArrayIndex = 0;
-	private transient final AtomicInteger index = new AtomicInteger();
+	private final transient AtomicInteger index = new AtomicInteger();
 	private final ProgressReporter progressReporter;
 	private List<?>[] partialResults;
 	private Future<?>[] futures;
@@ -42,10 +42,10 @@ public final class ParFor {
 	private volatile boolean clientWillGetExceptions;
 	private volatile boolean printedMissingExceptionWarning;
 	private volatile boolean started = false;
-	final private Object doneSemaphore = new Object();
+	private final Object doneSemaphore = new Object();
 	private volatile boolean done = false;
 	
-	static public ExecutorService threadPool;
+	public static ExecutorService threadPool;
 	@SuppressWarnings("unused")
 	private static final int nProc = Runtime.getRuntime().availableProcessors();
 

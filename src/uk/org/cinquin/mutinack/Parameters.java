@@ -38,6 +38,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterDescription;
 import com.beust.jcommander.WrappedParameter;
 import com.beust.jcommander.converters.BaseConverter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
@@ -45,15 +46,19 @@ import uk.org.cinquin.mutinack.misc_util.Handle;
 public final class Parameters implements Serializable {
 
 	public static final long serialVersionUID = 1L;
+	@JsonIgnore
 	private static final boolean hideInProgressParameters = true;
-	private static final boolean hideComplicatedParameters = true;
+	@JsonIgnore
+	private static final boolean hideAdvancedParameters = true;
 	
 	@Parameter(names = {"-help", "--help"}, help = true, description = "Display this message and return")
 	@HideInToString
+	@JsonIgnore
 	public boolean help;
 	
 	@Parameter(names = {"-version", "--version"}, help = true, description = "Display version information and return")
 	@HideInToString
+	@JsonIgnore
 	public boolean version;
 	
 	@Parameter(names = "-noStatusMessages", description = "Do not output any status information on stderr or stdout", required = false)
@@ -62,10 +67,16 @@ public final class Parameters implements Serializable {
 	
 	@Parameter(names = "-skipVersionCheck", description = "Do not check whether update is available for download", required = false)
 	@HideInToString
+	@JsonIgnore
 	public boolean skipVersionCheck = false;
 
 	@Parameter(names = "-verbosity", description = "0: main mutation detection results only; 3: open the firehose", required = false)
 	public int verbosity = 0;
+	
+	@FilePath
+	@Parameter(names = "-outputJSONTo", description = "Path to which JSON-formatted output should be written",
+			required = false)
+	public String outputJSONTo = "";
 	
 	@Parameter(names = "-outputDuplexDetails", description = "For each reported mutation, give list of its reads and duplexes", required = false)
 	public boolean outputDuplexDetails = false;
@@ -121,7 +132,6 @@ public final class Parameters implements Serializable {
 			required = true)
 	public String referenceGenome = "";
 	
-	@SuppressWarnings("null")
 	@Parameter(names = "-contigNamesToProcess", description =
 			"Reads not mapped to any of these contigs will be ignored")
 	@NonNull List<@NonNull String> contigNamesToProcess = 
@@ -150,8 +160,13 @@ public final class Parameters implements Serializable {
 	
 	static final List<@NonNull Integer> defaultStartContigPositions = 
 			Arrays.asList(1, 1, 1, 1, 1, 1, 1);
+	
+	@Parameter(names = "-traceField", description = "Output each position at which "
+			+ "specified statistic is implemented; formatted as sampleName:statisticName", required = false)
+	public List<String> traceFields = new ArrayList<>();
 
-	@Parameter(names = "-contigStatsBinLength", description = "TODO", required = false)
+	@Parameter(names = "-contigStatsBinLength", description = "Length of bin to use for statistics that"
+			+ " are broken down more finely than contig by contig", required = false)
 	public int contigStatsBinLength = 2_000_000;
 
 	@Parameter(names = "-minMappingQualityQ1", description = "Reads whose mapping quality is below this"
@@ -170,13 +185,13 @@ public final class Parameters implements Serializable {
 			+ "for original top and bottom strands can contribute candidates for substitutions or indels", required = false)
 	public int minReadsPerStrandQ2 = 3;
 	
-	@Parameter(names = "-promoteNQ1Duplexes", description = "NOT YET FUNCTIONAL - Promote candidate that has at least this many Q1 duplexes to Q2", required = false, hidden = hideComplicatedParameters)
+	@Parameter(names = "-promoteNQ1Duplexes", description = "Not yet functional, and probably never will be - Promote candidate that has at least this many Q1 duplexes to Q2", required = false, hidden = true)
 	public int promoteNQ1Duplexes = Integer.MAX_VALUE;
 	
-	@Parameter(names = "-promoteNSingleStrands", description = "NOT YET FUNCTIONAL - Promote duplex that has just 1 original strand but at least this many reads to Q1", required = false, hidden = hideComplicatedParameters)
+	@Parameter(names = "-promoteNSingleStrands", description = "Not yet functional, and probably never will be - Promote duplex that has just 1 original strand but at least this many reads to Q1", required = false, hidden = true)
 	public int promoteNSingleStrands = Integer.MAX_VALUE;
 	
-	@Parameter(names = "-promoteFractionReads", description = "Promote candidate supported by at least this fraction of reads to Q2", required = false, hidden = hideComplicatedParameters)
+	@Parameter(names = "-promoteFractionReads", description = "Promote candidate supported by at least this fraction of reads to Q2", required = false, hidden = hideAdvancedParameters)
 	public float promoteFractionReads = Float.MAX_VALUE;
 	
 	@Parameter(names = "-minConsensusThresholdQ1", description = "Lenient value for minimum fraction of reads from the same"
@@ -219,23 +234,23 @@ public final class Parameters implements Serializable {
 			, required = false)
 	public int minReadMedianPhredScore = 0;
 	
-	@Parameter(names = "-minMedianPhredQualityAtLocus", description = "Loci whose median Phred quality score is below this threshold are not used to propose mutation candidates"
+	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose mutation candidates"
 			, required = false)
-	public int minMedianPhredQualityAtLocus = 0;
+	public int minMedianPhredQualityAtPosition = 0;
 	
-	@Parameter(names = "-maxFractionWrongPairsAtLocus", description = "Loci are not used to propose mutation candidates if the fraction of reads covering the locus that have an unmapped mate or a mate that forms a wrong pair orientiation (RF, Tandem) is above this threshold"
+	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientiation (RF, Tandem) is above this threshold"
 			, required = false)
-	public float maxFractionWrongPairsAtLocus = 1.0f;
+	public float maxFractionWrongPairsAtPosition = 1.0f;
 	
 	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose mutation candidates"
 			, required = false)
 	public int maxAverageBasesClipped = 15;
 	
-	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Loci whose average covering duplex average number of clipped bases is above this threshold are not used to propose mutation candidates"
+	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose mutation candidates"
 			, required = false)
 	public int maxAverageClippingOfAllCoveringDuplexes = 999;
 	
-	@Parameter(names = "-maxNDuplexes", description = "Loci whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates"
+	@Parameter(names = "-maxNDuplexes", description = "Positions whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates"
 			, required = false)
 	public List<Integer> maxNDuplexes = new ArrayList<>();
 	
@@ -245,6 +260,9 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-minInsertSize", description = "Inserts below this size are not used to propose mutation candidates", required = false)
 	public int minInsertSize = 0;
 	
+	@Parameter(names = "-ignoreZeroInsertSizeReads", description = "Reads 0 or undefined insert size are thrown out at the onset (and thus cannot contribute to exclusion of mutation candidates found in multiple samples)", required = false)
+	public boolean ignoreZeroInsertSizeReads = false;
+
 	@Parameter(names = "-ignoreSizeOutOfRangeInserts", description = "Reads with insert size out of range are thrown out at the onset (and thus cannot contribute to exclusion of mutation candidates found in multiple samples)", required = false)
 	public boolean ignoreSizeOutOfRangeInserts = false;
 	
@@ -317,6 +335,9 @@ public final class Parameters implements Serializable {
 	@FilePath
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
 	public String forceOutputAtPositionsFile = null;
+	
+	@Parameter(names = "-randomOutputRate", description = "Randomly choose genome positions at this rate to include in output", required = false)
+	public float randomOutputRate = 0;
 
 	@FilePath
 	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags; " +
@@ -350,7 +371,7 @@ public final class Parameters implements Serializable {
 	public List<@NonNull String> reportStatsForNotBED = new ArrayList<>();
 	
 	@FilePathList
-	@Parameter(names = "-excludeRegionsInBED", description = "Loci covered by this BED file will be completely ignored in the analysis", required = false)
+	@Parameter(names = "-excludeRegionsInBED", description = "Positions covered by this BED file will be completely ignored in the analysis", required = false)
 	public List<@NonNull String> excludeRegionsInBED = new ArrayList<>();
 	
 	@FilePathList
@@ -398,19 +419,22 @@ public final class Parameters implements Serializable {
 	public String startWorker = null;
 	
 	@FilePath
-	@Parameter(names = "-workingDirectory", help = true, description = "TODO", required = false, hidden = hideInProgressParameters)
+	@Parameter(names = "-workingDirectory", help = true, description = "Evaluate parameter file paths using specified directory as workind directory", required = false, hidden = hideAdvancedParameters)
 	public String workingDirectory = null;
 	
 	@FilePath
-	@Parameter(names = "-referenceOutput", description = "TODO", required = false, hidden = hideInProgressParameters)
+	@Parameter(names = "-referenceOutput", description = "Path to reference output to be used for functional tests", required = false, hidden = hideAdvancedParameters)
 	public String referenceOutput = null;
 	
 	@FilePath
-	@Parameter(names = "-recordRunsTo", description = "TODO", required = false, hidden = hideInProgressParameters)
+	@Parameter(names = "-recordRunsTo", description = "Get server to output a record of all runs it processed, to be replayed for functional tests", required = false, hidden = hideAdvancedParameters)
 	public String recordRunsTo = null;
 
-	@Parameter(names = "-runName", description = "TODO", required = false, hidden = hideInProgressParameters)
+	@Parameter(names = "-runName", description = "Name of run to be used in conjunction with -recordRunsTo", required = false, hidden = hideAdvancedParameters)
 	public String runName = null;
+	
+	@Parameter(names = "-enableCostlyAssertions", description = "Enable internal sanity checks that significantly slow down execution", required = false, hidden = hideAdvancedParameters, arity = 1)
+	public boolean enableCostlyAssertions = true;
 	
 	@Retention(RetentionPolicy.RUNTIME)
 	/**
@@ -494,6 +518,7 @@ public final class Parameters implements Serializable {
 	}
 	
 	@HideInToString
+	@JsonIgnore
 	private static final Parameters defaultValues = new Parameters();
 	
 	@Override
@@ -504,6 +529,9 @@ public final class Parameters implements Serializable {
 			try {
 				if (field.getAnnotation(HideInToString.class) != null)
 					continue;
+				if (field.getName().equals("$jacocoData")) {
+					continue;
+				}
 				Object fieldValue = field.get(this);
 				Object fieldDefaultValue = field.get(defaultValues);
 				String stringValue;
@@ -652,7 +680,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + (logReadIssuesInOutputBam ? 1231 : 1237);
 		result = prime * result + maxAverageBasesClipped;
 		result = prime * result + maxAverageClippingOfAllCoveringDuplexes;
-		result = prime * result + Float.floatToIntBits(maxFractionWrongPairsAtLocus);
+		result = prime * result + Float.floatToIntBits(maxFractionWrongPairsAtPosition);
 		result = prime * result + maxInsertSize;
 		result = prime * result + ((maxNDuplexes == null) ? 0 : maxNDuplexes.hashCode());
 		result = prime * result + maxThreadsPerPool;
@@ -664,7 +692,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + ((minMappingQIntersect == null) ? 0 : minMappingQIntersect.hashCode());
 		result = prime * result + minMappingQualityQ1;
 		result = prime * result + minMappingQualityQ2;
-		result = prime * result + minMedianPhredQualityAtLocus;
+		result = prime * result + minMedianPhredQualityAtPosition;
 		result = prime * result + minNumberDuplexesSisterArm;
 		result = prime * result + minQ1Q2DuplexesToCallMutation;
 		result = prime * result + minQ2DuplexesToCallMutation;
@@ -810,8 +838,8 @@ public final class Parameters implements Serializable {
 			return false;
 		if (maxAverageClippingOfAllCoveringDuplexes != other.maxAverageClippingOfAllCoveringDuplexes)
 			return false;
-		if (Float.floatToIntBits(maxFractionWrongPairsAtLocus) != Float.floatToIntBits(
-				other.maxFractionWrongPairsAtLocus))
+		if (Float.floatToIntBits(maxFractionWrongPairsAtPosition) != Float.floatToIntBits(
+				other.maxFractionWrongPairsAtPosition))
 			return false;
 		if (maxInsertSize != other.maxInsertSize)
 			return false;
@@ -841,7 +869,7 @@ public final class Parameters implements Serializable {
 			return false;
 		if (minMappingQualityQ2 != other.minMappingQualityQ2)
 			return false;
-		if (minMedianPhredQualityAtLocus != other.minMedianPhredQualityAtLocus)
+		if (minMedianPhredQualityAtPosition != other.minMedianPhredQualityAtPosition)
 			return false;
 		if (minNumberDuplexesSisterArm != other.minNumberDuplexesSisterArm)
 			return false;

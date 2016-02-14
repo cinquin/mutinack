@@ -19,7 +19,7 @@ import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class BedFileExpMovingAverage {
 
-	private final static int BIN_SIZE = 100_000;
+	private static final int BIN_SIZE = 100_000;
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws IOException, ParseRTException {

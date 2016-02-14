@@ -18,13 +18,26 @@ package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
 import java.util.concurrent.atomic.LongAdder;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public final class LongAdderFormatter extends LongAdder implements Serializable {
+import uk.org.cinquin.mutinack.statistics.json.LongAdderFormatterSerializer;
+
+@JsonSerialize(using=LongAdderFormatterSerializer.class)
+public final class LongAdderFormatter extends LongAdder implements Serializable,
+	Actualizable {
 
 	private static final long serialVersionUID = -4695889470689380766L;
 
 	@Override
-	public String toString(){
+	public String toString() {
 		return DoubleAdderFormatter.nf.get().format(sum());
 	}
+
+	public String sum;
+	
+	@Override
+	public void actualize() {
+		sum = toString();
+	}
+
 }

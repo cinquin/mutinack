@@ -30,7 +30,7 @@ final class AlignmentExtremetiesDistance {
 	}
 
 	public void set(ExtendedSAMRecord r) {
-		if (r.getReadPositiveStrand()) {
+		if (r.duplexLeft()) {
 			temp.setPositions(
 					r.getUnclippedStart(),
 					r.getMateUnclippedEnd());

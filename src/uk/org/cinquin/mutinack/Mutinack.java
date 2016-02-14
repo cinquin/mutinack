@@ -39,6 +39,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
@@ -69,6 +70,9 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -93,10 +97,11 @@ import uk.org.cinquin.mutinack.features.BedComplement;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
-import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB;
-import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers.Builder;
+import uk.org.cinquin.mutinack.features.PosByPosNumbersPB;
+import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
 import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
@@ -105,19 +110,21 @@ import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Signals.SignalProcessor;
 import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.VersionInfo;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.ICounter;
 import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
+import uk.org.cinquin.mutinack.statistics.json.JsonRoot;
+import uk.org.cinquin.mutinack.statistics.json.ParedDownMutinack;
 import uk.org.cinquin.parfor.ParFor;
 
-public class Mutinack {
+public class Mutinack implements Actualizable {
 	
 	static {
 		if (! new File("logback.xml").isFile()) {
@@ -130,17 +137,17 @@ public class Mutinack {
 		}
 	}
 	
-	public final static Logger logger = LoggerFactory.getLogger("Mutinack");
-	final static Logger statusLogger = LoggerFactory.getLogger("MutinackStatus");
+	public static final Logger logger = LoggerFactory.getLogger("Mutinack");
+	static final Logger statusLogger = LoggerFactory.getLogger("MutinackStatus");
 	
-	private final static List<String> outputHeader = Collections.unmodifiableList(Arrays.asList(
+	private static final List<String> outputHeader = Collections.unmodifiableList(Arrays.asList(
 			"Notes", "Location", "Mutation type", "Mutation detail", "Sample", "nQ2Duplexes",
 			"nQ1Q2Duplexes", "nDuplexes", "nConcurringReads", "fractionConcurringQ2Duplexes", "fractionConcurringQ1Q2Duplexes", 
 			"fractionConcurringDuplexes", "fractionConcurringReads", "averageMappingQuality", "nDuplexesSisterArm", "insertSize", "minDistanceLigSite", "maxDistanceLigSite",
 			"positionInRead", "readEffectiveLength", "nameOfOneRead", "readAlignmentStart", "mateAlignmentStart",
-			"readAlignmentEnd", "mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtLocus", "minInsertSize", "maxInsertSize", "supplementalMessage"
+			"readAlignmentEnd", "mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtPosition", "minInsertSize", "maxInsertSize", "supplementalMessage"
 	));
-		
+	
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
 	
 	final MutinackGroup groupSettings;
@@ -156,7 +163,7 @@ public class Mutinack {
 	final int minBasePhredScoreQ1;
 	final int minBasePhredScoreQ2;
 	final int minReadMedianPhredScore;
-	final int minMedianPhredQualityAtLocus;
+	final int minMedianPhredQualityAtPosition;
 	final float minConsensusThresholdQ1;
 	final float minConsensusThresholdQ2;
 	final float disagreementConsensusThreshold;
@@ -169,13 +176,14 @@ public class Mutinack {
 	final int promoteNSingleStrands;
 	final float promoteFractionReads;
 	final int minNumberDuplexesSisterArm;
+	final boolean ignoreZeroInsertSizeReads;
 	final boolean ignoreSizeOutOfRangeInserts;
 	final boolean ignoreTandemRFPairs;
 	final boolean requireMatchInAlignmentEnd;
 	final boolean logReadIssuesInOutputBam;
 	final int maxAverageBasesClipped;
 	final int maxAverageClippingOfAllCoveringDuplexes;
-	final float maxFractionWrongPairsAtLocus;
+	final float maxFractionWrongPairsAtPosition;
 	final int maxNDuplexes;
 	final boolean computeSupplQuality;
 	final boolean rnaSeq;
@@ -183,7 +191,7 @@ public class Mutinack {
 	final boolean computeRawDisagreements;
 
 	final int idx;
-	final String name;
+	public final String name;
 	long timeStartProcessing;
 	private final @NonNull List<SubAnalyzer> subAnalyzers = new ArrayList<>();
 	final @NonNull File inputBam;
@@ -226,7 +234,7 @@ public class Mutinack {
 	final byte @NonNull[] constantBarcode;
 	final int variableBarcodeLength;
 	final int unclippedBarcodeLength;
-	public final @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
+	public @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
 	private String finalOutputBaseName;
 
 	public Mutinack(
@@ -255,6 +263,7 @@ public class Mutinack {
 			int minNumberDuplexesSisterArm,
 			int variableBarcodeLength,
 			byte @NonNull[] constantBarcode,
+			boolean ignoreZeroInsertSizeReads,
 			boolean ignoreSizeOutOfRangeInserts,
 			boolean ignoreTandemRFPairs,
 			@NonNull List<File> intersectAlignmentFiles,
@@ -262,8 +271,8 @@ public class Mutinack {
 			boolean logReadIssuesInOutputBam,
 			int maxAverageBasesClipped,
 			int maxAverageClippingOfAllCoveringDuplexes,
-			int minMedianPhredQualityAtLocus,
-			float maxFractionWrongPairsAtLocus,
+			int minMedianPhredQualityAtPosition,
+			float maxFractionWrongPairsAtPosition,
 			int maxNDuplex,
 			@NonNull OutputLevel outputLevel,
 			boolean rnaSeq,
@@ -304,7 +313,8 @@ public class Mutinack {
 		this.variableBarcodeLength = variableBarcodeLength;
 		this.constantBarcode = constantBarcode;
 		this.unclippedBarcodeLength = 0;
-				
+		
+		this.ignoreZeroInsertSizeReads = ignoreZeroInsertSizeReads;
 		this.ignoreSizeOutOfRangeInserts = ignoreSizeOutOfRangeInserts;
 		this.ignoreTandemRFPairs = ignoreTandemRFPairs;
 		this.intersectAlignmentFiles = intersectAlignmentFiles;
@@ -312,8 +322,8 @@ public class Mutinack {
 		this.logReadIssuesInOutputBam = logReadIssuesInOutputBam;
 		this.maxAverageBasesClipped = maxAverageBasesClipped;
 		this.maxAverageClippingOfAllCoveringDuplexes = maxAverageClippingOfAllCoveringDuplexes;
-		this.minMedianPhredQualityAtLocus = minMedianPhredQualityAtLocus;
-		this.maxFractionWrongPairsAtLocus = maxFractionWrongPairsAtLocus;
+		this.minMedianPhredQualityAtPosition = minMedianPhredQualityAtPosition;
+		this.maxFractionWrongPairsAtPosition = maxFractionWrongPairsAtPosition;
 		this.maxNDuplexes = maxNDuplex;
 		
 		this.computeSupplQuality = promoteNQ1Duplexes != Integer.MAX_VALUE ||
@@ -324,10 +334,23 @@ public class Mutinack {
 		this.excludeBEDs = excludeBEDs;
 		this.computeRawDisagreements = computeRawDisagreements;
 		
-		stats.add(new AnalysisStats("main_stats", groupSettings));
-		stats.add(new AnalysisStats("ins_stats", groupSettings));
-		this.stats.forEach(s -> s.setOutputLevel(outputLevel));
-
+		for (String statsName: Arrays.asList("main_stats", "ins_stats")) {
+			@SuppressWarnings("null")
+			AnalysisStats stat = new AnalysisStats(statsName, groupSettings);
+			stat.setOutputLevel(outputLevel);
+			for (String s: argValues.traceFields) {
+				try {
+					String[] split = s.split(":");
+					String analyzerName = split[0];
+					if (analyzerName.equals(name)) {
+						stat.traceField(split[1], s + ": ");
+					}
+				} catch (Exception e) {
+					throw new RuntimeException("Problem setting up traceField " + s, e);
+				}
+			}
+			stats.add(stat);
+		}
 	}
 	
 	public static void main(String args[]) throws InterruptedException, ExecutionException, FileNotFoundException {
@@ -394,8 +417,8 @@ public class Mutinack {
 			}
 			job.parameters = argValues;
 			EvaluationResult result = server.submitJob("client", job);
-			if (result.runtimeException != null) {
-				throw new RuntimeException(result.runtimeException);
+			if (result.executionThrowable != null) {
+				throw new RuntimeException(result.executionThrowable);
 			} else {
 				System.out.println("RESULT: \n" + result.output);
 			}
@@ -414,7 +437,11 @@ public class Mutinack {
 				try {
 					realMain1(job.parameters, outPS, errPS);
 				} catch (Throwable t) {
-					job.result.runtimeException = t;
+					if (!Util.isSerializable(t)) {
+						t = new RuntimeException("Unserializable exception " +
+								t.toString());
+					}
+					job.result.executionThrowable = t;
 				}
 				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
@@ -426,7 +453,7 @@ public class Mutinack {
 		}
 		
 		if (argValues.version) {
-			System.out.println(VersionInfo.gitCommit);
+			System.out.println(GitCommitInfo.getGitCommit());
 			StaticStuffToAvoidMutating.shutdown();
 			return;
 		}
@@ -438,15 +465,17 @@ public class Mutinack {
 	@SuppressWarnings("resource")
 	public static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
 		
+		DebugLogControl.COSTLY_ASSERTIONS = argValues.enableCostlyAssertions;
+		
 		StaticStuffToAvoidMutating.instantiateThreadPools(argValues.maxThreadsPerPool);
 
 		if (!versionChecked && !argValues.noStatusMessages && !argValues.skipVersionCheck) {
 			versionChecked = true;
-			StaticStuffToAvoidMutating.getExecutorService().submit(() -> Util.versionCheck());
+			StaticStuffToAvoidMutating.getExecutorService().submit(Util::versionCheck);
 		}
 		
 		if (!versionChecked && !argValues.noStatusMessages) {
-			Util.printUserMustSeeMessage(VersionInfo.gitCommit);
+			Util.printUserMustSeeMessage(GitCommitInfo.getGitCommit());
 			Util.printUserMustSeeMessage("Launch time: " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 		}
 		
@@ -539,7 +568,7 @@ public class Mutinack {
 								double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
 								final SequenceLocation parsedLocation = new SequenceLocation(contigs.indexOf(contig), contig,
 										(int) Math.floor(position), position - Math.floor(position) > 0);
-								if (!groupSettings.forceOutputAtLocations.add(parsedLocation)) {
+								if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 									Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 											" in list of forced output positions"));
 								}
@@ -549,12 +578,32 @@ public class Mutinack {
 						}
 					});
 				}
-				@SuppressWarnings("null")
-				@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
-				out.println("Forcing output at locations " + 
-						Util.truncateString(forceOutputString));
 			}
-
+			
+			if (argValues.randomOutputRate != 0) {
+				if (!argValues.readContigsFromFile) {
+					throw new IllegalArgumentException("Option randomOutputRate "
+						+ "requires readContigsFromFiles");
+				}
+				int randomLocs = 0;
+				for (Entry<@NonNull String, Integer> c: contigSizes.entrySet()) {
+					for (int i = 0; i < argValues.randomOutputRate * c.getValue(); i++) {
+						@SuppressWarnings("null")
+						SequenceLocation l = new SequenceLocation(
+							groupSettings.indexContigNameReverseMap.get(c.getKey()),
+							c.getKey(), (int) (Math.random() * (c.getValue() - 1)));
+						if (groupSettings.forceOutputAtLocations.put(l, true) == null) {
+							randomLocs++;
+						}
+					}
+				}
+				Util.printUserMustSeeMessage("Added " + randomLocs + " random output positions");
+			}
+			@SuppressWarnings("null")
+			@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
+			out.println("Forcing output at locations " + 
+					Util.truncateString(forceOutputString));
+			
 			out.println(outputHeader.stream().collect(Collectors.joining("\t")));
 
 			//Used to ensure that different analyzers do not use same output files
@@ -565,12 +614,12 @@ public class Mutinack {
 			}
 
 			Pair<List<String>, List<Integer>> parsedPositions = 
-					Util.parseListLoci(argValues.startAtPositions, true, "startAtPosition");	
+					Util.parseListPositions(argValues.startAtPositions, true, "startAtPosition");	
 			final List<String> startAtContigs = parsedPositions.fst;
 			final List<Integer> startAtPositions = parsedPositions.snd;
 
 			Pair<List<String>, List<Integer>> parsedPositions2 =
-					Util.parseListLoci(argValues.stopAtPositions, true, "stopAtPosition");	
+					Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPosition");	
 			final List<String> truncateAtContigs = parsedPositions2.fst;
 			final List<Integer> truncateAtPositions = parsedPositions2.snd;
 
@@ -646,9 +695,11 @@ public class Mutinack {
 				groupSettings.PROCESSING_CHUNK = argValues.processingChunk;
 				groupSettings.INTERVAL_SLOP = argValues.alignmentPositionMismatchAllowed;
 				groupSettings.BIN_SIZE = argValues.contigStatsBinLength;
+				groupSettings.terminateImmediatelyUponError = 
+						argValues.terminateImmediatelyUponError;
 				
 				groupSettings.setBarcodePositions(0, argValues.variableBarcodeLength - 1,
-						3, 5, 0);
+						3, 5);
 
 				//TODO Create a constructor that just takes argValues as an input,
 				//and/or use the builder pattern
@@ -685,6 +736,7 @@ public class Mutinack {
 						argValues.minNumberDuplexesSisterArm,
 						argValues.variableBarcodeLength,
 						nonNullify(argValues.constantBarcode.getBytes()),
+						argValues.ignoreZeroInsertSizeReads,
 						argValues.ignoreSizeOutOfRangeInserts,
 						argValues.ignoreTandemRFPairs,
 						intersectFiles,
@@ -692,8 +744,8 @@ public class Mutinack {
 						argValues.logReadIssuesInOutputBam,
 						argValues.maxAverageBasesClipped,
 						argValues.maxAverageClippingOfAllCoveringDuplexes,
-						argValues.minMedianPhredQualityAtLocus,
-						argValues.maxFractionWrongPairsAtLocus,
+						argValues.minMedianPhredQualityAtPosition,
+						argValues.maxFractionWrongPairsAtPosition,
 						maxNDuplex,
 						outputLevel,
 						argValues.rnaSeq,
@@ -706,9 +758,9 @@ public class Mutinack {
 						name;
 
 				if (argValues.outputTopBottomDisagreementBED) {
-					String tbdName = analyzer.finalOutputBaseName + "_top_bottom_disag_";
+					final String tbdName = analyzer.finalOutputBaseName + "_top_bottom_disag_";
 					analyzer.stats.forEach(s -> {
-						String path = tbdName + s.getName() + ".bed";
+						final String path = tbdName + s.getName() + ".bed";
 						try {
 							s.topBottomDisagreementWriter = new FileWriter(path);
 							analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
@@ -718,9 +770,9 @@ public class Mutinack {
 					});
 				}
 
-				String mutName = analyzer.finalOutputBaseName + "_mutations_";
+				final String mutName = analyzer.finalOutputBaseName + "_mutations_";
 				analyzer.stats.forEach(s -> {
-					String path = mutName + s.getName() + ".bed";
+					final String path = mutName + s.getName() + ".bed";
 					try {
 						s.mutationBEDWriter = new FileWriter(path);
 						analyzer.itemsToClose.add(s.mutationBEDWriter);				
@@ -731,26 +783,27 @@ public class Mutinack {
 
 				if (argValues.outputCoverageProto) {
 					analyzer.stats.forEach(s -> {
-						s.locusByLocusCoverage = new HashMap<>();
+						s.positionByPositionCoverage = new HashMap<>();
 						if (contigSizes.isEmpty()) {
 							throw new IllegalArgumentException("Need contig sizes for outputCoverageProto; " +
 									"set readContigsFromFile option");
 						}
 						contigSizes.forEach((k,v) -> {
-							s.locusByLocusCoverage.put(k, new int [v]);
+							s.positionByPositionCoverage.put(k, new int [v]);
 						});
-						Builder builder = LocusByLocusNumbersPB.GenomeNumbers.newBuilder();
-						builder.setGeneratingProgramVersion(VersionInfo.gitCommit);
+						Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
+						builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
 						builder.setGeneratingProgramArgs(argValues.toString());
-						builder.setSampleName(s.getName() + name + "_locus_by_locus_coverage");
-						s.locusByLocusCoverageProtobuilder = builder;
+						builder.setSampleName(analyzer.finalOutputBaseName + "/" +
+								s.getName() + "_" + name + "_pos_by_pos_coverage");
+						s.positionByPositionCoverageProtobuilder = builder;
 					});
 				}
 
 				if (argValues.outputCoverageBed) {
-					String coverageName = analyzer.finalOutputBaseName + "_coverage_";
+					final String coverageName = analyzer.finalOutputBaseName + "_coverage_";
 					analyzer.stats.forEach(s -> {
-						String path = coverageName + s.getName() + ".bed";
+						final String path = coverageName + s.getName() + ".bed";
 						try {	
 							s.coverageBEDWriter = new FileWriter(path);
 							analyzer.itemsToClose.add(s.coverageBEDWriter);
@@ -765,19 +818,19 @@ public class Mutinack {
 					final int finalContigIndex = contigIndex;
 					final SerializablePredicate<SequenceLocation> p = 
 							l -> l.contigIndex == finalContigIndex;
-							String contigName = argValues.contigNamesToProcess.get(contigIndex);
-							analyzer.stats.forEach(s -> {
-								s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
-								s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
-								s.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
-								s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(contigName, p);
-								s.codingStrandSubstQ2.addPredicate(contigName, p);
-								s.templateStrandSubstQ2.addPredicate(contigName, p);
-								s.codingStrandDelQ2.addPredicate(contigName, p);
-								s.templateStrandDelQ2.addPredicate(contigName, p);
-								s.codingStrandInsQ2.addPredicate(contigName, p);
-								s.templateStrandInsQ2.addPredicate(contigName, p);
-							});
+					final String contigName = argValues.contigNamesToProcess.get(contigIndex);
+					analyzer.stats.forEach(s -> {
+						s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
+						s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
+						s.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
+						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(contigName, p);
+						s.codingStrandSubstQ2.addPredicate(contigName, p);
+						s.templateStrandSubstQ2.addPredicate(contigName, p);
+						s.codingStrandDelQ2.addPredicate(contigName, p);
+						s.templateStrandDelQ2.addPredicate(contigName, p);
+						s.codingStrandInsQ2.addPredicate(contigName, p);
+						s.templateStrandInsQ2.addPredicate(contigName, p);
+					});
 				}
 
 				if (argValues.bedDisagreementOrienter != null) {
@@ -790,7 +843,7 @@ public class Mutinack {
 					}
 				}
 
-				Set<String> bedFileNames = new HashSet<>();
+				final Set<String> bedFileNames = new HashSet<>();
 
 				for (String fileName: argValues.reportStatsForBED) {
 					try {
@@ -806,11 +859,11 @@ public class Mutinack {
 						analyzer.filtersForCandidateReporting.put(filterName, filter);
 
 						analyzer.stats.forEach(s -> {
-							s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-							s.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-							s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-							s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-							s.nLociCandidatesForUniqueMutation.addPredicate(filterName, filter);
+							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
+							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
+							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+							s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
 							s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
@@ -824,11 +877,11 @@ public class Mutinack {
 							s.lackOfConsensus1.addPredicate(filterName, filter);
 							s.lackOfConsensus2.addPredicate(filterName, filter);
 
-							s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
-							s.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
-							s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
-							s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
-							s.nLociCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
+							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
+							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
+							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
+							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
+							s.nPosCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
 							s.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
 							s.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
 							s.topBottomInsDisagreementsQ2.addPredicate(notFilterName, notFilter);
@@ -856,11 +909,11 @@ public class Mutinack {
 								groupSettings.getIndexContigNameMap(), filterName);
 						final BedComplement filter = new BedComplement(filter0);
 						analyzer.stats.forEach(s -> {
-							s.nLociDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-							s.nLociDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-							s.nLociDuplexesCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-							s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-							s.nLociCandidatesForUniqueMutation.addPredicate(filterName, filter);
+							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
+							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
+							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+							s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
 							s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
@@ -880,7 +933,7 @@ public class Mutinack {
 							"-saveBEDBreakdownTo must appear same number of times");
 				}
 
-				Set<String> outputPaths = new HashSet<>();
+				final Set<String> outputPaths = new HashSet<>();
 				int index = 0;
 				for (index = 0; index < argValues.reportBreakdownForBED.size(); index++) {
 					try {
@@ -908,8 +961,8 @@ public class Mutinack {
 								throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
 										" specified multiple times");
 							}
-							counter.setOutputFile(new File(outputPath + "_nLociDuplex.bed"));
-							s.nLociDuplex.addPredicate(f.getName(), filter, counter);
+							counter.setOutputFile(new File(outputPath + "_nPosDuplex.bed"));
+							s.nPosDuplex.addPredicate(f.getName(), filter, counter);
 							for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
 								for (IntervalData<GenomeInterval> loc: locs) {
 									Iterator<GenomeInterval> it = loc.getData().iterator();
@@ -928,14 +981,27 @@ public class Mutinack {
 
 							counter = new CounterWithBedFeatureBreakdown(filter, null, groupSettings);
 							counter.setOutputFile(new File(argValues.saveBEDBreakdownTo.get(index0) + s.getName() +
-									"_nLociDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
-							s.nLociDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
+									"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
+							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
 						});
 					} catch (Exception e) {
 						throw new RuntimeException("Problem setting up BED file " + argValues.reportBreakdownForBED.get(index), e);
 					}
 				}
 			});//End parallel loop over analyzers
+			
+			for (String s: argValues.traceFields) {
+				try {
+					String[] split = s.split(":");
+					String analyzerName = split[0];
+					if (!names.contains(analyzerName)) {
+						throw new IllegalArgumentException("Unrecognized sample name " +
+							analyzerName);
+					}
+					} catch (Exception e) {
+					throw new RuntimeException("Problem with traceField " + s, e);
+				}
+			}
 
 			if (argValues.lenientSamValidation) {
 				SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.LENIENT);
@@ -947,7 +1013,7 @@ public class Mutinack {
 			final Histogram goodDuplexCovInAllInputs = new Histogram(500);
 
 			infoSignalHandler = signal -> {
-				PrintStream printStream = (signal == null) ? out : err;
+				final PrintStream printStream = (signal == null) ? out : err;
 				for (Mutinack analyzer: analyzers) {
 					analyzer.printStatus(printStream, signal != null);
 				}
@@ -968,6 +1034,8 @@ public class Mutinack {
 				printStream.println(blueF(signal != null) +
 						"Minimal Q2 duplex coverage across all inputs: " +
 						reset(signal != null) + goodDuplexCovInAllInputs);
+				
+				outputJSON(argValues, analyzers);
 			};
 			Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
@@ -1011,7 +1079,7 @@ public class Mutinack {
 
 				final int subAnalyzerSpan = (terminateContigAtPosition - startContigAtPosition + 1) / 
 						argValues.parallelizationFactor;
-				for (int p = 0 ; p < argValues.parallelizationFactor; p++) {
+				for (int p = 0; p < argValues.parallelizationFactor; p++) {
 					final AnalysisChunk analysisChunk = new AnalysisChunk();
 					analysisChunk.out = out;
 					analysisChunks.add(analysisChunk);
@@ -1032,7 +1100,8 @@ public class Mutinack {
 					final List<LocationExaminationResults> analyzerCandidateLists = new ArrayList<>();
 					analyzers.forEach(a -> {
 						analyzerCandidateLists.add(null);
-						final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a));
+						final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a),
+							out);
 						a.subAnalyzers.add(subAnalyzer);
 						analysisChunk.subAnalyzers.add(subAnalyzer);
 					});
@@ -1052,7 +1121,7 @@ public class Mutinack {
 			}//End loop over contig index
 
 			final int endIndex = contigs.size() - 1;
-			ParFor parFor = new ParFor("contig loop", 0, endIndex, null, true);
+			final ParFor parFor = new ParFor("contig loop", 0, endIndex, null, true);
 
 			for (int worker = 0; worker < parFor.getNThreads(); worker++) 
 				parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
@@ -1097,9 +1166,7 @@ public class Mutinack {
 					for (int p = 0 ; p < argValues.parallelizationFactor; p++) {
 						for (Mutinack analyzer: analyzers) {
 							int subAnalyzerIndex = contigIndex * argValues.parallelizationFactor + p;
-							Assert.noException(() -> {
-								analyzer.subAnalyzers.get(subAnalyzerIndex).checkAllDone();
-							});
+							Assert.noException(() -> analyzer.subAnalyzers.get(subAnalyzerIndex).checkAllDone());
 							analyzer.subAnalyzers.set(subAnalyzerIndex, null);
 						}
 					}
@@ -1117,13 +1184,13 @@ public class Mutinack {
 						StaticStuffToAvoidMutating.hostName +
 						" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 			}
-
+			
 			if (argValues.readContigsFromFile) {//Probably reference transcriptome; TODO need to
 				//devise a better way of figuring this out
 				for (Mutinack analyzer: analyzers) {
 					final ICounterSeqLoc counter = 
 							Objects.requireNonNull(
-									analyzer.stats.get(0).nLociDuplex.getSeqLocCounters().get("All")).
+									analyzer.stats.get(0).nPosDuplex.getSeqLocCounters().get("All")).
 							snd;
 					final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
 					final Map<String, Double> allCoverage = new THashMap<>();
@@ -1177,12 +1244,39 @@ public class Mutinack {
 		}
 	}
 		
+	private static void outputJSON(Parameters argValues, Collection<Mutinack> analyzers) {
+		if (!argValues.outputJSONTo.isEmpty()) {
+			analyzers.forEach(Actualizable::actualize);
+			JsonRoot root = new JsonRoot();
+			root.mutinackVersion = GitCommitInfo.getGitCommit();
+			root.parameters = argValues;
+			root.samples = analyzers.stream().map(a -> new ParedDownMutinack(a)).
+					collect(Collectors.toList());
+			analyzers.forEach(Actualizable::actualize);
+			ObjectMapper mapper = new ObjectMapper();
+			SimpleModule module = new SimpleModule();
+			mapper.registerModule(module).setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+					.withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+					.withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+					.withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+					.withCreatorVisibility(JsonAutoDetect.Visibility.NONE)
+					.withIsGetterVisibility(JsonAutoDetect.Visibility.NONE));
+			try {
+				mapper.writerWithDefaultPrettyPrinter().writeValue(
+						new File(argValues.outputJSONTo), root);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+	}
+
 	private static void close(SAMFileWriter alignmentWriter, List<Mutinack> analyzers,
 			SignalProcessor infoSignalHandler, MutinackGroup groupSettings) {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		
 		if (alignmentWriter != null) {
-			gatherer.tryAdd(() -> alignmentWriter.close());
+			gatherer.tryAdd(alignmentWriter::close);
 		}
 
 		for (Mutinack analyzer: analyzers) {
@@ -1197,14 +1291,14 @@ public class Mutinack {
 			}
 		}
 		
-		gatherer.tryAdd(() -> PoolController.shutdown());
+		gatherer.tryAdd(PoolController::shutdown);
 		
 		if (infoSignalHandler != null) {
 			gatherer.tryAdd(() -> 
 				Signals.removeSignalProcessor("INFO", infoSignalHandler));
 		}
 		
-		gatherer.tryAdd(() -> groupSettings.close());
+		gatherer.tryAdd(groupSettings::close);
 		
 		gatherer.throwIfPresent();
 	}
@@ -1224,11 +1318,11 @@ public class Mutinack {
 
 		gatherer.tryAdd(() -> {
 			stats.forEach(s -> {
-				if (s.locusByLocusCoverage != null) {
-					Builder builder = s.locusByLocusCoverageProtobuilder;
-					for (Entry<String, int[]> e: s.locusByLocusCoverage.entrySet()) {
-						LocusByLocusNumbersPB.ContigNumbers.Builder builder2 =
-								LocusByLocusNumbersPB.ContigNumbers.newBuilder();
+				if (s.positionByPositionCoverage != null) {
+					Builder builder = s.positionByPositionCoverageProtobuilder;
+					for (Entry<String, int[]> e: s.positionByPositionCoverage.entrySet()) {
+						PosByPosNumbersPB.ContigNumbers.Builder builder2 =
+								PosByPosNumbersPB.ContigNumbers.newBuilder();
 						builder2.setContigName(e.getKey());
 						int [] numbers = e.getValue();
 						builder2.ensureNumbersIsMutable(numbers.length);
@@ -1237,6 +1331,7 @@ public class Mutinack {
 						builder.addContigNumbers(builder2);
 					}
 					Path path = Paths.get(builder.getSampleName() + ".proto");
+					builder.setSampleName(path.getFileName().toString());
 					try {
 						Files.write(path, builder.build().toByteArray());
 					} catch (Exception e1) {
@@ -1268,6 +1363,7 @@ public class Mutinack {
 			stream.println(greenB(colorize) + "Statistics " + s.getName() + " for " + inputBam.getAbsolutePath() + reset(colorize));
 
 			s.print(stream, colorize);
+			
 
 			stream.println(blueF(colorize) + "Average Phred quality: " + reset(colorize) +
 					DoubleAdderFormatter.formatDouble(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
@@ -1281,16 +1377,40 @@ public class Mutinack {
 			stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) + 
 					((int) processingThroughput()) + " records / s");
 
-			for (String counter: s.nLociCandidatesForUniqueMutation.getCounterNames()) {
-				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) + DoubleAdderFormatter.
-						formatDouble(s.nLociCandidatesForUniqueMutation.getSum(counter) / s.nLociDuplexQualityQ2OthersQ1Q2.getSum(counter)));
+			for (String counter: s.nPosCandidatesForUniqueMutation.getCounterNames()) {
+				final double mutationRate = s.nPosCandidatesForUniqueMutation.getSum(counter) / 
+						s.nPosDuplexQualityQ2OthersQ1Q2.getSum(counter);
+				final String mutationRateString;
+				if (mutationRate > 1E-3 || mutationRate == 0) {
+					mutationRateString = DoubleAdderFormatter.formatDouble(mutationRate);
+				} else {
+					NumberFormat mrFormatter = mutationRateFormatter.get();
+					mutationRateString = mrFormatter.format(mutationRate);
+				}
+				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) +
+						mutationRateString);
 			}
 		});
 	}
+
+	public static final ThreadLocal<NumberFormat> mutationRateFormatter
+		= new ThreadLocal<NumberFormat>() {
+			@Override
+			protected NumberFormat initialValue() {
+				DecimalFormat f = new DecimalFormat("0.###E0");
+				DoubleAdderFormatter.setNanAndInfSymbols(f);
+				return f;
+			}
+		};
 	
 	@Override
 	public String toString() {
 		return name + " (" + inputBam.getAbsolutePath() + ")";
+	}
+
+	@Override
+	public void actualize() {
+		stats.forEach(Actualizable::actualize);
 	}
 
 }

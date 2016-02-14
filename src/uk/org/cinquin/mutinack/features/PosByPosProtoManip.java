@@ -39,20 +39,20 @@ import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters.HideInToString;
 import uk.org.cinquin.mutinack.Parameters.SwallowCommasConverter;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.ContigNumbers;
-import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers;
-import uk.org.cinquin.mutinack.features.LocusByLocusNumbersPB.GenomeNumbers.Builder;
+import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.ContigNumbers;
+import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers;
+import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.VersionInfo;
+import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.Counter;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.parfor.ParFor;
 
-public class LocusByLocusProtoManip {
+public class PosByPosProtoManip {
 	
 	public static class Params {
 		@Parameter(names = "-startAtPosition", description = "Formatted as chrI:12,000,000 or chrI:12000000; specify up to once per contig", required = false,
@@ -63,10 +63,10 @@ public class LocusByLocusProtoManip {
 				converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
 		public List<@NonNull String> stopAtPositions = new ArrayList<>();
 	
-		@Parameter(names = "-outputAll", description = "Output file with a reported value at each locus", required = false)
+		@Parameter(names = "-outputAll", description = "Output file with a reported value at each position", required = false)
 		public boolean outputAll = false;
 		
-		@Parameter(names = "-threshold", description = "Only loci with counts greater than or equal to this value will be reported", required = true)
+		@Parameter(names = "-threshold", description = "Only positions with counts greater than or equal to this value will be reported", required = true)
 		public int threshold = 1;
 		
 		@Parameter(names = "-input", description = "Protobuf file name or - for stdin", required = true, variableArity = true)
@@ -183,11 +183,11 @@ public class LocusByLocusProtoManip {
 		}
 		
 		Pair<List<String>, List<Integer>> p = 
-				Util.parseListLoci(argValues.startAtPositions, true, "startAtPositions");	
+				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
 		final List<Integer> startAtPositions = p.snd;
 
-		Pair<List<String>, List<Integer>> p2 = Util.parseListLoci(argValues.stopAtPositions, true, "stopAtPositions");	
+		Pair<List<String>, List<Integer>> p2 = Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPositions");	
 		final List<String> stopAtContigs = p2.fst;
 		final List<Integer> stopAtPositions = p2.snd;
 		
@@ -237,7 +237,7 @@ public class LocusByLocusProtoManip {
 		}
 		
 		Set<GenomeInterval> resultIntervals = new HashSet<>();
-		SettableInteger nLoci = new SettableInteger(0);
+		SettableInteger nPos = new SettableInteger(0);
 		
 		GenomeNumbers gn1 = getFromFile(argValues.inputs.get(0));
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().
@@ -262,11 +262,11 @@ public class LocusByLocusProtoManip {
 			if (n > 0) {
 				resultIntervals.addAll(reader.apply(location));
 			}
-			nLoci.incrementAndGet();			
+			nPos.incrementAndGet();			
 		});
-		System.err.print("Iterated over " + nLoci + " loci");
+		System.err.print("Iterated over " + nPos + " positions");
 		Pair<List<String>, List<Integer>> p = 
-				Util.parseListLoci(argValues.startAtPositions, true, "startAtPositions");	
+				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
 		if (startAtContigs.size() > 1) {
 			System.err.println(" in contigs " + startAtContigs);
@@ -304,22 +304,22 @@ public class LocusByLocusProtoManip {
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
 		
-		SettableInteger positiveLoci = new SettableInteger(0);
-		SettableInteger withinBedLoci = new SettableInteger(0);
-		SettableInteger testedLoci = new SettableInteger(0);
+		SettableInteger positivePositions = new SettableInteger(0);
+		SettableInteger withinBedPositions = new SettableInteger(0);
+		SettableInteger testedPositions = new SettableInteger(0);
 		
 		iterateGenomeNumbers(argValues, gn1, (location, n) -> {
-			testedLoci.incrementAndGet();
+			testedPositions.incrementAndGet();
 			if (reader.test(location)) {
-				withinBedLoci.getAndIncrement();
+				withinBedPositions.getAndIncrement();
 			}
 			if (!contigTrees.get(location.contigIndex).query(location.position).getUnprotectedData().isEmpty()) {
-				positiveLoci.incrementAndGet();
+				positivePositions.incrementAndGet();
 			}
 		});
 		
-		System.out.println(positiveLoci + " of " + withinBedLoci + " loci in BED file " + 
-				"belong to interval with at least one hit (total of " + testedLoci + " genome loci scanned)");
+		System.out.println(positivePositions + " of " + withinBedPositions + " positions in BED file " + 
+				"belong to interval with at least one hit (total of " + testedPositions + " genome positions scanned)");
 	}
 	
 	//TODO Use iterateGenomeNumbers instead of duplicating code
@@ -336,11 +336,11 @@ public class LocusByLocusProtoManip {
 		}
 		
 		Pair<List<String>, List<Integer>> p = 
-				Util.parseListLoci(argValues.startAtPositions, true, "startAtPositions");	
+				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
 		final List<Integer> startAtPositions = p.snd;
 
-		Pair<List<String>, List<Integer>> p2 = Util.parseListLoci(argValues.stopAtPositions, true, "stopAtPositions");	
+		Pair<List<String>, List<Integer>> p2 = Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPositions");	
 		final List<String> stopAtContigs = p2.fst;
 		final List<Integer> stopAtPositions = p2.snd;
 		
@@ -351,7 +351,7 @@ public class LocusByLocusProtoManip {
 		@SuppressWarnings("resource")
 		Counter<Integer> counter = new Counter<>(false, new MutinackGroup());
 
-		int nLoci = 0;
+		int nPos = 0;
 
 		final GenomeFeatureTester reader;
 		if (argValues.domainBedFile.length() > 0) {
@@ -404,10 +404,10 @@ public class LocusByLocusProtoManip {
 						}
 					}
 					counter.accept(numbers1[i]);
-					nLoci++;
+					nPos++;
 				}
 			}
-			System.err.print("Iterated over " + nLoci + " loci");
+			System.err.print("Iterated over " + nPos + " positions");
 			if (startAtContigs.size() > 1) {
 				System.err.println(" in contigs " + startAtContigs);
 			} else {
@@ -447,8 +447,8 @@ public class LocusByLocusProtoManip {
 	}
 	
 	private static void mathOp(Params argValues) throws IOException, InterruptedException {
-		Builder builder = LocusByLocusNumbersPB.GenomeNumbers.newBuilder();
-		builder.setGeneratingProgramVersion(VersionInfo.gitCommit);
+		Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
+		builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
 		builder.setGeneratingProgramArgs(argValues.toString());
 		builder.setSampleName(argValues.output);
 
@@ -488,8 +488,8 @@ public class LocusByLocusProtoManip {
 		}
 				
 		for (ContigNumbers cnl: inputs.get(0).getContigNumbersList()) {
-			LocusByLocusNumbersPB.ContigNumbers.Builder builder2 =
-					LocusByLocusNumbersPB.ContigNumbers.newBuilder();
+			PosByPosNumbersPB.ContigNumbers.Builder builder2 =
+					PosByPosNumbersPB.ContigNumbers.newBuilder();
 			builder2.setContigName(cnl.getContigName());
 			
 			Map<String, ContigNumbers> mapArrays = inputs.stream().flatMap(c -> 
@@ -559,11 +559,11 @@ public class LocusByLocusProtoManip {
 		final boolean outputAll = argValues.outputAll;
 		
 		Pair<List<String>, List<Integer>> p = 
-				Util.parseListLoci(argValues.startAtPositions, true, "startAtPositions");	
+				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
 		final List<Integer> startAtPositions = p.snd;
 
-		Pair<List<String>, List<Integer>> p2 = Util.parseListLoci(argValues.stopAtPositions, true, "stopAtPositions");	
+		Pair<List<String>, List<Integer>> p2 = Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPositions");	
 		final List<String> stopAtContigs = p2.fst;
 		final List<Integer> stopAtPositions = p2.snd;
 		
@@ -576,7 +576,7 @@ public class LocusByLocusProtoManip {
 		try (PrintStream writer = argValues.output.equals("-") ?
 									System.out :
 									new PrintStream(new FileOutputStream(argValues.output))) {
-			int nLoci = 0;
+			int nPos = 0;
 			for (ContigNumbers cnl: gn1.getContigNumbersList()) {
 				final int[] numbers1 = cnl.getNumbersArray();
 				if (numbers1 == null) {
@@ -604,7 +604,7 @@ public class LocusByLocusProtoManip {
 				final double alpha = argValues.alpha;
 				int nInBin = 0;
 				for (int i = initialI; i <= finalI; i++) {
-					nLoci++;
+					nPos++;
 					final int localValue = numbers1[i];
 					final boolean newAboveThreshold = localValue >= threshold;
 					
@@ -632,7 +632,7 @@ public class LocusByLocusProtoManip {
 					aboveThreshold = newAboveThreshold;
 				}
 			}
-			System.err.print("Iterated over " + nLoci + " loci");
+			System.err.print("Iterated over " + nPos + " positions");
 			if (startAtContigs.size() > 1) {
 				System.err.println(" in contigs " + startAtContigs);
 			} else {
@@ -655,7 +655,7 @@ public class LocusByLocusProtoManip {
 			Path path1 = Paths.get(path);
 			bytes = Files.readAllBytes(path1);
 		}
-		GenomeNumbers gn = LocusByLocusNumbersPB.GenomeNumbers.parseFrom(bytes);
+		GenomeNumbers gn = PosByPosNumbersPB.GenomeNumbers.parseFrom(bytes);
 		checkNoContigNameDups(gn, path);
 		return gn;
 	}

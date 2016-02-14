@@ -22,6 +22,8 @@ import java.util.Optional;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import contrib.edu.standford.nlp.util.HasInterval;
 import contrib.edu.standford.nlp.util.Interval;
 import uk.org.cinquin.mutinack.SequenceLocation;
@@ -34,7 +36,9 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	public final int contigIndex;
 	private final int start, end;
 	private final int length;
+	@JsonIgnore
 	private final double lengthInverse;
+	@JsonIgnore
 	private final Interval<Integer> interval;
 	private @Nullable Boolean negativeStrand;
 	

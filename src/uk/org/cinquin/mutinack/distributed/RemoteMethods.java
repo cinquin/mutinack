@@ -6,14 +6,14 @@ import java.rmi.RemoteException;
 
 public interface RemoteMethods extends Remote {
 	//For workers
-	public Job getMoreWork(String workerID) throws RemoteException, InterruptedException;
-	public void submitWork(String workerID, Job job) throws RemoteException;
+	Job getMoreWork(String workerID) throws RemoteException, InterruptedException;
+	void submitWork(String workerID, Job job) throws RemoteException;
 
 	//For clients
-	public EvaluationResult submitJob(String clientID, Job job) throws RemoteException, InterruptedException;
+	EvaluationResult submitJob(String clientID, Job job) throws RemoteException, InterruptedException;
 	
-	public boolean shouldTerminate(String workerID) throws RemoteException;
+	boolean shouldTerminate(String workerID) throws RemoteException;
 
-	public String getServerUUID() throws RemoteException;
+	String getServerUUID() throws RemoteException;
 
 }

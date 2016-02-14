@@ -22,16 +22,20 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.concurrent.atomic.DoubleAdder;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import uk.org.cinquin.mutinack.statistics.json.DoubleAdderFormatterSerializer;
+
+@JsonSerialize(using=DoubleAdderFormatterSerializer.class)
 public final class DoubleAdderFormatter extends DoubleAdder
-		implements Comparable<DoubleAdderFormatter>, Serializable {
+		implements Comparable<DoubleAdderFormatter>, Serializable, Actualizable {
 
 	private static final long serialVersionUID = -4695889470689380766L;
 
 	@Override
 	public String toString() {
-		double sum = sum();
-		return formatDouble(sum);
+		double dsum = sum();
+		return formatDouble(dsum);
 	}
 	
 	public static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
@@ -73,6 +77,13 @@ public final class DoubleAdderFormatter extends DoubleAdder
 	@Override
 	public int hashCode() {
 		throw new RuntimeException("Unimplemented");
+	}
+	
+	public String sum;
+	
+	@Override
+	public void actualize() {
+		sum = toString();
 	}
 
 }

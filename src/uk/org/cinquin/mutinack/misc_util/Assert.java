@@ -1,10 +1,10 @@
 package uk.org.cinquin.mutinack.misc_util;
 
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.function.Supplier;
-
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class Assert {
 	public static void isTrue(boolean condition, String format, Object... args) {
@@ -25,7 +25,7 @@ public class Assert {
 	}
 	
 	public static void isTrue(Supplier<Boolean> s, boolean nonTrivial, String format, Object... args) {
-		if (DebugLogControl.NONTRIVIAL_ASSERTIONS | !nonTrivial) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS || !nonTrivial) {
 			isTrue(s.get(), format, args);
 		}
 	}
@@ -35,7 +35,7 @@ public class Assert {
 	}
 	
 	public static void isFalse(Supplier<Boolean> s, boolean nonTrivial, String format, Object... args) {
-		if (DebugLogControl.NONTRIVIAL_ASSERTIONS | !nonTrivial) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS || !nonTrivial) {
 			isFalse(s.get(), format, args);
 		}
 	}

@@ -10,6 +10,10 @@ import contrib.net.sf.picard.util.IterableAdapter;
 
 public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements DuplexKeeper  {
 
+	public DuplexITKeeper() {
+		throw new RuntimeException();
+	}
+	
 	@Override
 	public @NonNull Iterable<DuplexRead> getIterable() {
 		return new IterableAdapter<>(iterator());
@@ -26,6 +30,16 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		overlappingDuplexes.clear();
 		getOverlapping(d.getInterval(), overlappingDuplexes);
 		return new IterableAdapter<>(overlappingDuplexes.iterator());
+	}
+
+	@Override
+	public boolean supportsMutableDuplexes() {
+		return false;
+	}
+
+	@Override
+	public DuplexRead getAndRemove(DuplexRead d) {
+		return super.getAndRemove(d);
 	}
 
 }

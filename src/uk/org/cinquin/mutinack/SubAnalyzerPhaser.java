@@ -18,9 +18,9 @@ import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +51,7 @@ import uk.org.cinquin.parfor.ParFor;
 
 public class SubAnalyzerPhaser extends Phaser {
 	
-	private final static Logger logger = LoggerFactory.getLogger("SubAnalyzerPhaser");
+	private static final Logger logger = LoggerFactory.getLogger("SubAnalyzerPhaser");
 	private static final boolean[] falseTrue = new boolean[] {false, true};
 
 	private final AnalysisChunk analysisChunk;
@@ -59,7 +59,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final SettableInteger lastProcessedPosition;
 	private final SettableInteger pauseAt;
 	private final SettableInteger previousLastProcessable;
-	private final Set<SequenceLocation> forceOutputAtLocations;
+	private final Map<SequenceLocation, Boolean> forceOutputAtLocations;
 	private final Histogram dubiousOrGoodDuplexCovInAllInputs;
 	private final Histogram goodDuplexCovInAllInputs;
 	private final Parameters argValues;
@@ -81,7 +81,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	public SubAnalyzerPhaser(Parameters argValues, AnalysisChunk analysisChunk, 
 			List<Mutinack> analyzers, List<@NonNull LocationExaminationResults> analyzerCandidateLists,
 			SAMFileWriter alignmentWriter,
-			Set<SequenceLocation> forceoutputatlocations,
+			Map<SequenceLocation, Boolean> forceOutputAtLocations,
 			Histogram dubiousOrGoodDuplexCovInAllInputs, Histogram goodDuplexCovInAllInputs,
 			String contigName,
 			int contigIndex,
@@ -98,12 +98,12 @@ public class SubAnalyzerPhaser extends Phaser {
 		previousLastProcessable = new SettableInteger(-1);
 		
 		readsToWrite = alignmentWriter == null ?
-				null
-				: new ConcurrentHashMap<>(100_000);
+			null
+			: new ConcurrentHashMap<>(100_000);
 		outputAlignment = alignmentWriter;
 		this.dubiousOrGoodDuplexCovInAllInputs = dubiousOrGoodDuplexCovInAllInputs;
 		this.goodDuplexCovInAllInputs = goodDuplexCovInAllInputs;
-		this.forceOutputAtLocations = forceoutputatlocations;
+		this.forceOutputAtLocations = forceOutputAtLocations;
 		nSubAnalyzers = analysisChunk.subAnalyzers.size();
 		
 		this.contigIndex = contigIndex;
@@ -161,7 +161,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					if (tester.test(location)) {
 						analysisChunk.subAnalyzers.parallelStream().
 							forEach(sa -> {sa.candidateSequences.remove(location);
-									sa.stats.nLociExcluded.add(location, 1);});
+									sa.stats.nPosExcluded.add(location, 1);});
 						lastProcessedPosition.set(position);
 						continue outer;
 					}
@@ -203,8 +203,8 @@ public class SubAnalyzerPhaser extends Phaser {
 							}
 						}
 
-						if (stats.locusByLocusCoverage != null) {
-							int[] array = Objects.requireNonNull(stats.locusByLocusCoverage.get(
+						if (stats.positionByPositionCoverage != null) {
+							int[] array = Objects.requireNonNull(stats.positionByPositionCoverage.get(
 									location.getContigName()));
 							if (array.length <= location.position) {
 								throw new IllegalArgumentException("Position goes beyond end of contig " +
@@ -256,12 +256,12 @@ public class SubAnalyzerPhaser extends Phaser {
 						final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
 
 						if (localTooHighCoverage) {
-							stats.nLociIgnoredBecauseTooHighCoverage.increment(location);
+							stats.nPosIgnoredBecauseTooHighCoverage.increment(location);
 							tooHighCoverage.set(true);
 						}
 
 						if (!localTooHighCoverage) {
-							//a.stats.nLociDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
+							//a.stats.nPosDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
 
 							for (@NonNull ComparablePair<String, String> var: examResults.rawMismatchesQ2) {
 								stats.rawMismatchesQ2.accept(location, var);
@@ -329,7 +329,7 @@ public class SubAnalyzerPhaser extends Phaser {
 								}
 							}
 						} else {
-							stats.nLociDuplexesCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
+							stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
 							for (ComparablePair<Mutation, Mutation> d: examResults.disagreements) {
 								stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
 							}
@@ -346,16 +346,16 @@ public class SubAnalyzerPhaser extends Phaser {
 							examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).flatMap(c -> c.getDuplexes().stream()).
 							filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).map(DuplexRead::getDistanceToLigSite).
 							forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
-								stats.realQ2CandidateDistanceToLigationSite.insert(i);});
+								stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
-							stats.nLociDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
-							stats.nLociQualityQ2OthersQ1Q2.increment(location);
+							stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
+							stats.nPosQualityQ2OthersQ1Q2.increment(location);
 							//XXX The following includes all candidates at *all* positions considered in
 							//processing chunk 
-							stats.nReadsAtLociQualityQ2OthersQ1Q2.insert(
+							stats.nReadsAtPosQualityQ2OthersQ1Q2.insert(
 									examResults.analyzedCandidateSequences.
 									stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
-							stats.nQ1Q2AtLociQualityQ2OthersQ1Q2.insert(
+							stats.nQ1Q2AtPosQualityQ2OthersQ1Q2.insert(
 									examResults.analyzedCandidateSequences.
 									stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
 						}
@@ -373,7 +373,10 @@ public class SubAnalyzerPhaser extends Phaser {
 					final Quality maxCandMutQuality = mutantCandidates.stream().
 							map(c -> c.getQuality().getMin()).max(Quality::compareTo).orElse(ATROCIOUS);
 
-					final boolean forceReporting = forceOutputAtLocations.contains(location);
+					final boolean forceReporting = forceOutputAtLocations.get(location) != null;
+					@SuppressWarnings("null")
+					final boolean randomlySelected = forceReporting &&
+						forceOutputAtLocations.get(location);
 
 					//Only report details when at least one mutant candidate is of Q2 quality
 					if (forceReporting || (maxCandMutQuality.compareTo(GOOD) >= 0)) {
@@ -408,6 +411,10 @@ public class SubAnalyzerPhaser extends Phaser {
 						for (CandidateSequence candidate: distinctQ1Q2Candidates) {
 							String baseOutput0 = "";
 
+							if (randomlySelected) {
+								baseOutput0 += "+";
+							}
+							
 							if (!candidate.getMutationType().isWildtype() &&
 									allCandidatesIncludingDisag.stream().filter(c -> c.equals(candidate) &&
 											(c.getQuality().getMin().compareTo(GOOD) >= 0 ||
@@ -438,7 +445,7 @@ public class SubAnalyzerPhaser extends Phaser {
 											stream().filter(cd -> cd.equals(candidate)).findAny().orElse(null);
 
 									if (c != null) {
-										stats.nLociCandidatesForUniqueMutation.accept(location, c.getnGoodDuplexes());
+										stats.nPosCandidatesForUniqueMutation.accept(location, c.getnGoodDuplexes());
 										stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert((int) c.getTotalGoodOrDubiousDuplexes());
 										if (!repetitiveBEDs.isEmpty()) {
 											boolean repetitive = false;
@@ -458,13 +465,13 @@ public class SubAnalyzerPhaser extends Phaser {
 								});
 								analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 										contains(candidate)).forEach(a -> {
-											a.stats.get(statsIndex).nReadsAtLociWithSomeCandidateForQ2UniqueMutation.insert(
+											a.stats.get(statsIndex).nReadsAtPosWithSomeCandidateForQ2UniqueMutation.insert(
 													analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 													stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
 										});
 								analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 										contains(candidate)).forEach(a -> {
-											a.stats.get(statsIndex).nQ1Q2AtLociWithSomeCandidateForQ2UniqueMutation.insert(
+											a.stats.get(statsIndex).nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation.insert(
 													analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
 													stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
 										});
@@ -529,7 +536,7 @@ public class SubAnalyzerPhaser extends Phaser {
 											c.refPositionOfMateLigationSite + "\t" +
 											(argValues.outputDuplexDetails ?
 													c.getIssues() : "") + "\t" +
-													c.getMedianPhredAtLocus() + "\t" +
+													c.getMedianPhredAtPosition() + "\t" +
 													(c.getMinInsertSize() == -1 ? "?" : c.getMinInsertSize()) + "\t" +
 													(c.getMaxInsertSize() == -1 ? "?" : c.getMaxInsertSize()) + "\t" +
 													(c.getSupplementalMessage() != null ? c.getSupplementalMessage() : "") +
@@ -549,8 +556,7 @@ public class SubAnalyzerPhaser extends Phaser {
 								}
 
 								try {
-									@Nullable
-									final OutputStreamWriter ambw = analyzer.stats.get(statsIndex).mutationBEDWriter;
+									final @Nullable OutputStreamWriter ambw = analyzer.stats.get(statsIndex).mutationBEDWriter;
 									if (ambw != null) {
 										ambw.append(location.getContigName() + "\t" + 
 												(location.position + 1) + "\t" + (location.position + 1) + "\t" +
@@ -577,7 +583,11 @@ public class SubAnalyzerPhaser extends Phaser {
 						//If outputting an alignment populated with fields identifying the duplexes,
 						//fill in the fields here
 						for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
-							if (!duplexRead.leftAlignmentStart.equals(location)) {
+							boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
+								duplexRead.maxInsertSize > 10_000;
+							boolean write = location.equals(duplexRead.rightAlignmentEnd) ||
+								(useAnyStart && location.equals(duplexRead.leftAlignmentEnd));
+							if (!write) {
 								continue;
 							}
 							final int randomIndexForDuplexName = dn.incrementAndGet();
@@ -602,7 +612,7 @@ public class SubAnalyzerPhaser extends Phaser {
 											minDuplexQualityCopy.toShortString() + "->" + maxDuplexQualityCopy.toShortString() + " P" + duplexRead.getMinMedianPhred() +
 											" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
 									samRecord.setAttribute("DI", info);
-									samRecord.setAttribute("DN", randomIndexForDuplexName);
+									samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
 									samRecord.setAttribute("VB", new String(e.variableBarcode));
 									samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
 									samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
@@ -665,13 +675,13 @@ public class SubAnalyzerPhaser extends Phaser {
 				final int maxInsertSize = analyzer.maxInsertSize;
 				if (analyzer.rnaSeq) {
 					while (iterator.hasNext()) {
-						if (iterator.next().getAlignmentEndNoBarcode() + maxInsertSize <= localPauseAt) {
+						if (iterator.next().getAlignmentEnd() + maxInsertSize <= localPauseAt) {
 							iterator.remove();
 						}
 					}
 				} else {
 					while (iterator.hasNext()) {
-						if (iterator.next().getAlignmentStartNoBarcode() + maxInsertSize <= localPauseAt) {
+						if (iterator.next().getAlignmentStart() + maxInsertSize <= localPauseAt) {
 							iterator.remove();
 						}
 					}

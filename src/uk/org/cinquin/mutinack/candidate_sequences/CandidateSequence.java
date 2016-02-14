@@ -60,7 +60,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private DetailedQualities quality;
 	private @Nullable Quality supplQuality;
 	private @Nullable StringBuilder supplementalMessage;
-	private transient final @Nullable ExtendedSAMRecord initialConcurringRead;
+	private final transient @Nullable ExtendedSAMRecord initialConcurringRead;
 	private final int initialLigationSiteD;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
 	private transient @Nullable Collection<@NonNull DuplexRead> duplexes;
@@ -86,7 +86,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	
 	//For debugging purposes
 	public int insertSize = -1;
-	public int localIgnoreLastNBases = -1;
 	public int positionInRead = -1;
 	public int readEL = -1;
 	public boolean insertSizeNoBarcodeAccounting = false;
@@ -97,7 +96,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public int mateReadAlignmentEnd = -1;
 	public int refPositionOfMateLigationSite = 1;
 	
-	private byte medianPhredAtLocus;
+	private byte medianPhredAtPosition;
 	
 	public int minDistanceToLigSite = Integer.MAX_VALUE;
 	public int maxDistanceToLigSite = Integer.MIN_VALUE;
@@ -127,12 +126,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.hidden = hidden;
 	}
 
-	public byte getMedianPhredAtLocus() {
-		return medianPhredAtLocus;
+	public byte getMedianPhredAtPosition() {
+		return medianPhredAtPosition;
 	}
 
-	public void setMedianPhredAtLocus(byte medianPhredAtLocus) {
-		this.medianPhredAtLocus = medianPhredAtLocus;
+	public void setMedianPhredAtPosition(byte medianPhredAtPosition) {
+		this.medianPhredAtPosition = medianPhredAtPosition;
 	}
 
 	public CandidateSequence(int analyzerID, @NonNull MutationType mutationType,
@@ -352,7 +351,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads() {
 		if (concurringReads == null) {
-			concurringReads = new TObjectIntHashMap<>(500);
+			concurringReads = new TObjectIntHashMap<>(500, 0.5f, 1_000_000);
 			if (initialConcurringRead != null) {
 				concurringReads.put(initialConcurringRead, initialLigationSiteD);
 			}
@@ -360,7 +359,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return concurringReads;
 	}
 	
-	private final static TObjectIntMap<ExtendedSAMRecord> 
+	private static final TObjectIntMap<ExtendedSAMRecord>
 		emptyObjectIntHashMap = new TObjectIntHashMap<>(0);
 	
 	@SuppressWarnings("null")
@@ -546,7 +545,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (candidate.getRawMismatchesQ2().size() > 0) {
 			getMutableRawMismatchesQ2().addAll(candidate.getRawMismatchesQ2()); //TODO Is it
 			//worth optimizing this out if not keeping track of raw disagreements? That would
-			//save one list allocation per locus
+			//save one list allocation per position
 		}
 		if (candidate.getRawDeletionsQ2().size() > 0) {
 			getMutableRawDeletionsQ2().addAll(candidate.getRawDeletionsQ2());
@@ -554,10 +553,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (candidate.getRawInsertionsQ2().size() > 0) {
 			getMutableRawInsertionsQ2().addAll(candidate.getRawInsertionsQ2());
 		}
-		//*****
-		//NB: make sure to field merging in sync in CandidateSequenceCombo::mergeCandidate 
-		//TODO Merge those pieces of code
-		//*****
 	}
 
 	@SuppressWarnings("null")

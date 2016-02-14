@@ -7,6 +7,6 @@ public class CallPitestTest {
 	@SuppressWarnings("static-method")
 	@Test
 	public void test() {
-		new PitestTest().testAvoidMethodCall();
+		new PitestTestHelper().testAvoidMethodCall();
 	}
 }

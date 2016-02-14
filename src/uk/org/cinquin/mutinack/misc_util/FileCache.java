@@ -20,9 +20,9 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 
 public class FileCache<T extends Serializable> {
 	
-	private final static Logger logger = LoggerFactory.getLogger(FileCache.class);
+	private static final Logger logger = LoggerFactory.getLogger(FileCache.class);
 
-	private static final FSTConfiguration conf = FSTConfiguration.createFastBinaryConfiguration();
+	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 	
 	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
 	
@@ -62,12 +62,12 @@ public class FileCache<T extends Serializable> {
 				dataIS.readFully(bytes);
 				result = (T) conf.asObject(bytes);
 				recreate = false;
-			} catch (IOException e) {
+			} catch (Exception e) {
 				logger.debug("Problem reading cache from " + cachedInfo.getAbsolutePath(), e);
 			}
 		} 
 		if (recreate) {
-			logger.info("Could not read from cache for " + path);
+			logger.debug("Could not read from cache for " + path);
 			result = processor.apply(path);
 			try (FileOutputStream os = new FileOutputStream(cachedInfo)) {
 				try (FileLock lock = os.getChannel().tryLock()) {

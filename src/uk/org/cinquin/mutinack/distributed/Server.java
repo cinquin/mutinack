@@ -1,6 +1,5 @@
 package uk.org.cinquin.mutinack.distributed;
 
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -43,7 +42,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	@SuppressWarnings("unused")
 	private static Registry registry;
 	
-	private static final FSTConfiguration conf = FSTConfiguration.createFastBinaryConfiguration();
+	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 
 	private void dumpRecordedRuns() {
 		if (recordedRuns == null) {
@@ -127,35 +126,31 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		
 		String hostName1 = getHostName(hostName0);
 
-		ActionListener rebindRunnable = new ActionListener() {
+		ActionListener rebindRunnable = event -> {
 
-			@Override
-			public void actionPerformed(ActionEvent event) {
-
-				synchronized (rebindTimer) {
-					if (!rebindTimer.isRunning())
-						return;
-					try {
-						if (firstRun.get()) {
-							Naming.rebind("//" + hostName1 + "/mutinack", Server.this);
-							System.out.println("Server " + "//" + hostName1 + "/mutinack"
-									+ " bound in registry");
-						}
-					} catch (Exception e) {
-						System.err.println("RMI server rebinding exception:" + e);
-						e.printStackTrace(System.out);
-					}
-					firstRun.set(false);
-				}
-			}
-		};
+            synchronized (rebindTimer) {
+                if (!rebindTimer.isRunning())
+                    return;
+                try {
+                    if (firstRun.get()) {
+                        Naming.rebind("//" + hostName1 + "/mutinack", Server.this);
+                        System.out.println("Server " + "//" + hostName1 + "/mutinack"
+                                + " bound in registry");
+                    }
+                } catch (Exception e) {
+                    System.err.println("RMI server rebinding exception:" + e);
+                    e.printStackTrace(System.out);
+                }
+                firstRun.set(false);
+            }
+        };
 		
 		rebindTimer = new Timer(300 * 1000, rebindRunnable); //Run every 5min
 		rebindTimer.setInitialDelay(0);
 		rebindTimer.start();
 		
 		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
-		Thread shutdownHook = new Thread(() -> dumpRecordedRuns());
+		Thread shutdownHook = new Thread(this::dumpRecordedRuns);
 		Runtime.getRuntime().addShutdownHook(shutdownHook);
 	}
 

@@ -25,6 +25,8 @@ import java.util.Objects;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import contrib.net.sf.samtools.SAMRecord;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 
@@ -35,6 +37,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	public final int position;
 	public final boolean plusHalf;
 
+	@JsonIgnore
 	private final int hash;
 	
 	private static final long serialVersionUID = -8294857765048137986L;

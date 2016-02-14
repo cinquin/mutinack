@@ -217,26 +217,31 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 			return false;
 		}
 	}
+	
+	@Override
+	public boolean remove(Object o){
+		return getAndRemove(o) != null;
+	}
 
 	@SuppressWarnings("unchecked")
-	@Override
-	public boolean remove(Object o) {
+	public @Nullable T getAndRemove(Object o) {
 		try {
 			return remove((T) o);
 		} catch (ClassCastException ex) {
-			return false;
+			return null;
 		}
 	}
 
-	public boolean remove(T target) {
+	public @Nullable T remove(T target) {
 		return remove(root, target);
 	}
 
-	public boolean remove(TreeNode<E,T> node, T target)
+	public @Nullable T remove(TreeNode<E,T> node, T target)
 	{
-		if (target == null) return false;
-		if (node.value == null) return false;
+		if (target == null) return null;
+		if (node.value == null) return null;
 		if (target.equals(node.value)) {
+			T returnValue = node.value;
 			int leftSize = (node.left != null)? node.left.size:0;
 			int rightSize = (node.right != null)? node.right.size:0;
 			if (leftSize == 0) {
@@ -279,15 +284,15 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 					adjustUpwards(rightmost.right,node);
 				}
 			}
-			return true;
+			return returnValue;
 		} else {
 			if (target.getInterval().compareTo(node.value.getInterval()) <= 0) {
 				// Should go on left
 				if (node.left == null) {
-					return false;
+					return null;
 				}
-				boolean res = remove(node.left, target);
-				if (res) {
+				T res = remove(node.left, target);
+				if (res != null) {
 					node.maxEnd = Interval.max(node.maxEnd, node.left.maxEnd);
 					node.size--;
 				}
@@ -295,10 +300,10 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 			} else {
 				// Should go on right
 				if (node.right == null) {
-					return false;
+					return null;
 				}
-				boolean res = remove(node.right, target);
-				if (res) {
+				T res = remove(node.right, target);
+				if (res != null) {
 					node.maxEnd = Interval.max(node.maxEnd, node.right.maxEnd);
 					node.size--;
 				}

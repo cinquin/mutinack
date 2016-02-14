@@ -26,7 +26,7 @@ public enum Quality {
 	static final @NonNull Quality MINIMUM = Quality.ATROCIOUS;
 	static final @NonNull Quality MAXIMUM = Quality.GOOD;
 	
-	public @NonNull static Quality min(@NonNull Quality a, @NonNull Quality b) {
+	public static @NonNull Quality min(@NonNull Quality a, @NonNull Quality b) {
 		return a.compareTo(b) < 0 ? a : b;
 	}
 

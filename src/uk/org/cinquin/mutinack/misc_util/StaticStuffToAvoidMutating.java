@@ -26,9 +26,9 @@ import uk.org.cinquin.parfor.ParFor;
 
 public class StaticStuffToAvoidMutating {
 
-	final static Logger logger = LoggerFactory.getLogger(StaticStuffToAvoidMutating.class);
+	static final Logger logger = LoggerFactory.getLogger(StaticStuffToAvoidMutating.class);
 
-	private final static Map<String, ReferenceSequence> contigSequences = new ConcurrentHashMap<>();
+	private static final Map<String, ReferenceSequence> contigSequences = new ConcurrentHashMap<>();
 	private static ReferenceSequenceFile refFile;
 	
 	private static ExecutorService executorService;
@@ -45,12 +45,12 @@ public class StaticStuffToAvoidMutating {
 		}
 		
 		setExecutorService(new ThreadPoolExecutor(0, nMaxThreads,
-                300, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), 
+                300, TimeUnit.SECONDS, new SynchronousQueue<>(),
                 new NamedPoolThreadFactory("Mutinack executor pool - ")));
 		
 		if (ParFor.threadPool == null) {
 			ParFor.threadPool = new ThreadPoolExecutor(0, nMaxThreads,
-					300, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+					300, TimeUnit.SECONDS, new SynchronousQueue<>(),
 					new NamedPoolThreadFactory("Mutinack ParFor pool - "));
 		}
 	}

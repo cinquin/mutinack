@@ -4,8 +4,6 @@ import java.util.ArrayList;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import contrib.net.sf.picard.util.IterableAdapter;
-
 public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements DuplexKeeper {
 
 	private static final long serialVersionUID = 4777255573227700343L;
@@ -21,7 +19,22 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 
 	@Override
 	public @NonNull Iterable<DuplexRead> getIterable() {
-		return new IterableAdapter<>(iterator());
+		return this;
+	}
+
+	@Override
+	public DuplexRead getAndRemove(DuplexRead d) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean supportsMutableDuplexes() {
+		return true;
+	}
+
+	@Override
+	public boolean contains(DuplexRead duplexRead) {
+		return super.contains(duplexRead);
 	}
 
 }
