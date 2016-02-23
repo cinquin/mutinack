@@ -63,8 +63,6 @@ ${MAKE} clean
 
 for target in all_failed all
 do
-#Try to run the tests three times to work around a bug in the Hotspot 1.8.0_45 and
-#1.8.0_51 JVMs that leads to occasional crashes (apparently caused by a compiler thread).
 	counter=0
 	while true
 	do
@@ -75,7 +73,7 @@ do
 		fi
 
 		counter=`expr $counter + 1`
-		if [ $counter -eq 3 ]
+		if [ $counter -eq 1 ]
 		then
 			if [ "$target" = "all_failed" -a $BAIL_IF_FAILED_TESTS_NOT_FIXED -ne 1 ]
 			then
