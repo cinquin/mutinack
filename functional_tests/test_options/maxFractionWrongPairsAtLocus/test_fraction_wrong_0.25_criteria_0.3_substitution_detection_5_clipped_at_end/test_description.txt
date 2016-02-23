@@ -1,1 +1,0 @@
-Program is expected to detect mutation.  The fraction of wrong pair at locus is 0.25 and maxFractionWrongPairsAtLocus=0.3.

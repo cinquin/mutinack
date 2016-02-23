@@ -1,0 +1,6 @@
+*1|	chrX:11,857,538	deletion	-C-	test	1	1	1	12	1.0000	1.0000	1.0000	1.0000	60	5	-137	38	38	94	132	NS500169:27:H11KBBGXX:1:13201:1451:5342--2	11857442	11857439	11857575	11857572	11857439		127	137	137		
+*1|	chrX:11,857,542	substitution	G->C	test	1	1	1	12	1.0000	1.0000	1.0000	1.0000	60	5	-137	34	34	97	132	NS500169:27:H11KBBGXX:1:13201:1451:5342--2	11857442	11857439	11857575	11857572	11857439		39	137	137		
+mutantQ2CandidateQ1Q2DCoverageRepetitive: []; nEntries = 0; average = NaN; median = NaN
+mutantQ2CandidateQ1Q2DCoverageNonRepetitive: [0, 2]; nEntries = 2; average = 1; median = 1
+nPosDuplexQualityQ2OthersQ1Q2: All: 55
+Mutation rate for All: 0.036

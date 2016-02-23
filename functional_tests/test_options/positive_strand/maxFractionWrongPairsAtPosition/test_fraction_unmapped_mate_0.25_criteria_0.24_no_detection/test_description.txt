@@ -1,0 +1,1 @@
+Program is expected to not detect substitution.  The fraction of unmapped mate at position for substitution is 0.25 maxFractionWrongPairsAtPosition=0.24.

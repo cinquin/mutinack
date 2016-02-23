@@ -1,0 +1,1 @@
+Program is expected to report coverage of "nPosDuplexQualityQ2OthersQ1Q2: All: 60" and an insertion.  The "Mutation rate for All:" is expected to be 1/60=0.017.  Coverage for non-insertion should be 1 less (59) because of phred score of 25 at position chrX:11,857,482.

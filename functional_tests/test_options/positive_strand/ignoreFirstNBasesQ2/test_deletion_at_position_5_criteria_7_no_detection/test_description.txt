@@ -1,0 +1,1 @@
+Program is expected to not detect deletion.  Deletion is at position 5 and -ignoreFirstNBasesQ2=7.  At the output positions, 0 Q1 duplexes are expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

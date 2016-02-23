@@ -1,0 +1,1 @@
+Program is expected to not detect mutation.  Alignment is off by 6 and alignmentPositionMismatchAllowed=5.  At the output positions, 3 Q1 duplexes are expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

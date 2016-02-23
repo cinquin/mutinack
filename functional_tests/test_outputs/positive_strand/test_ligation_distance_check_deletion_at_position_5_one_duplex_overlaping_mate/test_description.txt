@@ -1,0 +1,1 @@
+Program is expected to report deletion at distance 5 from ligation site even though mate-pair also has deletion and is 94bp from ligation site.

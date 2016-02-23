@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The read covering the mutation has an unmapped mate and is not used by Mutinack and maxFractionWrongPairsAtPosition=0.1.

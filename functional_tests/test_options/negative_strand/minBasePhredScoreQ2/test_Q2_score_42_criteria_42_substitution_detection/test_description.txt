@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The phred score of the mutation is 42 and minBasePhredScoreQ2=42.

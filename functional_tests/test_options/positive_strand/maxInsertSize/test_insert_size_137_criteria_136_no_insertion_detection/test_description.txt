@@ -1,0 +1,1 @@
+Program is expected not to detect insertion.  The size of the insert is 137bp and maxInsertSize=136.

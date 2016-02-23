@@ -1,0 +1,1 @@
+Program is expected not to detect substitution.  The median phred score of the reads not in the adapter (137 or 138, forward or reverse respectively) is 39 with 165 reads into the adapter with phred score of 0 not contributing to the median phred score and minReadMedianPhredScore=40.

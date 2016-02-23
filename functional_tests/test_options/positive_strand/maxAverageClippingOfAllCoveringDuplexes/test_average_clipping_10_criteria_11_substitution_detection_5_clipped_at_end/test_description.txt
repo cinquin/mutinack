@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The average clipping of all duplexes at the positions is 10 and maxAverageClippingOfAllCoveringDuplexes=11.

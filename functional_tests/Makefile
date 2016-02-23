@@ -57,7 +57,7 @@ FILES = $(shell find . -name args.txt -print | grep -v .AppleDouble)
 
 N_FILES = $(shell echo $(FILES) | tr ' ' '\n' | wc -l)
 RESULTS = $(FILES:args.txt=run.out) 
-OUTPUT_ALIGNMENTS = $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai)
+OUTPUT_ALIGNMENTS = $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai) $(FILES:args.txt=labeled_reads.bam.bai)
 RESULT_CHECKS = $(FILES:args.txt=run.out.check)
 JARS = $(shell find . -mindepth 2 -name mutinack.jar -print) $(shell find . -mindepth 2 -name jacoco.jar -print)
 REFFILES = $(shell find . -mindepth 2 '(' -name ref.fa -print -or -name ref.fa.fai -print ')')
@@ -112,7 +112,7 @@ clean_log_and_temp_files:
 	$(shell find . -name '*.log' -delete -or -name '*.check' -delete -or -name '*.swp' -delete -or -name '*.core' -delete -or -name '*.dict' -delete -or -name '*.bwt' -delete -or -name '*.bt2' -delete -or -name '*.rbwt' -delete -or -name '*.ann' -delete -or -name '*.rsa' -delete -or -name refBWA079.fa -delete -or -name BWA_OPTIONS_FILE -delete -or -name '*.amb' -delete -or -name '*.rpac' -delete -or -name '*.pac' -delete -or -name '*.cached' -delete -or -name '*.info' -delete -or -name .DS_Store -delete -or -name 'ins_stats_*' -delete -or -name 'main_stats_*' -delete -or -name 'coverage_*.txt' -delete -or -name 'refSeq*' -delete -or -name '*.sa' -delete)
 
 clean_results:
-	$(shell find . -name .\*control_mutations.bed -delete -or -name .\*control_top_bottom_disag.bed -delete -or -name .\*test_mutations.bed -delete -or -name .\*test_top_bottom_disag.bed -delete -or -name '*_coverage.bed' -delete -or -name '*_coverage.proto' -delete -or -name '*main_stats_.bed' -delete -or -name '*main_stats.bed' -delete -or -name '*ins_stats_.bed' -delete -or -name '*ins_stats.bed' -not -name 'expected_*' -delete -or -name '*_coverage.txt' -not -name 'expected_*' -delete -or -name '*_nLociDuplex.bed' -not -name 'expected_*' -delete)
+	$(shell find . -name '*control_mutations.bed' -delete -or -name '*control_top_bottom_disag.bed' -delete -or -name '*test_mutations.bed' -delete -or -name '*test_top_bottom_disag.bed' -delete -or -name '*_coverage.bed' -delete -or -name '*_coverage.proto' -delete -or -name '*main_stats_.bed' -delete -or -name '*main_stats.bed' -delete -or -name '*ins_stats_.bed' -delete -or -name '*ins_stats.bed' -not -name 'expected_*' -delete -or -name '*_coverage.txt' -not -name 'expected_*' -delete -or -name '*_nPosDuplex.bed' -not -name 'expected_*' -delete -or -name '*.json' -delete)
 	@echo "$(RESULTS) $(OUTPUT_ALIGNMENTS)" | xargs -n200 rm -f
 
 clean_check:
@@ -164,12 +164,12 @@ ref.fa.info:
 %/run.out: %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
-	@(cd $* && java $(JVM_OPTIONS) $(JACOCO) $(JVM_BUG_WORKAROUND) $(DEBUG_ATTACH) $(MAX_MEM_OPT) -jar mutinack.jar -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
+	@(cd $* && $(PATH_TO_NG) uk.org.cinquin.mutinack.Mutinack -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -noStatusMessages -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt)) > $@ || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
 
 AVOID_STUPID_RULE_SIDE_EFFECT = $(MAKE)
 
 .DELETE_ON_ERROR:
 %/run.out.check: %/run.out %/Makefile_aux_output_check %/grep_lines_in_file %/expected_output.txt
-	@((./grep_lines_in_file $*/run.out < $*/expected_output.txt > $@) && (cd $*/ && $(AVOID_STUPID_RULE_SIDE_EFFECT) -s -j1 -f Makefile_aux_output_check)) && ($(GIT) rm -f $*/FAILED > /dev/null 2>&1 || rm -f $*/FAILED) || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
+	@((./grep_lines_in_file $*/run.out < $*/expected_output.txt > $@) && (cd $*/ && $(AVOID_STUPID_RULE_SIDE_EFFECT) -s -j1 -f Makefile_aux_output_check 2>/dev/null)) && ($(GIT) rm -f $*/FAILED > /dev/null 2>&1 || rm -f $*/FAILED) || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
 
 

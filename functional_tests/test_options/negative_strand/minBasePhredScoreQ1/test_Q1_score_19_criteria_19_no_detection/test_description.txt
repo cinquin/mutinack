@@ -1,0 +1,1 @@
+Program is expected not to detect mutation.  The mutation in the sister arm has a phred score of 19 and minBasePhredScoreQ1=19.  At the output positions, 1 Q1 duplex is expected to be detected in test sample and 1 duplexes are expected to be detected in control sample.

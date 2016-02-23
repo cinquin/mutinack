@@ -1,0 +1,1 @@
+Program is expected to not detect substitution.  6bp are clipped and maxAverageBasesClipped=5.  At the output positions, 1 Q1 duplex is expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

@@ -1,0 +1,1 @@
+Program is expected not to detect deletion.  The size of the insert is 1100bp and maxInsertSize=1099.

@@ -1,1 +1,0 @@
-Program is expected to not detect mutation.  The size of the insert is 1100bp and maxInsertSize=1000.

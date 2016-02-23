@@ -1,1 +1,0 @@
-Program is expected to report deletion at distance 5 from ligation site.

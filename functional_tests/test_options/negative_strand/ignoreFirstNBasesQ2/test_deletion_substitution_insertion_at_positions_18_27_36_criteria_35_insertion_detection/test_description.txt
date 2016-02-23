@@ -1,0 +1,1 @@
+Program is expected to detect insertion.  Insertion is at position 36 and -ignoreFirstNBasesQ2=35.

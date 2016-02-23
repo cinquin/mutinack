@@ -1,0 +1,1 @@
+Program is expected to detect 34bp deletion and 1bp deletion on same duplex.

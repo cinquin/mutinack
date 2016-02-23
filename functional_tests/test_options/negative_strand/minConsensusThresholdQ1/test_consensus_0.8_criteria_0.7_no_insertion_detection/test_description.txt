@@ -1,0 +1,1 @@
+Program is expected not to detect insertion.  The consensus of mutation in sister arm is 0.8 and minConsensusThresholdQ1=0.7.
