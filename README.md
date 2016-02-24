@@ -23,12 +23,11 @@ functional tests), and Mutinack should thus run on any platform that has
 such a runtime (FreeBSD, Mac OS X, and Linux have been tested with
 OpenJDK 1.8 or 1.9 early access b76). The `mutinack.jar` file can be
 [directly downloaded](http://cinquin.org.uk/static/mutinack.jar), or
-built from a clone of this repository using `ant insert-git-info
-unjar_dependencies jar` (`ant` is technically not required but makes the
-build very straightforward; `git` is used to optionally include version
-information in the build). Note that on startup Mutinack checks whether
-a newer version is available for download; this can be disabled with the
-`-skipVersionCheck` flag.
+built from a clone of this repository using `ant jar` (Ant is
+technically not required but makes the build very straightforward; Git
+is used to optionally include version information in the build). Note
+that on startup Mutinack checks whether a newer version is available for
+download; this can be disabled with the `-skipVersionCheck` flag.
 
 **Tests**
 
@@ -36,7 +35,7 @@ Unit tests as well as a number of functional tests are provided. The
 former are available as `ant` target `junitreport`, and the latter can
 be run using the `run_functional_tests` script in the base directory.
 Both sets of tests are run automatically as part of continuous
-integration builds (each of the ~170 functional tests takes a relatively
+integration builds (each of the ~350 functional tests takes a relatively
 large amount of time to complete because of initialization costs, but the
 tests are run in parallel; the number of simultaneous jobs should be
 adjusted to match machine architecture using the `N_PARALLEL_JOBS` knob
@@ -49,17 +48,42 @@ to minimize initial configuration effort. Functional tests record
 code coverage using JaCoCo (use `ant` target `jacoco:report` to produce a
 report).
 
+The project is set up for [mutation
+testing](https://en.wikipedia.org/wiki/Mutation_testing) (these are
+mutations in code, not to be confused with mutations in DNA) using a
+[customized version](https://github.com/cinquin/pitest) of
+[PIT](http://pitest.org). This analysis identifies parts of the code
+that are sufficiently well constrained and covered by tests for changes
+introduced as code "mutations" to cause functional or unit tests to
+fail. Since the analysis is computationally costly, pre-computed
+mutation testing results have been made available
+[here](http://cinquin.org.uk/static/mutation_testing/) in HTML format.
+Note that as it is the analysis produces a number of false positives
+(i.e. mutations that that are not caught by tests, highlighted in red in
+the HTML output) for various reasons (e.g. because the mutated code
+improved performance without changing Mutinack's output, because it
+implemented internal sanity checks that also did not affect Mutinack's
+output, or because there is more than one way to achieve the exact same
+result). Note also that for now the tests do not aim to be exhaustive;
+they focus on the critical parts of the algorithm and of the output,
+rather than on all the functionality that is useful but that is not high
+priority to specifically test. The analysis can be run with `ant
+mutationCoverage` (run time is up to 1 day on a 64-core machine,
+depending on the mutators used).
+
 The project comes with `ant` and `maven` targets to run Findbugs, which
-is pre-packaged in the distribution.
+is pre-packaged in the distribution. The code is also regularly analyzed
+with Coverity Scan, which has very nice additions to Findbugs and does
+not currently detect any significant issue.
 
 Note that, at least on some versions of JRE 8, Mutinack can trigger a
-non-deterministic Java Virtual Machine bug, which has been
+non-deterministic Java Virtual Machine bug, which was
 [reported](https://bugs.openjdk.java.net/browse/JDK-8132870) to
-Oracle but apparently remains unaddressed (the original bug reported is
-possibly a duplicate of [this bug](https://bugs.openjdk.java.net/browse/JDK-6675699)).
-The JVM bug has only been observed in functional tests, which work around
-the problem by specifying the following JVM option:
-`-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey`.
+Oracle and [may be resolved](https://bugs.openjdk.java.net/browse/JDK-8150446)
+from JRE 8u74 onwards. This bug has only been observed in functional tests; 
+to work around it, use the following JVM flags:
+`-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey` and
+`-XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey`.
 
 **Sample datasets**
 
@@ -96,12 +120,14 @@ do not create an inordinate number of short-lived objects, object
 allocation and garbage collection can limit performance. We use the
 following JVM arguments, that were derived mostly by empirical means and
 that might need to be adapted for different architectures or usage
-patterns: `-XX:ParallelGCThreads=10 -Xmx15G`. With these settings we can
-achieve a throughput in excess of 3.5 million bases / s on our hardware
-(processing speed is data dependent). Performance can be increased by
-turning off internal assertions that provide sanity checks; these 
-assertions are kept on by default because the performance gain (which is
-also data dependent) is in general not substantial.
+patterns: `-XX:+UseParallelGC -XX:ParallelGCThreads=10 -Xmx15G`. With
+these settings we can achieve a throughput in excess of 3.5 million
+bases / s on our hardware (processing speed is data dependent).
+
+Performance can be increased by turning off costly internal assertions
+that provide internal sanity checks, using `-enableCostlyAssertions false`; 
+assertions that have a minimal performance impact can only be turned off
+by editing the code.
 
 Under FreeBSD or Mac OS X, press control-T (or `kill -INFO` the process)
 to see a progress update on the standard error stream.
@@ -123,42 +149,71 @@ and sun.tools dependencies: used to read BAM files. Some changes were
 made to improve performance (memoization of methods highlighted by
 profiling).
 
-- [JCommander](http://jcommander.org) by Cédric Beust: used to parse
-command-line arguments (Apache License V2.0)
+- [JCommander](http://jcommander.org) by Cédric Beust (Apache License
+V2.0): used to parse command-line arguments
 
-- [Guava](https://github.com/google/guava) by Google (Apache License
-V2.0)
-
-- [GNU Trove](http://trove4j.sourceforge.net/html/overview.html) (LGPL):
-used for its implementations of Maps and Sets that minimize object
-creation, and for Lists of primitives. Small changes made are
-independently released [here](https://github.com/cinquin/GNU_Trove).
+- [GNU Trove](http://trove4j.sourceforge.net/html/overview.html) (GNU
+Lesser General Public License): used for its implementations of Maps and
+Sets that minimize object creation, and for Lists of primitives. Small
+changes made are independently released
+[here](https://github.com/cinquin/GNU_Trove).
 
 - [Furious object pool](https://code.google.com/p/furious-objectpool/)
 by eddie (Apache license)
 
+- [Jackson](http://wiki.fasterxml.com/JacksonHome) by FasterXML (Apache
+License V2.0): used for JSON output
+
+- [fast-serialization](https://github.com/RuedigerMoeller/fast-
+serialization) by Ruediger Moeller (Apache License Version 2.0): used to
+cache data structures that are parsed (slowly) from text files
+
+- [Google Protobuf](https://github.com/google/protobuf/)
+([license](https://github.com/google/protobuf/blob/master/LICENSE)):
+used for serialization of detailed genome coverage data
+
+- [Apache Commons IO](https://commons.apache.org/proper/commons-io/)
+(Apache License Version 2.0)
+
 - An adapted version of
-[java-algorithms-implementation](https://github.com/phishman3579/java-algorithms-implementation)
-by Justin Wetherell (Apache License). Some changes were integrated
-upstream; others are available
-[here](https://github.com/cinquin/mutinack/blob/master/src/com/jwetherell/algorithms/data_structures/IntervalTree.java).
+[java-algorithms-implementation](https://github.com/phishman3579/java-
+algorithms-implementation) by Justin Wetherell (Apache License). Some
+changes were integrated upstream; others are available
+[here](https://github.com/cinquin/mutinack/blob/master/src/com/
+jwetherell/algorithms/data_structures/IntervalTree.java).
 
 - [Stanford CoreNLP](http://nlp.stanford.edu/software/corenlp.shtml) by
 The Stanford Natural Language Processing Group (GNU Public License v3)
 
-- [JUnit](http://http://junit.org) and [Hamcrest](https://code.google.
-com/p/hamcrest/) are used for unit testing (Eclipse Public License
-and BSD license, respectively) and have their jars included
+- [JUnit](http://http://junit.org), [Hamcrest](https://code.google.
+com/p/hamcrest/), and [JMockit](http://jmockit.org) (Eclipse Public
+License, BSD license, and MIT license, respectively): used for unit
+testing
 
-- [JaCoCo](http://eclemma.org/jacoco/), used for code coverage
-analysis (Eclipse Public License v1.0)
+- [PIT](http://pitest.org) by Henry Coles (Apache License Version 2.0):
+used for mutation testing; the version included with Mutinack was
+[adapted](https://github.com/cinquin/pitest) to provide more information
+on test failures, among other things
+
+- [JaCoCo](http://eclemma.org/jacoco/) (Eclipse Public License v1.0):
+used for code coverage analysis
+
+- [Findbugs](http://findbugs.sourceforge.net) (GNU Lesser General Public
+License): used for static analysis
+
+- [EqualsVerifier](http://www.jqno.nl/equalsverifier/) by Jan Ouwens
+(Apache License Version 2.0): used for testing of `equals` and
+`hashCode` methods
 
 - [Logback](http://logback.qos.ch), the [SLF4J](http://www.slf4j.org)
 API and the Lidalia extension for logging (LGLP, MIT, and MIT X11
-licenses, respectively)
+licenses, respectively): used for logging
 
 - A jar file containing Eclipse Null/Nullable annotations is included
 for convenience (Eclipse Public License)
+
+Travis and Coverity kindly provide free resources for continuous
+integration and static code analysis.
 
 **License**
 
