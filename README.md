@@ -144,10 +144,9 @@ system should automatically check the pull request).
 Mutinack relies on the following libraries:
 
 - [Picard tools](http://sourceforge.net/projects/picard/) by the Broad
-Institute (MIT License, Apache License V2.0) and its bzip2, snappy
-and sun.tools dependencies: used to read BAM files. Some changes were
-made to improve performance (memoization of methods highlighted by
-profiling).
+Institute (MIT License, Apache License V2.0) and its bzip2 and snappy
+dependencies: used to read BAM files. Some changes were made to improve
+performance (memoization of methods highlighted by profiling).
 
 - [JCommander](http://jcommander.org) by Cédric Beust (Apache License
 V2.0): used to parse command-line arguments
