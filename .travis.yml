@@ -24,4 +24,6 @@ addons:
     build_command_prepend: "ant clean"
     build_command: "ant"
     branch_pattern: "coverity"
-
+  apt:
+    packages:
+      - oracle-java8-installer
