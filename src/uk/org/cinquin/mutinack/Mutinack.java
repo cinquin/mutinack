@@ -629,7 +629,7 @@ public class Mutinack implements Actualizable {
 			for (String bed: argValues.excludeRegionsInBED) {
 				try {
 					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							groupSettings.getIndexContigNameMap(), bed);
+							groupSettings.getIndexContigNameMap(), bed, false);
 					excludeBEDs.add(reader);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + bed, e);
@@ -640,7 +640,7 @@ public class Mutinack implements Actualizable {
 			for (String bed: argValues.repetiveRegionBED) {
 				try {
 					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							groupSettings.getIndexContigNameMap(), bed);
+							groupSettings.getIndexContigNameMap(), bed, false);
 					repetitiveBEDs.add(reader);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + bed, e);
@@ -836,7 +836,7 @@ public class Mutinack implements Actualizable {
 				if (argValues.bedDisagreementOrienter != null) {
 					try {
 						analyzer.codingStrandTester = BedReader.getCachedBedFileReader(argValues.bedDisagreementOrienter, ".cached",
-								groupSettings.getIndexContigNameMap(), "");
+								groupSettings.getIndexContigNameMap(), "", false);
 					} catch (Exception e) {
 						throw new RuntimeException("Problem with BED file " + 
 								argValues.bedDisagreementOrienter, e);
@@ -853,7 +853,7 @@ public class Mutinack implements Actualizable {
 						final File f = new File(fileName);
 						final String filterName = f.getName();
 						final GenomeFeatureTester filter = BedReader.getCachedBedFileReader(fileName, ".cached",
-								groupSettings.getIndexContigNameMap(), filterName);
+								groupSettings.getIndexContigNameMap(), filterName, false);
 						final BedComplement notFilter = new BedComplement(filter);
 						final String notFilterName = "NOT " + f.getName();
 						analyzer.filtersForCandidateReporting.put(filterName, filter);
@@ -906,7 +906,7 @@ public class Mutinack implements Actualizable {
 						final File f = new File(fileName);
 						final String filterName = "NOT " + f.getName();
 						final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-								groupSettings.getIndexContigNameMap(), filterName);
+								groupSettings.getIndexContigNameMap(), filterName, false);
 						final BedComplement filter = new BedComplement(filter0);
 						analyzer.stats.forEach(s -> {
 							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
@@ -941,7 +941,7 @@ public class Mutinack implements Actualizable {
 						final BedReader filter = new BedReader(groupSettings.getIndexContigNameMap(), 
 								new BufferedReader(new FileReader(f)), f.getName(),
 								argValues.bedFeatureSuppInfoFile == null ? null :
-									new BufferedReader(new FileReader(argValues.bedFeatureSuppInfoFile)));
+									new BufferedReader(new FileReader(argValues.bedFeatureSuppInfoFile)), false);
 						int index0 = index;
 						analyzer.stats.forEach(s -> {
 							CounterWithBedFeatureBreakdown counter;

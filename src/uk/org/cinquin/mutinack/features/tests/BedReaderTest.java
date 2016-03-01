@@ -44,7 +44,7 @@ public class BedReaderTest {
 			mapNames.put(index++, name);
 		}
 		bc = new BedReader(mapNames, new BufferedReader(new StringReader(bed)),
-			"test reader", null);
+			"test reader", null, false);
 	}
 	
 	private final List<@NonNull String> contigNames = Arrays.asList(
@@ -96,7 +96,7 @@ public class BedReaderTest {
 				"";
 		
 		new BedReader(mapNames, new BufferedReader(new StringReader(bed1)),
-			"test reader", null);
+			"test reader", null, false);
 		throw new RuntimeException();
 	}
 	
@@ -112,7 +112,7 @@ public class BedReaderTest {
 				"";
 		
 		new BedReader(mapNames, new BufferedReader(new StringReader(bed2)),
-			"test reader", null);
+			"test reader", null, false);
 		throw new RuntimeException();
 	}
 	
@@ -127,7 +127,7 @@ public class BedReaderTest {
 				"";
 		
 		new BedReader(mapNames, new BufferedReader(new StringReader(bed3)),
-			"test reader", null);
+			"test reader", null, false);
 		throw new RuntimeException();
 	}
 

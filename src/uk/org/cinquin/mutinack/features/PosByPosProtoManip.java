@@ -248,7 +248,7 @@ public class PosByPosProtoManip {
 		try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 			GenomeFeatureTester reader0 = new BedReader(contigNameMap, 
 					new BufferedReader(fileReader),
-					argValues.domainBedFile, null);
+					argValues.domainBedFile, null, false);
 			if (argValues.invertInputs) {
 				System.err.println("Inverting input bed " + argValues.domainBedFile);
 				reader = new BedComplement(reader0);
@@ -285,7 +285,7 @@ public class PosByPosProtoManip {
 		for (String s: contigNames0) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", contigIndex++, s, -1, -1, null, Util.emptyOptional())));
+					new GenomeInterval("", contigIndex++, s, -1, -1, null, Util.emptyOptional(), 0)));
 		}
 		
 		for (GenomeInterval interval: resultIntervals) {
@@ -358,7 +358,7 @@ public class PosByPosProtoManip {
 			try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 				GenomeFeatureTester reader0 = new BedReader(nameMap, 
 						new BufferedReader(fileReader),
-						argValues.domainBedFile, null);
+						argValues.domainBedFile, null, false);
 				if (argValues.invertInputs) {
 					System.err.println("Inverting input bed " + argValues.domainBedFile);
 					reader = new BedComplement(reader0);
