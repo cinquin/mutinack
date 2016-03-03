@@ -108,14 +108,20 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		try(Stream<String> lines = reader.lines()) {
 			lines.forEachOrdered(l -> {
 				try {
-					lineCount.incrementAndGet();
+					final int line = lineCount.incrementAndGet();
 					@NonNull String[] components = l.split("\t");
-					if (components.length < 4) {
+					if (components.length < 3) {
 						throw new ParseRTException("Missing fields");
 					}
+					final boolean autogenerateName = components.length == 3;
 					int start = Integer.parseInt(underscorePattern.matcher(components[1]).replaceAll("")) - 1;
 					int end = Integer.parseInt(underscorePattern.matcher(components[2]).replaceAll("")) - 1;
-					String name = components[3];
+					final String name;
+					if (autogenerateName) {
+						name = "line_" + line;
+					} else {
+						name = components[3];
+					}
 					final Integer length;
 					final @NonNull Optional<Boolean> strandPolarity;
 					if (components.length >= 6) {
@@ -162,7 +168,11 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					} else {
 						score = 0f;
 					}
-					GenomeInterval interval = new GenomeInterval(name, reverseIndex.get(components[0]), 
+					Integer contigIndex = reverseIndex.get(components[0]);
+					if (contigIndex == null) {
+						throw new IllegalArgumentException("Could not find contig " + components[0]);
+					}
+					GenomeInterval interval = new GenomeInterval(name, contigIndex, 
 							/*contig*/ components[0], start, end, length, strandPolarity, score);
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
 				} catch (NumberFormatException | ParseRTException e) {
