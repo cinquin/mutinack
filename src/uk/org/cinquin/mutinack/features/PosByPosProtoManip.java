@@ -72,7 +72,7 @@ public class PosByPosProtoManip {
 		@Parameter(names = "-input", description = "Protobuf file name or - for stdin", required = true, variableArity = true)
 		public List<String> inputs;
 
-		@Parameter(names = "-invertInputs", description = "Protobuf file name or - for stdin", required = true)
+		@Parameter(names = "-invertInputs", description = "Protobuf file name or - for stdin", required = false)
 		public boolean invertInputs;
 
 		@Parameter(names = "-domainBedFile", description = "Only domains defined in following bed file will be used for histogram computation", required = false)
