@@ -162,7 +162,9 @@ public class PosByPosProtoManip {
 			break;
 			default: throw new IllegalArgumentException("Unknown command " + args[0]);
 		}
-		ParFor.threadPool.shutdown();
+		if (ParFor.threadPool != null) {
+			ParFor.threadPool.shutdown();
+		}
 	}
 	
 	private static void checkArgumentLength(int length, List<?> list, String errorMessage) {
