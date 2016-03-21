@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 
 public final class ParFor {
 	
@@ -72,6 +73,14 @@ public final class ParFor {
 
 	private ParFor(int startIndex, int endIndex, ProgressReporter progressBar,
 			ExecutorService threadPool, boolean stopAllUponException, int maxNThreads) {
+		if (threadPool == null) {
+			synchronized(ParFor.class) {
+				if (ParFor.threadPool == null) {
+					StaticStuffToAvoidMutating.instantiateThreadPools(64);
+				}
+			}
+			threadPool = ParFor.threadPool;
+		}
 		this.startIndex = startIndex;
 		this.endIndex = endIndex;
 		nIterations = endIndex - startIndex + 1;
@@ -88,7 +97,7 @@ public final class ParFor {
 		workers = new ILoopWorker[result];
 	}
 
-	public ParFor(String name, int startIndex, int endIndex, ProgressReporter progressBar, boolean stopAllUponException){
+	public ParFor(String name, int startIndex, int endIndex, ProgressReporter progressBar, boolean stopAllUponException) {
 		this(startIndex, endIndex,progressBar, threadPool, stopAllUponException);
 		if (name != null)
 			setName(name);

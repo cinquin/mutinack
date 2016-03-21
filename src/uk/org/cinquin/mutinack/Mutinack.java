@@ -794,7 +794,7 @@ public class Mutinack implements Actualizable {
 						Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
 						builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
 						builder.setGeneratingProgramArgs(argValues.toString());
-						builder.setSampleName(analyzer.finalOutputBaseName + "/" +
+						builder.setSampleName(analyzer.finalOutputBaseName + "_" +
 								s.getName() + "_" + name + "_pos_by_pos_coverage");
 						s.positionByPositionCoverageProtobuilder = builder;
 					});
