@@ -410,7 +410,7 @@ public class PosByPosProtoManip {
 				}
 			}
 			System.err.print("Iterated over " + nPos + " positions");
-			if (startAtContigs.size() > 1) {
+			if (startAtContigs.size() > 0) {
 				System.err.println(" in contigs " + startAtContigs);
 			} else {
 				System.err.println();
@@ -617,7 +617,7 @@ public class PosByPosProtoManip {
 					if (movingAverage) {
 						if (nInBin++ == argValues.binSize) {
 							nInBin = 0;
-							writer.append(	contigName + "\t" +
+							writer.append(contigName + "\t" +
 									i + "\t" +
 									averaged + "\n");
 						}
