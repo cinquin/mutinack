@@ -130,6 +130,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 		nPosQualityQ2 = new StatsCollector();
 		nPosQualityQ2OthersQ1Q2 = new StatsCollector();
 		nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosCandidatesForUniqueMutation = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		
 		{	//Force output of fields annotated with AddChromosomeBins to be broken down by
@@ -508,6 +509,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = TERSE)
 	public final MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2;
+
+	@PrintInStatus(outputLevel = TERSE)
+	public final MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate;
 
 	@PrintInStatus(color = "greenBackground", outputLevel = TERSE)
 	public final MultiCounter<?> nPosCandidatesForUniqueMutation;

@@ -168,6 +168,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					} else {
 						score = 0f;
 					}
+
 					Integer contigIndex = reverseIndex.get(components[0]);
 					if (contigIndex == null) {
 						throw new IllegalArgumentException("Could not find contig " + components[0]);
@@ -175,7 +176,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					GenomeInterval interval = new GenomeInterval(name, contigIndex, 
 							/*contig*/ components[0], start, end, length, strandPolarity, score);
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
-				} catch (NumberFormatException | ParseRTException e) {
+				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);
 				}
 			});

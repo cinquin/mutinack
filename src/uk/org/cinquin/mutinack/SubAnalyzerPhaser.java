@@ -350,6 +350,12 @@ public class SubAnalyzerPhaser extends Phaser {
 
 							stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
 							stats.nPosQualityQ2OthersQ1Q2.increment(location);
+							@Nullable final GenomeFeatureTester codingStrandTester =
+								analyzers.get(0).codingStrandTester;
+							if (codingStrandTester != null &&
+									codingStrandTester.getNegativeStrand(location).isPresent()) {
+								stats.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.accept(location, examResults.nGoodDuplexes);
+							}
 							//XXX The following includes all candidates at *all* positions considered in
 							//processing chunk 
 							stats.nReadsAtPosQualityQ2OthersQ1Q2.insert(
