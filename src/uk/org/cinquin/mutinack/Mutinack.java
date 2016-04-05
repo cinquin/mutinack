@@ -863,6 +863,7 @@ public class Mutinack implements Actualizable {
 							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
 							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
 							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+							s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
 							s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
 							s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
@@ -881,6 +882,7 @@ public class Mutinack implements Actualizable {
 							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
 							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
 							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
+							s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(notFilterName, notFilter);
 							s.nPosCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
 							s.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
 							s.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
@@ -913,6 +915,7 @@ public class Mutinack implements Actualizable {
 							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
 							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
 							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+							s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
 							s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
 							s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
