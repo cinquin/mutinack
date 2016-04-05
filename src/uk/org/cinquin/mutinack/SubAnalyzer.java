@@ -786,7 +786,7 @@ public final class SubAnalyzer {
 					final int readPosition = r.referencePositionToReadPosition(refPosition);
 					if (!r.formsWrongPair()) {
 						final int distance = r.tooCloseToBarcode(refPosition, readPosition, 0);
-						if (Math.abs(distance) > 150 && !candidate.getMutationType().isWildtype()) {
+						if (Math.abs(distance) > 160) {
 							throw new AssertionFailedException("Distance problem with candidate " + candidate +
 								" read at read position " + readPosition + " and refPosition " +
 								refPosition + " " + r.toString() + " in analyzer" +
