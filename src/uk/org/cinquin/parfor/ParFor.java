@@ -10,16 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 
 public final class ParFor {
 	
-	final static Logger logger = LoggerFactory.getLogger("Parfor");
+	static final Logger logger = LoggerFactory.getLogger("Parfor");
 	/**
 	 * Profiling suggests setting thread names represents a substantial
 	 * cost when doing many short Parfor runs.
@@ -33,7 +34,7 @@ public final class ParFor {
 	
 	private ILoopWorker[] workers = null;
 	private int workerArrayIndex = 0;
-	private transient final AtomicInteger index = new AtomicInteger();
+	private final transient AtomicInteger index = new AtomicInteger();
 	private final ProgressReporter progressReporter;
 	private List<?>[] partialResults;
 	private Future<?>[] futures;
@@ -42,10 +43,11 @@ public final class ParFor {
 	private volatile boolean clientWillGetExceptions;
 	private volatile boolean printedMissingExceptionWarning;
 	private volatile boolean started = false;
-	final private Object doneSemaphore = new Object();
+	private final Object doneSemaphore = new Object();
 	private volatile boolean done = false;
 	
-	static public final transient ExecutorService threadPool = Executors.newCachedThreadPool();
+	public static ExecutorService threadPool;
+	@SuppressWarnings("unused")
 	private static final int nProc = Runtime.getRuntime().availableProcessors();
 
 	public interface ProgressReporter {
@@ -71,13 +73,21 @@ public final class ParFor {
 
 	private ParFor(int startIndex, int endIndex, ProgressReporter progressBar,
 			ExecutorService threadPool, boolean stopAllUponException, int maxNThreads) {
+		if (threadPool == null) {
+			synchronized(ParFor.class) {
+				if (ParFor.threadPool == null) {
+					StaticStuffToAvoidMutating.instantiateThreadPools(64);
+				}
+			}
+			threadPool = ParFor.threadPool;
+		}
 		this.startIndex = startIndex;
 		this.endIndex = endIndex;
 		nIterations = endIndex - startIndex + 1;
 		this.progressReporter = progressBar;
 		this.stopAllUponException = stopAllUponException;
 
-		int useNThreads = nProc;
+		int useNThreads = ((ThreadPoolExecutor) threadPool).getMaximumPoolSize();
 		/*int activeThreads = ((ThreadPoolExecutor) threadPool).getActiveCount();
 		if (activeThreads > nProc) {
 			logger.warn("Capping number of parallel threads");
@@ -87,7 +97,7 @@ public final class ParFor {
 		workers = new ILoopWorker[result];
 	}
 
-	public ParFor(String name, int startIndex, int endIndex, ProgressReporter progressBar, boolean stopAllUponException){
+	public ParFor(String name, int startIndex, int endIndex, ProgressReporter progressBar, boolean stopAllUponException) {
 		this(startIndex, endIndex,progressBar, threadPool, stopAllUponException);
 		if (name != null)
 			setName(name);
@@ -210,10 +220,9 @@ public final class ParFor {
 										synchronized(doneSemaphore) {
 											doneSemaphore.notifyAll();
 										}
-									}
-									else if (!printedMissingExceptionWarning) {
+									} else if (!printedMissingExceptionWarning) {
 										printedMissingExceptionWarning = true;
-										logger.error(name + "Multiple exceptions caught in ParFor(1); only 1 will be rethrown");
+										logger.error(name + ": multiple exceptions caught in ParFor");
 									}
 								}
 								logger.error(name + "Aborting ParFor run");
@@ -314,7 +323,7 @@ public final class ParFor {
 							}
 						}
 						else
-							logger.error(name + "Multiple exceptions caught in ParFor(2); only 1 will be rethrown");
+							logger.error(name + ": multiple exceptions caught in ParFor; only 1 will be rethrown");
 					}
 					logger.error(name + "Aborting ParFor run");
 				}
@@ -358,6 +367,12 @@ public final class ParFor {
 
 	public void setName(String name) {
 		this.name = name + ": ";
+	}
+
+	public static void shutdownExecutor() {
+		if (threadPool != null) {
+			threadPool.shutdown();
+		}
 	}
 
 }

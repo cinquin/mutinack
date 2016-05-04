@@ -1,0 +1,1 @@
+Program is expected to detect 3 mutations and output a coverage bed "test_coverage_ins_stats.bed" with a coverage of 1 at chrX:11,857,461.

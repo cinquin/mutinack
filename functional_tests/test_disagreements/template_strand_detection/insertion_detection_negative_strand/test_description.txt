@@ -1,1 +1,1 @@
-Program is expected to detect strand disagreement for insertion in the template strand.
+Program is expected to detect strand disagreement for insertion in the template strand and a coverage of 95.

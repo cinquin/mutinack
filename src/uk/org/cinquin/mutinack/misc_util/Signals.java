@@ -16,6 +16,7 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,32 +27,43 @@ import sun.misc.SignalHandler;
 
 public class Signals {
 
-	public interface SignalProcessor {
+	public interface SignalProcessor extends Serializable {
 		void handle(Signal signal);
 	}
 
-	static private Map<String, List<SignalProcessor>> processors = new HashMap<>();
+	private static Map<String, List<SignalProcessor>> processors = new HashMap<>();
 	
 	static boolean initialized = false;
 
-	public synchronized static void registerSignalProcessor(String name, SignalProcessor p) {
-		if (!initialized) {
+	public static void registerSignalProcessor(String name, SignalProcessor p) {
+		synchronized(processors) {
+			if (!initialized) {
+				initialize();
+				initialized = true;
+			}
+			List<SignalProcessor> list = processors.get(name);
+			if (list == null) {
+				list = new ArrayList<>();
+				processors.put(name, list);
+			}
+			list.add(p);
+		}
+	}
+	
+	public static void clearSignalProcessors() {
+		synchronized(processors) {
+			processors.clear();
 			initialize();
-			initialized = true;
 		}
-		List<SignalProcessor> list = processors.get(name);
-		if (list == null) {
-			list = new ArrayList<>();
-			processors.put(name, list);
-		}
-		list.add(p);
 	}
 
-	public synchronized static void removeSignalProcessor(String name, SignalProcessor p) {
-		List<SignalProcessor> list = processors.get(name);
-		if (list == null)
-			throw new IllegalArgumentException();
-		list.remove(p);
+	public static synchronized void removeSignalProcessor(String name, SignalProcessor p) {
+		synchronized(processors) {
+			List<SignalProcessor> list = processors.get(name);
+			if (list == null)
+				throw new IllegalArgumentException();
+			list.remove(p);
+		}
 	}
 
 	private static class Handler {
@@ -80,7 +92,6 @@ public class Signals {
 
 	private static void initialize () {
 		try {
-			Signal.handle(new Signal("URG"), new Handler("URG").sigHandler);
 			Signal.handle(new Signal("INFO"), new Handler("INFO").sigHandler);
 		} catch (IllegalArgumentException e) { 
 			if (!System.getProperty("os.name", "Linux default").contains("Linux")) {

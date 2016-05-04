@@ -1,1 +1,0 @@
-Program is expected to not detect mutation.  The size of the insert is 1100bp and maxInsertSize=1000.  At the output loci, 1 Q1 duplex is expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

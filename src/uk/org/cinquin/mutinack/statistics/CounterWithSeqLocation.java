@@ -19,15 +19,13 @@ package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import org.eclipse.jdt.annotation.NonNull;
-
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 
 /**
- * Reports counts following contig blocks whose size is defined by {@link #BIN_SIZE},
+ * Reports counts following contig blocks whose size is defined by {@link MutinackGroup#BIN_SIZE},
  * and additionally breaking down counts using an indexing object.
  * @author olivier
  *
@@ -36,25 +34,21 @@ import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 public class CounterWithSeqLocation<T> extends Counter<T> implements Serializable {
 	
 	private static final long serialVersionUID = 1472307547807376993L;
-
-	public static final int BIN_SIZE = 100_000;
-
-	public static Map<Object, @NonNull Object> contigNames;
 	
-	public CounterWithSeqLocation(boolean sortByValue) {
-		super(sortByValue);
+	public CounterWithSeqLocation(boolean sortByValue, MutinackGroup groupSettings) {
+		super(sortByValue, groupSettings);
 		List<SerializableFunction<Object, Object>> contigNames0 = new ArrayList<>();
 		contigNames0.add(0, null);
-		contigNames0.add(contigNames::get);
-		contigNames0.add(i -> ((Integer) i) * BIN_SIZE);
+		contigNames0.add(groupSettings.getIndexContigNameMap()::get);
+		contigNames0.add(i -> ((Integer) i) * groupSettings.BIN_SIZE);
 		setKeyNamePrintingProcessor(contigNames0);
 	}
 	
-	public CounterWithSeqLocation() {
-		this(false);
+	public CounterWithSeqLocation(MutinackGroup groupSettings) {
+		this(false, groupSettings);
 	}
 		
 	public void accept(SequenceLocation loc, Object o) {
-		super.acceptVarArgs(1d, o, loc.contigIndex, loc.position / BIN_SIZE);
+		super.acceptVarArgs(1d, o, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
 	}
 }

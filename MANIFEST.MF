@@ -1,8 +1,0 @@
-Manifest-Version: 1.0
-Ant-Version: Apache Ant 1.9.3
-Created-By: 1.8.0_51-b16 (Oracle Corporation)
-Built-By: Daily Build
-Implementation-Version: 0.99-b0
-Built-Date: 2015-09-15 18:23:31
-Main-Class: uk.org.cinquin.mutinack.Mutinack
-

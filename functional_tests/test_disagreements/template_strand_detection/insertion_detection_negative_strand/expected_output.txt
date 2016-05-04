@@ -1,3 +1,6 @@
 templateStrandInsQ2: All: {(wt G, ins A)=1}; total: 1
 rawInsertionsQ1: All: {(C, T)=3, (G, A)=3}; total: 6
 rawInsertionsQ2: All: {(C, T)=3, (G, A)=3}; total: 6
+topBottomInsDisagreementsQ2: All: {(wt G, ins A)=1}; total: 1
+nPosDuplexCandidatesForDisagreementQ2: All: 95
+

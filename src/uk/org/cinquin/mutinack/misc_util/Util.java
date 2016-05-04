@@ -16,21 +16,9 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
-
-import contrib.net.sf.samtools.AbstractBAMFileIndex;
-import contrib.net.sf.samtools.BAMIndexMetaData;
-import contrib.net.sf.samtools.SAMFileReader;
-import contrib.net.sf.samtools.SAMRecord;
-import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
-import contrib.net.sf.samtools.util.StringUtil;
-import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
-
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -39,6 +27,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +40,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.commons.io.output.NullOutputStream;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import contrib.net.sf.samtools.AbstractBAMFileIndex;
+import contrib.net.sf.samtools.BAMIndexMetaData;
+import contrib.net.sf.samtools.SAMFileReader;
+import contrib.net.sf.samtools.SAMRecord;
+import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
+import contrib.net.sf.samtools.util.StringUtil;
+import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
+import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class Util {
 	
@@ -74,7 +78,7 @@ public class Util {
 	public static<T> @Nullable T nullableify(@NonNull T o) {
 		return o;
 	}
-	
+		
 	public static<T> @NonNull Set<T> getDuplicates(Collection<T> collection) {
 		Set<T> set = new HashSet<>();
 		Set<T> result = new HashSet<>();
@@ -86,7 +90,7 @@ public class Util {
 		return result;
 	}
 	
-	public static Pair<List<String>, List<Integer>> parseListLoci(List<String> l,
+	public static Pair<List<String>, List<Integer>> parseListPositions(List<String> l,
 			boolean noContigRepeat, String errorMessagePrefix) {
 		final List<String> contigNames = l.stream().map
 				(s -> s.split(":")[0]).collect(Collectors.toList());
@@ -148,7 +152,7 @@ public class Util {
 	}
 
 	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN, int nMismatchesAllowed) {
-		if (DebugControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
 			throw new IllegalArgumentException();
 		}
 		try {
@@ -166,12 +170,29 @@ public class Util {
 		return true;
 	}
 	
-	private final static @NonNull AtomicInteger nRead = new AtomicInteger();
+	public static int nMismatches(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
+			throw new IllegalArgumentException();
+		}
+		int nMismatches = 0;
+		try {
+			for (int i = 0; i < a.length; i++) {
+				if (!basesEqual(a[i], b[i], allowN)) {
+					++nMismatches;
+				}
+			}
+		} catch (ArrayIndexOutOfBoundsException e) {
+			throw new RuntimeException("Index out of bounds while comparing " + new String(a) + " to " + new String(b), e);
+		}
+		return nMismatches;
+	}
+	
+	private static final @NonNull AtomicInteger nRead = new AtomicInteger();
 	
 	public static void readFileIntoMap(File file, Map<String, FastQRead> rawReads, int pairID) {
 		Signals.SignalProcessor infoSignalHandler = signal ->
 				System.err.println("Currently reading records from file " + file.getAbsolutePath() + "; " +
-                NumberFormat.getInstance().format(rawReads.size()) + " total so far");
+                DoubleAdderFormatter.nf.get().format(rawReads.size()) + " total so far");
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
 		final SettableInteger lineModulo = new SettableInteger(0);
@@ -279,12 +300,12 @@ public class Util {
 		}
 	}
 	
-	private final static class FourLines {
+	private static final class FourLines {
 		final @NonNull List<String> lines = new ArrayList<>(4);
 	}
 	
 	public static String getRecordNameWithPairSuffix(SAMRecord record) {
-		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1")).intern();
+		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1"))/*.intern()*/;
 	}
 	
 	//Keep separate maps for variable and constant barcodes so we can have stats for each
@@ -322,7 +343,9 @@ public class Util {
 	public static final ThreadLocal<NumberFormat> mediumLengthFloatFormatter = new ThreadLocal<NumberFormat>() {
 		@Override
 		protected NumberFormat initialValue(){
-			return new DecimalFormat("0.0000");
+			DecimalFormat f = new DecimalFormat("0.0000");
+			DoubleAdderFormatter.setNanAndInfSymbols(f);
+			return f;
 		}
 	};
 
@@ -344,8 +367,8 @@ public class Util {
 			this.alignmentStart = alignmentStart;
 		}
 		
-		final public boolean negativeStrand;
-		final public int alignmentStart;
+		public final boolean negativeStrand;
+		public final int alignmentStart;
 	}
 	
 	/**
@@ -412,4 +435,26 @@ public class Util {
 			e.printStackTrace(System.err);
 		}
 	}
+
+	public static Map<Integer, @NonNull String> indexNameMap(List<@NonNull String> names) {
+		Map<Integer, @NonNull String> indexMap = new HashMap<>();
+		int index = 0;
+		for (String name: names) {
+			indexMap.put(index, name);
+		}
+		return indexMap;
+	}
+	
+	public static boolean isSerializable(Object o) {
+		NullOutputStream os = new NullOutputStream();
+		try {
+			try(ObjectOutputStream out = new ObjectOutputStream(os)) {
+				out.writeObject(o);
+			}
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+	
 }

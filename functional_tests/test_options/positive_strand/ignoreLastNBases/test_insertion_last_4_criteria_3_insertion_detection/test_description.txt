@@ -1,0 +1,1 @@
+Program is expected to detect insertion.  The insertion is 4bp from the end of the read and ignoreLastNBases=3.

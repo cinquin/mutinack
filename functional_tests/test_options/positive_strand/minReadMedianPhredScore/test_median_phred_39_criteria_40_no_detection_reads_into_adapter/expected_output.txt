@@ -1,0 +1,6 @@
+medianPositionPhredQuality: []; nEntries = 0; average = NaN; median = NaN
+averageReadPhredQuality0: [6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6]; nEntries = 12; average = 19.5; median = 0
+averageReadPhredQuality1: []; nEntries = 0; average = NaN; median = NaN
+medianReadPhredQuality: [6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6]; nEntries = 12; average = 19.5; median = 0
+nProcessedBases: [0, 0, 0, 0, 0, 0, 1,650]; total: 1,650
+

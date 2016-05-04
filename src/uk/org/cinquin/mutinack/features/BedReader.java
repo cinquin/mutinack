@@ -17,37 +17,50 @@
 package uk.org.cinquin.mutinack.features;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class BedReader implements GenomeFeatureTester, Serializable {
 
 	private static final long serialVersionUID = 7826378727266972258L;
+	private static final Pattern underscorePattern = Pattern.compile("_");
+	private static final Pattern quotePattern = Pattern.compile("\"");
+
+	@JsonIgnore
 	public final MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
+	@JsonIgnore
 	private final List<IntervalTree<GenomeInterval>> contigTrees = new ArrayList<>();
+	@JsonIgnore
 	private final @NonNull Map<@NonNull String, @NonNull String> suppInfo;
 	private final String readerName;
 		
@@ -55,35 +68,60 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	public String toString() {
 		return "Tester for BED file at " + readerName;
 	}
-
+	
+	@SuppressWarnings("resource")
+	public static BedReader getCachedBedFileReader(String path0, String cacheExtension,
+			Map<Integer, @NonNull String> indexContigNameMap, String readerName, boolean parseScore) {
+		return FileCache.getCached(path0, cacheExtension, path -> {
+			try {
+				return new BedReader(indexContigNameMap, 
+					new BufferedReader(new FileReader(new File(path))), readerName, null, false);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
+	
 	@SuppressWarnings("null")
-	public BedReader (Collection<@NonNull String> contigNames, BufferedReader reader,
-			String readerName, BufferedReader suppInfoReader) throws ParseRTException {
+	public BedReader(Map<Integer, @NonNull String> indexContigNameMap, BufferedReader reader,
+			String readerName, BufferedReader suppInfoReader, boolean parseScore) throws ParseRTException {
+		
+		Map<String, Integer> reverseIndex = new HashMap<>();
+		for (Entry<Integer, @NonNull String> e: indexContigNameMap.entrySet()) {
+			if (reverseIndex.put(e.getValue(), e.getKey()) != null) {
+				throw new IllegalArgumentException("Repeated contig name " + e.getValue());
+			}
+		}
 		
 		this.readerName = readerName;
 		bedFileIntervals = new MapOfLists<>();
 		
 		int entryCount = 0;
+		final AtomicInteger lineCount = new AtomicInteger(0);
 
-		AtomicInteger lineCount = new AtomicInteger(0);
-
-		for (String s: contigNames) {
+		for (Entry<Integer, @NonNull String> s: indexContigNameMap.entrySet()) {
 			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", s, -1, -1, null, null)));
+			bedFileIntervals.addAt(s.getValue(), new IntervalTree.IntervalData<>(-1, -1, 
+					new GenomeInterval("", s.getKey(), s.getValue(), -1, -1, null, Optional.empty(), 0)));
 		}
 		
 		try(Stream<String> lines = reader.lines()) {
 			lines.forEachOrdered(l -> {
 				try {
-					lineCount.incrementAndGet();
-					@NonNull String[] components = (@NonNull String @NonNull[]) l.split("\t");
-					if (components.length < 4) {
+					final int line = lineCount.incrementAndGet();
+					@NonNull String[] components = l.split("\t");
+					if (components.length < 3) {
 						throw new ParseRTException("Missing fields");
 					}
-					int start = Integer.parseInt(components[1].replaceAll("_", "")) - 1;
-					int end = Integer.parseInt(components[2].replaceAll("_", "")) - 1;
-					String name = components[3];
+					final boolean autogenerateName = components.length == 3;
+					int start = Integer.parseInt(underscorePattern.matcher(components[1]).replaceAll("")) - 1;
+					int end = Integer.parseInt(underscorePattern.matcher(components[2]).replaceAll("")) - 1;
+					final String name;
+					if (autogenerateName) {
+						name = "line_" + line;
+					} else {
+						name = components[3];
+					}
 					final Integer length;
 					final @NonNull Optional<Boolean> strandPolarity;
 					if (components.length >= 6) {
@@ -95,7 +133,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						}
 						try {
 							if (components.length >= 11) {
-								String[] blockLengths = components[10].replaceAll("\"", "").split(",");
+								String[] blockLengths = quotePattern.matcher(components[10]).replaceAll("").split(",");
 								int totalLength = 0;
 								boolean foundEmptyBlock = false;
 								for (String bl: blockLengths) {
@@ -103,6 +141,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 										if (foundEmptyBlock) {
 											throw new ParseRTException("Two empty block length items");
 										}
+										foundEmptyBlock = true;
 									} else {
 										totalLength += Integer.parseInt(bl);
 									}
@@ -118,10 +157,26 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						length = null;
 						strandPolarity = Optional.empty();
 					}
-					GenomeInterval interval = new GenomeInterval(name, /*contig*/ components[0], 
-							start, end, length, strandPolarity);
-					bedFileIntervals.addAt(interval.contig, new IntervalTree.IntervalData<>(start, end, interval));
-				} catch (NumberFormatException | ParseRTException e) {
+					final float score;
+					if (parseScore) {
+						try {
+							score = Float.parseFloat(components[4]);
+						} catch (NumberFormatException e) {
+							throw new ParseRTException("Could not parse score " +
+								components[4]);
+						}
+					} else {
+						score = 0f;
+					}
+
+					Integer contigIndex = reverseIndex.get(components[0]);
+					if (contigIndex == null) {
+						throw new IllegalArgumentException("Could not find contig " + components[0]);
+					}
+					GenomeInterval interval = new GenomeInterval(name, contigIndex, 
+							/*contig*/ components[0], start, end, length, strandPolarity, score);
+					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
+				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);
 				}
 			});
@@ -144,9 +199,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
 		
-		if (entryCount != lineCount.get()) {
-			throw new AssertionFailedException("Incorrect number of entries after BED file reading: " + entryCount + " vs " + lineCount.get());
-		}
+		Assert.isFalse(entryCount != lineCount.get(),
+				"Incorrect number of entries after BED file reading: %s vs %s", entryCount, lineCount.get());
 		
 		if (suppInfoReader == null) {
 			suppInfo = Collections.emptyMap();

@@ -45,8 +45,8 @@ public class PoolController extends Thread {
 			instance.alive = false;
 			
 			for (PoolSettings<?> poolSettings : instance.listPoolSettings) {
-				if (poolSettings.pool() instanceof Controllable) {
-					Controllable controllable = (Controllable) poolSettings.pool();
+				if (poolSettings.pool(false) instanceof Controllable) {
+					Controllable controllable = (Controllable) poolSettings.pool(false);
 					controllable.destroy();
 				}
 			}
@@ -82,8 +82,8 @@ public class PoolController extends Thread {
 		synchronized (listPoolSettings) {
 			for (PoolSettings<?> poolSettings : listPoolSettings) {
 
-				if (poolSettings.pool() instanceof Controllable) {
-					Controllable controllable = (Controllable) poolSettings.pool();
+				if (poolSettings.pool(false) instanceof Controllable) {
+					Controllable controllable = (Controllable) poolSettings.pool(false);
 					if (poolSettings.debug()) System.out.println(controllable.toString());
 
 					/*

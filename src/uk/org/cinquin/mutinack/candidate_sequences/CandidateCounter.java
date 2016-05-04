@@ -18,7 +18,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
@@ -39,6 +39,8 @@ public final class CandidateCounter {
 	public final @NonNull Map<@NonNull CandidateSequence,
 		@NonNull SettableInteger> candidateCounts;			
 	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
+	
+	public long nPhreds, sumPhreds;
 
 	public CandidateCounter(@NonNull Set<CandidateSequence> candidates,
 			@NonNull SequenceLocation location) {
@@ -55,16 +57,22 @@ public final class CandidateCounter {
 	
 	public void compute() {
 		reset();
-		if (DebugControl.NONTRIVIAL_ASSERTIONS) {
+		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
 			if (keptRecords.size() > 0 || candidateCounts.size() > 0) {
 				throw new AssertionFailedException();
 			}
 		}
+		sumPhreds = 0;
+		nPhreds = 0;
 		for (CandidateSequence candidate: candidates) {
 			for (ExtendedSAMRecord r: records) {
 				if (candidate.getNonMutableConcurringReads().containsKey(r)) {
+					Byte phredScore = r.basePhredScores.get(location);
+					if (phredScore != null) {
+						sumPhreds += phredScore;
+						nPhreds++;
+					}
 					if (minBasePhredScore > 0) {
-						Byte phredScore = r.basePhredScores.get(location);
 						if (phredScore != null && phredScore < minBasePhredScore) {
 							continue;
 						}

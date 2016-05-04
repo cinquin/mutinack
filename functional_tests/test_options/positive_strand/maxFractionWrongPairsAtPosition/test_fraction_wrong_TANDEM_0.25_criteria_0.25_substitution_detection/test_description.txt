@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The fraction of wrong pair at position is 0.25 and maxFractionWrongPairsAtPosition=0.25.

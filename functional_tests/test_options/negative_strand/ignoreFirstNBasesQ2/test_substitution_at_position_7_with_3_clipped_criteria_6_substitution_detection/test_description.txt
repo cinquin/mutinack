@@ -1,0 +1,1 @@
+Program is expected to not detect substitution.  Substitution is at position 7 with 3 clipped and -ignoreFirstNBasesQ2=6.

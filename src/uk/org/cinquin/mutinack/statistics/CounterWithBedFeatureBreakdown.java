@@ -18,6 +18,10 @@ package uk.org.cinquin.mutinack.statistics;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
@@ -47,21 +51,29 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 	
 	private static final long serialVersionUID = 9168551060568948486L;
 
+	@JsonIgnore
 	protected boolean on = true;
 	
-	private final @NonNull Counter<GenomeInterval> counter = new Counter<>(false);
+	private final @NonNull Counter<GenomeInterval> counter;
+	@JsonIgnore
 	private final @NonNull BedReader bedFeatures;
+	@JsonIgnore
 	private @Nullable File outputFile;
+	@JsonIgnore
 	private final @Nullable Function<@NonNull String, @NonNull String> supplementaryInfoProvider;
+	@JsonIgnore
 	private final @Nullable Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName;
+	@JsonIgnore
 	private @Nullable String analyzerName = null;
+	@JsonIgnore
 	private boolean normalizedOutput = false;
 	
 	public CounterWithBedFeatureBreakdown(@NonNull BedReader bedFeatures, 
-			Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName) {
-		super();
+			Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName,
+			MutinackGroup groupSettings) {
+		counter = new Counter<>(false, groupSettings);
 		this.bedFeatures = bedFeatures;
-		supplementaryInfoProvider = name -> bedFeatures.getSuppInfo(name);
+		supplementaryInfoProvider = bedFeatures::getSuppInfo;
 		this.refSeqToOfficialGeneName = refSeqToOfficialGeneName;				
 	}
 		

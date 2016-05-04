@@ -1,0 +1,1 @@
+Program is expected to detect substitution and deletion.  The fraction of RF at position for substitution is 0.25 and for deletion is 0.14 and maxFractionWrongPairsAtPosition=0.25.

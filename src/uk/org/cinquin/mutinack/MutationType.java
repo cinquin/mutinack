@@ -22,7 +22,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 
 public enum MutationType {
-	INSERTION, DELETION, SUBSTITUTION, COMBINATION, WILDTYPE;
+	INSERTION, DELETION, SUBSTITUTION, WILDTYPE;
 
 	@Override
 	public @NonNull String toString() {
@@ -31,9 +31,12 @@ public enum MutationType {
 			case INSERTION: return "insertion";
 			case DELETION: return "deletion";
 			case SUBSTITUTION: return "substitution";
-			case COMBINATION: return "combination";
 			default: throw new AssertionFailedException();
 		}
+	}
+	
+	public boolean isWildtype() {
+		return this == WILDTYPE;
 	}
 }
 

@@ -1,0 +1,2 @@
+Mutation rate for NOT test_gene_not_at_mutation_location: 0.011
+Mutation rate for test_gene_not_at_mutation_location: NaN

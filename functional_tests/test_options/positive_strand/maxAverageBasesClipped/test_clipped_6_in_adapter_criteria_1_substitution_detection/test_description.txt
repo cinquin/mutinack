@@ -1,0 +1,1 @@
+Program is expected to detect substitution.  6bp go into adapter and are not counted toward clipping threshold.  0bp are clipped and maxAverageBasesClipped=1.

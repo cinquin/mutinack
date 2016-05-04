@@ -45,18 +45,18 @@ public class GenomeIntervalTest {
 	public void test() {
 		
 		ArrayList<IntervalData<GenomeInterval>> intervalDataList = new ArrayList<>();
-		List<String> names = IntStream.iterate(0, i -> i + 1).limit(15).mapToObj(i -> "name_" + i).
-				collect(Collectors.toList());
+		 List<String> names = IntStream.iterate(0, i -> i + 1).limit(15).mapToObj(i -> "name_" + i).
+				 collect(Collectors.toList());
 		for (int i = 0; i < 91; i++) {
 			for (String name: names) {
-				GenomeInterval i1 = new GenomeInterval(name, "", 10 + i, 100, null, Util.emptyOptional());
+				GenomeInterval i1 = new GenomeInterval(name, -1, "", 10 + i, 100, null, Util.emptyOptional(), 0);
 				intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
-				GenomeInterval i2 = new GenomeInterval(name, "", 10, 101 - i, null, Util.emptyOptional());
+				GenomeInterval i2 = new GenomeInterval(name, -1, "", 10, 101 - i, null, Util.emptyOptional(), 0);
 				intervalDataList.add(new IntervalTree.IntervalData<>(i2.getStart(), i2.getEnd(), i2));
 			}
 		}
 
-		GenomeInterval i3 = new GenomeInterval("name_3", "", 105, 150, null, Util.emptyOptional());
+		GenomeInterval i3 = new GenomeInterval("name_3", -1, "", 105, 150, null, Util.emptyOptional(), 0);
 		
 		intervalDataList.add(new IntervalTree.IntervalData<>(i3.getStart(), i3.getEnd(), i3));
 
@@ -79,9 +79,9 @@ public class GenomeIntervalTest {
 		
 		//Same sort of test as above, but using random intervals
 		for (int i = 0; i < 10_000; i++) {
-			GenomeInterval i1 = new GenomeInterval("Random interval", "", 
+			GenomeInterval i1 = new GenomeInterval("Random interval", -1, "", 
 					(int) (Math.random() - 0.5) * 2 * 200, 
-					(int) (Math.random() - 0.5) * 2 * 200, null, Util.emptyOptional());
+					(int) (Math.random() - 0.5) * 2 * 200, null, Util.emptyOptional(), 0);
 			
 			intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 		}
@@ -122,6 +122,7 @@ public class GenomeIntervalTest {
 				new HashSet<>(id.getData()))).collect(Collectors.toList());
 	}
 	
+	@SuppressWarnings("unused")
 	private final SecureRandom random = new SecureRandom();
 	
 	private void check(IntervalTree<GenomeInterval> tree, List<IntervalData<GenomeInterval>> intervalList) {

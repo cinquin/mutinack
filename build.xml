@@ -19,7 +19,7 @@
                     <fileset dir="bin">
                         <exclude name="**/picard/**"/>
                         <exclude name="**/samtools/**"/>
-                        <exclude name="**/LocusByLocusNumbersPB*"/>
+                        <exclude name="**/PosByPosNumbersPB*"/>
                     </fileset>
                 </classfiles>
                 <sourcefiles encoding="UTF-8">
@@ -41,11 +41,9 @@
         <pathelement location="bin"/>
         <pathelement location="lib/jcommander-1.33-SNAPSHOT.jar"/>
         <pathelement location="lib/org.eclipse.jdt.annotation_2.0.0.v20131221-0104_beta_java8.jar"/>
-        <pathelement location="lib/stanford-corenlp-3.4.jar"/>
         <pathelement location="lib/junit-4.12.jar"/>
         <pathelement location="lib/trove-150802233617_PATCHED.jar"/>
         <pathelement location="lib/sun_tools_8_0_25.jar"/>
-        <pathelement location="lib/testng-6.8.22-20150430.132838-2.jar"/>
         <pathelement location="lib/bzip2.jar"/>
         <pathelement location="lib/snappy-java-1.0.3-rc3.jar"/>
         <pathelement location="lib/hamcrest-core-1.3.jar"/>
@@ -53,6 +51,15 @@
 	<pathelement location="lib/logback-core-1.1.3.jar"/>
 	<pathelement location="lib/logback-classic-1.1.3.jar"/>
 	<pathelement location="lib/protobuf-java-2.4.1_PATCHED.jar"/>
+        <pathelement location="lib/equalsverifier-1.7.6.jar"/>
+        <pathelement location="lib/jmockit-1.21.jar"/>
+        <pathelement location="findbugs-3.0.1/lib/findbugs.jar"/>
+        <pathelement location="lib/commons-io-2.4.jar"/>
+        <pathelement location="lib/pitest-1.1.8.jar"/>
+        <pathelement location="lib/jackson-core-2.7.0.jar"/>
+        <pathelement location="lib/jackson-databind-2.7.0.jar"/>
+        <pathelement location="lib/jackson-annotations-2.7.0.jar"/>
+        <pathelement location="lib/fst-2.43-onejar.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -65,6 +72,7 @@
     </target>
     <target name="clean">
         <delete dir="bin"/>
+        <delete dir="{junit.output.dir}" failonerror="false"/>
     </target>
     <target depends="clean" name="cleanall"/>
     <target depends="build-subprojects,build-project" name="build"/>
@@ -78,6 +86,7 @@
         </javac>
     </target>
     <target name="UtilTest">
+        <delete dir="{junit.output.dir}" failonerror="false"/>
         <mkdir dir="${junit.output.dir}"/>
         <jacoco:coverage destfile="target/jacoco.exec">
             <junit fork="yes" printsummary="withOutAndErr">
@@ -87,19 +96,77 @@
             </junit>
         </jacoco:coverage>
     </target>
-    <target name="SequenceAnalysis">
+    <target name="FunctionalTests">
+        <delete dir="{junit.output.dir}" failonerror="false"/>
         <mkdir dir="${junit.output.dir}"/>
         <jacoco:coverage destfile="target/jacoco.exec">
             <junit fork="yes" printsummary="withOutAndErr">
+                <jvmarg value="-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey"/>
+                <jvmarg value="-XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey"/>
+
                 <formatter type="xml"/>
-                <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
-                <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
+                <test name="uk.org.cinquin.mutinack.tests.FunctionalTestRerun" todir="${junit.output.dir}"/>
                 <classpath refid="SequenceAnalysis.classpath"/>
             </junit>
         </jacoco:coverage>
+    </target>
+    <target name="SequenceAnalysis" depends="build">
+        <mkdir dir="${junit.output.dir}"/>
+        <parallel>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="contrib.nf.fr.eraasoft.pool.test.TestPool" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.features.tests.BedReaderTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.features.tests.GenomeIntervalTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.misc_util.UtilTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.statistics.CounterTest" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.tests.TestEqualsHashcodeContracts" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                     <classpath refid="SequenceAnalysis.classpath"/>
+                     <batchtest todir="${junit.output.dir}">
+                         <fileset dir="bin/">
+                             <include name="uk/org/cinquin/mutinack/tests/*Test.class" />
+                         </fileset>
+                     </batchtest>
+                    <formatter type="xml"/>
+                </junit>
+            </jacoco:coverage>
+        </parallel>
     </target>
     <target depends="SequenceAnalysis" name="junitreport">
         <junitreport todir="${junit.output.dir}">

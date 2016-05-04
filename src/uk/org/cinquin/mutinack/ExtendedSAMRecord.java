@@ -16,16 +16,17 @@
  */
 package uk.org.cinquin.mutinack;
 
-import static uk.org.cinquin.mutinack.misc_util.DebugControl.ENABLE_TRACE;
 import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import contrib.net.sf.samtools.AlignmentBlock;
+import contrib.edu.standford.nlp.util.HasInterval;
+import contrib.edu.standford.nlp.util.Interval;
 import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
@@ -33,14 +34,12 @@ import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import edu.stanford.nlp.util.HasInterval;
-import edu.stanford.nlp.util.Interval;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.misc_util.DebugControl;
+import uk.org.cinquin.mutinack.features.ParseRTException;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 /**
  * Hashcode and equality based on read name + first or second of pair.
@@ -49,18 +48,18 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
  */
 public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	
-	final static Logger logger = LoggerFactory.getLogger(ExtendedSAMRecord.class);
+	static final Logger logger = LoggerFactory.getLogger(ExtendedSAMRecord.class);
 			
 	private final @NonNull Map<String, ExtendedSAMRecord> extSAMCache;
 	public final @NonNull SAMRecord record;
 	private final @NonNull String name;
 	private @Nullable ExtendedSAMRecord mate;
-	private final @Nullable String mateName;
+	private final @NonNull String mateName;
 	private final int hashCode;
-	public transient @Nullable DuplexRead duplexRead;
-	private byte @Nullable[] mateVariableBarcode; //TODO Could probably be made final
+	public @Nullable DuplexRead duplexRead;
+	private byte @Nullable[] mateVariableBarcode;
 	public final byte @NonNull[] variableBarcode;
-	final byte @Nullable[] constantBarcode;
+	public final byte @Nullable[] constantBarcode;
 	final int medianPhred;
 	/**
 	 * Length of read ignoring trailing Ns.
@@ -72,21 +71,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private Boolean formsWrongPair;
 	public boolean processed = false;
 	public boolean duplexAlreadyVisitedForStats = false;
-	
-	static int UNCLIPPED_BARCODE_LENGTH = Integer.MAX_VALUE;
-	private static final int VARIABLE_BARCODE_START = 0;
-	static int VARIABLE_BARCODE_END = Integer.MAX_VALUE;
-	private static final int CONSTANT_BARCODE_START = 3;
-	private static final int CONSTANT_BARCODE_END = 5;
-	private static byte[] Ns;
-	
-	int getnClipped() {
-		computeNClipped();
-		return nClipped;
-	}
 
+	private final @NonNull MutinackGroup groupSettings;
+			
 	public static String getReadFullName(SAMRecord rec) {
-		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2")).intern();
+		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2"))/*.intern()*/;
 	}
 
 	public @NonNull String getFullName() {
@@ -110,34 +99,58 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 	
 	private void computeNClipped() {
-		int adapterClipped = record.getReadLength() - effectiveLength;
+		final int readLength = record.getReadLength();
+		final int adapterClipped = readLength - effectiveLength;
 		
-		int nClippedLeft = Math.max(0, (!getReadNegativeStrandFlag() ? 
-								/* positive strand */
-								getAlignmentStart() - getUnclippedStart() - UNCLIPPED_BARCODE_LENGTH :
-								/* negative strand */
-								/* Note: getMateAlignmentEndNoBarcode will return Integer.MAX_INT if mate not loaded*/
-								(getMateAlignmentEndNoBarcode() >= getAlignmentStartNoBarcode() /* adapter run through, causes clipping we should ignore */ ? 0 :
-								getAlignmentStart() - getUnclippedStart() - adapterClipped))
-							 );
-		
-		int nClippedRight =	Math.max(0, (getReadNegativeStrandFlag() ? 
-						/* negative strand */
-						record.getUnclippedEnd() - record.getAlignmentEnd() -UNCLIPPED_BARCODE_LENGTH :
+		int nClippedLeft = (!getReadNegativeStrandFlag() ? 
+				
 						/* positive strand */
-						( getAlignmentEnd() >= getMateAlignmentStartNoBarcode() /* adapter run through, causes clipping we should ignore */ ? 0 :
-						record.getUnclippedEnd() - record.getAlignmentEnd() - adapterClipped)));
+						getAlignmentStart() - getUnclippedStart() :
+								
+						/* negative strand */
+						/* Note: getMateAlignmentEnd will return Integer.MAX_INT if mate not loaded*/
+						(getAlignmentStart() <= getMateAlignmentStart() ?
+							/* adapter run through, causes clipping we should ignore */
+							0 :
+							getAlignmentStart() - getUnclippedStart() - adapterClipped));
+		nClippedLeft = Math.max(0, nClippedLeft);
+		
+		int nClippedRight =	getReadNegativeStrandFlag() ? 
+				
+						/* negative strand */
+						getUnclippedEnd() - getAlignmentEnd() :
+								
+						/* positive strand */
+						(getAlignmentEnd() >= getMateAlignmentEnd() ? 
+							/* adapter run through, causes clipping we should ignore */
+							0 :
+							getUnclippedEnd() - getAlignmentEnd() - adapterClipped);
+		nClippedRight = Math.max(0, nClippedRight);
 		
 		nClipped = nClippedLeft + nClippedRight;	
 	}
+	
+	public int getnClipped() {
+		if (nClipped == -1) {
+			computeNClipped();
+		}
+		return nClipped;
+	}
+	
+	public void resetnClipped() {
+		nClipped = -1;
+	}
 
-	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName, @NonNull Mutinack analyzer,
+	@SuppressWarnings("static-access")
+	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName,
+			@NonNull MutinackGroup groupSettings, @NonNull Mutinack analyzer,
 			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+		this.groupSettings = groupSettings;
 		this.extSAMCache = extSAMCache;
 		this.name = fullName;
 		this.record = rec;
 		hashCode = fullName.hashCode();
-		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1")).intern();
+		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1"))/*.intern()*/;
 		
 		final int readLength = rec.getReadLength();
 		
@@ -153,20 +166,18 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		if (getReadNegativeStrandFlag()) {
 			int i = 0;
-			while (read[i] == 'N' && i < readLength) {
+			while (read[i] == 'N' && 
+					i < readLength - 1) {
 				i++;
 			}
 			effectiveLength = readLength - i;
 		} else {
-			while (read[effectiveLength - 1] == 'N' && effectiveLength > 0) {
+			while (read[effectiveLength - 1] == 'N' &&
+					effectiveLength > 0) {
 				effectiveLength--;
 			}
 		}
-		
-		if (effectiveLength < 0) {
-			throw new AssertionFailedException();
-		}
-		
+		Assert.isFalse(effectiveLength < 0);
 		this.effectiveLength = effectiveLength;
 		
 		int sumBaseQualities = 0;
@@ -175,43 +186,43 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		int n =  Math.min(effectiveLength, readLength / 2);
 		for (int index1 = 0; index1 < n; index1++) {
 			nConsidered++;
-			byte b = baseQualities[index1];
+			final byte b = baseQualities[index1];
 			sumBaseQualities += b;
-			analyzer.stats.nProcessedBases.add(location, 1);
-			analyzer.stats.phredSumProcessedbases.add(b);
+			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
+			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
-		analyzer.stats.averageReadPhredQuality0.insert(sumBaseQualities / nConsidered);
+		int avQuality = sumBaseQualities / nConsidered;
+		analyzer.stats.forEach(s-> s.averageReadPhredQuality0.insert(avQuality));
 
 		sumBaseQualities = 0;
 		nConsidered = 0;
 		for (int index1 = readLength / 2; index1 < effectiveLength; index1++) {
 			nConsidered++;
-			byte b = baseQualities[index1];
+			final byte b = baseQualities[index1];
 			sumBaseQualities += b;
-			analyzer.stats.nProcessedBases.add(location, 1);
-			analyzer.stats.phredSumProcessedbases.add(b);
+			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
+			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
 		if (nConsidered > 0) {
-			analyzer.stats.averageReadPhredQuality1.insert(sumBaseQualities / nConsidered);
+			int avQuality1 = sumBaseQualities / nConsidered;
+			analyzer.stats.forEach(s -> s.averageReadPhredQuality1.insert(avQuality1));
 		}
 
 		qualities.sort();
 		medianPhred = qualities.get(qualities.size() / 2);
-		analyzer.stats.medianReadPhredQuality.insert(medianPhred);
+		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 		
-		if (DebugControl.NONTRIVIAL_ASSERTIONS && (rec.getUnclippedEnd() - rec.getAlignmentEnd() < 0 ||
-				rec.getAlignmentStart() - rec.getUnclippedStart() < 0)) {
-			throw new AssertionFailedException();
-		}
+		Assert.isTrue(rec.getUnclippedEnd() >= getAlignmentEnd());
+		Assert.isTrue(rec.getAlignmentStart() >= getUnclippedStart());
 		
 		final @NonNull String fullBarcodeString;
 		String bcAttr = (String) record.getAttribute("BC");
 		if (bcAttr == null) {
-			final int firstIndex =  name.indexOf("BC:Z:");
+			final int firstIndex = name.indexOf("BC:Z:");
 			if (firstIndex == -1) {
-				throw new RuntimeException("Missing first barcode for read " + name + 
+				throw new ParseRTException("Missing first barcode for read " + name + 
 						" " + record.toString() + " from analyzer " + analyzer);
 			}
 			final int index;
@@ -220,7 +231,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			} else {
 				index = name.indexOf("BC:Z:", firstIndex + 1);
 				if (index == -1) {
-					throw new RuntimeException("Missing second barcode for read " + name + 
+					throw new ParseRTException("Missing second barcode for read " + name + 
 							" " + record.toString() + " from analyzer " + analyzer);
 				}
 			}
@@ -228,57 +239,45 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		} else {
 			fullBarcodeString = bcAttr;
 		}
-		variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(VARIABLE_BARCODE_START, VARIABLE_BARCODE_END + 1).getBytes()));
-		constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(CONSTANT_BARCODE_START, CONSTANT_BARCODE_END + 1).getBytes()));
+		variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(
+				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes()));
+		constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(
+				groupSettings.getConstantBarcodeStart(), groupSettings.getConstantBarcodeEnd() + 1).getBytes()));
 
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
 	}
 	
-	@SuppressWarnings("null")
-	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull Mutinack analyzer, 
-			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
-		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2")).intern(), analyzer, location, extSAMCache);
-	}
-	
-	private static void checkNs() {
-		if (Ns == null) {
-			//There is a race condition here that is inconsequential
-			final byte[] localNs = new byte [VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1];
-			for (int i = 0; i < VARIABLE_BARCODE_END - VARIABLE_BARCODE_START + 1; i++) {
-				localNs[i] = 'N';
-			}
-			Ns = localNs;
-		}
+	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull MutinackGroup groupSettings,
+			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
+			@NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/,
+				groupSettings, analyzer, location, extSAMCache);
 	}
 	
 	public byte @NonNull[] getMateVariableBarcode() {
-		if (mateVariableBarcode == null) {
+		if (mateVariableBarcode == null ||
+				mateVariableBarcode == groupSettings.getNs()) {
 			checkMate();
 			if (mate == null) {
-				checkNs();
-				mateVariableBarcode = Ns;
+				mateVariableBarcode = groupSettings.getNs();
 			} else {
 				mateVariableBarcode = nonNullify(mate).variableBarcode;
 			}
 		}
-		if (mateVariableBarcode != null) {
-			return mateVariableBarcode;
-		} else {
-			throw new AssertionFailedException();
-		}
+		return Objects.requireNonNull(mateVariableBarcode);
 	}
 		
 	@Override
 	public String toString() {
-		return name + ": " + "startNoBC: " + getAlignmentStartNoBarcode() +
-			"; endNoBC: " + getAlignmentEndNoBarcode() +
+		return name + ": " + "startNoBC: " + getAlignmentStart() +
+			"; endNoBC: " + getAlignmentEnd() +
 			"; alignmentStart: " + (getReadNegativeStrandFlag() ? "-" : "+") + getAlignmentStart() +
 			"; alignmentEnd: " + getAlignmentEnd() + 
 			"; cigar: " + record.getCigarString() +
 			"; length: " + record.getReadLength() +
 			"; effectiveLength: " + effectiveLength +
 			"; nClipped: " + (nClipped == -1 ? "Uncomputed" : getnClipped()) +
-			"; insertSize: " + getInsertSizeNoBarcodes(true) +
+			"; insertSize: " + getInsertSize() +
 			"; bases: " + new String(record.getReadBases());
 	}
 
@@ -324,84 +323,52 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			return nReadBasesProcessed + (nBasesToAlign - nBasesAligned);
 		}
 	}
+	
+	public static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
 		
 	public int tooCloseToBarcode(int refPosition, int readPosition, int ignoreFirstNBases) {
 		
 		final boolean readOnNegativeStrand = getReadNegativeStrandFlag();
+		
 		final int distance0;
 
-		boolean tooCloseToBarcode;
 		if (readOnNegativeStrand) {
-			distance0 = readPosition - (record.getReadLength() - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH);
-			tooCloseToBarcode = distance0 > 0;
-			if (ENABLE_TRACE && tooCloseToBarcode) {
-				logger.trace("Ignoring indel too close to barcode A " + refPosition + " " + (record.getReadLength() - 1 - ignoreFirstNBases - UNCLIPPED_BARCODE_LENGTH) + "; " + getFullName() + " at " + getAlignmentStart());
-			}
+			distance0 = readPosition - ((record.getReadLength() - 1) - ignoreFirstNBases);
 		} else {
-			distance0 = ignoreFirstNBases + UNCLIPPED_BARCODE_LENGTH - readPosition;
-			tooCloseToBarcode = distance0 > 0;
-			if (ENABLE_TRACE && tooCloseToBarcode) {
-				logger.trace("Ignoring indel too close to barcode B " + refPosition + " " + readPosition + " vs "  + (ignoreFirstNBases + UNCLIPPED_BARCODE_LENGTH) + "; " + getFullName() + " at " + getAlignmentStart());
-			}
+			distance0 = ignoreFirstNBases - readPosition;
 		}
-		
-		if (tooCloseToBarcode) {
-			return distance0;
-		}
-		
+				
 		//Now check if position is too close to other adapter barcode ligation site,
 		//or on the wrong side of it
 		final int refPositionOfMateLigationSite = getRefPositionOfMateLigationSite();
 		final int distance1;
 
-		if (refPositionOfMateLigationSite < Integer.MAX_VALUE) {
+		if (!formsWrongPair() && refPositionOfMateLigationSite != NO_MATE_POSITION) {
 
 			final int readPositionOfLigSiteA = referencePositionToReadPosition(refPositionOfMateLigationSite - 1) + 1;
 			final int readPositionOfLigSiteB = referencePositionToReadPosition(refPositionOfMateLigationSite + 1) - 1;
 			
 			if (getReadNegativeStrandFlag()) {
 				distance1 = Math.max(readPositionOfLigSiteA, readPositionOfLigSiteB) + ignoreFirstNBases - readPosition;
-				if (distance1 > 0) {
-					if (ENABLE_TRACE) {
-						logger.trace("Ignoring indel too close to barcode C " + refPosition + " " + (Math.max(readPositionOfLigSiteA, readPositionOfLigSiteB) - 1 + ignoreFirstNBases) + "; " + getFullName());
-					}
-					return distance1;
-				}
 			} else {
-				distance1 = readPosition - (Math.min(readPositionOfLigSiteA, readPositionOfLigSiteB) - ignoreFirstNBases);
-				if (ENABLE_TRACE) {
-					logger.trace("readPosition=" + readPosition +
-							"readPositionOfLigSiteA=" + readPositionOfLigSiteA +
-							" readPositionOfLigSiteB=" + readPositionOfLigSiteB +
-							" ignoreFirstNBases=" + ignoreFirstNBases +
-							" finalProduct=" + distance1 +
-							" distance0=" + distance0);
-				}
-				if (distance1 > 0)  {
-					if (ENABLE_TRACE) {
-						logger.trace("Ignoring indel too close to barcode D; " + refPosition + " " + " mate ligation site " + refPositionOfMateLigationSite + "   " + (Math.min(readPositionOfLigSiteA, readPositionOfLigSiteB) + 1 - ignoreFirstNBases) + "; " + getFullName());
-					}
-					return distance1;
-				}
+				distance1 = readPosition - (Math.min(readPositionOfLigSiteA, readPositionOfLigSiteB ) - ignoreFirstNBases);
 			}
 		} else {
-			//Did not use to have mate details; this does not account for barcode alignment in the mate
+			//Mate info not available, or pair is "wrong" pair
+			//Just go by effectiveLength to infer presence of adapter, although
+			//it should not happen in practice that reads form a wrong pair
+			//when there is adapter read-through
+
+			final int readLength = record.getReadLength();
+			final int adapterClipped = readLength - effectiveLength;
 			if (readOnNegativeStrand) {
-				distance1 = getMateAlignmentStart() + ignoreFirstNBases - refPosition;
-				tooCloseToBarcode = distance1 > 0;
-				if (ENABLE_TRACE) {
-					logger.trace("Ignoring indel too close to barcode E " + 
-							(getMateAlignmentStart() + ignoreFirstNBases) + "; " +
-							getFullName());
-				}
+				distance1 = (adapterClipped == 0) ?
+						Integer.MIN_VALUE :
+						ignoreFirstNBases + adapterClipped - readPosition;
 			} else {
-				distance1 = refPosition - (getMateAlignmentStart() + record.getReadLength() - ignoreFirstNBases);
-				tooCloseToBarcode = distance1 > 0;
-				if (ENABLE_TRACE && tooCloseToBarcode) {
-					logger.trace("Ignoring indel too close to barcode F " +
-							(getMateAlignmentStart() + record.getReadLength()) + "; "
-							+ getFullName());
-				}
+				distance1 = (adapterClipped == 0) ?
+						Integer.MIN_VALUE :
+						readPosition - (effectiveLength - ignoreFirstNBases - 1);
 			}
 		}
 		
@@ -414,105 +381,31 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			getMateUnclippedEnd();
 	}
 
-	public static int getNBarcodeBasesAtAlignmentEnd() {
-		return 0;
-	}
-		
-	int getNBarcodeBasesAtAlignmentStart() {
-		if (getReadNegativeStrandFlag()) {
-			return 0;
-		}
-		
-		//Of the first TOTAL_BARCODE_LENGTH bases of the read, compute how many are part of an insertion
-		List<CigarElement> cElmnts = record.getCigar().getCigarElements();
-		int ceIndex = 0;
-		int nInsertedBases = 0;
-		int nProcessedBases = 0;
-		while (true) {
-			CigarElement c = cElmnts.get(ceIndex);
-			int blockLength = c.getLength();
-			int nTakenBases = Math.min(blockLength, UNCLIPPED_BARCODE_LENGTH - nProcessedBases);
-			nProcessedBases += nTakenBases;
-			
-			if (c.getOperator() == CigarOperator.INSERTION) {
-				nInsertedBases += nTakenBases;
-			}
-			
-			if (nProcessedBases == UNCLIPPED_BARCODE_LENGTH) {
-				break;	
-			} else if (nProcessedBases > UNCLIPPED_BARCODE_LENGTH) {
-				throw new AssertionFailedException("Problem with cigar " + record.getCigarString() + "; " + c.toString() + "; " + nProcessedBases + "; " + nTakenBases);
-			}
-			ceIndex++;
-		}
-
-		List<AlignmentBlock> alignmentBlocks = record.getAlignmentBlocks();
-		int readStart = alignmentBlocks.get(0).getReadStart() - 1;
-		
-		int adjustment = readStart < (UNCLIPPED_BARCODE_LENGTH - nInsertedBases) ? 
-				(UNCLIPPED_BARCODE_LENGTH - nInsertedBases) - readStart : 0;
-		return adjustment;
-	}
-	
-	public int getRefAlignmentStartNoBarcode() {
+	public int getRefAlignmentStart() {
 		int referenceStart = getAlignmentStart();
-		if (referenceStart < 0) {
-			throw new AssertionFailedException();
-		}
-		if (getReadNegativeStrandFlag()) {
-			return referenceStart;
-		} else {
-			int adjustment = getNBarcodeBasesAtAlignmentStart();
-			return referenceStart + adjustment;
-		}
+		Assert.isFalse(referenceStart < 0);
+		return referenceStart;
 	}
 	
-	public int getRefAlignmentEndNoBarcode() {
+	public int getRefAlignmentEnd() {
 		int referenceEnd = getAlignmentEnd();
-		if (referenceEnd < 0) {
-			throw new AssertionFailedException();
-		}
-		if (getReadNegativeStrandFlag()) {
-			int adjustment = getNBarcodeBasesAtAlignmentEnd();
-			return referenceEnd - adjustment;
-		} else {
-			return referenceEnd;
-		}
+		Assert.isFalse(referenceEnd < 0);
+		return referenceEnd;
 	}
 
-	public int getMateRefAlignmentStartNoBarcode() {
+	public int getMateRefAlignmentStart() {
 		checkMate();
-		return mate == null ? Integer.MAX_VALUE : nonNullify(mate).getRefAlignmentStartNoBarcode();
+		return mate == null ? NO_MATE_POSITION : nonNullify(mate).getRefAlignmentStart();
 	}
 	
-	public int getMateRefAlignmentEndNoBarcode() {
+	public int getMateRefAlignmentEnd() {
 		checkMate();
-		return mate == null ? Integer.MAX_VALUE : nonNullify(mate).getRefAlignmentEndNoBarcode();
+		return mate == null ? NO_MATE_POSITION : nonNullify(mate).getRefAlignmentEnd();
 	}
 	
-	public Integer getInsertSizeNoBarcodes(boolean fallBackOnNoBarcodeValue) {
+	public int getInsertSize() {
 		int inferredInsertSize = record.getInferredInsertSize();
-		if (inferredInsertSize == 0) {
-			return 0;
-		}
-		
-		checkMate();
-		
-		if (mate == null) {
-			if (fallBackOnNoBarcodeValue) 
-				return inferredInsertSize;
-			else
-				return null;
-		}
-		
-		int actualSize;
-		if (inferredInsertSize < 0) {
-			actualSize = getMateRefAlignmentStartNoBarcode() - getRefAlignmentEndNoBarcode() - 1;
-		} else {
-			actualSize = getMateRefAlignmentEndNoBarcode() - getRefAlignmentStartNoBarcode() + 1;
-		}
-		
-		return actualSize;
+		return inferredInsertSize;
 	}
 	
 	public ExtendedSAMRecord getMate() {
@@ -527,18 +420,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 					record.getMateUnmappedFlag() || 
 					SamPairUtil.getPairOrientation(record) == PairOrientation.TANDEM ||
 					SamPairUtil.getPairOrientation(record) == PairOrientation.RF
-															) ||
-					getMate() == null;
+															);
 		}
 		return formsWrongPair;
-	}
-
-	public SequenceLocation getMateLocation() {
-		int mateReferenceIndex = record.getMateReferenceIndex();
-		if (mateReferenceIndex == -1) {
-			return null;
-		}
-		return new SequenceLocation(record.getMateReferenceName(), getMateAlignmentStart());
 	}
 
 	public boolean getReadNegativeStrandFlag() {
@@ -553,14 +437,6 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		if (mate == null) {
 			mate = extSAMCache.get(mateName);
 		}
-	}
-	
-	public int getAlignmentStartNoBarcode() {
-		return getAlignmentStart() + getNBarcodeBasesAtAlignmentStart();
-	}
-	
-	public int getAlignmentEndNoBarcode() {
-		return getAlignmentEnd() - getNBarcodeBasesAtAlignmentEnd();
 	}
 	
 	/** Indexing starts at 0
@@ -586,36 +462,23 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public int getAlignmentEnd() {
 		return record.getAlignmentEnd() - 1;
 	}
-	
-	public int getMateAlignmentStartNoBarcode() {
-		checkMate();
-		if (mate == null) {
-			return record.getMateAlignmentStart() - 1;
-		}
-		return nonNullify(mate).getAlignmentStartNoBarcode();
-	}
 
-	public int getMateAlignmentEndNoBarcode() {
-		checkMate();
-		if (mate == null) {
-			return Integer.MAX_VALUE;
-		}
-		return nonNullify(mate).getAlignmentEndNoBarcode();
-	}
-	
 	/** Indexing starts at 0
 	 * 
 	 * @return
 	 */
 	public int getMateAlignmentEnd() {
 		checkMate();
-		return mate == null ? Integer.MAX_VALUE : nonNullify(mate).getAlignmentEnd();
+		if (mate == null) {
+			return NO_MATE_POSITION;
+		}
+		return nonNullify(mate).getAlignmentEnd();
 	}
 	
 	public int getMateUnclippedEnd() {
 		checkMate();
 		if (mate == null) {
-			return Integer.MAX_VALUE;
+			return NO_MATE_POSITION;
 		}
 		return nonNullify(mate).getUnclippedEnd();
 	}
@@ -627,19 +490,27 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public int getMateUnclippedStart() {
 		checkMate();
 		if (mate == null) {
-			return Integer.MAX_VALUE;
+			return NO_MATE_POSITION;
 		}
 		return nonNullify(mate).getUnclippedStart();
-	}
-
-	@SuppressWarnings("null")
-	public static byte @NonNull[] getNs() {
-		checkNs();
-		return Ns;
 	}
 
 	public int getMappingQuality() {
 		return record.getMappingQuality();
 	}
 
+	public boolean overlapsWith(SequenceLocation location) {
+		if (getRefAlignmentStart() > location.position ||
+			getRefAlignmentEnd() < location.position ||
+			location.contigIndex != record.getReferenceIndex()) {
+			return false;
+		}
+		return true;
+	}
+	
+	public boolean duplexLeft() {
+		return formsWrongPair() ?
+				getAlignmentStart() <= getMateAlignmentStart()
+				: getReadPositiveStrand();
+	}
 }

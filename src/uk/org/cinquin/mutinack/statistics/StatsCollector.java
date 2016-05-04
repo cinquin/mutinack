@@ -16,25 +16,33 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
-import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-
 import java.io.Serializable;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class StatsCollector implements Serializable {
+import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.statistics.json.StatsCollectorSerializer;
+
+@JsonSerialize(using=StatsCollectorSerializer.class)
+public class StatsCollector implements Serializable, Traceable, Actualizable {
 	
 	private static final long serialVersionUID = -2681471547369656383L;
+	
+	@JsonIgnore
+	private String tracePrefix = null;
 
-	private final @NonNull List<@NonNull LongAdderFormatter> values = new ArrayList<>();
+	public final @NonNull List<@NonNull LongAdderFormatter> values =
+			new ArrayList<>();
 
 	private @NonNull LongAdderFormatter get(int index) {
 		if (values.size() < index + 1) {
@@ -49,18 +57,22 @@ public class StatsCollector implements Serializable {
 			synchronized(values) {
 				result = Util.nullableify(values.get(index));
 			}
-			if (result == null) {
-				throw new AssertionFailedException();
-			}
+			Objects.requireNonNull(result);
 		}
 		return result;
 	}
 	
 	public void increment(@NonNull SequenceLocation location) {
+		if (tracePrefix != null) {
+			System.err.println(tracePrefix + "+1 at " + location);
+		}
 		get(location.contigIndex).increment();
 	}
 
 	public void add(@NonNull SequenceLocation location, long n) {
+		if (tracePrefix != null) {
+			System.err.println(tracePrefix + "+" + n + " at " + location);
+		}
 		get(location.contigIndex).add(n);
 	}
 	
@@ -80,8 +92,23 @@ public class StatsCollector implements Serializable {
 	}
 	
 	public String toString(@NonNull Function<Long, Long> transformer) {
-		return values.toString() + "; total: " + NumberFormat.getInstance().format(
+		return values.toString() + "; total: " + DoubleAdderFormatter.nf.get().format(
 				transformer.apply(sum()));
+	}
+
+	@Override
+	public void setPrefix(@Nullable String prefix) {
+		tracePrefix = prefix;
+	}
+
+	public String total;
+	
+	@Override
+	public void actualize() {
+		total = DoubleAdderFormatter.nf.get().format(sum());
+		for (LongAdderFormatter laf: values) {
+			laf.actualize();
+		}
 	}
 }
 

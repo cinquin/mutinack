@@ -16,45 +16,66 @@
  */
 package uk.org.cinquin.mutinack.features;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import contrib.edu.standford.nlp.util.HasInterval;
+import contrib.edu.standford.nlp.util.Interval;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import edu.stanford.nlp.util.HasInterval;
-import edu.stanford.nlp.util.Interval;
 
-public final class GenomeInterval implements HasInterval<Integer> {
+/**
+ * Equality based on name, contigName, start and end.
+ * @author olivier
+ *
+ */
+public final class GenomeInterval implements HasInterval<Integer>, Serializable {
+
+	private static final long serialVersionUID = -8173244932350184778L;
 	public final String name;
-	public final @NonNull String contig;
+	public final @NonNull String contigName;
+	public final int contigIndex;
 	private final int start, end;
 	private final int length;
+	private final float score;
+	@JsonIgnore
 	private final double lengthInverse;
+	@JsonIgnore
 	private final Interval<Integer> interval;
-	private @NonNull Optional<Boolean> negativeStrand;
+	private @Nullable Boolean negativeStrand;
 	
-	public GenomeInterval(String name, @NonNull String contig, int start, int end, Integer length,
-			@NonNull Optional<Boolean> negativeStrand) {
+	public GenomeInterval(String name, int contigIndex, @NonNull String contigName, int start, int end, Integer length,
+			@NonNull Optional<Boolean> negativeStrand, float score) {
 		this.name = name;
-		this.contig = contig;
+		this.contigName = contigName;
+		this.contigIndex = contigIndex;
 		this.start = start;
 		this.end = end;
 		this.length = length == null ? (end - start + 1) : length;
 		lengthInverse = 1d / this.length;
 		interval = Interval.toInterval(start, end);
-		this.negativeStrand = negativeStrand;
+		this.negativeStrand = negativeStrand.orElse(null);
+		this.score = score;
 	}
 	
+	private static final Optional<Boolean> optionalTrue = Optional.of(true);
+	private static final Optional<Boolean> optionalFalse = Optional.of(false);
+	
+	@SuppressWarnings("null")
 	public @NonNull Optional<Boolean> isNegativeStrand() {
-		return negativeStrand;
+		return negativeStrand == null ? Optional.empty() : (negativeStrand ? optionalTrue : optionalFalse);
 	}
 	
 	public @NonNull SequenceLocation getStartLocation() {
-		return new SequenceLocation(contig, start);
+		return new SequenceLocation(contigIndex, contigName, start);
 	}
 
 	public void setNegativeStrand(@NonNull Optional<Boolean> negativeStrand) {
-		this.negativeStrand = negativeStrand;
+		this.negativeStrand = negativeStrand.orElse(null);
 	}
 
 	public int getStart() {
@@ -64,6 +85,10 @@ public final class GenomeInterval implements HasInterval<Integer> {
 	public int getEnd() {
 		return end;
 	}
+
+	public float getScore() {
+		return score;
+	}
 	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
@@ -72,7 +97,7 @@ public final class GenomeInterval implements HasInterval<Integer> {
 	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + contig.hashCode();
+		result = prime * result + contigName.hashCode();
 		result = prime * result + end;
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + start;
@@ -94,7 +119,7 @@ public final class GenomeInterval implements HasInterval<Integer> {
 			return false;
 		}
 		GenomeInterval other = (GenomeInterval) obj;
-		if (!contig.equals(other.contig)) {
+		if (!contigName.equals(other.contigName)) {
 			return false;
 		}
 		if (end != other.end) {
@@ -115,7 +140,7 @@ public final class GenomeInterval implements HasInterval<Integer> {
 	
 	@Override
 	public String toString() {
-		return name + " on contig " + contig + " " + start + " to " + end;
+		return name + " on contig " + contigName + " " + start + " to " + end;
 	}
 
 	public double getLength() {

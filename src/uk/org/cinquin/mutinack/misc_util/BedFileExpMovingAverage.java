@@ -19,7 +19,7 @@ import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class BedFileExpMovingAverage {
 
-	private final static int BIN_SIZE = 100_000;
+	private static final int BIN_SIZE = 100_000;
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws IOException, ParseRTException {
@@ -40,8 +40,8 @@ public class BedFileExpMovingAverage {
 
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
 
-			BedReader bedReader = new BedReader(indexContigNameMap.values(), 
-					new BufferedReader(fileReader), refFile, null);
+			BedReader bedReader = new BedReader(indexContigNameMap, 
+					new BufferedReader(fileReader), refFile, null, false);
 
 			for (int contig = 0; contig < contigNames.size(); contig++) {
 				double v = 0;
@@ -50,7 +50,7 @@ public class BedFileExpMovingAverage {
 					int l = c * BIN_SIZE; 
 					for (; l < (c + 1) * BIN_SIZE; l++) {
 						double vl = 0;
-						final SequenceLocation loc = new SequenceLocation(contig, l);
+						final SequenceLocation loc = new SequenceLocation(contig, contigName, l);
 						if (parseExpressionLevel) {
 							if (bedReader.apply(loc).size() > 1) {
 								System.err.println("Warning: " + bedReader.apply(loc).size() + " values at " + loc);

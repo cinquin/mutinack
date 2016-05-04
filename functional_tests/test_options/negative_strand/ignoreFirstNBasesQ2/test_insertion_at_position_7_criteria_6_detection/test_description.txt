@@ -1,0 +1,1 @@
+Program is expected to detect insertion.  Deletion is at position 7 and -ignoreFirstNBasesQ2=6.

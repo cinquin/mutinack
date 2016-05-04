@@ -19,15 +19,15 @@ package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 
 /**
- * Reports counts following contig blocks whose size is defined by {@link #binSize}.
+ * Reports counts following contig blocks whose size is defined by {@link #BIN_SIZE}.
  * See also {@link CounterWithSeqLocation}.
  * @author olivier
  *
@@ -36,28 +36,25 @@ import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 public class CounterWithSeqLocOnly extends Counter implements ICounterSeqLoc, Serializable {
 		
 	private static final long serialVersionUID = 6490500502909806438L;
-	public static Map<Object, @NonNull Object> contigNames;
 	
-	public CounterWithSeqLocOnly(boolean sortByValue) {
-		super(sortByValue);
+	public CounterWithSeqLocOnly(boolean sortByValue, MutinackGroup groupSettings) {
+		super(sortByValue, groupSettings);
 		List<SerializableFunction<Object, Object>> contigNames0 = new ArrayList<>();
-		contigNames0.add(contigNames::get);
-		contigNames0.add(i -> ((Integer) i) * binSize);
+		contigNames0.add(groupSettings.getIndexContigNameMap()::get);
+		contigNames0.add(i -> ((Integer) i) * groupSettings.BIN_SIZE);
 		setKeyNamePrintingProcessor(contigNames0);
 	}
-	
-	private static final int binSize = 1_000_000;
-	
+		
 	@Override
 	public void accept(@NonNull SequenceLocation loc) {
 		if (on)
-			super.acceptVarArgs(1d, loc.contigIndex, loc.position / binSize);
+			super.acceptVarArgs(1d, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
 	}
 	
 	@Override
 	public void accept (@NonNull SequenceLocation loc, long n) {
 		if (on)
-			super.acceptVarArgs(n, loc.contigIndex, loc.position / binSize);
+			super.acceptVarArgs(n, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
 	}
 	
 	@Override
@@ -68,6 +65,6 @@ public class CounterWithSeqLocOnly extends Counter implements ICounterSeqLoc, Se
 	@Override
 	public void accept(@NonNull SequenceLocation loc, double d) {
 		if (on)
-			super.acceptVarArgs(d, loc.contigIndex, loc.position / binSize);
+			super.acceptVarArgs(d, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
 	}
 }

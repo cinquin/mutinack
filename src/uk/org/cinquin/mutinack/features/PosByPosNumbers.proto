@@ -1,0 +1,20 @@
+option optimize_for = LITE_RUNTIME;
+option java_outer_classname = "PosByPosNumbersPB";
+option java_package = "uk.org.cinquin.mutinack.features";
+
+message ContigNumbers {
+	required string contigName = 1;
+	repeated int32 numbers = 2 [packed = true];
+}
+
+message GenomeNumbers {
+	required string sampleName = 1;
+	required string generatingProgramVersion = 2;
+	required string generatingProgramArgs = 3;
+	repeated ContigNumbers contigNumbers = 4;
+}
+
+message GeneratedFrom {
+	required string operation = 1;
+	repeated GenomeNumbers operands = 2;
+}

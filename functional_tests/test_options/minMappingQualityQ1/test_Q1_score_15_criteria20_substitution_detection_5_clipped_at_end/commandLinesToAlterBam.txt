@@ -1,3 +1,0 @@
-samtools view -h test1.bwa_mem_unpaired_no_adapt.map.sorted.bam | sed -e 's/60/15/g' | samtools view -bSh - > test1_2.bwa_mem_unpaired_no_adapt.map.sorted.bam
-samtools index test1_2.bwa_mem_unpaired_no_adapt.map.sorted.bam
-"rename file test1_2 -> test1"

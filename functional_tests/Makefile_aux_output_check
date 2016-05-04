@@ -1,0 +1,8 @@
+
+FILES = $(shell find . -name 'expected_*' -not -name 'expected_output.txt' -not -name 'run.out' | sed -e 's/expected_//g' | sed -e 's/$$/.check/g')
+
+all: $(FILES)
+
+.DELETE_ON_ERROR:
+%.check: expected_%
+	./grep_lines_in_file $* < expected_$* > $@

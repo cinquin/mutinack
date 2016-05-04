@@ -1,1 +1,0 @@
-Program is expected to not detect mutation.  The average clipping of all duplexes at the loci is 10 and maxAverageClippingOfAllCoveringDuplexes=8.  At the output loci, 2 Q1 duplexes are expected to be detected in test sample (one wt and 1 substitution) and 5 duplexes are expected to be detected in control sample.

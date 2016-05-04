@@ -345,6 +345,11 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         return new FwdIterator(min());
     }
 
+    public Iterator<V> valueIterator()
+    {
+        return new ValueIterator(min());
+    }
+    
     /**
      * Return an iterator over all intervals greater than or equal to the specified interval.
      * @param start The interval's start.
@@ -365,6 +370,29 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
     public Iterator<Node<V>> overlappers( final int start, final int end )
     {
         return new OverlapIterator(start,end);
+    }
+    
+    public Iterable<V> overlappersIt(final int start, final int end) {
+    	return new Iterable<V>() {
+
+			@Override
+			public Iterator<V> iterator() {
+				Iterator<Node<V>> it = overlappers(start, end);
+				return new Iterator<V>() {
+
+					@Override
+					public boolean hasNext() {
+						return it.hasNext();
+					}
+
+					@Override
+					public V next() {
+						return it.next().getValue();
+					}
+					
+				};
+			}
+    	};
     }
 
     /**
@@ -1059,6 +1087,26 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         private int mSize;
         private int mMaxEnd;
         private boolean mIsBlack;
+    }
+    
+    public class ValueIterator implements Iterator<V> {
+    	
+    	private final Iterator<Node<V>> fwdIt;
+    	
+    	public ValueIterator(Node<V> node) {
+    		fwdIt = new FwdIterator(node);
+    	}
+
+		@Override
+		public boolean hasNext() {
+			return fwdIt.hasNext();
+		}
+
+		@Override
+		public V next() {
+			return fwdIt.next().getValue();
+		}
+    	
     }
 
     public class FwdIterator

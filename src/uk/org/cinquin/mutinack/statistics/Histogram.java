@@ -19,12 +19,21 @@ package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import uk.org.cinquin.mutinack.statistics.json.HistogramSerializer;
+
+@JsonSerialize(using=HistogramSerializer.class)
 public class Histogram extends ArrayList<LongAdderFormatter>
-		implements SwitchableStats, Serializable {
+		implements SwitchableStats, Serializable, Actualizable {
+	@JsonIgnore
 	protected boolean on = true;
 	private static final long serialVersionUID = -1557536590861199764L;
 	
+	@JsonIgnore
 	private final int maxSize;
+	
 	private final LongAdderFormatter sum = new LongAdderFormatter();
 	
 	public Histogram(int maxSize) {
@@ -34,9 +43,9 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 
 	@Override
 	public String toString() {
-		double nEntries = 0;
+		double nEntriesAsD = 0;
 		boolean medianSet = false;
-		int median = 0;
+		float medianAsF = Float.NaN;
 		long size = size();
 		double totalNEntries = 0;
 		for (LongAdderFormatter longAdderFormatter: this) {
@@ -44,15 +53,15 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 		}
 		int index = 0;
 		for (; index < size; index++) {
-			nEntries += get(index).doubleValue();
-			if (!medianSet && nEntries >= totalNEntries * 0.5) {
+			nEntriesAsD += get(index).doubleValue();
+			if (!medianSet && nEntriesAsD >= totalNEntries * 0.5) {
 				medianSet = true;
-				median = index;
+				medianAsF = index;
 			}
 		}
-		return super.toString() + "; nEntries = " + DoubleAdderFormatter.formatDouble(nEntries) +
-			"; average = " + DoubleAdderFormatter.formatDouble(sum.sum() / nEntries) +
-			"; median = " + DoubleAdderFormatter.formatDouble(median) +
+		return super.toString() + "; nEntries = " + DoubleAdderFormatter.formatDouble(nEntriesAsD) +
+			"; average = " + DoubleAdderFormatter.formatDouble(sum.sum() / nEntriesAsD) +
+			"; median = " + DoubleAdderFormatter.formatDouble(medianAsF) +
 				(index == size - 1 ? " (UNDERESTIMATE)" : "");
 	}
 
@@ -92,5 +101,35 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	@Override
 	public boolean isOn() {
 		return on;
+	}
+	
+	public String nEntries;
+	public String average;
+	public String median;
+	public String notes;
+
+	@Override
+	public void actualize() {
+		double nEntries0 = 0;
+		boolean medianSet = false;
+		float median0 = Float.NaN;
+		long size = size();
+		double totalNEntries = 0;
+		for (LongAdderFormatter longAdderFormatter: this) {
+			longAdderFormatter.actualize();
+			totalNEntries += longAdderFormatter.doubleValue();
+		}
+		int index = 0;
+		for (; index < size; index++) {
+			nEntries0 += get(index).doubleValue();
+			if (!medianSet && nEntries0 >= totalNEntries * 0.5) {
+				medianSet = true;
+				median0 = index;
+			}
+		}
+		nEntries = DoubleAdderFormatter.formatDouble(nEntries0);
+		average = DoubleAdderFormatter.formatDouble(sum.sum() / nEntries0);
+		median = DoubleAdderFormatter.formatDouble(median0);
+		notes = index == size - 1 ? " (UNDERESTIMATE)" : "";
 	}
 }

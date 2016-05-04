@@ -1,0 +1,1 @@
+Program is expected to report breakdown of nPosDuplexQualityQ2OthersQ1Q2 coverage in bed region (40) divided by bed region length (68) = 0.588.

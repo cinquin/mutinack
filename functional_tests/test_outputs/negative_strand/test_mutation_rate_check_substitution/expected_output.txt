@@ -1,0 +1,2 @@
+nPosDuplexQualityQ2OthersQ1Q2: All: 94
+Mutation rate for All: 0.011

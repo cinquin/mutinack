@@ -1,1 +1,0 @@
-Program is expected to not detect mutation.  The median phred score is 27 (although there are enough reads with minBasePhredScoreQ2 >30 to call mutation) and  minMedianPhredQualityAtLocus=30.

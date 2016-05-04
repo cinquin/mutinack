@@ -1,0 +1,2 @@
+Program is expected to detect mutation.  The consensus of mutation in sister arm is 0.6 and minConsensusThresholdQ1=0.8.  At the output positions, 1 Q1 duplex is expected to be detected in test sample and 0 duplexes are expected to be detected in control sample.
+

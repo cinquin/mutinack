@@ -15,15 +15,15 @@ public class PoolFactory<T> {
 		this.poolableObject = poolableObject;
 	}
 
-	public ObjectPool<T> getPool() {
-		if (pool == null)
+	public ObjectPool<T> getPool(boolean createIfNecessary) {
+		if (pool == null && createIfNecessary)
 			createPoolInstance();
 		return pool;
 	}
 	
 	public void clear() {
-		if (getPool() instanceof Controllable) {
-			((Controllable) getPool()).clear();
+		if (getPool(false) instanceof Controllable) {
+			((Controllable) getPool(false)).clear();
 		}
 	}
 

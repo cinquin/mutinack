@@ -115,7 +115,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	}
 	
 	public byte[] getSequence() {
-		if (mutationType == MutationType.WILDTYPE) {
+		if (mutationType.isWildtype()) {
 			return new byte[] {wildtype};
 		} else {
 			return mutationSequence;
@@ -148,8 +148,6 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			return "ins " + mutationSequenceString();
 		case SUBSTITUTION:
 			return "subst " + mutationSequenceString();
-		case COMBINATION:
-			return "combo " + mutationSequenceString();
 		default : throw new AssertionFailedException();
 		}
 	}

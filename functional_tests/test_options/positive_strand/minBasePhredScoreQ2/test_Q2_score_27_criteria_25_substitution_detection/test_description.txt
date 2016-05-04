@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The phred score of the mutation is 27 and minBasePhredScoreQ2=25.  At the output positions, 1 Q1 duplex is expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

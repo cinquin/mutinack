@@ -17,7 +17,7 @@
 package uk.org.cinquin.mutinack.statistics;
 
 import java.io.Serializable;
-import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +27,10 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 import uk.org.cinquin.mutinack.misc_util.Util;
@@ -40,13 +44,19 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
  *
  * @param <T>
  */
-public class Counter<T> implements ICounter<T>, Serializable {
+public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	private static final long serialVersionUID = -8737720765068575377L;
+	@JsonIgnore
 	protected boolean on = true;
+	@JsonIgnore
 	protected final boolean sortByValue;
+	@JsonUnwrapped
 	private final @NonNull Map<Object, @NonNull Object> map = new ConcurrentHashMap<>();
+	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
-	
+	@JsonIgnore
+	protected final MutinackGroup groupSettings;
+	@JsonIgnore
 	private List<SerializableFunction<Object, Object>> nameProcessors;
 
 	@SuppressWarnings("unchecked")
@@ -64,15 +74,17 @@ public class Counter<T> implements ICounter<T>, Serializable {
 			return result;
 		};
 	
-	private final Comparator<? super Map.Entry<Object,Object>> printingSorter;
+	@JsonIgnore
+	private transient final Comparator<? super Map.Entry<Object,Object>> printingSorter;
 	
-	public Counter(boolean sortByValue) {
+	public Counter(boolean sortByValue, MutinackGroup groupSettings) {
 		this.sortByValue = sortByValue;
 		if (sortByValue) {
 			printingSorter = byValueSorter;
 		} else {
 			printingSorter = byKeySorter;
 		}
+		this.groupSettings = groupSettings;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -80,7 +92,8 @@ public class Counter<T> implements ICounter<T>, Serializable {
 		nameProcessors = l;
 		for (Object v: map.values()) {
 			if (v instanceof Counter) {
-				((Counter) v).setKeyNamePrintingProcessor(l.subList(1, l.size()));
+				((Counter) v).setKeyNamePrintingProcessor(
+						new ArrayList<>(l.subList(1, l.size())));
 			}
 		}
 	}
@@ -94,16 +107,14 @@ public class Counter<T> implements ICounter<T>, Serializable {
 			accept(t, 1d);
 	}
 	
-	@SuppressWarnings("null")
 	void acceptVarArgs(long n, @NonNull Object ... indices) {
 		if (on)
-			accept (CompositeIndex.asCompositeIndex(Util.nonNullify(Arrays.asList(indices))), n);
+			accept (CompositeIndex.asCompositeIndex(Arrays.asList(indices)), n);
 	}
 
-	@SuppressWarnings("null")
 	void acceptVarArgs(double d, @NonNull Object ... indices) {
 		if (on)
-			accept (CompositeIndex.asCompositeIndex(Util.nonNullify(Arrays.asList(indices))), d);
+			accept (CompositeIndex.asCompositeIndex(Arrays.asList(indices)), d);
 	}
 	
 	@Override
@@ -117,7 +128,7 @@ public class Counter<T> implements ICounter<T>, Serializable {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void accept (@NonNull Object t, double d) {
+	public void accept(@NonNull Object t, double d) {
 		if (!on)
 				return;
 		@NonNull Object index = t;
@@ -127,15 +138,15 @@ public class Counter<T> implements ICounter<T>, Serializable {
 			index = indices.get(0);
 			terminal = indices.size() == 1;
 		}
-		Object preExistingValue = Util.nullableify(map.get(index));
+		Object preExistingValue = map.get(index);
 		if (preExistingValue == null) {
 			synchronized (map) {
-				preExistingValue = Util.nullableify(map.get(index));
+				preExistingValue = map.get(index);
 				if (preExistingValue == null) {
 					if (terminal) {
 						preExistingValue = new DoubleAdderFormatter();
 					} else {
-						preExistingValue = new Counter<>(sortByValue);
+						preExistingValue = new Counter<>(sortByValue, groupSettings);
 						((Counter) preExistingValue).setKeyNamePrintingProcessor(nameProcessors.subList(1, nameProcessors.size()));
 						isMultidimensionalCounter = true;
 					}
@@ -193,7 +204,7 @@ public class Counter<T> implements ICounter<T>, Serializable {
 				} else
 					return ((ICounter<?>) o).sum();
 			}).sum();
-			result.append(NumberFormat.getInstance().format(sum));
+			result.append(DoubleAdderFormatter.nf.get().format(sum));
 			result.append("\n");
 		}
 		map.entrySet().stream().sorted(printingSorter).forEach( e -> {
@@ -211,7 +222,7 @@ public class Counter<T> implements ICounter<T>, Serializable {
 			if (val instanceof DoubleAdderFormatter) {
 				result.append(val);
 			} else {
-				result.append(NumberFormat.getInstance().format(((Counter<?>) val).sum())).append("\n");
+				result.append(DoubleAdderFormatter.nf.get().format(((Counter<?>) val).sum())).append("\n");
 				result.append(((Counter<?>) val).toString(linePrefix + "  "));
 			}
 		});
@@ -251,5 +262,12 @@ public class Counter<T> implements ICounter<T>, Serializable {
 	@Override
 	public int hashCode() {
 		throw new RuntimeException("Unimplemented");
+	}
+
+	@Override
+	public void actualize() {
+		//TODO Finish this
+		map.values().stream().filter(o -> o instanceof Actualizable).
+			forEach(a -> ((Actualizable) a).actualize());
 	}
 }

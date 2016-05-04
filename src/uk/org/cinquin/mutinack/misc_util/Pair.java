@@ -20,11 +20,16 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Collection;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
 //Adapted from http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
 public class Pair<A,B> implements Serializable {
 
 	private static final long serialVersionUID = -1873509799696495621L;
+	@JsonIgnore
 	public A fst;
+	@JsonUnwrapped
     public B snd;
 
     public Pair(A first, B second) {
@@ -34,7 +39,7 @@ public class Pair<A,B> implements Serializable {
     }
 
     @Override
-	public int hashCode() {
+	public final int hashCode() {
     	int hashFirst = fst != null ? fst.hashCode() : 0;
     	int hashSecond = snd != null ? snd.hashCode() : 0;
 
@@ -42,7 +47,7 @@ public class Pair<A,B> implements Serializable {
     }
 
     @Override
-	public boolean equals(Object other) {
+	public final boolean equals(Object other) {
     	if (other instanceof Pair) {
     		Pair<?, ?> otherPair = (Pair<?, ?>) other;
     		return 

@@ -1,0 +1,1 @@
+Program is expected to detect mutation.  The mapping quality is 60 and minMappingQualityQ2=50.  At the output positions, 1 Q1 duplex is expected to be detected in test sample and 5 duplexes are expected to be detected in control sample.

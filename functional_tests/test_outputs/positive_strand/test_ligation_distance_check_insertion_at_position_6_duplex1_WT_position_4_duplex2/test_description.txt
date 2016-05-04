@@ -1,0 +1,1 @@
+Program is expected to report an insertion at 5bp from ligation site and WT at 4bp from ligation site.

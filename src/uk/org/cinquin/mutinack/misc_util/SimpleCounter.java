@@ -16,17 +16,11 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.eclipse.jdt.annotation.NonNull;
-
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 
-import java.util.Set;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Not thread-safe.
@@ -81,7 +75,7 @@ public final class SimpleCounter<T> {
 			int barcodeLength) {
 		final List<SimpleCounter<Byte>> counts = new ArrayList<>(barcodeLength);
 		for (int i = 0; i < barcodeLength; i++) {
-			counts.add(new SimpleCounter<Byte>());
+			counts.add(new SimpleCounter<>());
 		}
 		for (ExtendedSAMRecord r: records) {
 			byte[] barcode = r.variableBarcode;

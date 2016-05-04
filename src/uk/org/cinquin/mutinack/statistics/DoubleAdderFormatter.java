@@ -17,23 +17,51 @@
 package uk.org.cinquin.mutinack.statistics;
 
 import java.io.Serializable;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.concurrent.atomic.DoubleAdder;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import uk.org.cinquin.mutinack.statistics.json.DoubleAdderFormatterSerializer;
+
+@JsonSerialize(using=DoubleAdderFormatterSerializer.class)
 public final class DoubleAdderFormatter extends DoubleAdder
-		implements Comparable<DoubleAdderFormatter>, Serializable {
+		implements Comparable<DoubleAdderFormatter>, Serializable, Actualizable {
 
 	private static final long serialVersionUID = -4695889470689380766L;
 
 	@Override
 	public String toString() {
-		double sum = sum();
-		return formatDouble(sum);
+		double dsum = sum();
+		return formatDouble(dsum);
 	}
 	
+	public static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
+		@Override
+		protected NumberFormat initialValue() {
+			NumberFormat f = NumberFormat.getInstance();
+			setNanAndInfSymbols(f);
+			return f;
+		}
+	};
+	
+	public static boolean setNanAndInfSymbols(NumberFormat f) {
+		 if (f instanceof DecimalFormat) {
+			 DecimalFormat f2 = (DecimalFormat) f;
+			 DecimalFormatSymbols symbols = f2.getDecimalFormatSymbols();
+			 symbols.setNaN("NaN");
+			 symbols.setInfinity("Inf");
+			 f2.setDecimalFormatSymbols(symbols);
+			 return true;
+		 } else
+			 return false;
+	}
+
 	public static String formatDouble(double d) {
-		return NumberFormat.getInstance().format(d == Math.rint(d) ? (long) d : d);
+		NumberFormat f = nf.get();
+		return f.format(d == Math.rint(d) ? (long) d : d);
 	}
 
 	@Override
@@ -49,6 +77,13 @@ public final class DoubleAdderFormatter extends DoubleAdder
 	@Override
 	public int hashCode() {
 		throw new RuntimeException("Unimplemented");
+	}
+	
+	public String sum;
+	
+	@Override
+	public void actualize() {
+		sum = toString();
 	}
 
 }

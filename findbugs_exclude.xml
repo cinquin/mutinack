@@ -17,6 +17,6 @@
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
   <Match>
-    <Class name="~.*LocusByLocusNumbersPB.*"/>
+    <Class name="~.*PosByPosNumbersPB.*"/>
   </Match>
 </FindBugsFilter>

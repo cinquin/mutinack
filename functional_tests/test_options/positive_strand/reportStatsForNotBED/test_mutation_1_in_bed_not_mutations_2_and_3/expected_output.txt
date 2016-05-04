@@ -1,0 +1,1 @@
+Mutation rate for NOT test.bed: 0.036

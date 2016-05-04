@@ -1,3 +1,5 @@
 templateStrandDelQ2: All: {(wt T, del T)=1}; total: 1
 rawDeletionsQ1: All: {(A, A)=3, (T, T)=3}; total: 6
 rawDeletionsQ2: All: {(A, A)=3, (T, T)=3}; total: 6
+topBottomDelDisagreementsQ2: All: {(wt T, del T)=1}; total: 1
+nPosDuplexCandidatesForDisagreementQ2: All: 158
