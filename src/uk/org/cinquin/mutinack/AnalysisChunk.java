@@ -1,6 +1,6 @@
 /**
  * Mutinack mutation detection program.
- * Copyright (C) 2014-2015 Olivier Cinquin
+ * Copyright (C) 2014-2016 Olivier Cinquin
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
