@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/cinquin/mutinack.svg?branch=master)](https://travis-ci.org/cinquin/mutinack)
-[![Coverity scan](https://scan.coverity.com/projects/4876/badge.svg)](https://scan.coverity.com/projects/4876)
+<!-- [![Coverity scan](https://scan.coverity.com/projects/4876/badge.svg)](https://scan.coverity.com/projects/4876) -->
 
 **General notes**
 
@@ -74,7 +74,9 @@ depending on the mutators used).
 The project comes with `ant` and `maven` targets to run Findbugs, which
 is pre-packaged in the distribution. The code is also regularly analyzed
 with Coverity Scan, which has very nice additions to Findbugs and does
-not currently detect any significant issue.
+not currently detect any significant issue (note however that recent
+versions of Mutinack cannot be analyzed with Coverity, because of an
+apparent bug in Coverity that has been reported to Synopsys).
 
 Note that, at least on some versions of JRE 8, Mutinack can trigger a
 non-deterministic Java Virtual Machine bug, which was
