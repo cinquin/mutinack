@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -72,22 +74,24 @@ public class BedFileDisagScoreLookup {
 				Collection<GenomeInterval> intervals = scores.apply(
 					new SequenceLocation(contigNames.indexOf(contig),
 						indexContigNameMap, position));
+				
+				List<String> addToEnd = new ArrayList<>();
+				Arrays.stream(split).skip(3).forEach(addToEnd::add);
 								
 				final float result;
-				final String intervalDesc;
 				if (intervals.isEmpty()) {
 					result = -1;
-					intervalDesc = "";
 				} else {
 					result = (float) 
 						intervals.stream().mapToDouble(i -> i.getScore()).sum();
-					intervalDesc =
-						intervals.stream().map(i -> i.toString()).collect(
-							Collectors.joining("\t"));
+					intervals.forEach(i -> addToEnd.add(i.toString()));
 				}
 				
+				String endOfLine = addToEnd.stream().
+					collect(Collectors.joining("\t"));
+				
 				System.out.println(contig + ":" + position + "\t" + result + "\t" +
-					intervalDesc);
+					endOfLine);
 			});
 			
 			System.err.println(outOfRange.get() + " out of range; " +
