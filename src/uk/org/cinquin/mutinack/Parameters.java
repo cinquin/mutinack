@@ -334,7 +334,7 @@ public final class Parameters implements Serializable {
 	
 	@FilePath
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
-	public String forceOutputAtPositionsFile = null;
+	public List<@NonNull String> forceOutputAtPositionsFile = new ArrayList<>();
 	
 	@Parameter(names = "-randomOutputRate", description = "Randomly choose genome positions at this rate to include in output", required = false)
 	public float randomOutputRate = 0;

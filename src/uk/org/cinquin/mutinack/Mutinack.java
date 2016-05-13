@@ -554,8 +554,8 @@ public class Mutinack implements Actualizable {
 					contigNames);
 
 			groupSettings.forceOutputAtLocations.clear();
-			if (argValues.forceOutputAtPositionsFile != null) {
-				try(Stream<String> lines = Files.lines(Paths.get(argValues.forceOutputAtPositionsFile))) {
+			for (String forceOutputFilePath: argValues.forceOutputAtPositionsFile) {
+				try(Stream<String> lines = Files.lines(Paths.get(forceOutputFilePath))) {
 					lines.forEach(l -> {
 						for (String loc: l.split(" ")) {
 							try {
