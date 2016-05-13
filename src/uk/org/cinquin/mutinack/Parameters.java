@@ -332,7 +332,7 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-sampleName", description = "Used to name samples in output file; can be repeated as many times as there are inputReads", required = false)
 	List<@NonNull String> sampleNames = new ArrayList <> ();
 	
-	@FilePath
+	@FilePathList
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
 	public List<@NonNull String> forceOutputAtPositionsFile = new ArrayList<>();
 	
