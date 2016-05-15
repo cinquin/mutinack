@@ -82,7 +82,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			cMutSeq = null;
 		}
 		Mutation c = new Mutation(mutationType, complement(wildtype), /* XXX */ false, cMutSeq,
-				getTemplateStrand());
+				isTemplateStrand());
 		return c;
 	}
 	
@@ -168,7 +168,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		return Byte.compare(wildtype, o.wildtype);
 	}
 
-	public @NonNull Optional<Boolean> getTemplateStrand() {
+	public @NonNull Optional<Boolean> isTemplateStrand() {
 		return Util.nonNullify(Optional.ofNullable(templateStrand));
 	}
 

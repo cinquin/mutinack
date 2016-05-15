@@ -295,7 +295,6 @@ public class SubAnalyzerPhaser extends Phaser {
 							}
 
 							for (DuplexDisagreement d: examResults.disagreements) {
-								final Mutation mutant = d.getSnd();
 								
 								byte[] fstSeq = d.getFst().getSequence();
 								if (fstSeq == null) {
@@ -305,6 +304,8 @@ public class SubAnalyzerPhaser extends Phaser {
 								if (sndSeq == null) {
 									sndSeq = new byte[] {'?'};
 								}
+
+                                                                final Mutation mutant = d.getSnd();
 
 								try {
 									@Nullable
@@ -330,21 +331,21 @@ public class SubAnalyzerPhaser extends Phaser {
 
 								if (mutant.mutationType == SUBSTITUTION) {
 									stats.topBottomSubstDisagreementsQ2.accept(location, d);
-									mutant.getTemplateStrand().ifPresent(b -> {
+									mutant.isTemplateStrand().ifPresent(b -> {
 										if (b)
 											stats.templateStrandSubstQ2.accept(location, d);
 										else 
 											stats.codingStrandSubstQ2.accept(location, d);});
 								} else if (mutant.mutationType == DELETION) {
 									stats.topBottomDelDisagreementsQ2.accept(location, d);
-									mutant.getTemplateStrand().ifPresent(b -> {
+									mutant.isTemplateStrand().ifPresent(b -> {
 										if (b) 
 											stats.templateStrandDelQ2.accept(location, d);
 										else 
 											stats.codingStrandDelQ2.accept(location, d);});
 								} else if (mutant.mutationType == INSERTION) {
 									stats.topBottomInsDisagreementsQ2.accept(location, d);
-									mutant.getTemplateStrand().ifPresent(b -> {
+									mutant.isTemplateStrand().ifPresent(b -> {
 										if (b) 
 											stats.templateStrandInsQ2.accept(location, d);
 										else stats.codingStrandInsQ2.accept(location, d);

@@ -817,7 +817,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 						
 						stats.nPosDuplexWithTopBottomDuplexDisagreementNotASub.accept(location);
 
-						simplifiedMutation.setTemplateStrand(actualMutant.getTemplateStrand());
+						simplifiedMutation.setTemplateStrand(actualMutant.isTemplateStrand());
 						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
 							DuplexDisagreement disag = negativeStrand ? 
 								new DuplexDisagreement(wildtype.reverseComplement(), simplifiedMutation.reverseComplement(), true) :
