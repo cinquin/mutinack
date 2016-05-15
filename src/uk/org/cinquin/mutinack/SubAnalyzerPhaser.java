@@ -316,9 +316,9 @@ public class SubAnalyzerPhaser extends Phaser {
 												(mutant.mutationType == SUBSTITUTION ?
 														(new String(fstSeq) + "" + new String(sndSeq)) 
 														:
-															new String (sndSeq))
-												+ "\t" +
-												mutant.mutationType + "\n");
+														new String (sndSeq)) + "\t" +
+												mutant.mutationType + 
+												(d.hasAWtStrand ? "" : ("\t" + d.getFst().mutationType)) + "\n");
 									}
 								} catch (IOException e) {
 									throw new RuntimeException(e);

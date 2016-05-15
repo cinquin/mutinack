@@ -734,8 +734,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 				if (!m1.mutationType.isWildtype() && !m2.mutationType.isWildtype()) {
 					stats.nPosDuplexWithTopBottomDuplexDisagreementNoWT.accept(location);
-					DuplexDisagreement disag = new DuplexDisagreement(m1, m2, false);
 					if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
+						DuplexDisagreement disag = new DuplexDisagreement(m1, m2, false);
 						duplexDisagreements.add(disag);
 					}
 				} else {
@@ -818,21 +818,21 @@ public final class DuplexRead implements HasInterval<Integer> {
 						stats.nPosDuplexWithTopBottomDuplexDisagreementNotASub.accept(location);
 
 						simplifiedMutation.setTemplateStrand(actualMutant.getTemplateStrand());
-						DuplexDisagreement disag = negativeStrand ? 
+						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
+							DuplexDisagreement disag = negativeStrand ? 
 								new DuplexDisagreement(wildtype.reverseComplement(), simplifiedMutation.reverseComplement(), true) :
 								new DuplexDisagreement(wildtype, simplifiedMutation, true);
-						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
-								duplexDisagreements.add(disag);
+							duplexDisagreements.add(disag);
 						}
 					} else {
 						hasSubstitution = true;
 						hasDeletion = false;
 						hasInsertion = false;
-						DuplexDisagreement disag = negativeStrand ? 
-								new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true) :
-								new DuplexDisagreement(wildtype, actualMutant, true);
 						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {//TODO Check
 							//redundant with what was done earlier
+							DuplexDisagreement disag = negativeStrand ? 
+								new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true) :
+								new DuplexDisagreement(wildtype, actualMutant, true);
 							duplexDisagreements.add(disag);
 						}
 					}
