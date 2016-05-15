@@ -81,6 +81,7 @@ import contrib.net.sf.samtools.SAMFileHeader;
 import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMFileWriterFactory;
+import contrib.net.sf.samtools.SAMProgramRecord;
 import contrib.net.sf.samtools.util.RuntimeIOException;
 import contrib.nf.fr.eraasoft.pool.ObjectPool;
 import contrib.nf.fr.eraasoft.pool.PoolSettings;
@@ -498,6 +499,13 @@ public class Mutinack implements Actualizable {
 			analyzers.add(null);
 		}
 
+		for (String inputBamPath: argValues.inputReads) {
+			final File inputBam = new File(inputBamPath); 
+			try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
+				out.println(inputBamPath + ":\n" + tempReader.getFileHeader().getTextHeader());
+			}
+		}
+
 		SAMFileWriter alignmentWriter = null;
 		SignalProcessor infoSignalHandler = null;
 		final MutinackGroup groupSettings = new MutinackGroup();
@@ -518,7 +526,16 @@ public class Mutinack implements Actualizable {
 				final File inputBam = new File(argValues.inputReads.get(0)); 
 
 				try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
-					header.setSequenceDictionary(tempReader.getFileHeader().getSequenceDictionary());
+					final SAMFileHeader inputHeader = tempReader.getFileHeader();
+					header.setSequenceDictionary(inputHeader.getSequenceDictionary());
+					List<SAMProgramRecord> programs = new ArrayList<>(inputHeader.getProgramRecords());
+					SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
+					//documentation somewhere of what programGroupId should be??
+					mutinackRecord.setProgramName("Mutinack");
+					mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
+					mutinackRecord.setCommandLine(argValues.toString());
+					programs.add(mutinackRecord);
+					header.setProgramRecords(programs);
 				}
 				alignmentWriter = factory.
 						makeBAMWriter(header, false, new File(argValues.outputAlignmentFile), 0);
