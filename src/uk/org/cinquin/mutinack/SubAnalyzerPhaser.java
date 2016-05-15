@@ -294,8 +294,40 @@ public class SubAnalyzerPhaser extends Phaser {
 								stats.rawInsertionLengthQ2.insert(var.snd.length());
 							}
 
-							for (ComparablePair<Mutation, Mutation> d: examResults.disagreements) {
-								Mutation mutant = d.getSnd();
+							for (DuplexDisagreement d: examResults.disagreements) {
+								final Mutation mutant = d.getSnd();
+								
+								byte[] fstSeq = d.getFst().getSequence();
+								if (fstSeq == null) {
+									fstSeq = new byte[] {'?'};
+								}
+								byte[] sndSeq = d.getSnd().getSequence();
+								if (sndSeq == null) {
+									sndSeq = new byte[] {'?'};
+								}
+
+								try {
+									@Nullable
+									final OutputStreamWriter tpdw = d.hasAWtStrand ? stats.topBottomDisagreementWriter
+										: stats.noWtDisagreementWriter;
+									if (tpdw != null) {
+										tpdw.append(location.getContigName() + "\t" +
+												(location.position + 1) + "\t" + (location.position + 1) + "\t" +
+												(mutant.mutationType == SUBSTITUTION ?
+														(new String(fstSeq) + "" + new String(sndSeq)) 
+														:
+															new String (sndSeq))
+												+ "\t" +
+												mutant.mutationType + "\n");
+									}
+								} catch (IOException e) {
+									throw new RuntimeException(e);
+								}
+								
+								if (!d.hasAWtStrand) {
+										continue;
+								}
+
 								if (mutant.mutationType == SUBSTITUTION) {
 									stats.topBottomSubstDisagreementsQ2.accept(location, d);
 									mutant.getTemplateStrand().ifPresent(b -> {
@@ -319,35 +351,10 @@ public class SubAnalyzerPhaser extends Phaser {
 									});
 								}
 
-								byte[] fstSeq = d.getFst().getSequence();
-								if (fstSeq == null) {
-									fstSeq = new byte[] {'?'};
-								}
-								byte[] sndSeq = d.getSnd().getSequence();
-								if (sndSeq == null) {
-									sndSeq = new byte[] {'?'};
-								}
-
-								try {
-									@Nullable
-									OutputStreamWriter tpdw = stats.topBottomDisagreementWriter;
-									if (tpdw != null) {
-										tpdw.append(location.getContigName() + "\t" +
-												(location.position + 1) + "\t" + (location.position + 1) + "\t" +
-												(mutant.mutationType == SUBSTITUTION ?
-														(new String(fstSeq) + "" + new String(sndSeq)) 
-														:
-															new String (sndSeq))
-												+ "\t" +
-												mutant.mutationType + "\n");
-									}
-								} catch (IOException e) {
-									throw new RuntimeException(e);
-								}
 							}
 						} else {
 							stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
-							for (ComparablePair<Mutation, Mutation> d: examResults.disagreements) {
+							for (@NonNull DuplexDisagreement d: examResults.disagreements) {
 								stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
 							}
 						}

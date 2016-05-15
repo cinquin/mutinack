@@ -108,8 +108,6 @@ public class AnalysisStats implements Serializable, Actualizable {
 		codingStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		templateStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		topBottomDisagreementsQ2TooHighCoverage = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
-		lackOfConsensus1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
-		lackOfConsensus2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexCandidatesForDisagreementQ2TooHighCoverage = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexWithLackOfStrandConsensus1 = new StatsCollector();
@@ -181,7 +179,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 					for (int contig = 0; contig < contigNames.size(); contig++) {
 						for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / groupSettings.BIN_SIZE; c++) {
 							SequenceLocation location = new SequenceLocation(contig, contigNames.get(contig), c * groupSettings.BIN_SIZE);
-							topBottomSubstDisagreementsQ2.accept(location, new ComparablePair<>(wtM, to), 0);
+							topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true), 0);
 							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
 							templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
 						}
@@ -412,15 +410,15 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomSubstDisagreementsQ2;
+	public final MultiCounter<DuplexDisagreement> topBottomSubstDisagreementsQ2;
 	
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomDelDisagreementsQ2;
+	public final MultiCounter<DuplexDisagreement> topBottomDelDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomInsDisagreementsQ2;
+	public final MultiCounter<DuplexDisagreement> topBottomInsDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandSubstQ2;
@@ -441,13 +439,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandInsQ2;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> topBottomDisagreementsQ2TooHighCoverage;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> lackOfConsensus1;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> lackOfConsensus2;
+	public final MultiCounter<DuplexDisagreement> topBottomDisagreementsQ2TooHighCoverage;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
@@ -528,7 +520,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = VERBOSE)
 	public final Histogram nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
 
-	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, mutationBEDWriter, coverageBEDWriter;
+	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter, mutationBEDWriter, coverageBEDWriter;
 
 	@PrintInStatus(outputLevel = VERBOSE, description = "Q1 or Q2 duplex coverage histogram")
 	public final Histogram Q1Q2DuplexCoverage = new Histogram(500);

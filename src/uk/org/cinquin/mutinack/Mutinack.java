@@ -758,14 +758,22 @@ public class Mutinack implements Actualizable {
 						name;
 
 				if (argValues.outputTopBottomDisagreementBED) {
-					final String tbdName = analyzer.finalOutputBaseName + "_top_bottom_disag_";
+					final String tbdNameMain = analyzer.finalOutputBaseName + "_top_bottom_disag_";
+					final String tbdNameNoWt = analyzer.finalOutputBaseName + "_top_bottom_disag_no_wt_";
 					analyzer.stats.forEach(s -> {
-						final String path = tbdName + s.getName() + ".bed";
+						final String pathMain = tbdNameMain + s.getName() + ".bed";
 						try {
-							s.topBottomDisagreementWriter = new FileWriter(path);
+							s.topBottomDisagreementWriter = new FileWriter(pathMain);
 							analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
 						} catch (IOException e) {
-							handleOutputException(path, e, argValues);
+							handleOutputException(pathMain, e, argValues);
+						}
+						final String pathNoWt = tbdNameNoWt + s.getName() + ".bed";
+						try {
+							s.noWtDisagreementWriter = new FileWriter(pathNoWt);
+							analyzer.itemsToClose.add(s.noWtDisagreementWriter);
+						} catch (IOException e) {
+							handleOutputException(pathNoWt, e, argValues);
 						}
 					});
 				}
@@ -875,8 +883,6 @@ public class Mutinack implements Actualizable {
 							s.templateStrandDelQ2.addPredicate(filterName, filter);
 							s.codingStrandInsQ2.addPredicate(filterName, filter);
 							s.templateStrandInsQ2.addPredicate(filterName, filter);
-							s.lackOfConsensus1.addPredicate(filterName, filter);
-							s.lackOfConsensus2.addPredicate(filterName, filter);
 
 							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
 							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
@@ -894,8 +900,6 @@ public class Mutinack implements Actualizable {
 							s.templateStrandDelQ2.addPredicate(notFilterName, notFilter);
 							s.codingStrandInsQ2.addPredicate(notFilterName, notFilter);
 							s.templateStrandInsQ2.addPredicate(notFilterName, notFilter);
-							s.lackOfConsensus1.addPredicate(notFilterName, notFilter);
-							s.lackOfConsensus2.addPredicate(notFilterName, notFilter);
 							analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
 						});
 					} catch (Exception e) {
@@ -921,8 +925,6 @@ public class Mutinack implements Actualizable {
 							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
 							s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
-							s.lackOfConsensus1.addPredicate(filterName, filter);
-							s.lackOfConsensus2.addPredicate(filterName, filter);
 						});
 
 						analyzer.filtersForCandidateReporting.put(filterName, filter);

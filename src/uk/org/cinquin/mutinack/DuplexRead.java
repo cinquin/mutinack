@@ -495,7 +495,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		topCounter.minBasePhredScore = 0;
 		bottomCounter.minBasePhredScore = 0;
 		resetMaxDistanceToLigSite();
-		final @NonNull List<@NonNull ComparablePair<Mutation, Mutation>> duplexDisagreements = 
+		final @NonNull List<@NonNull DuplexDisagreement> duplexDisagreements = 
 				new ArrayList<>();
 		stats.nPosDuplex.accept(location);
 		final Entry<CandidateSequence, SettableInteger> bottom, top;
@@ -734,6 +734,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 				if (!m1.mutationType.isWildtype() && !m2.mutationType.isWildtype()) {
 					stats.nPosDuplexWithTopBottomDuplexDisagreementNoWT.accept(location);
+					DuplexDisagreement disag = new DuplexDisagreement(m1, m2, false);
+					if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
+						duplexDisagreements.add(disag);
+					}
 				} else {
 					final Mutation actualMutant = (!m1.mutationType.isWildtype()) ? m1 : m2;
 					final Mutation wildtype = (actualMutant == m1) ? m2 : m1;
@@ -814,22 +818,22 @@ public final class DuplexRead implements HasInterval<Integer> {
 						stats.nPosDuplexWithTopBottomDuplexDisagreementNotASub.accept(location);
 
 						simplifiedMutation.setTemplateStrand(actualMutant.getTemplateStrand());
-						ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
-								new ComparablePair<>(wildtype.reverseComplement(), simplifiedMutation.reverseComplement()) :
-									new ComparablePair<>(wildtype, simplifiedMutation);
+						DuplexDisagreement disag = negativeStrand ? 
+								new DuplexDisagreement(wildtype.reverseComplement(), simplifiedMutation.reverseComplement(), true) :
+								new DuplexDisagreement(wildtype, simplifiedMutation, true);
 						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
-								duplexDisagreements.add(mutationPair);
+								duplexDisagreements.add(disag);
 						}
 					} else {
 						hasSubstitution = true;
 						hasDeletion = false;
 						hasInsertion = false;
-						ComparablePair<Mutation, Mutation> mutationPair = negativeStrand ? 
-								new ComparablePair<>(wildtype.reverseComplement(), actualMutant.reverseComplement()) :
-								new ComparablePair<>(wildtype, actualMutant);
+						DuplexDisagreement disag = negativeStrand ? 
+								new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true) :
+								new DuplexDisagreement(wildtype, actualMutant, true);
 						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {//TODO Check
 							//redundant with what was done earlier
-							duplexDisagreements.add(mutationPair);
+							duplexDisagreements.add(disag);
 						}
 					}
 					
@@ -859,7 +863,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 						
 					if (minDist.get() == 99999) {
 						//This means that no reads are left that support the mutation candidate
-						//This can happen in case of low Phred qualities that leads to the
+						//This can happen in case of low Phred qualities that lead to the
 						//reads being discarded
 					} else if (minDist.get() < 0) {
 						logger.warn("Min dist = " + minDist.get() +

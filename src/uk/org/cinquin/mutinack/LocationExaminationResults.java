@@ -32,8 +32,9 @@ final class LocationExaminationResults {
 	int strandCoverageImbalance;
 	int nMissingStrands;
 	final @NonNull 
-		Collection<@NonNull ComparablePair<Mutation, Mutation>> disagreements = new ArrayList<>();
+		Collection<@NonNull DuplexDisagreement> disagreements = new ArrayList<>();
 	final @NonNull 
 	Collection<@NonNull ComparablePair<String, String>> rawMismatchesQ2 = new ArrayList<>(),
 		rawDeletionsQ2 = new ArrayList<>(), rawInsertionsQ2 = new ArrayList<>();
+	public Object disagreementsNoWt;
 }
