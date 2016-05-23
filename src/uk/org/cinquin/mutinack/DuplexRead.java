@@ -936,7 +936,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		
 		Assert.isFalse(!duplexDisagreements.isEmpty() &&
 				dq.getMinIgnoring(assaysToIgnoreForDisagreementQuality).compareTo(GOOD) < 0,
-				dq.getQualities().toString());
+				() -> dq.getQualities().toString());
 		
 		if (!duplexDisagreements.isEmpty()) {
 			result.disagreements.addAll(duplexDisagreements);

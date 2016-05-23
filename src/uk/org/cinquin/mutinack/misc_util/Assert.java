@@ -33,10 +33,20 @@ public class Assert {
 		}
 	}
 	
+	public static void isTrue(boolean condition, Supplier<String> format, Object... args) {
+		if (!condition) {
+			isTrue(condition, format.get(), args);
+		}
+	}
+	
 	public static void isFalse(boolean condition, String format, Object... args) {
 		isTrue(!condition, format, args);
 	}
-	
+
+	public static void isFalse(boolean condition, Supplier<String> format, Object... args) {
+		isTrue(!condition, format, args);
+	}
+
 	public static void isTrue(Supplier<Boolean> s, String format, Object... args) {
 		isTrue(s.get(), format, args);
 	}
@@ -80,4 +90,5 @@ public class Assert {
 	public static void isNull(Object o) {
 		isTrue(o == null);
 	}
+
 }

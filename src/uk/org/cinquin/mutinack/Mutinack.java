@@ -1170,9 +1170,9 @@ public class Mutinack implements Actualizable {
 
 					MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 					
-					//Catch all the exceptions because the exceptions throw by
+					//Catch all the exceptions because the exceptions thrown by
 					//some threads may be secondary to the primary exception
-					//but still be examined before the primary exception
+					//but may still be examined before the primary exception
 					for (Future<?> f: futures) {
 						gatherer.tryAdd(() -> {
 							try {
