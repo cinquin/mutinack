@@ -542,15 +542,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		candidate.addPhredQualitiesToList(getPhredQualityScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
 		acceptLigSiteDistance(candidate.getMaxDistanceToLigSite());
-		if (candidate.getRawMismatchesQ2().size() > 0) {
+		if (!candidate.getRawMismatchesQ2().isEmpty()) {
 			getMutableRawMismatchesQ2().addAll(candidate.getRawMismatchesQ2()); //TODO Is it
 			//worth optimizing this out if not keeping track of raw disagreements? That would
 			//save one list allocation per position
 		}
-		if (candidate.getRawDeletionsQ2().size() > 0) {
+		if (!candidate.getRawDeletionsQ2().isEmpty()) {
 			getMutableRawDeletionsQ2().addAll(candidate.getRawDeletionsQ2());
 		}
-		if (candidate.getRawInsertionsQ2().size() > 0) {
+		if (!candidate.getRawInsertionsQ2().isEmpty()) {
 			getMutableRawInsertionsQ2().addAll(candidate.getRawInsertionsQ2());
 		}
 	}

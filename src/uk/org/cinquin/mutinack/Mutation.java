@@ -35,7 +35,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	@SuppressWarnings("unused")
 	private final boolean negativeStrand;
 	private Boolean templateStrand;
-	
+
 	public Mutation(MutationType mutationType, byte wildtype, boolean negativeStrand,
 			byte[] mutationSequence, @NonNull Optional<Boolean> templateStrand) {
 		this.mutationType = mutationType;

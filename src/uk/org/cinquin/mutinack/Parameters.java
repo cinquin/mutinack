@@ -162,7 +162,7 @@ public final class Parameters implements Serializable {
 			Arrays.asList(1, 1, 1, 1, 1, 1, 1);
 	
 	@Parameter(names = "-traceField", description = "Output each position at which "
-			+ "specified statistic is implemented; formatted as sampleName:statisticName", required = false)
+			+ "specified statistic is incremented; formatted as sampleName:statisticName", required = false)
 	public List<String> traceFields = new ArrayList<>();
 
 	@Parameter(names = "-contigStatsBinLength", description = "Length of bin to use for statistics that"
@@ -335,6 +335,14 @@ public final class Parameters implements Serializable {
 	@FilePathList
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
 	public List<@NonNull String> forceOutputAtPositionsFile = new ArrayList<>();
+
+	@FilePath
+	@Parameter(names = "-annotateMutationsInFile", description = "TODO", required = false)
+	public String annotateMutationsInFile = null;
+
+	@FilePath
+	@Parameter(names = "-annotateMutationsOutputFile", description = "TODO", required = false)
+	public String annotateMutationsOutputFile = null;
 	
 	@Parameter(names = "-randomOutputRate", description = "Randomly choose genome positions at this rate to include in output", required = false)
 	public float randomOutputRate = 0;

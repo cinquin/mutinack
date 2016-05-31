@@ -36,5 +36,4 @@ final class LocationExaminationResults {
 	final @NonNull 
 	Collection<@NonNull ComparablePair<String, String>> rawMismatchesQ2 = new ArrayList<>(),
 		rawDeletionsQ2 = new ArrayList<>(), rawInsertionsQ2 = new ArrayList<>();
-	public Object disagreementsNoWt;
 }

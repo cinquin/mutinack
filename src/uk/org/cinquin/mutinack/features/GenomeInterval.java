@@ -65,7 +65,6 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	private static final Optional<Boolean> optionalTrue = Optional.of(true);
 	private static final Optional<Boolean> optionalFalse = Optional.of(false);
 	
-	@SuppressWarnings("null")
 	public @NonNull Optional<Boolean> isNegativeStrand() {
 		return negativeStrand == null ? Optional.empty() : (negativeStrand ? optionalTrue : optionalFalse);
 	}

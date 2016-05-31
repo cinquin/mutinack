@@ -76,13 +76,13 @@ public interface CandidateSequenceI extends Serializable {
 	void mergeWith(@NonNull CandidateSequenceI c);
 	@Nullable Quality getSupplQuality();
 	void setSupplQuality(@Nullable Quality supplQuality);
-    int getMaxDistanceToLigSite();
-    int getMinDistanceToLigSite();
-    Collection<ComparablePair<String, String>> getRawMismatchesQ2();
-    Collection<ComparablePair<String, String>> getMutableRawMismatchesQ2();
-    Collection<ComparablePair<String, String>> getRawDeletionsQ2();
-    Collection<ComparablePair<String, String>> getMutableRawDeletionsQ2();
-    Collection<ComparablePair<String, String>> getRawInsertionsQ2();
-    Collection<ComparablePair<String, String>> getMutableRawInsertionsQ2();
+	int getMaxDistanceToLigSite();
+	int getMinDistanceToLigSite();
+	Collection<ComparablePair<String, String>> getRawMismatchesQ2();
+	Collection<ComparablePair<String, String>> getMutableRawMismatchesQ2();
+	Collection<ComparablePair<String, String>> getRawDeletionsQ2();
+	Collection<ComparablePair<String, String>> getMutableRawDeletionsQ2();
+	Collection<ComparablePair<String, String>> getRawInsertionsQ2();
+	Collection<ComparablePair<String, String>> getMutableRawInsertionsQ2();
 	boolean isNegativeStrand();
 }

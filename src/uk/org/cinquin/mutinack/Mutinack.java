@@ -17,11 +17,7 @@
 package uk.org.cinquin.mutinack;
 
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
-import static uk.org.cinquin.mutinack.misc_util.Util.blueF;
-import static uk.org.cinquin.mutinack.misc_util.Util.greenB;
-import static uk.org.cinquin.mutinack.misc_util.Util.internedVariableBarcodes;
-import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
-import static uk.org.cinquin.mutinack.misc_util.Util.reset;
+import static uk.org.cinquin.mutinack.misc_util.Util.*;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -50,12 +46,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
@@ -139,7 +135,7 @@ public class Mutinack implements Actualizable {
 	}
 	
 	public static final Logger logger = LoggerFactory.getLogger("Mutinack");
-	static final Logger statusLogger = LoggerFactory.getLogger("MutinackStatus");
+	private static final Logger statusLogger = LoggerFactory.getLogger("MutinackStatus");
 	
 	private static final List<String> outputHeader = Collections.unmodifiableList(Arrays.asList(
 			"Notes", "Location", "Mutation type", "Mutation detail", "Sample", "nQ2Duplexes",
@@ -192,7 +188,7 @@ public class Mutinack implements Actualizable {
 	final boolean computeRawDisagreements;
 
 	final int idx;
-	public final String name;
+	public final @NonNull String name;
 	long timeStartProcessing;
 	private final @NonNull List<SubAnalyzer> subAnalyzers = new ArrayList<>();
 	final @NonNull File inputBam;
@@ -241,7 +237,7 @@ public class Mutinack implements Actualizable {
 	public Mutinack(
 			MutinackGroup groupSettings,
 			Parameters argValues,
-			String name,
+			@NonNull String name,
 			int idx,
 			@NonNull File inputBam,
 			int ignoreFirstNBasesQ1, int ignoreFirstNBasesQ2, 
@@ -362,14 +358,14 @@ public class Mutinack implements Actualizable {
 				System.err.println(e.getMessage());
 			}
 			System.out.println(e.getMessage());
-			//Make sure to return a non-0 value so "make" sees the run failed
+			//Make sure to return a non-0 value so Make sees the run failed
 			System.exit(1);
 		} catch (Throwable t) {
 			if (System.console() == null) {
 				t.printStackTrace(System.err);
 			}
 			t.printStackTrace(System.out);
-			//Make sure to return a non-0 value so "make" sees the run failed
+			//Make sure to return a non-0 value so Make sees the run failed
 			System.exit(1);
 		}
 	}
@@ -430,6 +426,23 @@ public class Mutinack implements Actualizable {
 			RemoteMethods server = Server.getServer(argValues.startWorker);
 			while (true) {
 				Job job = server.getMoreWork("worker");
+				Thread pingThread = new Thread(() -> {
+					try {
+						while(true) {
+							Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000);
+							try {
+								server.notifyStillAlive("worker", job);
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+						}
+					} catch (InterruptedException e) {
+						//Nothing to do; just exit and die
+					}
+				});
+				pingThread.setDaemon(true);
+				pingThread.setName("Ping thread of worker");
+				pingThread.start();
 				job.result = new EvaluationResult();
 				ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 				PrintStream outPS = new PrintStream(outStream);
@@ -447,6 +460,7 @@ public class Mutinack implements Actualizable {
 				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
 				server.submitWork("worker", job);
+				pingThread.interrupt();
 				Signals.clearSignalProcessors();//Should be unnecessary
 			}
 			//Worker never leaves this loop; it just gets killed when its services
@@ -480,7 +494,7 @@ public class Mutinack implements Actualizable {
 			Util.printUserMustSeeMessage("Launch time: " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 		}
 		
-		if (argValues.saveFilteredReadsTo.size() > 0) {
+		if (!argValues.saveFilteredReadsTo.isEmpty()) {
 			throw new RuntimeException("Not implemented");
 		}
 		
@@ -507,6 +521,7 @@ public class Mutinack implements Actualizable {
 		}
 
 		SAMFileWriter alignmentWriter = null;
+		OutputStreamWriter mutationAnnotationWriter = null;
 		SignalProcessor infoSignalHandler = null;
 		final MutinackGroup groupSettings = new MutinackGroup();
 		groupSettings.registerInterruptSignalProcessor();
@@ -541,6 +556,16 @@ public class Mutinack implements Actualizable {
 						makeBAMWriter(header, false, new File(argValues.outputAlignmentFile), 0);
 			}
 			alignmentWriter0 = alignmentWriter;
+
+			if (argValues.annotateMutationsOutputFile != null) {
+				mutationAnnotationWriter = new FileWriter(argValues.annotateMutationsOutputFile);
+			} else {
+				if (argValues.annotateMutationsInFile != null) {
+					throw new IllegalArgumentException("Annotating of mutation in file " +
+						argValues.annotateMutationsInFile + " was requested but no output was specified " +
+						"with annotateMutationsOutputFile argument");
+				}
+			}
 
 			final @NonNull List<@NonNull String> contigs;
 			final @NonNull Map<@NonNull String, Integer> contigSizes;
@@ -621,13 +646,14 @@ public class Mutinack implements Actualizable {
 			out.println("Forcing output at locations " + 
 					Util.truncateString(forceOutputString));
 			
-			out.println(outputHeader.stream().collect(Collectors.joining("\t")));
+			out.println(String.join("\t", outputHeader));
 
 			//Used to ensure that different analyzers do not use same output files
-			final Set<String> names = new HashSet<>();
+			final Set<String> sampleNames = new HashSet<>();
 
 			if (argValues.minMappingQIntersect.size() != argValues.intersectAlignment.size()) {
-				throw new IllegalArgumentException("Lists given in minMappingQIntersect and intersectAlignment must have same length");
+				throw new IllegalArgumentException(
+					"Lists given in minMappingQIntersect and intersectAlignment must have same length");
 			}
 
 			Pair<List<String>, List<Integer>> parsedPositions = 
@@ -668,7 +694,7 @@ public class Mutinack implements Actualizable {
 				final String inputReads = argValues.inputReads.get(i);
 				final File inputBam = new File(inputReads); 
 
-				final String name;
+				final @NonNull String name;
 
 				if (argValues.sampleNames.size() >= i + 1) {
 					name = argValues.sampleNames.get(i);
@@ -676,8 +702,8 @@ public class Mutinack implements Actualizable {
 					name = inputBam.getName();
 				}
 
-				synchronized (names) {
-					if (!names.add(name)) {
+				synchronized (sampleNames) {
+					if (!sampleNames.add(name)) {
 						throw new RuntimeException("Two or more analyzers trying to use the same name " +
 								name + "; please give samples unique names");
 					}
@@ -698,7 +724,7 @@ public class Mutinack implements Actualizable {
 					throw new IllegalArgumentException("maxNDuplexes must be specified once for each input file or not at all");
 				}
 
-				final int maxNDuplex = argValues.maxNDuplexes.size() == 0 ? Integer.MAX_VALUE :
+				final int maxNDuplex = argValues.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
 					argValues.maxNDuplexes.get(i);
 
 				final OutputLevel[] d = OutputLevel.values();
@@ -813,9 +839,7 @@ public class Mutinack implements Actualizable {
 							throw new IllegalArgumentException("Need contig sizes for outputCoverageProto; " +
 									"set readContigsFromFile option");
 						}
-						contigSizes.forEach((k,v) -> {
-							s.positionByPositionCoverage.put(k, new int [v]);
-						});
+						contigSizes.forEach((k,v) -> s.positionByPositionCoverage.put(k, new int [v]));
 						Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
 						builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
 						builder.setGeneratingProgramArgs(argValues.toString());
@@ -837,7 +861,6 @@ public class Mutinack implements Actualizable {
 						}
 					});
 				}
-
 
 				for (int contigIndex = 0; contigIndex < argValues.contigNamesToProcess.size(); contigIndex++) {
 					final int finalContigIndex = contigIndex;
@@ -987,12 +1010,10 @@ public class Mutinack implements Actualizable {
 							s.nPosDuplex.addPredicate(f.getName(), filter, counter);
 							for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
 								for (IntervalData<GenomeInterval> loc: locs) {
-									Iterator<GenomeInterval> it = loc.getData().iterator();
-									while (it.hasNext()) {
-										GenomeInterval interval = it.next();
+									for (GenomeInterval interval : loc.getData()) {
 										counter.accept(interval.getStartLocation(), 0);
 										if (NONTRIVIAL_ASSERTIONS && !counter.getCounter().getCounts().containsKey(interval)) {
-											throw new AssertionFailedException("Failed to add " + interval +"; matches were " +
+											throw new AssertionFailedException("Failed to add " + interval + "; matches were " +
 													counter.getBedFeatures().apply(interval.getStartLocation()));
 										}
 									}
@@ -1012,15 +1033,27 @@ public class Mutinack implements Actualizable {
 				}
 			});//End parallel loop over analyzers
 			
+			groupSettings.mutationsToAnnotate.clear();
+			if (argValues.annotateMutationsInFile != null) {
+				Set<String> unknownSampleNames = new TreeSet<>();
+				groupSettings.mutationsToAnnotate.putAll(MutationListReader.readMutationList(
+					argValues.annotateMutationsInFile, argValues.annotateMutationsInFile, contigNames,
+					sampleNames, unknownSampleNames));
+				if (!unknownSampleNames.isEmpty()) {
+						Util.printUserMustSeeMessage("Warning: unrecognized sample names in annotateMutationsInFile " +
+							unknownSampleNames);
+				}
+			}
+			
 			for (String s: argValues.traceFields) {
 				try {
 					String[] split = s.split(":");
 					String analyzerName = split[0];
-					if (!names.contains(analyzerName)) {
+					if (!sampleNames.contains(analyzerName)) {
 						throw new IllegalArgumentException("Unrecognized sample name " +
 							analyzerName);
 					}
-					} catch (Exception e) {
+				} catch (Exception e) {
 					throw new RuntimeException("Problem with traceField " + s, e);
 				}
 			}
@@ -1130,7 +1163,7 @@ public class Mutinack implements Actualizable {
 
 					final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(argValues,
 							analysisChunk, analyzers, analyzerCandidateLists,
-							alignmentWriter, groupSettings.forceOutputAtLocations,
+							alignmentWriter, mutationAnnotationWriter, groupSettings.forceOutputAtLocations,
 							dubiousOrGoodDuplexCovInAllInputs,
 							goodDuplexCovInAllInputs,
 							contigNames.get(contigIndex), contigIndex,
@@ -1158,12 +1191,10 @@ public class Mutinack implements Actualizable {
 							final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex * argValues.parallelizationFactor + p);				
 							final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
 
-							Runnable r = () -> {
-								ReadLoader.load(analyzer, subAnalyzer, analysisChunk,
-										argValues, analysisChunks,
-										groupSettings.PROCESSING_CHUNK, contigs, contigIndex,
-										alignmentWriter0, StaticStuffToAvoidMutating::getContigSequence);
-							};
+							Runnable r = () -> ReadLoader.load(analyzer, subAnalyzer, analysisChunk,
+                                    argValues, analysisChunks,
+                                    groupSettings.PROCESSING_CHUNK, contigs, contigIndex,
+                                    alignmentWriter0, StaticStuffToAvoidMutating::getContigSequence);
 							futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
 						}//End loop over parallelization factor
 					}//End loop over analyzers
@@ -1212,8 +1243,7 @@ public class Mutinack implements Actualizable {
 				for (Mutinack analyzer: analyzers) {
 					final ICounterSeqLoc counter = 
 							Objects.requireNonNull(
-									analyzer.stats.get(0).nPosDuplex.getSeqLocCounters().get("All")).
-							snd;
+									analyzer.stats.get(0).nPosDuplex.getSeqLocCounters().get("All")).snd;
 					final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
 					final Map<String, Double> allCoverage = new THashMap<>();
 
@@ -1261,8 +1291,18 @@ public class Mutinack implements Actualizable {
 					}  
 				}
 			}
+			
+			if (mutationAnnotationWriter != null) {//Unnecessary test, performed to suppress null warning
+				for (@NonNull List<Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
+						groupSettings.mutationsToAnnotate.values()) {
+					for (Pair<@NonNull Mutation, @NonNull String> leftBehind: leftBehindList) {
+						mutationAnnotationWriter.append(leftBehind.snd + "\tNOT FOUND\n");
+					}
+				}
+			}
+
 		} finally {
-			close(alignmentWriter, analyzers, infoSignalHandler, groupSettings);
+			close(alignmentWriter, mutationAnnotationWriter, analyzers, infoSignalHandler, groupSettings);
 		}
 	}
 		
@@ -1272,7 +1312,7 @@ public class Mutinack implements Actualizable {
 			JsonRoot root = new JsonRoot();
 			root.mutinackVersion = GitCommitInfo.getGitCommit();
 			root.parameters = argValues;
-			root.samples = analyzers.stream().map(a -> new ParedDownMutinack(a)).
+			root.samples = analyzers.stream().map(ParedDownMutinack::new).
 					collect(Collectors.toList());
 			analyzers.forEach(Actualizable::actualize);
 			ObjectMapper mapper = new ObjectMapper();
@@ -1293,12 +1333,25 @@ public class Mutinack implements Actualizable {
 
 	}
 
-	private static void close(SAMFileWriter alignmentWriter, List<Mutinack> analyzers,
-			SignalProcessor infoSignalHandler, MutinackGroup groupSettings) {
+	private static void close(SAMFileWriter alignmentWriter,
+			OutputStreamWriter mutationAnnotationWriter,
+			List<Mutinack> analyzers,
+			SignalProcessor infoSignalHandler,
+			MutinackGroup groupSettings) {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		
 		if (alignmentWriter != null) {
 			gatherer.tryAdd(alignmentWriter::close);
+		}
+
+		if (mutationAnnotationWriter != null) {
+			gatherer.tryAdd(() -> {
+				try {
+					mutationAnnotationWriter.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 		}
 
 		for (Mutinack analyzer: analyzers) {
@@ -1338,31 +1391,29 @@ public class Mutinack implements Actualizable {
 			});
 		}
 
-		gatherer.tryAdd(() -> {
-			stats.forEach(s -> {
-				if (s.positionByPositionCoverage != null) {
-					Builder builder = s.positionByPositionCoverageProtobuilder;
-					for (Entry<String, int[]> e: s.positionByPositionCoverage.entrySet()) {
-						PosByPosNumbersPB.ContigNumbers.Builder builder2 =
-								PosByPosNumbersPB.ContigNumbers.newBuilder();
-						builder2.setContigName(e.getKey());
-						int [] numbers = e.getValue();
-						builder2.ensureNumbersIsMutable(numbers.length);
-						builder2.numUsedInNumbers_ = numbers.length;
-						builder2.numbers_ = numbers;
-						builder.addContigNumbers(builder2);
-					}
-					Path path = Paths.get(builder.getSampleName() + ".proto");
-					builder.setSampleName(path.getFileName().toString());
-					try {
-						Files.write(path, builder.build().toByteArray());
-					} catch (Exception e1) {
-						throw new RuntimeException(e1);
-					}
+		gatherer.tryAdd(() -> stats.forEach(s -> {
+			if (s.positionByPositionCoverage != null) {
+				Builder builder = s.positionByPositionCoverageProtobuilder;
+				for (Entry<String, int[]> e: s.positionByPositionCoverage.entrySet()) {
+					PosByPosNumbersPB.ContigNumbers.Builder builder2 =
+						PosByPosNumbersPB.ContigNumbers.newBuilder();
+					builder2.setContigName(e.getKey());
+					int [] numbers = e.getValue();
+					builder2.ensureNumbersIsMutable(numbers.length);
+					builder2.numUsedInNumbers_ = numbers.length;
+					builder2.numbers_ = numbers;
+					builder.addContigNumbers(builder2);
 				}
-			});
-		});
-		
+				Path path = Paths.get(builder.getSampleName() + ".proto");
+				builder.setSampleName(path.getFileName().toString());
+				try {
+					Files.write(path, builder.build().toByteArray());
+				} catch (Exception e1) {
+					throw new RuntimeException(e1);
+				}
+			}
+		}));
+
 		gatherer.throwIfPresent();
 	}
 

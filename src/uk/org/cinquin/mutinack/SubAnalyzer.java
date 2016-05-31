@@ -179,7 +179,7 @@ public final class SubAnalyzer {
 			final SettableInteger nLeftBehind = new SettableInteger(-1);
 			candidateSequences.forEach((k,v) -> {
 				Assert.isTrue(v.isEmpty() || (v.iterator().next().getLocation().equals(k)),
-						"Mimatched locations");
+						"Mismatched locations");
 
 				String s = v.stream().
 						filter(c -> c.getLocation().position > truncateProcessingAt + analyzer.maxInsertSize &&
@@ -428,8 +428,7 @@ public final class SubAnalyzer {
 		Pair<DuplexRead, DuplexRead> pair;
 		if (DebugLogControl.COSTLY_ASSERTIONS && 
 				(pair = 
-				DuplexRead.checkNoEqualDuplexes(duplexKeeper.getIterable()))
-				!= null) {
+					DuplexRead.checkNoEqualDuplexes(duplexKeeper.getIterable())) != null) {
 			throw new AssertionFailedException("Equal duplexes: " +
 				pair.fst + " and " + pair.snd);
 		}
@@ -570,15 +569,17 @@ public final class SubAnalyzer {
 	 * @param location
 	 * @return
 	 */
-	@NonNull LocationExaminationResults examineLocation0(final @NonNull SequenceLocation location) {
+	@NonNull
+	private LocationExaminationResults examineLocation0(final @NonNull SequenceLocation location) {
 		final LocationExaminationResults result = new LocationExaminationResults();
 
-		final Set<CandidateSequence> candidateSet = candidateSequences.get(location);
-		if (candidateSet == null) {
+		final Set<CandidateSequence> candidateSet0 = candidateSequences.get(location);
+		if (candidateSet0 == null) {
 			stats.nPosUncovered.increment(location);
 			result.analyzedCandidateSequences = Collections.emptyList();
 			return result;
 		}
+		final Set<CandidateSequence> candidateSet = Collections.unmodifiableSet(candidateSet0);
 
 		//Retrieve relevant duplex reads
 		//It is necessary not to duplicate the duplex reads, hence the use of a set
@@ -593,6 +594,7 @@ public final class SubAnalyzer {
 			if (candidate.isHidden()) {
 				hasHiddenCandidate = true;
 			}
+			candidate.getQuality().reset();
 			IdentityHashSet<DuplexRead> candidateDuplexReads = new IdentityHashSet<>();
 			candidate.getNonMutableConcurringReads().forEachEntry((r, c) -> {
 				@Nullable DuplexRead d = r.duplexRead;
@@ -695,16 +697,14 @@ public final class SubAnalyzer {
 			result.disagreements.clear();
 		} else {
 			candidateSet.stream().flatMap(c -> c.getRawMismatchesQ2().stream()).
-			forEach(result.rawMismatchesQ2::add);
+				forEach(result.rawMismatchesQ2::add);
 			candidateSet.stream().flatMap(c -> c.getRawInsertionsQ2().stream()).
-			forEach(result.rawInsertionsQ2::add);
+				forEach(result.rawInsertionsQ2::add);
 			candidateSet.stream().flatMap(c -> c.getRawDeletionsQ2().stream()).
-			forEach(result.rawDeletionsQ2::add);
+				forEach(result.rawDeletionsQ2::add);
 		}
 
 		for (CandidateSequence candidate: candidateSet) {
-			candidate.getQuality().reset();
-
 			candidate.setMedianPhredAtPosition(positionMedianPhred);
 
 			candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
@@ -723,12 +723,14 @@ public final class SubAnalyzer {
 
 			if (candidate.getnDuplexes() == 0) {
 				candidate.getQuality().addUnique(NO_DUPLEXES, ATROCIOUS);
-				continue;
+				//continue;
 			}
 
-			candidate.getDuplexes().forEach(d -> candidate.getIssues().put(d, d.localQuality));
+			candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localQuality) != null) {
+				throw new AssertionFailedException();
+			}});
 
-			Quality maxQ = maxQForAllDuplexes;
+			final Quality maxQ = maxQForAllDuplexes;
 			final Quality maxDuplexQ = candidate.getDuplexes().stream().
 				map(dr -> {
 					dr.localQuality.addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxQ);
@@ -758,7 +760,7 @@ public final class SubAnalyzer {
 				if (countQ1Duplexes >= analyzer.promoteNQ1Duplexes)
 					candidate.setSupplQuality(GOOD);
 				else if (candidate.getNonMutableConcurringReads().size() >= analyzer.promoteFractionReads * totalReadsAtPosition &&
-					highMapQReads.count() >= 10) { //TODO Make 10 a parameter
+					highMapQReads.count() >= 10) {//TODO Make 10 a parameter
 					candidate.setSupplQuality(GOOD);
 					stats.nQ2PromotionsBasedOnFractionReads.add(location, 1);
 				} else {
@@ -785,7 +787,7 @@ public final class SubAnalyzer {
 					final int refPosition = location.position;
 					final int readPosition = r.referencePositionToReadPosition(refPosition);
 					if (!r.formsWrongPair()) {
-						final int distance = r.tooCloseToBarcode(refPosition, readPosition, 0);
+						final int distance = r.tooCloseToBarcode(readPosition, 0);
 						if (Math.abs(distance) > 160) {
 							throw new AssertionFailedException("Distance problem with candidate " + candidate +
 								" read at read position " + readPosition + " and refPosition " +
@@ -824,30 +826,30 @@ public final class SubAnalyzer {
 				final Map<String, Integer> stringCounts = new HashMap<>(100);
 
 				candidate.getNonMutableConcurringReads().keySet().stream().map(er -> {
-					String other = er.record.getMateReferenceName();
-					if (er.record.getReferenceName().equals(other))
-						return "";
-					else
-						return other + ":" + er.getMateAlignmentStart();
-				}).forEach(s -> {
-					if ("".equals(s))
-						return;
-					Integer found = stringCounts.get(s);
-					if (found == null){
-						stringCounts.put(s,1);
-					} else {
-						stringCounts.put(s, found + 1);
-					}
-				});
+						String other = er.record.getMateReferenceName();
+						if (er.record.getReferenceName().equals(other))
+							return "";
+						else
+							return other + ":" + er.getMateAlignmentStart();
+					}).forEach(s -> {
+						if ("".equals(s))
+							return;
+						Integer found = stringCounts.get(s);
+						if (found == null){
+							stringCounts.put(s, 1);
+						} else {
+							stringCounts.put(s, found + 1);
+						}
+					});
 
 				final Optional<String> mates = stringCounts.entrySet().stream().map(entry -> entry.getKey() + 
-					((entry.getValue() == 1) ? "" : (" (" + entry.getValue() + " repeats)"))
-					+ "; ").sorted().reduce(String::concat);
+					((entry.getValue() == 1) ? "" : (" (" + entry.getValue() + " repeats)")) + "; ").
+					sorted().reduce(String::concat);
 
 				final String hasMateOnOtherChromosome = mates.isPresent() ? mates.get() : "";
 
-				final IntSummaryStatistics insertSizeStats = candidate.getNonMutableConcurringReads().keySet().stream().mapToInt(er -> Math.abs(er.
-					getInsertSize())).summaryStatistics();
+				final IntSummaryStatistics insertSizeStats = candidate.getNonMutableConcurringReads().keySet().stream().
+					mapToInt(er -> Math.abs(er.getInsertSize())).summaryStatistics();
 				final int localMaxInsertSize = insertSizeStats.getMax();
 				final int localMinInsertSize = insertSizeStats.getMin();
 
@@ -925,7 +927,7 @@ public final class SubAnalyzer {
 				case 'T' : stats.nPosQualityPoorT.increment(location); break;
 				case 'G' : stats.nPosQualityPoorG.increment(location); break;
 				case 'C' : stats.nPosQualityPoorC.increment(location); break;
-				case 'X' : break; //Ignore because we do not have a record of wildtype sequence
+				case 'X' : break;//Ignore because we do not have a record of wildtype sequence
 				default : throw new AssertionFailedException();
 			}
 		} else if (maxQuality == DUBIOUS) {
@@ -1155,8 +1157,8 @@ public final class SubAnalyzer {
 							"; insert size: " + insertSize + ")");
 					}
 					location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment, true);
-					int distance0 = extendedRec.tooCloseToBarcode(refPosition, readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
-					int distance1 = extendedRec.tooCloseToBarcode(refPosition, readPosition, analyzer.ignoreFirstNBasesQ1);
+					int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
+					int distance1 = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
 					int distance = Math.max(distance0, distance1);
 					distance = -distance + 1;
 					
@@ -1168,8 +1170,8 @@ public final class SubAnalyzer {
 						}
 						logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
 					} else {
-						distance0 = extendedRec.tooCloseToBarcode(refPosition, readEndOfPreviousAlignment, 0);
-						distance1 = extendedRec.tooCloseToBarcode(refPosition, readPosition, 0);
+						distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
+						distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
 						distance = Math.max(distance0, distance1);
 						distance = -distance + 1;
 
@@ -1235,8 +1237,8 @@ public final class SubAnalyzer {
 						continue;
 					}
 					
-					int distance0 = -extendedRec.tooCloseToBarcode(refPosition - 1, readPosition - 1, analyzer.ignoreFirstNBasesQ1);
-					int distance1 = -extendedRec.tooCloseToBarcode(refEndOfPreviousAlignment + 1, readEndOfPreviousAlignment + 1, analyzer.ignoreFirstNBasesQ1);
+					int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, analyzer.ignoreFirstNBasesQ1);
+					int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, analyzer.ignoreFirstNBasesQ1);
 					int distance = Math.min(distance0, distance1) + 1;
 
 					final boolean Q1reject = distance < 0;
@@ -1248,8 +1250,8 @@ public final class SubAnalyzer {
 						}
 						logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
 					} else {
-						distance0 = -extendedRec.tooCloseToBarcode(refPosition - 1, readPosition - 1, 0);
-						distance1 = -extendedRec.tooCloseToBarcode(refEndOfPreviousAlignment + 1, readEndOfPreviousAlignment + 1, 0);
+						distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
+						distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
 						distance = Math.min(distance0, distance1) + 1;
 
 						stats.nCandidateDeletions.increment(location);
@@ -1367,13 +1369,13 @@ public final class SubAnalyzer {
 				final boolean tooLate = readOnNegativeStrand ? readPosition < analyzer.ignoreLastNBases :
 					readPosition > (rec.getReadLength() - 1) - analyzer.ignoreLastNBases;
 
-				int distance = extendedRec.tooCloseToBarcode(refPosition, readPosition, analyzer.ignoreFirstNBasesQ1);
+				int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
 
 				boolean goodToInsert = distance < 0 && !tooLate;
 				
 				if (distance >= 0) {
 					if (!extendedRec.formsWrongPair()) {
-						distance = extendedRec.tooCloseToBarcode(refPosition, readPosition, 0);
+						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
 						if (distance <= 0 && insertCandidateAtRegularPosition) {
 							stats.rejectedSubstDistanceToLigationSite.insert(-distance);
 							stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
@@ -1419,7 +1421,7 @@ public final class SubAnalyzer {
 							throw new AssertionFailedException("Unexpected letter: " + StringUtil.toUpperCase(readBases[readPosition]));
 					}
 										
-					distance = -extendedRec.tooCloseToBarcode(refPosition, readPosition, 0);
+					distance = -extendedRec.tooCloseToBarcode(readPosition, 0);
 
 					final CandidateSequence candidate = new CandidateSequence(analyzer.idx, SUBSTITUTION, location,
 							extendedRec, distance);
@@ -1474,10 +1476,10 @@ public final class SubAnalyzer {
 				}//End of mismatched read case
 			} else {
 				//Wildtype read
-				int distance = extendedRec.tooCloseToBarcode(refPosition, readPosition, analyzer.ignoreFirstNBasesQ1);
+				int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
 				if (distance >= 0) {
 					if (!extendedRec.formsWrongPair()) {
-						distance = extendedRec.tooCloseToBarcode(refPosition, readPosition, 0);
+						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
 						if (distance <= 0 && insertCandidateAtRegularPosition) {
 							stats.wtRejectedDistanceToLigationSite.insert(-distance);
 						}
@@ -1494,7 +1496,7 @@ public final class SubAnalyzer {
 								" in analyzer" + analyzer.inputBam.getAbsolutePath() +
 								"; distance is " + distance + "");
 					}
-					distance = extendedRec.tooCloseToBarcode(refPosition, readPosition, 0);
+					distance = extendedRec.tooCloseToBarcode(readPosition, 0);
 					if (!extendedRec.formsWrongPair() && insertCandidateAtRegularPosition) {
 						 stats.wtAcceptedBaseDistanceToLigationSite.insert(-distance);
 					}

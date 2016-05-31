@@ -51,6 +51,8 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	
 	private static final long serialVersionUID = 7331182254489507945L;
 	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
+	
+	public final static int PING_INTERVAL_SECONDS = 20;
 
 	private final Map<Job, Job> jobs = new ConcurrentHashMap<>();
 	private final String recordRunsTo;
@@ -175,6 +177,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	public Job getMoreWork(String workerID) throws RemoteException, InterruptedException {
 		Job job = queue.poll(Integer.MAX_VALUE, TimeUnit.DAYS);
 		job.workerID = workerID;
+		job.timeLastWorkerPing = System.currentTimeMillis();
 		job.timeGivenToWorker = System.nanoTime();
 		return job;
 	}
@@ -210,7 +213,12 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		
 		synchronized(job) {
 			while (!job.completed) {
-				job.wait();
+				job.wait(PING_INTERVAL_SECONDS * 1_000);
+				if (!job.completed && job.timeGivenToWorker > 0 &&
+					(System.currentTimeMillis() - job.timeLastWorkerPing > 3 * PING_INTERVAL_SECONDS * 1_000)) {
+						throw new RuntimeException("Worker " + job.workerID + " unresponsive while " +
+							"processing " + job);
+				}
 			}
 		}
 		jobs.remove(job);
@@ -242,6 +250,16 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			throw new RuntimeException(e);
 		}
 		return server;
+	}
+
+	@Override
+	public void notifyStillAlive(String workerID, Job job) throws RemoteException {
+		Job localJobObj = jobs.get(job);
+		if (localJobObj == null) {
+			System.err.println("Ping for unknown job " + job + " from worker " + workerID);
+			return;
+		}
+		localJobObj.timeLastWorkerPing = System.currentTimeMillis();
 	}
 
 }

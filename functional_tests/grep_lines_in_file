@@ -7,7 +7,7 @@ if (! -e $ARGV[0]) {
 }
 my $found = 1;
 my $n_lines = 0;
-my $n_columns_to_check = 18;
+my $n_columns_to_check = 14;
 while(my $line = <STDIN>) {
 	chomp($line);
 	if ($line eq "") {

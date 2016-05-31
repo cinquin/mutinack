@@ -308,7 +308,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				nReadBasesProcessed += nTakenBases;
 			} else if (c.getOperator() == CigarOperator.INSERTION) {
 				nReadBasesProcessed += blockLength;
-			} if (c.getOperator() == CigarOperator.DELETION) {
+			} else if (c.getOperator() == CigarOperator.DELETION) {
 				nBasesAligned += blockLength;
 			}
 			//Ignoring clipping at end of read		
@@ -318,15 +318,14 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		
 		if (nBasesAligned == nBasesToAlign) {
 			return nReadBasesProcessed;
-		}
-		else {
+		} else {
 			return nReadBasesProcessed + (nBasesToAlign - nBasesAligned);
 		}
 	}
 	
-	public static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
+	private static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
 		
-	public int tooCloseToBarcode(int refPosition, int readPosition, int ignoreFirstNBases) {
+	public int tooCloseToBarcode(int readPosition, int ignoreFirstNBases) {
 		
 		final boolean readOnNegativeStrand = getReadNegativeStrandFlag();
 		
@@ -508,7 +507,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return true;
 	}
 	
-	public boolean duplexLeft() {
+	boolean duplexLeft() {
 		return formsWrongPair() ?
 				getAlignmentStart() <= getMateAlignmentStart()
 				: getReadPositiveStrand();

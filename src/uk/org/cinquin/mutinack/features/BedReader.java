@@ -81,17 +81,22 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			}
 		});
 	}
+
+	public final static <K, V> Map<V, K> invertMap(Map<K, V> map) {
+		Map<V, K> result = new HashMap<>();
+		for (Entry<K, V> e: map.entrySet()) {
+			if (result.put(e.getValue(), e.getKey()) != null) {
+				throw new IllegalArgumentException("Repeated entry " + e.getValue());
+			}
+		}
+		return result;
+	}
 	
 	@SuppressWarnings("null")
 	public BedReader(Map<Integer, @NonNull String> indexContigNameMap, BufferedReader reader,
 			String readerName, BufferedReader suppInfoReader, boolean parseScore) throws ParseRTException {
 		
-		Map<String, Integer> reverseIndex = new HashMap<>();
-		for (Entry<Integer, @NonNull String> e: indexContigNameMap.entrySet()) {
-			if (reverseIndex.put(e.getValue(), e.getKey()) != null) {
-				throw new IllegalArgumentException("Repeated contig name " + e.getValue());
-			}
-		}
+		Map<String, Integer> reverseIndex = invertMap(indexContigNameMap);
 		
 		this.readerName = readerName;
 		bedFileIntervals = new MapOfLists<>();

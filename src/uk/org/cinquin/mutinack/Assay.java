@@ -24,9 +24,10 @@ package uk.org.cinquin.mutinack;
  */
 public enum Assay {
 	
-	N_STRANDS,
+	N_READS_PER_STRAND,
+	N_STRANDS_DISAGREEMENT,//Used to mark disagreements that are supported by too few strands to reach Q2
 	N_READS_WRONG_PAIR,//Also used for Q2 raw disagreements
-	N_STRANDS_ABOVE_MIN_PHRED,//Also used for Q2 raw disagreements
+	N_STRAND_READS_ABOVE_MIN_PHRED,//Also used for Q2 raw disagreements
 	AVERAGE_N_CLIPPED,//Also used for Q2 raw disagreements
 	TOP_STRAND_MAP_Q2,//Also used for Q2 raw disagreements
 	BOTTOM_STRAND_MAP_Q2,//Also used for Q2 raw disagreements
@@ -40,6 +41,8 @@ public enum Assay {
 	MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES,//Also used for Q2 raw disagreements
 	NO_DUPLEXES,
 	MAX_Q_FOR_ALL_DUPLEXES,
-	MAX_DPLX_Q_IGNORING_DISAG;
+	MAX_DPLX_Q_IGNORING_DISAG,
+	MIN_DUPLEXES_SISTER_SAMPLE,
+	PRESENT_IN_SISTER_SAMPLE;
 	
 }

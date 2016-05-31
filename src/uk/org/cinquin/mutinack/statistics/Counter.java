@@ -75,7 +75,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		};
 	
 	@JsonIgnore
-	private transient final Comparator<? super Map.Entry<Object,Object>> printingSorter;
+	private final transient Comparator<? super Map.Entry<Object,Object>> printingSorter;
 	
 	public Counter(boolean sortByValue, MutinackGroup groupSettings) {
 		this.sortByValue = sortByValue;

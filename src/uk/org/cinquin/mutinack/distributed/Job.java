@@ -63,5 +63,6 @@ public final class Job implements Serializable {
 	public long timeGivenToWorker;
 	public long timeCompletedOnWorker;
 	public long timeReturnedToSubmitter;
+	public long timeLastWorkerPing;
 	public String workerID;
 }

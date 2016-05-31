@@ -23,9 +23,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -33,6 +35,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.Util;
 
 /**
@@ -63,11 +66,17 @@ public class MutinackGroup implements Closeable, Serializable {
 	private Map<Integer, @NonNull String> indexContigNameMap;
 	public final Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
 	public final Map<SequenceLocation, Boolean> forceOutputAtLocations = new HashMap<>();
+	public final ConcurrentMap<Pair<SequenceLocation, String>,
+		@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>>
+		mutationsToAnnotate = new ConcurrentHashMap<>(5_000);
 	public int PROCESSING_CHUNK;
 
 	public int INTERVAL_SLOP;
 	public int BIN_SIZE = 10_000;
-	
+
+	public MutinackGroup() {
+	}
+
 	private static void checkSet(String var, int previousVal, int newVal) {
 		if (previousVal == Integer.MAX_VALUE) {
 			return;
@@ -96,8 +105,7 @@ public class MutinackGroup implements Closeable, Serializable {
 	}
 
 	public byte @NonNull[] getNs() {
-		Objects.requireNonNull(Ns);
-		return Ns;
+		return Objects.requireNonNull(Ns);
 	}
 
 	private transient Thread hook = new Thread(() -> {
@@ -110,9 +118,6 @@ public class MutinackGroup implements Closeable, Serializable {
 
 	public static String forceKeeperType = null;
 
-	public MutinackGroup() {
-	}
-	
 	public void registerInterruptSignalProcessor() {
 		Runtime.getRuntime().addShutdownHook(hook);
 	}

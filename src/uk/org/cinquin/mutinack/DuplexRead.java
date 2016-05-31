@@ -15,19 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package uk.org.cinquin.mutinack;
-import static uk.org.cinquin.mutinack.Assay.AVERAGE_N_CLIPPED;
-import static uk.org.cinquin.mutinack.Assay.BOTTOM_STRAND_MAP_Q2;
-import static uk.org.cinquin.mutinack.Assay.CLOSE_TO_LIG;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q0;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q1;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_THRESHOLDS_1;
-import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
-import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
-import static uk.org.cinquin.mutinack.Assay.MISSING_STRAND;
-import static uk.org.cinquin.mutinack.Assay.N_READS_WRONG_PAIR;
-import static uk.org.cinquin.mutinack.Assay.N_STRANDS;
-import static uk.org.cinquin.mutinack.Assay.N_STRANDS_ABOVE_MIN_PHRED;
-import static uk.org.cinquin.mutinack.Assay.TOP_STRAND_MAP_Q2;
+import static uk.org.cinquin.mutinack.Assay.*;
 import static uk.org.cinquin.mutinack.MutationType.DELETION;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
@@ -87,7 +75,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
  */
 public final class DuplexRead implements HasInterval<Integer> {
 	
-	static final Logger logger = LoggerFactory.getLogger(DuplexRead.class);
+	private static final Logger logger = LoggerFactory.getLogger(DuplexRead.class);
 	
 	private final MutinackGroup groupSettings;
 	public byte @NonNull[] leftBarcode, rightBarcode;
@@ -283,12 +271,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public String toString() {
 		return leftAlignmentStart + ", " + rightAlignmentStart + ", " + 
 			leftAlignmentEnd + ", " + rightAlignmentEnd + ", " + new String(leftBarcode) + "-" + 
-			new String(rightBarcode) + "," + " Q" + minQuality +
+			new String(rightBarcode) + ", " + " Q" + minQuality +
 			(localQuality == null ? "" : (" " + localQuality.getQualities().entrySet().stream().
 				min((e1, e2) -> e1.getValue().compareTo(e2.getValue())).map(Entry::getKey).map(
 					Enum::toString).orElse("") + " ")) +
-			"->" + maxQuality + topStrandRecords.toString() + " "
-			+ bottomStrandRecords.toString();
+			"->" + maxQuality + topStrandRecords.toString() + " " +
+			bottomStrandRecords.toString();
 	}
 
 	@Override
@@ -315,10 +303,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 					barcode2[i];
 				
 				final ComparablePair<String, String> p = first < second ?
-						new ComparablePair<>(SubAnalyzer.byteMap.get(first), 
-								SubAnalyzer.byteMap.get(second)) :
-						new ComparablePair<>(SubAnalyzer.byteMap.get(second),
-								SubAnalyzer.byteMap.get(first));
+					new ComparablePair<>(SubAnalyzer.byteMap.get(first),
+						SubAnalyzer.byteMap.get(second)) :
+					new ComparablePair<>(SubAnalyzer.byteMap.get(second),
+						SubAnalyzer.byteMap.get(first));
 				if (nMismatches == 1) {
 					stats.vBarcodeMismatches1M.accept(location, p);
 				} else if (nMismatches == 2) {
@@ -374,7 +362,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		};
 		
 	
-	public static DuplexKeeper groupDuplexes(
+	static DuplexKeeper groupDuplexes(
 			DuplexKeeper duplexes,
 			Consumer<DuplexRead> preliminaryOp,
 			Supplier<DuplexKeeper> factory, Mutinack analyzer, AnalysisStats stats,
@@ -478,7 +466,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 
 	private static final Set<Assay> ignorePhred = 
-			Collections.singleton(N_STRANDS_ABOVE_MIN_PHRED);
+			Collections.singleton(N_STRAND_READS_ABOVE_MIN_PHRED);
 	
 	@SuppressWarnings("null")
 	public void examineAtLoc(@NonNull SequenceLocation location,
@@ -548,10 +536,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 		
 		if (nBottomStrandsWithCandidate >= analyzer.minReadsPerStrandQ2 &&
 				nTopStrandsWithCandidate >= analyzer.minReadsPerStrandQ2) {
-			dq.addUnique(N_STRANDS, GOOD);
+			dq.addUnique(N_READS_PER_STRAND, GOOD);
 		} else if (nBottomStrandsWithCandidate >= analyzer.minReadsPerStrandQ1 &&
 				nTopStrandsWithCandidate >= analyzer.minReadsPerStrandQ1) {
-			dq.addUnique(N_STRANDS, DUBIOUS);
+			dq.addUnique(N_READS_PER_STRAND, DUBIOUS);
 			stats.nPosDuplexTooFewReadsPerStrand2.increment(location);
 			result.strandCoverageImbalance = Math.max(result.strandCoverageImbalance,
 					Math.abs(bottomStrandRecords.size() - topStrandRecords.size()));
@@ -562,9 +550,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 					issues.add(location + "TFR1T");
 			}
 		} else {
-			dq.addUnique(N_STRANDS, POOR);
+			dq.addUnique(N_READS_PER_STRAND, POOR);
 			stats.nPosDuplexTooFewReadsPerStrand1.increment(location);
-			if (bottomStrandRecords.size() == 0 || topStrandRecords.size() == 0) {
+			if (bottomStrandRecords.isEmpty() || topStrandRecords.isEmpty()) {
 				result.nMissingStrands++;
 			}
 			if (analyzer.logReadIssuesInOutputBam) {
@@ -592,7 +580,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			bottomCounter.compute();
 			if (topCounter.keptRecords.size() < analyzer.minReadsPerStrandQ2 ||
 					bottomCounter.keptRecords.size() < analyzer.minReadsPerStrandQ2) {
-				dq.addUnique(N_STRANDS_ABOVE_MIN_PHRED, DUBIOUS);
+				dq.addUnique(N_STRAND_READS_ABOVE_MIN_PHRED, DUBIOUS);
 			}
 		}
 		
@@ -709,14 +697,19 @@ public final class DuplexRead implements HasInterval<Integer> {
 			}
 			dq.addUnique(MISSING_STRAND, DUBIOUS);
 		}
-		
-		final boolean highEnoughQualForDisagreement = 
+
+		final boolean enoughReadsForQ2Disag = bottom != null && 
+				bottom.getValue().get() >= analyzer.minReadsPerStrandForDisagreement
+				&&
+				top != null &&
+				top.getValue().get() >= analyzer.minReadsPerStrandForDisagreement;
+
+		final boolean highEnoughQualForQ2Disagreement =
 			dq.getMin().compareTo(GOOD) >= 0 &&
-			bottom.getValue().get() >= analyzer.minReadsPerStrandForDisagreement &&
-			top.getValue().get() >= analyzer.minReadsPerStrandForDisagreement &&
+			enoughReadsForQ2Disag &&
 			!hasHiddenCandidate;
 		
-		if (bothStrandsPresent && highEnoughQualForDisagreement) {
+		if (bothStrandsPresent && highEnoughQualForQ2Disagreement) {
 			stats.nPosDuplexCandidatesForDisagreementQ2.accept(location);
 		}
 
@@ -728,7 +721,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			issues.add(location + " DSG");
 			disagreement = true;
 
-			if (highEnoughQualForDisagreement) {
+			if (highEnoughQualForQ2Disagreement) {
 				final Mutation m1 = new Mutation(top.getKey());
 				final Mutation m2 = new Mutation(bottom.getKey());
 
@@ -805,8 +798,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 					final boolean hasDeletion;
 					final boolean hasInsertion;
 					final boolean hasSubstitution;
-					final Mutation simplifiedMutation = actualMutant;
-					
+
 					if (actualMutant.mutationType != SUBSTITUTION) {
 						//This case is relatively infrequent, so separate it
 						//But it would simpler not to have a special case for substitutions
@@ -817,11 +809,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 						
 						stats.nPosDuplexWithTopBottomDuplexDisagreementNotASub.accept(location);
 
-						simplifiedMutation.setTemplateStrand(actualMutant.isTemplateStrand());
+						actualMutant.setTemplateStrand(actualMutant.isTemplateStrand());
 						if (getDistanceToLigSite() > analyzer.ignoreFirstNBasesQ2) {
 							DuplexDisagreement disag = negativeStrand ? 
-								new DuplexDisagreement(wildtype.reverseComplement(), simplifiedMutation.reverseComplement(), true) :
-								new DuplexDisagreement(wildtype, simplifiedMutation, true);
+								new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true) :
+								new DuplexDisagreement(wildtype, actualMutant, true);
 							duplexDisagreements.add(disag);
 						}
 					} else {
@@ -876,7 +868,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 							stats.substDisagDistanceToLigationSite.insert(minDist.get());
 						} else if (hasDeletion) {
 							stats.delDisagDistanceToLigationSite.insert(minDist.get());
-							stats.disagDelSize.insert(simplifiedMutation.mutationSequence.length);
+							stats.disagDelSize.insert(actualMutant.mutationSequence.length);
 						} else if (hasInsertion) {
 							stats.insDisagDistanceToLigationSite.insert(minDist.get());
 						} else {
@@ -884,12 +876,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 						}
 					}//End distance to ligation site cases
 				}//End case with one wildtype candidate
-			}//End highEnoughQualForDisagreement
+			}//End highEnoughQualForQ2Disagreement
 		}//End candidate for disagreement
 
 		localQuality = dq;
 		
-		@SuppressWarnings("unused")
 		int nRemoved = 0;
 
 		//Now remove support given to non-consensus candidate mutations by this duplex
@@ -900,23 +891,35 @@ public final class DuplexRead implements HasInterval<Integer> {
 				continue;
 			}
 			
-			@NonNull TObjectIntHashMap<ExtendedSAMRecord> reads = 
-					candidate.getMutableConcurringReads();
+			@NonNull TObjectIntHashMap<ExtendedSAMRecord> reads = candidate.getMutableConcurringReads();
 			
 			final int noEntryValue = reads.getNoEntryValue();
 			
 			for (ExtendedSAMRecord r: bottomStrandRecords) {
-				if (reads.remove(r) == noEntryValue)
+				if (reads.remove(r) != noEntryValue) {
 					nRemoved++;
+				}
 				Assert.isFalse(reads.contains(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
 			}
 			for (ExtendedSAMRecord r: topStrandRecords) {
-				if (reads.remove(r) == noEntryValue)
+				if (reads.remove(r) != noEntryValue) {
 					nRemoved++;
+				}
 				Assert.isFalse(reads.contains(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
-			}			
+			}
+
+			if (disagreement && nRemoved > 0) {
+				//Mark presence of at least one duplex with disagreement with DISAGREEMENT Assay,
+				//but only set corresponding quality to "DUBIOUS" if the disagreement is of sufficiently high
+				//quality, so that a single low-quality duplex cannot force downgrading of mutation
+				//(which may be undesirable if other high-quality duplexes support presence of the mutation).
+				candidate.getQuality().getQualities().put(DISAGREEMENT, highEnoughQualForQ2Disagreement ? DUBIOUS : GOOD);
+				if (!enoughReadsForQ2Disag) {
+					candidate.getQuality().getQualities().put(N_STRANDS_DISAGREEMENT, GOOD);
+				}
+			}
 		}
 				
 		if (dq.getMinIgnoring(ignorePhred).compareTo(GOOD) >= 0) {
@@ -924,8 +927,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 			if (totalNPhreds > 0) {
 				long sumPhreds = topCounter.sumPhreds + bottomCounter.sumPhreds;
 				stats.phredAndLigSiteDistance.accept(location, 
-						new ComparablePair<>(distanceToLigSite, 
-								(int) (sumPhreds / totalNPhreds)));
+					new ComparablePair<>(distanceToLigSite,
+						(int) (sumPhreds / totalNPhreds)));
 			}
 		}
 		
@@ -936,7 +939,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		
 		Assert.isFalse(!duplexDisagreements.isEmpty() &&
 				dq.getMinIgnoring(assaysToIgnoreForDisagreementQuality).compareTo(GOOD) < 0,
-				() -> dq.getQualities().toString());
+			() -> dq.getQualities().toString());
 		
 		if (!duplexDisagreements.isEmpty()) {
 			result.disagreements.addAll(duplexDisagreements);
