@@ -12,7 +12,7 @@ top/bottom strand disagreements over any genome region defined in a
 custom BED file. While Mutinack was primarily designed with DNA-Seq in
 mind, it can accessorily be used to collapse RNA-Seq reads to only keep
 one set of reads per molecule in a cDNA library, which minimizes noise
-when quantifying gene expression (see e.g. \[1-2\]).
+when quantifying gene expression (see e.g. \[[1](#1)-[2](#2)\]).
 
 **Installing and building Mutinack**
 
@@ -32,21 +32,21 @@ download; this can be disabled with the `-skipVersionCheck` flag.
 **Tests**
 
 Unit tests as well as a number of functional tests are provided. The
-former are available as `ant` target `junitreport`, and the latter can
-be run using the `run_functional_tests` script in the base directory.
-Both sets of tests are run automatically as part of continuous
-integration builds (each of the ~350 functional tests takes a relatively
-large amount of time to complete because of initialization costs, but the
+former are available as Ant target `junitreport`, and the latter can be
+run using the `run_functional_tests` script in the base directory. Both
+sets of tests are run automatically as part of continuous integration
+builds (each of the ~350 functional tests takes a relatively large
+amount of time to complete because of initialization costs, but the
 tests are run in parallel; the number of simultaneous jobs should be
 adjusted to match machine architecture using the `N_PARALLEL_JOBS` knob
-in the `run_functional_tests` script). The functional test setup includes
-a mechanism to mark failed tests and automatically track them in a Git
-repository, which makes it possible to prioritize re-running of these
-tests when performing continuous integration builds across multiple
-machines (with e.g. Jenkins); this functionality is turned off by default
-to minimize initial configuration effort. Functional tests record
-code coverage using JaCoCo (use `ant` target `jacoco:report` to produce a
-report).
+in the `run_functional_tests` script). The functional test setup
+includes a mechanism to mark failed tests and automatically track them
+in a Git repository, which makes it possible to prioritize re-running of
+these tests when performing continuous integration builds across
+multiple machines (with e.g. Jenkins); this functionality is turned off
+by default to minimize initial configuration effort. Functional tests
+record code coverage using JaCoCo (use Ant target `jacoco:report` to
+produce a report).
 
 The project is set up for [mutation
 testing](https://en.wikipedia.org/wiki/Mutation_testing) (these are
@@ -71,21 +71,28 @@ priority to specifically test. The analysis can be run with `ant
 mutationCoverage` (run time is up to 1 day on a 64-core machine,
 depending on the mutators used).
 
-The project comes with `ant` and `maven` targets to run Findbugs, which
-is pre-packaged in the distribution. The code is also regularly analyzed
+The project comes with Ant and Maven targets to run Findbugs, which is
+pre-packaged in the distribution. The code is also regularly analyzed
 with Coverity Scan, which has very nice additions to Findbugs and does
-not currently detect any significant issue (note however that recent
+not currently detect any significant issue. Note however that recent
 versions of Mutinack cannot be analyzed with Coverity, because of an
-apparent bug in Coverity that has been reported to Synopsys).
+apparent bug in Coverity that has been reported to Synopsys. The
+Findbugs analysis requires a custom Findbugs version (packaged with
+Mutinack) that contains a version of the ASM bytecode engineering
+library that we modified to work around a bug in the Java compiler
+documented [here](https://github.com/cinquin/javac_bug) and that Oracle
+has acknowledged (but not yet fixed) as [OpenJDK bug
+8144185](https://bugs.openjdk.java.net/browse/JDK-8144185).
 
-Note that, at least on some versions of JRE 8, Mutinack can trigger a
-non-deterministic Java Virtual Machine bug, which was
-[reported](https://bugs.openjdk.java.net/browse/JDK-8132870) to
-Oracle and [may be resolved](https://bugs.openjdk.java.net/browse/JDK-8150446)
-from JRE 8u74 onwards. This bug has only been observed in functional tests; 
-to work around it, use the following JVM flags:
-`-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey` and
-`-XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey`.
+Note also that, at least on some versions of JRE 8, Mutinack can trigger
+a non-deterministic Java Virtual Machine bug, which was
+[reported](https://bugs.openjdk.java.net/browse/JDK-8132870) to Oracle
+and [appears to have been
+resolved](https://bugs.openjdk.java.net/browse/JDK-8150446) from JRE
+8u74 onwards. This bug has only been observed in functional tests; to
+work around it, use the following JVM flags:
+`-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey`
+and `-XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey`.
 
 **Sample datasets**
 
@@ -202,6 +209,10 @@ used for code coverage analysis
 - [Findbugs](http://findbugs.sourceforge.net) (GNU Lesser General Public
 License): used for static analysis
 
+- [ASM library](http://asm.ow2.org) by the OW2 Consortium (BSD license):
+used by Findbugs and JaCoCo; modified to work around [OpenJDK bug
+8144185](https://bugs.openjdk.java.net/browse/JDK-8144185)
+
 - [EqualsVerifier](http://www.jqno.nl/equalsverifier/) by Jan Ouwens
 (Apache License Version 2.0): used for testing of `equals` and
 `hashCode` methods
@@ -223,12 +234,12 @@ Mutinack is released under the GNU Affero General Public License version
 
 **References**
 
-\[1\]: Shiroguchi, K., Jia, T.Z., Sims, P.A., Xie, X.S. (2012). Digital
-RNA sequencing minimizes sequence-dependent bias and amplification noise
-with optimized single-molecule barcodes. Proc Natl Acad Sci U S A 109,
-1347–1352.
+<a name="1"></a>\[1\]: Shiroguchi, K., Jia, T.Z., Sims, P.A., Xie, X.S.
+(2012). Digital RNA sequencing minimizes sequence-dependent bias and
+amplification noise with optimized single-molecule barcodes. Proc Natl
+Acad Sci U S A 109, 1347–1352.
 
-\[2\]: Fu, G.K., Xu, W., Wilhelmy, J., Mindrinos, M.N., Davis, R.W.,
-Xiao, W., Fodor, S.P.A. (2014). Molecular indexing enables quantitative
-targeted RNA sequencing and reveals poor efficiencies in standard
-library preparations. Proc Natl Acad Sci U S A 111, 1891–1896.
+<a name="2"></a>\[2\]: Fu, G.K., Xu, W., Wilhelmy, J., Mindrinos, M.N.,
+Davis, R.W., Xiao, W., Fodor, S.P.A. (2014). Molecular indexing enables
+quantitative targeted RNA sequencing and reveals poor efficiencies in
+standard library preparations. Proc Natl Acad Sci U S A 111, 1891–1896.
