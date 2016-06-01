@@ -52,6 +52,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -421,7 +422,8 @@ public final class SubAnalyzer {
 				Assert.isFalse(
 					duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0,
 					"Misordered duplex: %s -- %s %s %s", duplexRead.leftAlignmentStart,
-					duplexRead.leftAlignmentEnd, duplexRead.toString(), rExtended.getFullName());
+					duplexRead.leftAlignmentEnd, duplexRead,
+					(Supplier<String>) rExtended::getFullName);
 			}//End new duplex creation
 		}//End loop over reads
 		

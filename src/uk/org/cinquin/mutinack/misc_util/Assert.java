@@ -24,11 +24,20 @@ import java.io.PrintStream;
 import java.util.function.Supplier;
 
 public class Assert {
+	@SuppressWarnings("rawtypes")
 	public static void isTrue(boolean condition, String format, Object... args) {
 		if (!condition) {
 			ByteArrayOutputStream errStream = new ByteArrayOutputStream();
 			PrintStream errPS = new PrintStream(errStream);
-			errPS.printf(format, args);
+			Object[] argsRetrievedStrings = new Object[args.length];
+			for (int i = 0; i < args.length; i++) {
+				if (args[i] instanceof Supplier) {
+						argsRetrievedStrings[i] = ((Supplier) args[i]).get();
+				} else {
+					argsRetrievedStrings[i] = args[i];
+				}
+			}
+			errPS.printf(format, argsRetrievedStrings);
 			throw new AssertionFailedException(errStream.toString());
 		}
 	}
