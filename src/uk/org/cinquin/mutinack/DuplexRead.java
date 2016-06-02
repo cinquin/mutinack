@@ -915,9 +915,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 				//but only set corresponding quality to "DUBIOUS" if the disagreement is of sufficiently high
 				//quality, so that a single low-quality duplex cannot force downgrading of mutation
 				//(which may be undesirable if other high-quality duplexes support presence of the mutation).
-				candidate.getQuality().getQualities().put(DISAGREEMENT, highEnoughQualForQ2Disagreement ? DUBIOUS : GOOD);
+				candidate.getQuality().add(DISAGREEMENT, highEnoughQualForQ2Disagreement ? DUBIOUS : GOOD);
 				if (!enoughReadsForQ2Disag) {
-					candidate.getQuality().getQualities().put(N_STRANDS_DISAGREEMENT, GOOD);
+					candidate.getQuality().add(N_STRANDS_DISAGREEMENT, GOOD);
 				}
 			}
 		}

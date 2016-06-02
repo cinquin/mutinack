@@ -17,15 +17,19 @@
 package uk.org.cinquin.mutinack;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.mutinack.misc_util.Handle;
 
 public class DetailedQualities implements Serializable {
+	
+	private @Nullable Map<Assay, @NonNull Quality> unmodifiableMap;
 	
 	private static final long serialVersionUID = -5423960175598403757L;
 	@SuppressWarnings("null")
@@ -37,8 +41,13 @@ public class DetailedQualities implements Serializable {
 		return qualities.toString();
 	}
 	
+	@SuppressWarnings("null")
 	public Map<Assay, Quality> getQualities() {
-		return qualities;
+		if (unmodifiableMap == null) {
+			//Not thread safe but that doesn't matter
+			unmodifiableMap = Collections.unmodifiableMap(qualities);
+		}
+		return unmodifiableMap;
 	}
 
 	public void addUnique(Assay assay, @NonNull Quality q) {

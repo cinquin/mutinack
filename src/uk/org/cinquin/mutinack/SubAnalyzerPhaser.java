@@ -473,14 +473,14 @@ public class SubAnalyzerPhaser extends Phaser {
 									c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
 								mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum();
 
-							final long candidateCount = allCandidatesIncludingDisag.stream().
+							final long candidateCount = allQ1Q2Candidates.stream().
 								filter(c -> c.equals(candidate)).count();
 							
 							if (!candidate.getMutationType().isWildtype() &&
-									allCandidatesIncludingDisag.stream().filter(c -> c.equals(candidate) &&
+								allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
 										(c.getQuality().getMin().compareTo(GOOD) >= 0 || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).compareTo(GOOD) >= 0))).count() >= 2) {
 								baseOutput0 += "!";
-							} else if (candidateCount == 1 && //Mutant candidate shows up only once (and therefore in only 1 analyzer)
+							} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 									!candidate.getMutationType().isWildtype() &&
 									candidate.getQuality().getMin().compareTo(GOOD) >= 0 &&
 									(candidate.getnGoodDuplexes() >= argValues.minQ2DuplexesToCallMutation) &&
@@ -560,6 +560,9 @@ public class SubAnalyzerPhaser extends Phaser {
 									continue;
 								} else {//1 candidate
 									c = l.get(0);
+									if (c.getQuality().getMin().compareTo(GOOD) < 0) {
+										line = line.replace("*", "x");
+									}
 									NumberFormat formatter = mediumLengthFloatFormatter.get();
 									Stream<String> qualityKD = c.getIssues().values().stream().map(
 											issues -> issues.getQualities().entrySet().
