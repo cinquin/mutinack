@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -38,8 +39,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 /**
  * Count occurrences of different instances of objects of type T, based on objects' equal method.
- * If T implements CompositeIndex, the counts are broken down following the indices defined
- * by getIndices.
+ * If T is a List, the counts are broken down following the indices defined in the list.
  * @author olivier
  *
  * @param <T>
@@ -102,41 +102,38 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	 * @see uk.org.cinquin.duplex_analysis.ICounter#accept(T)
 	 */
 	@Override
-	public void accept (@NonNull T t) {
+	public void accept(@NonNull T t) {
 		if (on)
 			accept(t, 1d);
 	}
 	
 	void acceptVarArgs(long n, @NonNull Object ... indices) {
 		if (on)
-			accept (CompositeIndex.asCompositeIndex(Arrays.asList(indices)), n);
+			accept(Arrays.asList(indices), n);
 	}
 
 	void acceptVarArgs(double d, @NonNull Object ... indices) {
 		if (on)
-			accept (CompositeIndex.asCompositeIndex(Arrays.asList(indices)), d);
+			accept(Arrays.asList(indices), d);
 	}
 	
 	@Override
-	public void accept (@NonNull Object t, long l) {
+	public void accept(@NonNull Object t, long l) {
 		if (on)
 			accept(t, (double) l);
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.org.cinquin.duplex_analysis.ICounter#accept(T, long)
-	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	@Override
-	public void accept(@NonNull Object t, double d) {
-		if (!on)
-				return;
+	private void accept(@NonNull Object t, double d, int offset) {
 		@NonNull Object index = t;
 		boolean terminal = true;
-		if (t instanceof CompositeIndex) {
-			List<@NonNull Object> indices = ((CompositeIndex) t).getIndices();
-			index = indices.get(0);
-			terminal = indices.size() == 1;
+		final List<@NonNull Object> list;
+		if (t instanceof List) {
+			list = (List<@NonNull Object>) t;
+			index = list.get(offset);
+			terminal = offset == list.size() - 1;
+		} else {
+			list = null;
 		}
 		Object preExistingValue = map.get(index);
 		if (preExistingValue == null) {
@@ -157,10 +154,20 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		if (terminal) {
 			((DoubleAdderFormatter) preExistingValue).add(d);
 		} else {
-			((Counter<Object>) preExistingValue).accept(((CompositeIndex) t).pop(), d);			
+			((Counter<Object>) preExistingValue).accept(Objects.requireNonNull(list), d, offset + 1);
 		}
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see uk.org.cinquin.duplex_analysis.ICounter#accept(T, long)
+	 */
+	@Override
+	public void accept(@NonNull Object t, double d) {
+		if (!on)
+				return;
+		accept(t, d, 0);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.org.cinquin.duplex_analysis.ICounter#sum()
 	 */

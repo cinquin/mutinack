@@ -29,7 +29,6 @@ import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
 @SuppressWarnings("static-method")
 public class CounterTest {
 
-	@SuppressWarnings("null")
 	@Test
 	public void testMain() {
 		//TODO Should update this test to read the counter's contents, once an
@@ -38,11 +37,11 @@ public class CounterTest {
 		Counter<Object> c = new Counter<>(false, new MutinackGroup());
 		SerializableFunction<Object, Object> map = (o -> o.equals(3) ? "trois" : o);
 		c.setKeyNamePrintingProcessor(Arrays.asList(null, map, null));
-		c.accept(CompositeIndex.asCompositeIndex(new Object[] {2,3,4}), 10);
-		c.accept(CompositeIndex.asCompositeIndex(new Object[] {2,3,7}), 20);
-		c.accept(CompositeIndex.asCompositeIndex(new Object[] {4,3,2}), 1);
-		c.accept(CompositeIndex.asCompositeIndex(new Object[] {2,3,7}), 12);
-		c.accept(CompositeIndex.asCompositeIndex(new Object[] {2,7,7}), 13);
+		c.accept(Arrays.asList(new Object[] {2,3,4}), 10);
+		c.accept(Arrays.asList(new Object[] {2,3,7}), 20);
+		c.accept(Arrays.asList(new Object[] {4,3,2}), 1);
+		c.accept(Arrays.asList(new Object[] {2,3,7}), 12);
+		c.accept(Arrays.asList(new Object[] {2,7,7}), 13);
 		
 		String reference =
 				"56\n" +
