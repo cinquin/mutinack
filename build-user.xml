@@ -73,6 +73,7 @@
       <auxClasspath>
         <fileset dir="">
           <include name="lib/*.jar"/>
+          <include name="lib_build_run_test/*.jar"/>
           <include name="bin/**/*.class"/>
         </fileset>
       </auxClasspath>
@@ -81,7 +82,7 @@
 	</class>
     </findbugs>
   </target>
-  <path id="pit.path"> <pathelement location="lib/pitest-1.1.8.jar"/> <pathelement location="lib/pitest-ant-1.1.8.jar"/> <pathelement location="lib/junit-4.12.jar"/> </path>
+  <path id="pit.path"> <pathelement location="lib_build_run_test/pitest-1.1.8.jar"/> <pathelement location="lib_build_run_test/pitest-ant-1.1.8.jar"/> <pathelement location="lib_build_run_test/junit-4.12.jar"/> </path>
   <taskdef name="pitest" classname="org.pitest.ant.PitestTask" classpathref="pit.path" />
   <target name="mutationCoverage" depends="build">
     <pitest

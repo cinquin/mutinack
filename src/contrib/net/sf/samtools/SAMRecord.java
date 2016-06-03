@@ -787,6 +787,7 @@ public class SAMRecord implements Cloneable
      * Use setReadUnmappedFlag instead.
      * @deprecated
      */
+    @Deprecated
     public void setReadUmappedFlag(final boolean flag) {
         setReadUnmappedFlag(flag);
     }
@@ -1289,6 +1290,7 @@ public class SAMRecord implements Cloneable
      * @deprecated This method is not guaranteed to return a valid SAM text representation of the SAMRecord.
      * To get standard SAM text representation, use net.sf.samtools.SAMRecord#getSAMString().
      */
+    @Deprecated
     public String format() {
         final StringBuilder buffer = new StringBuilder();
         addField(buffer, getReadName(), null, null);

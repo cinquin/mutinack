@@ -6,7 +6,7 @@
               as the first entry and export the buildfile again. -->
 <project basedir="." default="build" name="SequenceAnalysis" xmlns:jacoco="antlib:org.jacoco.ant">
     <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
-        <classpath path="lib/org.jacoco.ant-0.7.5.201505241946.jar:lib/org.jacoco.core-0.7.5.201505241946.jar:lib/org.jacoco.report-0.7.5.201505241946.jar:lib/org.jacoco.agent-0.7.5.201505241946.jar:lib/asm-debug-all-5.0.4.jar"/>
+        <classpath path="lib_build_run_test/org.jacoco.ant-0.7.5.201505241946.jar:lib_build_run_test/org.jacoco.core-0.7.5.201505241946.jar:lib_build_run_test/org.jacoco.report-0.7.5.201505241946.jar:lib_build_run_test/org.jacoco.agent-0.7.5.201505241946.jar:lib_build_run_test/asm-debug-all-5.0.4.jar"/>
     </taskdef>
 
     <target name="jacoco:report">
@@ -41,21 +41,20 @@
         <pathelement location="bin"/>
         <pathelement location="lib/jcommander-1.33-SNAPSHOT.jar"/>
         <pathelement location="lib/org.eclipse.jdt.annotation_2.0.0.v20131221-0104_beta_java8.jar"/>
-        <pathelement location="lib/junit-4.12.jar"/>
+        <pathelement location="lib_build_run_test/junit-4.12.jar"/>
         <pathelement location="lib/trove-150802233617_PATCHED.jar"/>
-        <pathelement location="lib/sun_tools_8_0_25.jar"/>
         <pathelement location="lib/bzip2.jar"/>
         <pathelement location="lib/snappy-java-1.0.3-rc3.jar"/>
-        <pathelement location="lib/hamcrest-core-1.3.jar"/>
+        <pathelement location="lib_build_run_test/hamcrest-core-1.3.jar"/>
 	<pathelement location="lib/slf4j-api-1.7.7.jar"/>
 	<pathelement location="lib/logback-core-1.1.3.jar"/>
 	<pathelement location="lib/logback-classic-1.1.3.jar"/>
 	<pathelement location="lib/protobuf-java-2.4.1_PATCHED.jar"/>
-        <pathelement location="lib/equalsverifier-1.7.6.jar"/>
-        <pathelement location="lib/jmockit-1.21.jar"/>
+        <pathelement location="lib_build_run_test/equalsverifier-1.7.6.jar"/>
+        <pathelement location="lib_build_run_test/jmockit-1.21.jar"/>
         <pathelement location="findbugs-3.0.1/lib/findbugs.jar"/>
         <pathelement location="lib/commons-io-2.4.jar"/>
-        <pathelement location="lib/pitest-1.1.8.jar"/>
+        <pathelement location="lib_build_run_test/pitest-1.1.8.jar"/>
         <pathelement location="lib/jackson-core-2.7.0.jar"/>
         <pathelement location="lib/jackson-databind-2.7.0.jar"/>
         <pathelement location="lib/jackson-annotations-2.7.0.jar"/>
@@ -77,12 +76,16 @@
     <target depends="clean" name="cleanall"/>
     <target depends="build-subprojects,build-project" name="build"/>
     <target name="build-subprojects"/>
+    <path id="errorprone">
+        <fileset dir="lib_build_run_test" includes="error_prone_ant*.jar"/>
+    </path>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
-        <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+        <javac compiler="com.google.errorprone.ErrorProneAntCompilerAdapter" encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
            <compilerarg value="-XDignore.symbol.file" />
             <src path="src"/>
             <classpath refid="SequenceAnalysis.classpath"/>
+            <compilerclasspath refid="errorprone"/>
         </javac>
     </target>
     <target name="UtilTest">

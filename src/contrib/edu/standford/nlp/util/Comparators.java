@@ -42,7 +42,7 @@ public class Comparators {
   }
 
   public static <T> Comparator<T> chain(Comparator<? super T>... c) {
-    return chain(Arrays.asList(c));
+    return Comparators.<T>chain(Arrays.asList(c));
   }
 
   /**

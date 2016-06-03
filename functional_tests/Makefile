@@ -135,7 +135,7 @@ clean_hardlinks: clean_jars
 	@ln -f mutinack.jar $@
 
 %/jacoco.jar:
-	@ln -f ../lib/org.jacoco.agent-0.7.5.201505241946-runtime.jar $@
+	@ln -f ../lib_build_run_test/org.jacoco.agent-0.7.5.201505241946-runtime.jar $@
 
 %/logback.xml:
 	@ln -f logback.xml $@

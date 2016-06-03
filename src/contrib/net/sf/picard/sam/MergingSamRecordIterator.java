@@ -50,6 +50,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
      * @param forcePresorted True to ensure that the iterator checks the headers of the readers for appropriate sort order.
      * @deprecated replaced by (SamFileHeaderMerger, Collection<SAMFileReader>, boolean)
      */
+    @Deprecated
     public MergingSamRecordIterator(final SamFileHeaderMerger headerMerger, final boolean forcePresorted) {
         this(headerMerger, headerMerger.getReaders(), forcePresorted);
     }

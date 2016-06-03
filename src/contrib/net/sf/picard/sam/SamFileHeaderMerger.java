@@ -119,6 +119,7 @@ public class SamFileHeaderMerger {
      * @param sortOrder sort order new header should have
      * @deprecated replaced by SamFileHeaderMerger(Collection<SAMFileHeader>, SAMFileHeader.SortOrder, boolean)
      */
+    @Deprecated
     public SamFileHeaderMerger(final Collection<SAMFileReader> readers, final SAMFileHeader.SortOrder sortOrder) {
         this(readers, sortOrder, false);
     }
@@ -132,6 +133,7 @@ public class SamFileHeaderMerger {
      * all input sequence dictionaries be identical.
      * @deprecated replaced by SamFileHeaderMerger(Collection<SAMFileHeader>, SAMFileHeader.SortOrder, boolean)
      */
+    @Deprecated
     public SamFileHeaderMerger(final Collection<SAMFileReader> readers, final SAMFileHeader.SortOrder sortOrder, final boolean mergeDictionaries) {
         this(sortOrder, getHeadersFromReaders(readers), mergeDictionaries);
         this.readers = readers;
@@ -644,6 +646,7 @@ public class SamFileHeaderMerger {
      *
      * @deprecated replaced by getReadGroupId(SAMFileHeader, String)
      * */
+    @Deprecated
     public String getReadGroupId(final SAMFileReader reader, final String originalReadGroupId) {
         return getReadGroupId(reader.getFileHeader(), originalReadGroupId);
     }
@@ -659,6 +662,7 @@ public class SamFileHeaderMerger {
      * @return new ID from the merged list of program groups in the output file
      * @deprecated replaced by getProgramGroupId(SAMFileHeader, String)
      */
+    @Deprecated
     public String getProgramGroupId(final SAMFileReader reader, final String originalProgramGroupId) {
         return getProgramGroupId(reader.getFileHeader(), originalProgramGroupId);
     }
@@ -695,6 +699,7 @@ public class SamFileHeaderMerger {
     /** Returns the collection of readers that this header merger is working with. May return null.
      * @deprecated replaced by getHeaders()
      */
+    @Deprecated
     public Collection<SAMFileReader> getReaders() {
         return this.readers;
     }
@@ -712,6 +717,7 @@ public class SamFileHeaderMerger {
      * @return the new index value
      * @deprecated replaced by getMergedSequenceIndex(SAMFileHeader, Integer)
      */
+    @Deprecated
     public Integer getMergedSequenceIndex(final SAMFileReader reader, final Integer oldReferenceSequenceIndex) {
         return this.getMergedSequenceIndex(reader.getFileHeader(), oldReferenceSequenceIndex);
     }

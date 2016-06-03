@@ -72,6 +72,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * @deprecated Use SAMSequenceRecord(final String name, final int sequenceLength) instead.
      * sequenceLength is required for the object to be considered valid.
      */
+    @Deprecated
     public SAMSequenceRecord(final String name) {
         this(name, UNKNOWN_SEQUENCE_LENGTH);
     }

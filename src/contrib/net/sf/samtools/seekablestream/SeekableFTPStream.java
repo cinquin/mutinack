@@ -93,7 +93,7 @@ public class SeekableFTPStream extends SeekableStream {
     public static void main(String[] args) throws IOException {
 //    	String testURL = (args.length < 1) ? "ftp://apache.cs.utah.edu/apache.org/HEADER.html" : args[0];
     	String testURL = (args.length < 1) ? "ftp://hgdownload.cse.ucsc.edu/goldenPath/panTro3/vsHg19/panTro3.hg19.all.chain.gz" : args[0];
-        long startPosition = (args.length < 2) ? 0x0b66c78l : Long.parseLong(args[1]);
+        long startPosition = (args.length < 2) ? 0x0b66c78L : Long.parseLong(args[1]);
         int len = (args.length < 3) ? 8 : Integer.parseInt(args[2]);
         int skipLen = (args.length < 4) ? 0x18 : Integer.parseInt(args[3]);
         SeekableStream s = SeekableStreamFactory.getInstance().getStreamFor(testURL);
