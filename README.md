@@ -21,13 +21,15 @@ in a single `mutinack.jar` file. The only runtime requirement is a Java
 \>= 8 runtime (and GNU make and Perl with module File::Grep for
 functional tests), and Mutinack should thus run on any platform that has
 such a runtime (FreeBSD, Mac OS X, and Linux have been tested with
-OpenJDK 1.8 or 1.9 early access b76). The `mutinack.jar` file can be
-[directly downloaded](http://cinquin.org.uk/static/mutinack.jar), or
+OpenJDK 1.8 or 1.9 early access build 114). The `mutinack.jar` file can
+be [directly downloaded](http://cinquin.org.uk/static/mutinack.jar), or
 built from a clone of this repository using `ant jar` (Ant is
 technically not required but makes the build very straightforward; Git
-is used to optionally include version information in the build). Note
-that on startup Mutinack checks whether a newer version is available for
-download; this can be disabled with the `-skipVersionCheck` flag.
+is used to optionally include version information in the build). Be sure
+to perform a recursive clone of this repository (passing Git the
+`--recursive` argument). Note that on startup Mutinack checks whether a
+newer version is available for download; this can be disabled with the
+`-skipVersionCheck` flag.
 
 **Tests**
 
@@ -35,16 +37,19 @@ Unit tests as well as a number of functional tests are provided. The
 former are available as Ant target `junitreport`, and the latter can be
 run using the `run_functional_tests` script in the base directory. Both
 sets of tests are run automatically as part of continuous integration
-builds (each of the ~350 functional tests takes a relatively large
+builds. Each of the ~350 functional tests takes a relatively large
 amount of time to complete because of initialization costs, but the
 tests are run in parallel; the number of simultaneous jobs should be
 adjusted to match machine architecture using the `N_PARALLEL_JOBS` knob
-in the `run_functional_tests` script). The functional test setup
-includes a mechanism to mark failed tests and automatically track them
-in a Git repository, which makes it possible to prioritize re-running of
-these tests when performing continuous integration builds across
-multiple machines (with e.g. Jenkins); this functionality is turned off
-by default to minimize initial configuration effort. Functional tests
+in the `run_functional_tests` script. Functional tests further rely on
+Nailgun (provided as a Git submodule) to avoid JVM startup costs and to
+optimize speed by using "warm" JVM instances; Nailgun needs to have been
+built for the tests to run. The functional test setup includes a
+mechanism to mark failed tests and automatically track them in a Git
+repository, which makes it possible to prioritize re-running of these
+tests when performing continuous integration builds across multiple
+machines (with e.g. Jenkins); this functionality is turned off by
+default to minimize initial configuration effort. Functional tests
 record code coverage using JaCoCo (use Ant target `jacoco:report` to
 produce a report).
 
@@ -71,17 +76,18 @@ priority to specifically test. The analysis can be run with `ant
 mutationCoverage` (run time is up to 1 day on a 64-core machine,
 depending on the mutators used).
 
-The project comes with Ant and Maven targets to run Findbugs, which is
-pre-packaged in the distribution. The code is also regularly analyzed
-with Coverity Scan, which has very nice additions to Findbugs and does
-not currently detect any significant issue. Note however that recent
-versions of Mutinack cannot be analyzed with Coverity, because of an
-apparent bug in Coverity that has been reported to Synopsys. The
-Findbugs analysis requires a custom Findbugs version (packaged with
-Mutinack) that contains a version of the ASM bytecode engineering
-library that we modified to work around a bug in the Java compiler
-documented [here](https://github.com/cinquin/javac_bug) and that Oracle
-has acknowledged (but not yet fixed) as [OpenJDK bug
+The project is compiled with Google's "Error Prone" static analyzer, and
+comes with Ant and Maven targets to run Findbugs, which is pre-packaged
+in the distribution. The code is also regularly analyzed with Coverity
+Scan, which has very nice additions to Findbugs and does not currently
+detect any significant issue. Note however that recent versions of
+Mutinack cannot be analyzed with Coverity, because of an apparent bug in
+Coverity that has been reported to Synopsys. The Findbugs analysis
+requires a custom Findbugs version (packaged with Mutinack) that
+contains a version of the ASM bytecode engineering library that we
+modified to work around a bug in the Java compiler documented
+[here](https://github.com/cinquin/javac_bug) and that Oracle has
+acknowledged (but not yet fixed) as [OpenJDK bug
 8144185](https://bugs.openjdk.java.net/browse/JDK-8144185).
 
 Note also that, at least on some versions of JRE 8, Mutinack can trigger
@@ -208,6 +214,9 @@ used for code coverage analysis
 
 - [Findbugs](http://findbugs.sourceforge.net) (GNU Lesser General Public
 License): used for static analysis
+
+- [Error Prone](http://errorprone.info) by Google (Apache License
+Version 2.0): used for static analysis at compile time
 
 - [ASM library](http://asm.ow2.org) by the OW2 Consortium (BSD license):
 used by Findbugs and JaCoCo; modified to work around [OpenJDK bug
