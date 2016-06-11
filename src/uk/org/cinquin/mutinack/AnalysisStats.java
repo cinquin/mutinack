@@ -131,6 +131,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 		nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosCandidatesForUniqueMutation = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		
+		nReadsInPrefetchQueue = new Histogram(1_000);	
+		
 		{	//Force output of fields annotated with AddChromosomeBins to be broken down by
 			//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
 			//TODO Base this on the actual contigs the program is run on, not the default contigs
@@ -667,6 +669,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = TERSE)
 	final StatsCollector nProcessedBases = new StatsCollector();
+	
+	@PrintInStatus(outputLevel = VERBOSE)
+	final Histogram nReadsInPrefetchQueue;
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE)

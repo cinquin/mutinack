@@ -27,6 +27,8 @@ import java.util.function.Consumer;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import uk.org.cinquin.mutinack.statistics.Histogram;
+
 /**
 
  * @author olivier
@@ -45,14 +47,15 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 
 	private final Object semaphore = new Object();
 
-	private final Object THE_END = new Object();
+	private static final Object THE_END = new Object();
 	private volatile RuntimeException exception = null;
 	
 	final @NonNull Thread fetchingThread;
-	
+		
 	public IteratorPrefetcher(final Iterator<T> it, final int nReadAhead, 
 			final @Nullable Closeable closeWhenDone,
-			final Consumer<T> preProcessor) {
+			final Consumer<T> preProcessor,
+			final @Nullable Histogram nReadsInPrefetchQueue) {
 		minQueueSize = nReadAhead;
 		Runnable r = new Runnable() {
 			@SuppressWarnings("unchecked")
@@ -64,16 +67,18 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 							if (Thread.interrupted()) {
 								throw new InterruptedException();
 							}
-							T t;
 							if (!it.hasNext()) {
 								((BlockingQueue<Object>) queue).add(THE_END);
 								iteratorExhausted = true;
 								break;
 							}
-							t = it.next();
+							final T t = it.next();
 							preProcessor.accept(t);
 							queue.add(t);
-							queueSize.incrementAndGet();
+							final int queueSizeCopy = queueSize.incrementAndGet();
+							if (nReadsInPrefetchQueue != null) {
+								nReadsInPrefetchQueue.insert(queueSizeCopy);
+							}
 							synchronized(semaphore) {
 								semaphore.notifyAll();
 							}
@@ -106,6 +111,7 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 			}
 		};
 		fetchingThread = new Thread(r, "Iterator prefetch");
+		fetchingThread.setDaemon(true);
 		fetchingThread.start();
 	}
 

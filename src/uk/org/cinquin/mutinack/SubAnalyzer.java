@@ -71,6 +71,7 @@ import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TByteObjectMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.hash.TCustomHashSet;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
@@ -81,7 +82,7 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
-import uk.org.cinquin.mutinack.misc_util.collections.IdentityHashSet;
+import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
@@ -447,15 +448,14 @@ public final class SubAnalyzer {
 		//and left/right consensus that differ by at most
 		//analyzer.nVariableBarcodeMismatchesAllowed
 
-		final DuplexKeeper cleanedUpDuplexes =
-				DuplexRead.groupDuplexes(
-						duplexKeeper,
-						duplex -> duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength),
-						() -> getDuplexKeeper(fallBackOnIntervalTree),
-						analyzer,
-						stats,
-						0);
-		
+		final DuplexKeeper cleanedUpDuplexes = DuplexRead.groupDuplexes(
+			duplexKeeper,
+			duplex -> duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength),
+			() -> getDuplexKeeper(fallBackOnIntervalTree),
+			analyzer,
+			stats,
+			0);
+
 		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
 			Assert.isFalse(duplexRead.invalid);
 			final @NonNull SequenceLocation roughLocation;
@@ -589,7 +589,8 @@ public final class SubAnalyzer {
 		//objects we use in this method should be equal according to the equals() method
 		//(although when grouping duplexes we don't check equality for the inner ends of
 		//the reads since they depend on read length)
-		final IdentityHashSet<DuplexRead> duplexReads = new IdentityHashSet<>();
+		final Set<DuplexRead> duplexReads = 
+			new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 
 		boolean hasHiddenCandidate = false;
 		for (CandidateSequence candidate: candidateSet) {
@@ -597,7 +598,8 @@ public final class SubAnalyzer {
 				hasHiddenCandidate = true;
 			}
 			candidate.getQuality().reset();
-			IdentityHashSet<DuplexRead> candidateDuplexReads = new IdentityHashSet<>();
+			final Set<DuplexRead> candidateDuplexReads = 
+				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			candidate.getNonMutableConcurringReads().forEachEntry((r, c) -> {
 				@Nullable DuplexRead d = r.duplexRead;
 				if (d != null) {
@@ -943,7 +945,7 @@ public final class SubAnalyzer {
 		return result;
 	}//End examineLocation
 	
-	private static Runnable checkDuplexAndCandidates(IdentityHashSet<DuplexRead> duplexReads,
+	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
 			Set<CandidateSequence> candidateSet) {
 		for (DuplexRead duplexRead: duplexReads) {
 			for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
@@ -1059,17 +1061,17 @@ public final class SubAnalyzer {
 		final PairOrientation pairOrientation;
 		
 		if (rec.getReadPairedFlag() && !rec.getReadUnmappedFlag() && !rec.getMateUnmappedFlag() &&
-				rec.getReferenceIndex().equals(rec.getMateReferenceIndex()) &&
-				((pairOrientation = SamPairUtil.getPairOrientation(rec)) == PairOrientation.TANDEM ||
-				pairOrientation == PairOrientation.RF)) {
-			if (pairOrientation == PairOrientation.TANDEM) {
-				stats.nReadsPairTandem.increment(location);
-			} else if (pairOrientation == PairOrientation.RF) {
-				stats.nReadsPairRF.increment(location);
-			}
-			if (analyzer.ignoreTandemRFPairs) {
-				return -1;
-			}
+			rec.getReferenceIndex().equals(rec.getMateReferenceIndex()) &&
+			((pairOrientation = SamPairUtil.getPairOrientation(rec)) == PairOrientation.TANDEM ||
+			pairOrientation == PairOrientation.RF)) {
+				if (pairOrientation == PairOrientation.TANDEM) {
+					stats.nReadsPairTandem.increment(location);
+				} else if (pairOrientation == PairOrientation.RF) {
+					stats.nReadsPairRF.increment(location);
+				}
+				if (analyzer.ignoreTandemRFPairs) {
+					return -1;
+				}
 		}
 		
 		final boolean reversed = rec.getReadNegativeStrandFlag();
@@ -1111,197 +1113,325 @@ public final class SubAnalyzer {
 
 		int returnValue = -1;
 
-	if (insertSize == 0) {
-		stats.nReadsInsertNoSize.increment(location);
-		if (analyzer.ignoreZeroInsertSizeReads) {
-			return -1;
+		if (insertSize == 0) {
+			stats.nReadsInsertNoSize.increment(location);
+			if (analyzer.ignoreZeroInsertSizeReads) {
+				return -1;
+			}
 		}
-	}
-	
-	final boolean notRnaSeq = !analyzer.rnaSeq;
 
-	for (AlignmentBlock block: rec.getAlignmentBlocks()) {
-		int refPosition = block.getReferenceStart() - 1;
-		int readPosition = block.getReadStart() - 1;
-		final int nBlockBases = block.getLength();
+		final boolean notRnaSeq = !analyzer.rnaSeq;
 
-		returnValue = Math.max(returnValue, refPosition + nBlockBases);
+		for (AlignmentBlock block: rec.getAlignmentBlocks()) {
+			int refPosition = block.getReferenceStart() - 1;
+			int readPosition = block.getReadStart() - 1;
+			final int nBlockBases = block.getLength();
 
-		/**
-		 * When adding an insertion candidate, make sure that a wildtype or
-		 * mismatch candidate is also inserted at the same position, even
-		 * if it normally would not have been (for example because of low Phred
-		 * quality). This should avoid awkward comparisons between e.g. an
-		 * insertion candidate and a combo insertion + wildtype candidate.
-		 */
-		boolean forceCandidateInsertion = false;
-		
-		if (refEndOfPreviousAlignment != -1) {
+			returnValue = Math.max(returnValue, refPosition + nBlockBases);
 
-			final boolean insertion = refPosition == refEndOfPreviousAlignment + 1;
-			
-			final boolean tooLate = (readOnNegativeStrand ? 
+			/**
+			 * When adding an insertion candidate, make sure that a wildtype or
+			 * mismatch candidate is also inserted at the same position, even
+			 * if it normally would not have been (for example because of low Phred
+			 * quality). This should avoid awkward comparisons between e.g. an
+			 * insertion candidate and a combo insertion + wildtype candidate.
+			 */
+			boolean forceCandidateInsertion = false;
+
+			if (refEndOfPreviousAlignment != -1) {
+
+				final boolean insertion = refPosition == refEndOfPreviousAlignment + 1;
+
+				final boolean tooLate = (readOnNegativeStrand ? 
 					(insertion ? readPosition <= analyzer.ignoreLastNBases : readPosition < analyzer.ignoreLastNBases) :
-				readPosition > rec.getReadLength() - analyzer.ignoreLastNBases) && notRnaSeq;
+					readPosition > rec.getReadLength() - analyzer.ignoreLastNBases) && notRnaSeq;
 
-			if (tooLate) {
-				if (DebugLogControl.shouldLog(TRACE, logger)) {
-					logger.trace("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + " " + (rec.getReadLength() - 1) + " " + extendedRec.getFullName());
-				}
-				stats.nCandidateIndelAfterLastNBases.increment(location);
-			} else {
-				if (insertion) {
-					//Insertion
-					stats.nCandidateInsertions.increment(location);
+				if (tooLate) {
 					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Insertion at position " + readPosition + " for read " + rec.getReadName() +
-							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
-							"; insert size: " + insertSize + ")");
+						logger.trace("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + " " + (rec.getReadLength() - 1) + " " + extendedRec.getFullName());
 					}
-					location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment, true);
-					int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
-					int distance1 = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
-					int distance = Math.max(distance0, distance1);
-					distance = -distance + 1;
-					
-					final boolean Q1reject = distance < 0;
-					if (Q1reject) {
-						if (!extendedRec.formsWrongPair()) {
-							stats.rejectedIndelDistanceToLigationSite.insert(-distance);
-							stats.nCandidateIndelBeforeFirstNBases.increment(location);
+					stats.nCandidateIndelAfterLastNBases.increment(location);
+				} else {
+					if (insertion) {
+						stats.nCandidateInsertions.increment(location);
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
+							logger.trace("Insertion at position " + readPosition + " for read " + rec.getReadName() +
+								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
+								"; insert size: " + insertSize + ")");
 						}
-						logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
-					} else {
-						distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
-						distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
-						distance = Math.max(distance0, distance1);
+						location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment, true);
+						int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
+						int distance1 = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
+						int distance = Math.max(distance0, distance1);
 						distance = -distance + 1;
 
-						final CandidateSequence candidate = new CandidateSequence(analyzer.idx, INSERTION, location,
+						final boolean Q1reject = distance < 0;
+						if (Q1reject) {
+							if (!extendedRec.formsWrongPair()) {
+								stats.rejectedIndelDistanceToLigationSite.insert(-distance);
+								stats.nCandidateIndelBeforeFirstNBases.increment(location);
+							}
+							logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+						} else {
+							distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
+							distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
+							distance = Math.max(distance0, distance1);
+							distance = -distance + 1;
+
+							final CandidateSequence candidate = new CandidateSequence(analyzer.idx, INSERTION, location,
 								extendedRec, distance);
 
-						final byte [] insertedSequence = Arrays.copyOfRange(readBases,
+							final byte [] insertedSequence = Arrays.copyOfRange(readBases,
 								readEndOfPreviousAlignment + 1, readPosition);
 
-						if (!extendedRec.formsWrongPair()) {
-							candidate.acceptLigSiteDistance(distance);
-						}
+							if (!extendedRec.formsWrongPair()) {
+								candidate.acceptLigSiteDistance(distance);
+							}
 
-						candidate.insertSize = insertSize;
-						candidate.positionInRead = readPosition;
-						candidate.readEL = effectiveReadLength;
-						candidate.readName = extendedRec.getFullName();
-						candidate.readAlignmentStart = extendedRec.getRefAlignmentStart();
-						candidate.mateReadAlignmentStart = extendedRec.getMateRefAlignmentStart();
-						candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
-						candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
-						candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-						candidate.insertSizeNoBarcodeAccounting = false;
-						candidate.setSequence(insertedSequence);
+							candidate.insertSize = insertSize;
+							candidate.positionInRead = readPosition;
+							candidate.readEL = effectiveReadLength;
+							candidate.readName = extendedRec.getFullName();
+							candidate.readAlignmentStart = extendedRec.getRefAlignmentStart();
+							candidate.mateReadAlignmentStart = extendedRec.getMateRefAlignmentStart();
+							candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
+							candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
+							candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
+							candidate.insertSizeNoBarcodeAccounting = false;
+							candidate.setSequence(insertedSequence);
 
-						if (analyzer.computeRawDisagreements) {
-							final byte wildType = readBases[readEndOfPreviousAlignment];
-							@SuppressWarnings("null")
-							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
+							if (analyzer.computeRawDisagreements) {
+								final byte wildType = readBases[readEndOfPreviousAlignment];
+								@SuppressWarnings("null")
+								final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
 									new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
-											new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
+										new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
 									:
 									new ComparablePair<>(byteMap.get(wildType),
-											new String(insertedSequence).toUpperCase());
-									stats.rawInsertionsQ1.accept(location, mutationPair);
-									stats.rawInsertionLengthQ1.insert(insertedSequence.length);
+										new String(insertedSequence).toUpperCase());
+								stats.rawInsertionsQ1.accept(location, mutationPair);
+								stats.rawInsertionLengthQ1.insert(insertedSequence.length);
 
-									if (meetsQ2Thresholds(extendedRec) &&
-											baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
-											!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
+								if (meetsQ2Thresholds(extendedRec) &&
+									baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
+									!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
 										candidate.getMutableRawInsertionsQ2().add(mutationPair);
-									}
-						}
+								}
+							}
 
-						if (DebugLogControl.shouldLog(TRACE, logger)) {
-							logger.trace("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
+							if (DebugLogControl.shouldLog(TRACE, logger)) {
+								logger.trace("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
+							}
+							readLocalCandidates.add(candidate, location);
+							forceCandidateInsertion = true;
+							if (DebugLogControl.shouldLog(TRACE, logger)) {
+								logger.trace("Added candidate at " + location + "; readLocalCandidates now " + readLocalCandidates.build());
+							}
+							extendedRec.nReferenceDisagreements++;
 						}
-						readLocalCandidates.add(candidate, location);
-						forceCandidateInsertion = true;
-						if (DebugLogControl.shouldLog(TRACE, logger)) {
-							logger.trace("Added candidate at " + location + "; readLocalCandidates now " + readLocalCandidates.build());
-						}
-						extendedRec.nReferenceDisagreements++;
-					}
-				}//End of insertion case
-				else if (refPosition < refEndOfPreviousAlignment + 1) {
-					throw new AssertionFailedException("Alignment block misordering");
-				} else {
-					//Deletion or skipped region ("N" in Cigar)
-					if (refPosition > refBases.length - 1) {
-						logger.warn("Ignoring rest of read after base mapped at " + refPosition + 
-								", beyond the end of " + ref.getName());
-						continue;
-					}
-					
-					int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, analyzer.ignoreFirstNBasesQ1);
-					int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, analyzer.ignoreFirstNBasesQ1);
-					int distance = Math.min(distance0, distance1) + 1;
-
-					final boolean Q1reject = distance < 0;
-					
-					if (Q1reject) {
-						if (!extendedRec.formsWrongPair()) {
-							stats.rejectedIndelDistanceToLigationSite.insert(-distance);
-							stats.nCandidateIndelBeforeFirstNBases.increment(location);
-						}
-						logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+					}//End of insertion case
+					else if (refPosition < refEndOfPreviousAlignment + 1) {
+						throw new AssertionFailedException("Alignment block misordering");
 					} else {
-						distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
-						distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
-						distance = Math.min(distance0, distance1) + 1;
+						//Deletion or skipped region ("N" in Cigar)
+						if (refPosition > refBases.length - 1) {
+							logger.warn("Ignoring rest of read after base mapped at " + refPosition + 
+								", beyond the end of " + ref.getName());
+							continue;
+						}
 
-						stats.nCandidateDeletions.increment(location);
-						if (DebugLogControl.shouldLog(TRACE, logger)) {
-							logger.trace("Deletion at position " + readPosition + " for read " + rec.getReadName() +
+						int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, analyzer.ignoreFirstNBasesQ1);
+						int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, analyzer.ignoreFirstNBasesQ1);
+						int distance = Math.min(distance0, distance1) + 1;
+
+						final boolean Q1reject = distance < 0;
+
+						if (Q1reject) {
+							if (!extendedRec.formsWrongPair()) {
+								stats.rejectedIndelDistanceToLigationSite.insert(-distance);
+								stats.nCandidateIndelBeforeFirstNBases.increment(location);
+							}
+							logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+						} else {
+							distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
+							distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
+							distance = Math.min(distance0, distance1) + 1;
+
+							stats.nCandidateDeletions.increment(location);
+							if (DebugLogControl.shouldLog(TRACE, logger)) {
+								logger.trace("Deletion at position " + readPosition + " for read " + rec.getReadName() +
 									" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
 									"; insert size: " + insertSize + ")");
-						}
+							}
 
-						final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
-						location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment + 1);
-						final @NonNull SequenceLocation deletionEnd = new SequenceLocation(ref.getContigIndex(),
+							final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
+							location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment + 1);
+							final @NonNull SequenceLocation deletionEnd = new SequenceLocation(ref.getContigIndex(),
 								ref.getName(), location.position + deletionLength);
 
-						final byte @Nullable[] deletedSequence = notRnaSeq 	? Arrays.copyOfRange(ref.getBases(),
-								refEndOfPreviousAlignment + 1, refPosition)
-								: null	;
+							final byte @Nullable[] deletedSequence = notRnaSeq ?
+								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition)
+								: null;
 
-						//Add hidden mutations to all locations covered by deletion
-						//So disagreements between deletions that have only overlapping
-						//spans are detected.
-						for (int i = 1; i < deletionLength; i++) {
-							SequenceLocation location2 = new SequenceLocation(ref.getContigIndex(),
+							//Add hidden mutations to all locations covered by deletion
+							//So disagreements between deletions that have only overlapping
+							//spans are detected.
+							for (int i = 1; i < deletionLength; i++) {
+								SequenceLocation location2 = new SequenceLocation(ref.getContigIndex(),
 									ref.getName(), refEndOfPreviousAlignment + 1 + i);
-							CandidateSequence hiddenCandidate = new CandidateDeletion(analyzer.idx, location2, extendedRec, Integer.MAX_VALUE,
+								CandidateSequence hiddenCandidate = new CandidateDeletion(analyzer.idx, location2, extendedRec, Integer.MAX_VALUE,
 									location, deletionEnd);
-							hiddenCandidate.setHidden(true);
-							hiddenCandidate.insertSize = insertSize;
-							hiddenCandidate.insertSizeNoBarcodeAccounting = false;
-							hiddenCandidate.positionInRead = readPosition;
-							hiddenCandidate.readEL = effectiveReadLength;
-							hiddenCandidate.readName = extendedRec.getFullName();
-							hiddenCandidate.readAlignmentStart = extendedRec.getRefAlignmentStart();
-							hiddenCandidate.mateReadAlignmentStart = extendedRec.getMateRefAlignmentStart();
-							hiddenCandidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
-							hiddenCandidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
-							hiddenCandidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-							hiddenCandidate.setSequence(deletedSequence);
-							readLocalCandidates.add(hiddenCandidate, location2);
+								hiddenCandidate.setHidden(true);
+								hiddenCandidate.insertSize = insertSize;
+								hiddenCandidate.insertSizeNoBarcodeAccounting = false;
+								hiddenCandidate.positionInRead = readPosition;
+								hiddenCandidate.readEL = effectiveReadLength;
+								hiddenCandidate.readName = extendedRec.getFullName();
+								hiddenCandidate.readAlignmentStart = extendedRec.getRefAlignmentStart();
+								hiddenCandidate.mateReadAlignmentStart = extendedRec.getMateRefAlignmentStart();
+								hiddenCandidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
+								hiddenCandidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
+								hiddenCandidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
+								hiddenCandidate.setSequence(deletedSequence);
+								readLocalCandidates.add(hiddenCandidate, location2);
+							}
+
+							final CandidateSequence candidate = new CandidateDeletion(analyzer.idx, location, extendedRec, distance,
+								location, new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition));
+
+							if (!extendedRec.formsWrongPair()) {
+								candidate.acceptLigSiteDistance(distance);
+							}
+
+							candidate.insertSize = insertSize;
+							candidate.insertSizeNoBarcodeAccounting = false;
+							candidate.positionInRead = readPosition;
+							candidate.readEL = effectiveReadLength;
+							candidate.readName = extendedRec.getFullName();
+							candidate.readAlignmentStart = extendedRec.getRefAlignmentStart();
+							candidate.mateReadAlignmentStart = extendedRec.getMateRefAlignmentStart();
+							candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
+							candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
+							candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
+							candidate.setSequence(deletedSequence);
+							readLocalCandidates.add(candidate, location);
+							extendedRec.nReferenceDisagreements++;
+
+							if (notRnaSeq && analyzer.computeRawDisagreements) {
+								@SuppressWarnings("null")
+								final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
+									new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
+										new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
+									:
+										new ComparablePair<>(byteMap.get(deletedSequence[0]),
+											new String(deletedSequence).toUpperCase());
+								stats.rawDeletionsQ1.accept(location, mutationPair);
+								stats.rawDeletionLengthQ1.insert(deletedSequence.length);
+								if (meetsQ2Thresholds(extendedRec) &&
+									baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
+									!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
+										candidate.getMutableRawDeletionsQ2().add(mutationPair);
+								}
+							}
+						}
+					}//End of deletion case
+				}//End of case with accepted indel
+			}//End of case where there was a previous alignment block
+
+			refEndOfPreviousAlignment = refPosition + (nBlockBases - 1);
+			readEndOfPreviousAlignment = readPosition + (nBlockBases - 1);
+
+			for (int i = 0; i < nBlockBases; i++, readPosition++, refPosition++) {
+				if (i == 1) {
+					forceCandidateInsertion = false;
+				}
+				boolean insertCandidateAtRegularPosition = true;
+				final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
+					new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition, true)
+					: null;
+					/*final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
+				readPosition == effectiveReadLength - 1;*/
+
+				location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition);
+
+				if (baseQualities[readPosition] < analyzer.minBasePhredScoreQ1) {
+					stats.nBasesBelowPhredScore.increment(location);
+					if (forceCandidateInsertion) {
+						insertCandidateAtRegularPosition = false;
+					} else {
+						continue;
+					}
+				}
+				if (refPosition > refBases.length - 1) {
+					logger.warn("Ignoring base mapped at " + refPosition + ", beyond the end of " + ref.getName());
+					continue;
+				}
+				stats.nCandidateSubstitutionsConsidered.increment(location);
+				if (readBases[readPosition] != StringUtil.toUpperCase(refBases[refPosition]) /*Mismatch*/) {
+
+					final boolean tooLate = readOnNegativeStrand ? readPosition < analyzer.ignoreLastNBases :
+						readPosition > (rec.getReadLength() - 1) - analyzer.ignoreLastNBases;
+
+					int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
+
+					boolean goodToInsert = distance < 0 && !tooLate;
+
+					if (distance >= 0) {
+						if (!extendedRec.formsWrongPair()) {
+							distance = extendedRec.tooCloseToBarcode(readPosition, 0);
+							if (distance <= 0 && insertCandidateAtRegularPosition) {
+								stats.rejectedSubstDistanceToLigationSite.insert(-distance);
+								stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
+							}
+						}
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
+							logger.trace("Ignoring subst too close to barcode for read " + rec.getReadName());
+						}
+						insertCandidateAtRegularPosition = false;
+					} else if (tooLate && insertCandidateAtRegularPosition) {
+						stats.nCandidateSubstitutionsAfterLastNBases.increment(location);
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
+							logger.trace("Ignoring subst too close to read end for read " + rec.getReadName());
+						}
+						insertCandidateAtRegularPosition = false;
+					}
+					if (goodToInsert || forceCandidateInsertion) {
+						if (DebugLogControl.shouldLog(TRACE, logger)) {
+							logger.trace("Substitution at position " + readPosition + " for read " + rec.getReadName() +
+								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
+								"; insert size: " + insertSize + ")");
+						}
+						final byte wildType = StringUtil.toUpperCase(refBases[refPosition]);
+						final byte mutation = StringUtil.toUpperCase(readBases[readPosition]);
+						switch (mutation) {
+							case 'A':
+								stats.nCandidateSubstitutionsToA.increment(location); break;
+							case 'T':
+								stats.nCandidateSubstitutionsToT.increment(location); break;
+							case 'G':
+								stats.nCandidateSubstitutionsToG.increment(location); break;
+							case 'C':
+								stats.nCandidateSubstitutionsToC.increment(location); break;
+							case 'N':
+								stats.nNs.increment(location);
+								if (!forceCandidateInsertion) {
+									continue;
+								} else {
+									insertCandidateAtRegularPosition = false;
+								}
+								break;
+							default:
+								throw new AssertionFailedException("Unexpected letter: " + StringUtil.toUpperCase(readBases[readPosition]));
 						}
 
-						final CandidateSequence candidate = new CandidateDeletion(analyzer.idx, location, extendedRec, distance,
-								location, new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition));
+						distance = -extendedRec.tooCloseToBarcode(readPosition, 0);
+
+						final CandidateSequence candidate = new CandidateSequence(analyzer.idx, SUBSTITUTION, location,
+							extendedRec, distance);
 
 						if (!extendedRec.formsWrongPair()) {
 							candidate.acceptLigSiteDistance(distance);
 						}
-
 						candidate.insertSize = insertSize;
 						candidate.insertSizeNoBarcodeAccounting = false;
 						candidate.positionInRead = readPosition;
@@ -1312,239 +1442,110 @@ public final class SubAnalyzer {
 						candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
 						candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
 						candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-						candidate.setSequence(deletedSequence);
-						readLocalCandidates.add(candidate, location);
-						extendedRec.nReferenceDisagreements++;
-
-						if (notRnaSeq && analyzer.computeRawDisagreements) {
-							@SuppressWarnings("null")
-							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
-									new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
-											new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
-									:
-										new ComparablePair<>(byteMap.get(deletedSequence[0]),
-												new String(deletedSequence).toUpperCase());
-									stats.rawDeletionsQ1.accept(location, mutationPair);
-									stats.rawDeletionLengthQ1.insert(deletedSequence.length);
-									if (meetsQ2Thresholds(extendedRec) &&
-											baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
-											!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
-										candidate.getMutableRawDeletionsQ2().add(mutationPair);
-									}
+						final byte[] mutSequence = {readBases[readPosition]};
+						candidate.setSequence(mutSequence);
+						candidate.setWildtypeSequence(wildType);
+						if (insertCandidateAtRegularPosition) {
+							readLocalCandidates.add(candidate, location);
 						}
-					}
-				}//End of deletion case
-			}//End of case with accepted indel
-		}//End of case where there was a previous alignment block
-
-		refEndOfPreviousAlignment = refPosition + (nBlockBases - 1);
-		readEndOfPreviousAlignment = readPosition + (nBlockBases - 1);
-
-		for (int i = 0; i < nBlockBases; i++, readPosition++, refPosition++) {
-			if (i == 1) {
-				forceCandidateInsertion = false;
-			}
-			boolean insertCandidateAtRegularPosition = true;
-			final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
-				new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition, true)
-				: null;
-			/*final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
-				readPosition == effectiveReadLength - 1;*/
-
-			location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition);
-			
-			if (baseQualities[readPosition] < analyzer.minBasePhredScoreQ1) {
-				stats.nBasesBelowPhredScore.increment(location);
-				if (forceCandidateInsertion) {
-					insertCandidateAtRegularPosition = false;
-				} else {
-					continue;
-				}
-			}
-			if (refPosition > refBases.length - 1) {
-				logger.warn("Ignoring base mapped at " + refPosition + ", beyond the end of " + ref.getName());
-				continue;
-			}
-			stats.nCandidateSubstitutionsConsidered.increment(location);
-			if (readBases[readPosition] != StringUtil.toUpperCase(refBases[refPosition]) /*Mismatch*/) {
-				
-				final boolean tooLate = readOnNegativeStrand ? readPosition < analyzer.ignoreLastNBases :
-					readPosition > (rec.getReadLength() - 1) - analyzer.ignoreLastNBases;
-
-				int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
-
-				boolean goodToInsert = distance < 0 && !tooLate;
-				
-				if (distance >= 0) {
-					if (!extendedRec.formsWrongPair()) {
-						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
-						if (distance <= 0 && insertCandidateAtRegularPosition) {
-							stats.rejectedSubstDistanceToLigationSite.insert(-distance);
-							stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
-						}
-					}
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Ignoring subst too close to barcode for read " + rec.getReadName());
-					}
-					insertCandidateAtRegularPosition = false;
-				} else if (tooLate && insertCandidateAtRegularPosition) {
-					stats.nCandidateSubstitutionsAfterLastNBases.increment(location);
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Ignoring subst too close to read end for read " + rec.getReadName());
-					}
-					insertCandidateAtRegularPosition = false;
-				}
-				if (goodToInsert || forceCandidateInsertion) {
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Substitution at position " + readPosition + " for read " + rec.getReadName() +
-							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
-							"; insert size: " + insertSize + ")");
-					}
-					final byte wildType = StringUtil.toUpperCase(refBases[refPosition]);
-					final byte mutation = StringUtil.toUpperCase(readBases[readPosition]);
-					switch (mutation) {
-						case 'A':
-							stats.nCandidateSubstitutionsToA.increment(location); break;
-						case 'T':
-							stats.nCandidateSubstitutionsToT.increment(location); break;
-						case 'G':
-							stats.nCandidateSubstitutionsToG.increment(location); break;
-						case 'C':
-							stats.nCandidateSubstitutionsToC.increment(location); break;
-						case 'N':
-							stats.nNs.increment(location);
-							if (!forceCandidateInsertion) {
-								continue;
-							} else {
-								insertCandidateAtRegularPosition = false;
+						if (locationPH != null) {
+							final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
+								WILDTYPE, locationPH, extendedRec, distance);
+							if (!extendedRec.formsWrongPair()) {
+								candidate2.acceptLigSiteDistance(distance);
 							}
-							break;
-						default:
-							throw new AssertionFailedException("Unexpected letter: " + StringUtil.toUpperCase(readBases[readPosition]));
+							candidate2.setWildtypeSequence(wildType);
+							candidate2.setSequence(null);
+							readLocalCandidates.add(candidate2, locationPH);
+						}
+						candidate.addBasePhredQualityScore(baseQualities[readPosition]);
+						extendedRec.nReferenceDisagreements++;
+						if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
+							logger.warn("Recording Phred score multiple times at same position " + location);
+						}
+						if (analyzer.computeRawDisagreements && insertCandidateAtRegularPosition) {
+							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
+								new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
+									byteMap.get(Mutation.complement(mutation))) :
+								new ComparablePair<>(byteMap.get(wildType),
+									byteMap.get(mutation));
+							stats.rawMismatchesQ1.accept(location, mutationPair);
+							if (meetsQ2Thresholds(extendedRec) &&
+								baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
+								!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
+									candidate.getMutableRawMismatchesQ2().add(mutationPair);
+							}
+						}
+					}//End of mismatched read case
+				} else {
+					//Wildtype read
+					int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
+					if (distance >= 0) {
+						if (!extendedRec.formsWrongPair()) {
+							distance = extendedRec.tooCloseToBarcode(readPosition, 0);
+							if (distance <= 0 && insertCandidateAtRegularPosition) {
+								stats.wtRejectedDistanceToLigationSite.insert(-distance);
+							}
+						}
+						if (!forceCandidateInsertion) {
+							continue;
+						} else {
+							insertCandidateAtRegularPosition = false;
+						}
+					} else {
+						if (!extendedRec.formsWrongPair() && distance < -150) {
+							throw new AssertionFailedException("Distance problem 1 at read position " + readPosition +
+								" and refPosition " + refPosition + " " + extendedRec.toString() +
+								" in analyzer" + analyzer.inputBam.getAbsolutePath() +
+								"; distance is " + distance + "");
+						}
+						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
+						if (!extendedRec.formsWrongPair() && insertCandidateAtRegularPosition) {
+							stats.wtAcceptedBaseDistanceToLigationSite.insert(-distance);
+						}
 					}
-										
-					distance = -extendedRec.tooCloseToBarcode(readPosition, 0);
 
-					final CandidateSequence candidate = new CandidateSequence(analyzer.idx, SUBSTITUTION, location,
-							extendedRec, distance);
-
+					if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - analyzer.ignoreLastNBases) || 
+						(readOnNegativeStrand && readPosition < analyzer.ignoreLastNBases))) {
+						if (insertCandidateAtRegularPosition) {
+							stats.nCandidateWildtypeAfterLastNBases.increment(location);
+						}
+						if (!forceCandidateInsertion) {
+							continue;
+						} else {
+							insertCandidateAtRegularPosition = false;
+						}
+					}
+					final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
+						WILDTYPE, location, extendedRec, -distance);
 					if (!extendedRec.formsWrongPair()) {
-						candidate.acceptLigSiteDistance(distance);
+						candidate.acceptLigSiteDistance(-distance);
 					}
-					candidate.insertSize = insertSize;
-					candidate.insertSizeNoBarcodeAccounting = false;
-					candidate.positionInRead = readPosition;
-					candidate.readEL = effectiveReadLength;
-					candidate.readName = extendedRec.getFullName();
-					candidate.readAlignmentStart = extendedRec.getRefAlignmentStart();
-					candidate.mateReadAlignmentStart = extendedRec.getMateRefAlignmentStart();
-					candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
-					candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
-					candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-					final byte[] mutSequence = {readBases[readPosition]};
-					candidate.setSequence(mutSequence);
-					candidate.setWildtypeSequence(wildType);
+					candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 					if (insertCandidateAtRegularPosition) {
 						readLocalCandidates.add(candidate, location);
 					}
 					if (locationPH != null) {
 						final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
-								WILDTYPE, locationPH, extendedRec, distance);
+							WILDTYPE, locationPH, extendedRec, -distance);
 						if (!extendedRec.formsWrongPair()) {
-							candidate2.acceptLigSiteDistance(distance);
+							candidate2.acceptLigSiteDistance(-distance);
 						}
-						candidate2.setWildtypeSequence(wildType);
+						candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 						candidate2.setSequence(null);
 						readLocalCandidates.add(candidate2, locationPH);
 					}
 					candidate.addBasePhredQualityScore(baseQualities[readPosition]);
-					extendedRec.nReferenceDisagreements++;
 					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
 						logger.warn("Recording Phred score multiple times at same position " + location);
 					}
-					if (analyzer.computeRawDisagreements && insertCandidateAtRegularPosition) {
-						final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
-								new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
-										byteMap.get(Mutation.complement(mutation))) :
-								new ComparablePair<>(byteMap.get(wildType),
-										byteMap.get(mutation));
-						stats.rawMismatchesQ1.accept(location, mutationPair);
-						if (meetsQ2Thresholds(extendedRec) &&
-							baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
-							!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
-								candidate.getMutableRawMismatchesQ2().add(mutationPair);
-						}
-					}
-				}//End of mismatched read case
-			} else {
-				//Wildtype read
-				int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
-				if (distance >= 0) {
-					if (!extendedRec.formsWrongPair()) {
-						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
-						if (distance <= 0 && insertCandidateAtRegularPosition) {
-							stats.wtRejectedDistanceToLigationSite.insert(-distance);
-						}
-					}
-					if (!forceCandidateInsertion) {
-						continue;
-					} else {
-						insertCandidateAtRegularPosition = false;
-					}
-				} else {
-					if (!extendedRec.formsWrongPair() && distance < -150) {
-						throw new AssertionFailedException("Distance problem 1 at read position " + readPosition +
-								" and refPosition " + refPosition + " " + extendedRec.toString() +
-								" in analyzer" + analyzer.inputBam.getAbsolutePath() +
-								"; distance is " + distance + "");
-					}
-					distance = extendedRec.tooCloseToBarcode(readPosition, 0);
-					if (!extendedRec.formsWrongPair() && insertCandidateAtRegularPosition) {
-						 stats.wtAcceptedBaseDistanceToLigationSite.insert(-distance);
-					}
-				}
-								
-				if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - analyzer.ignoreLastNBases) || 
-						(readOnNegativeStrand && readPosition < analyzer.ignoreLastNBases))) {
-					if (insertCandidateAtRegularPosition) {
-						stats.nCandidateWildtypeAfterLastNBases.increment(location);
-					}
-					if (!forceCandidateInsertion) {
-						continue;
-					} else {
-						insertCandidateAtRegularPosition = false;
-					}
-				}
-				final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
-						WILDTYPE, location, extendedRec, -distance);
-				if (!extendedRec.formsWrongPair()) {
-					candidate.acceptLigSiteDistance(-distance);
-				}
-				candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-				if (insertCandidateAtRegularPosition) {
-					readLocalCandidates.add(candidate, location);
-				}
-				if (locationPH != null) {
-					final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
-							WILDTYPE, locationPH, extendedRec, -distance);
-					if (!extendedRec.formsWrongPair()) {
-						candidate2.acceptLigSiteDistance(-distance);
-					}
-					candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-					candidate2.setSequence(null);
-					readLocalCandidates.add(candidate2, locationPH);
-				}
-				candidate.addBasePhredQualityScore(baseQualities[readPosition]);
-				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
-					logger.warn("Recording Phred score multiple times at same position " + location);
-				}
-			}//End of wildtype case
-		}//End of loop over alignment bases
-	}//End alignment block loop
+				}//End of wildtype case
+			}//End of loop over alignment bases
+		}//End alignment block loop
 
-	readLocalCandidates.build().forEach((k,v) -> insertCandidateAtPosition(v, k));
+		readLocalCandidates.build().forEach((k, v) -> insertCandidateAtPosition(v, k));
 
-	return returnValue;
+		return returnValue;
 	}
 	
 	public @NonNull Mutinack getAnalyzer() {

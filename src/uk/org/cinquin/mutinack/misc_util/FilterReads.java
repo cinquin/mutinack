@@ -70,7 +70,7 @@ public class FilterReads {
 			
 			int nWrongPair = 0, nTooBig = 0, nDiffContig = 0;
 			
-			for (Iterator<SAMRecord> iterator = new IteratorPrefetcher<>(bamReader.iterator(), 100, null, e -> {});
+			for (Iterator<SAMRecord> iterator = new IteratorPrefetcher<>(bamReader.iterator(), 100, null, e -> {}, null);
 					iterator.hasNext() ;) {
 				if (nProcessed == 1 || nProcessedMod++ == 100_000 || ! iterator.hasNext()) {
 					nProcessedMod = 0;

@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -31,6 +30,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
+import gnu.trove.map.hash.THashMap;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
@@ -51,7 +51,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@JsonIgnore
 	protected final boolean sortByValue;
 	@JsonUnwrapped
-	private final @NonNull Map<Object, @NonNull Object> map = new ConcurrentHashMap<>();
+	private final @NonNull Map<Object, @NonNull Object> map = new THashMap<>();
 	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
 	@JsonIgnore

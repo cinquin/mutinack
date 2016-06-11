@@ -78,13 +78,15 @@ public class IntervalTree<T> implements Serializable {
 		else {
 			List<IntervalData<T>> sortedList = new ArrayList<>(intervals);
 			sortedList.sort((i1, i2) -> Long.compare(i1.end + i1.start, i2.end + i2.start));
-			root = createFromList(sortedList);
+			root = createFromList(sortedList, 0);
 		}
 	}
 
-	protected static <T> Interval<T> createFromList(List<IntervalData<T>> intervals) {
+	protected static <T> Interval<T> createFromList(List<IntervalData<T>> intervals,
+			int currentDepth) {
 		Interval<T> newInterval = new Interval<>();
 		if (intervals.size() == 1) {
+			newInterval.initialDepth = 0;
 			IntervalData<T> middle = intervals.get(0);
 			newInterval.center = ((middle.start + middle.end) / 2);
 			newInterval.add(middle);
@@ -103,10 +105,18 @@ public class IntervalTree<T> implements Serializable {
 					newInterval.add(interval);
 				}
 			}
-			if (leftIntervals.size() > 0)
-				newInterval.left = createFromList(leftIntervals);
-			if (rightIntervals.size() > 0)
-				newInterval.right = createFromList(rightIntervals);
+			int maxChildDepth = 0;
+			if (leftIntervals.size() > 0) {
+				final Interval<T> newLeft = createFromList(leftIntervals, currentDepth + 1);
+				newInterval.left = newLeft;
+				maxChildDepth = newLeft.initialDepth;
+			}
+			if (rightIntervals.size() > 0) {
+				final Interval<T> newRight = createFromList(rightIntervals, currentDepth + 1);
+				newInterval.right = newRight;
+				maxChildDepth = Math.max(maxChildDepth, newRight.initialDepth);
+			}
+			newInterval.initialDepth = maxChildDepth + 1;
 		}
 		return newInterval;
 	}
@@ -184,6 +194,7 @@ public class IntervalTree<T> implements Serializable {
 		}
 
 		private long center = Long.MIN_VALUE;
+		private int initialDepth;
 		private Interval<T> left = null;
 		private Interval<T> right = null;
 		private final List<IntervalData<T>> overlap = new ArrayList<>(), // startComparator

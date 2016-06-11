@@ -128,7 +128,8 @@ public class ReadLoader {
 
 				for (File f: analyzer.intersectAlignmentFiles) {
 					SAMFileReader reader = new SAMFileReader(f);
-					intersectionIterators.add(new IteratorPrefetcher<>(reader.queryOverlapping(bamContig), 100, reader, e -> {}));
+					intersectionIterators.add(new IteratorPrefetcher<>(reader.queryOverlapping(bamContig),
+						100, reader, e -> {}, null));
 				}
 				final int nIntersect = intersectionIterators.size();
 				final Map<Integer, Integer> intersectionWaitUntil = new HashMap<>();
@@ -150,7 +151,8 @@ public class ReadLoader {
 				subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
 
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
-						e -> {e.eagerDecode(); e.getUnclippedEnd(); e.getUnclippedStart();})) {
+						e -> {e.eagerDecode(); e.getUnclippedEnd(); e.getUnclippedStart();},
+						subAnalyzer.stats.nReadsInPrefetchQueue)) {
 					while (iterator.hasNext() && !phaser.isTerminated() && !analyzer.
 							groupSettings.terminateAnalysis) {
 

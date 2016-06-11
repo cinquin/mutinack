@@ -504,13 +504,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 		bottomCounter.compute();
 		
 		{//Make sure we do not leak bottom0 or top0
-			final Entry<CandidateSequence, SettableInteger> bottom0 = bottomCounter.candidateCounts.entrySet().parallelStream().
+			final Entry<CandidateSequence, SettableInteger> bottom0 = bottomCounter.candidateCounts.entrySet().stream().
 					max((a,b) -> Integer.compare(a.getValue().get(), b.getValue().get())).
 					orElse(null);
 			bottom = bottom0 == null ? null :
 				new AbstractMap.SimpleImmutableEntry<>(bottom0.getKey(), bottom0.getValue());
 
-			final Entry<CandidateSequence, SettableInteger> top0 = topCounter.candidateCounts.entrySet().parallelStream().
+			final Entry<CandidateSequence, SettableInteger> top0 = topCounter.candidateCounts.entrySet().stream().
 					max((a,b) -> Integer.compare(a.getValue().get(), b.getValue().get())).
 					orElse(null);
 			top = top0 == null ? null :
