@@ -30,13 +30,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
+import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector;
 
 @SuppressWarnings("static-method")
 public class GenomeIntervalTest {
@@ -44,21 +47,7 @@ public class GenomeIntervalTest {
 	@Test
 	public void test() {
 		
-		ArrayList<IntervalData<GenomeInterval>> intervalDataList = new ArrayList<>();
-		 List<String> names = IntStream.iterate(0, i -> i + 1).limit(15).mapToObj(i -> "name_" + i).
-				 collect(Collectors.toList());
-		for (int i = 0; i < 91; i++) {
-			for (String name: names) {
-				GenomeInterval i1 = new GenomeInterval(name, -1, "", 10 + i, 100, null, Util.emptyOptional(), 0);
-				intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
-				GenomeInterval i2 = new GenomeInterval(name, -1, "", 10, 101 - i, null, Util.emptyOptional(), 0);
-				intervalDataList.add(new IntervalTree.IntervalData<>(i2.getStart(), i2.getEnd(), i2));
-			}
-		}
-
-		GenomeInterval i3 = new GenomeInterval("name_3", -1, "", 105, 150, null, Util.emptyOptional(), 0);
-		
-		intervalDataList.add(new IntervalTree.IntervalData<>(i3.getStart(), i3.getEnd(), i3));
+		List<IntervalData<GenomeInterval>> intervalDataList = getTestIntervalDataList();
 
 		List<IntervalData<GenomeInterval>> clone0 = deepClone(intervalDataList);
 		IntervalTree<GenomeInterval> tree1 = new IntervalTree<>(clone0);
@@ -86,6 +75,9 @@ public class GenomeIntervalTest {
 			intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 		}
 		
+		intervalDataList = new ArrayList<>(
+			intervalDataList.stream().collect(TroveSetCollector.uniqueValueCollector()));
+		
 		clone0 = deepClone(intervalDataList);
 		tree1 = new IntervalTree<>(clone0);
 		
@@ -101,19 +93,44 @@ public class GenomeIntervalTest {
 			check(tree, intervalDataList);
 		}
 	}
-	
-	@Test
-	public void checkImmutableEmptySet() {
-		//Check that IntervalTree is not creating a new empty set every time
-		//a query has no result, but instead returns the (immutable) Collections
-		//empty set
-		assertTrue(new IntervalTree<>(Collections.emptyList()).query(0).getUnprotectedData() == 
-				Collections.emptySet());
 
+	@Test(expected = UnsupportedOperationException.class)
+	public void testUnmodifiableQueryResultSet() {
+		new IntervalTree<>(getTestIntervalDataList()).
+			query(Integer.MIN_VALUE, Integer.MAX_VALUE).getData().
+			add(null);
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void testUnmodifiableQueryResultSet1() {
+		new IntervalTree<>(getTestIntervalDataList()).
+			query(Integer.MIN_VALUE, Integer.MAX_VALUE).getData().
+			clear();
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void testUnmodifiableEmptyQueryResultSet() {
+		new IntervalTree<>(Collections.emptyList()).query(0).getData().
+		add(null);
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void testUnmodifiableEmptyQueryResultSet1() {
+		new IntervalTree<>(Collections.emptyList()).query(0).getData().
+		clear();
+	}
+
+	@Test
+	public void testIdentityOfEmptyQueryResults() {
+		//Check that IntervalTree is not creating a new empty set every time
+		//a query has no result, but instead returns the same (immutable)
+		//empty set
+		assertTrue(new IntervalTree<>(Collections.emptyList()).query(0) == IntervalData.EMPTY);
+		
 		//Check that IntervalTree is creating a new empty set if requesting
 		//a defensive copy of the result
-		assertTrue(new IntervalTree<>(Collections.emptyList()).query(0).getData() != 
-				Collections.emptySet());
+		IntervalData<Object> queryResult = new IntervalTree<>(Collections.emptyList()).query(0);
+		assertTrue(queryResult.getData() != queryResult.getUnprotectedData());
 	}
 	
 	private List<IntervalData<GenomeInterval>> deepClone(List<IntervalData<GenomeInterval>> list) {
@@ -121,10 +138,32 @@ public class GenomeIntervalTest {
 		return list.stream().map(id -> new IntervalData<>(id.getStart(), id.getEnd(),
 				new HashSet<>(id.getData()))).collect(Collectors.toList());
 	}
-	
+
 	@SuppressWarnings("unused")
 	private final SecureRandom random = new SecureRandom();
 	
+	private List<IntervalData<GenomeInterval>> getTestIntervalDataList() {
+		final List<IntervalData<GenomeInterval>> intervalDataList = new ArrayList<>();
+
+		List<String> names = IntStream.iterate(0, i -> i + 1).limit(15).mapToObj(i -> "name_" + i).
+				 collect(Collectors.toList());
+		for (int i = 0; i < 91; i++) {
+			for (String name: names) {
+				GenomeInterval i1 = new GenomeInterval(name, -1, "", 10 + i, 100, null, Util.emptyOptional(), 0);
+				intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
+				GenomeInterval i2 = new GenomeInterval(name, -1, "", 10, 101 - i, null, Util.emptyOptional(), 0);
+				intervalDataList.add(new IntervalTree.IntervalData<>(i2.getStart(), i2.getEnd(), i2));
+			}
+		}
+
+		GenomeInterval i3 = new GenomeInterval("name_3", -1, "", 105, 150, null, Util.emptyOptional(), 0);
+
+		intervalDataList.add(new IntervalTree.IntervalData<>(i3.getStart(), i3.getEnd(), i3));
+
+		return new ArrayList<>(
+			intervalDataList.stream().collect(TroveSetCollector.uniqueValueCollector()));
+	}
+
 	private void check(IntervalTree<GenomeInterval> tree, List<IntervalData<GenomeInterval>> intervalList) {
 		for (int position = -200 ; position <= 200; position ++) {
 			final int position0 = position;
@@ -139,6 +178,13 @@ public class GenomeIntervalTest {
 			data = tree.query(position0).getUnprotectedData();
 			assertTrue(data.equals(groundTruthSet));
 
+			Collection<GenomeInterval> data0 = new THashSet<>();
+			tree.forEach(position0, x -> {
+					Assert.assertTrue(data0.add(x));
+					return true;
+				}
+			);
+			assertTrue(data0.equals(groundTruthSet));
 			
 			/* This part of the test disabled because of long run time (but the
 			test does pass if code is uncommented).

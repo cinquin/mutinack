@@ -25,12 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,6 +45,7 @@ import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
@@ -223,7 +224,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	 */
 	@Override
 	public boolean test(SequenceLocation loc) {
-		return !contigTrees.get(loc.contigIndex).query(loc.position).getUnprotectedData().isEmpty();
+		return contigTrees.get(loc.contigIndex).contains(loc.position);
 	}
 	
 	public static boolean anyMatch(Collection<GenomeFeatureTester> testers,
@@ -258,26 +259,40 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		return contigTrees.get(loc.contigIndex).query(loc.position).getUnprotectedData();
 	}
 
+	public void forEach(SequenceLocation loc, Predicate<GenomeInterval> keepGoingPredicate) {
+		contigTrees.get(loc.contigIndex).forEach(loc.position, keepGoingPredicate);
+	}
+
 	@Override
 	public @NonNull Optional<Boolean> getNegativeStrand(SequenceLocation loc) {
-		Collection<GenomeInterval> matches = contigTrees.get(loc.contigIndex).
-				query(loc.position).getUnprotectedData();
-		if (matches.isEmpty()) {
-			return Util.emptyOptional();
-		}
-		if (matches.size() > 1) {
-			//Do some sanity checking
-			boolean r1 = matches.iterator().next().isNegativeStrand().get();
-			Iterator<GenomeInterval> iterator = matches.iterator();
-			while (iterator.hasNext()) {
-				if (iterator.next().isNegativeStrand().get() != r1) {
-					//Overlapping features with opposite orientations
-					//Since we do not know which should be used, return null
-					return Util.emptyOptional();
-				}
+		Handle<Boolean> positiveStrand = new Handle<>();
+		contigTrees.get(loc.contigIndex).forEach(loc.position, interval -> {
+				return interval.isNegativeStrand().map(b -> {
+					Boolean ps = positiveStrand.get();
+					if (ps == null) {
+						positiveStrand.set(b);
+						return true;
+					} else {
+						if (ps != b) {
+							//Overlapping features with opposite orientations
+							//Since we do not know which should be used, return null
+							positiveStrand.set(null);
+							return false;
+						}
+						return true;
+					}
+				}).orElse(true);
 			}
+		);
+		Boolean result = positiveStrand.get();
+		if (result == null) {
+			return Util.emptyOptional();
+		} else {
+			return result ? TRUE_OPTIONAL : FALSE_OPTIONAL;
 		}
-		return matches.iterator().next().isNegativeStrand();
 	}
+
+	private final static @NonNull Optional<Boolean> TRUE_OPTIONAL = Optional.of(true);
+	private final static @NonNull Optional<Boolean> FALSE_OPTIONAL = Optional.of(false);
 
 }

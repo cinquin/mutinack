@@ -16,18 +16,6 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import uk.org.cinquin.mutinack.MutinackGroup;
-import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.features.BedReader;
-import uk.org.cinquin.mutinack.features.GenomeInterval;
-import uk.org.cinquin.mutinack.misc_util.Pair;
-import uk.org.cinquin.mutinack.misc_util.Util;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -41,6 +29,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import uk.org.cinquin.mutinack.MutinackGroup;
+import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.features.BedReader;
+import uk.org.cinquin.mutinack.features.GenomeInterval;
+import uk.org.cinquin.mutinack.misc_util.Pair;
+import uk.org.cinquin.mutinack.misc_util.Util;
 
 /**
  * @author olivier
@@ -87,9 +87,11 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 	public void accept(@NonNull SequenceLocation loc, double d) {
 		if (!on)
 			return;
-		for (GenomeInterval f: bedFeatures.apply(loc)) {
-			counter.accept(f, d * f.getLengthInverse());
-		}
+		bedFeatures.forEach(loc, (GenomeInterval f) -> {
+				counter.accept(f, d * f.getLengthInverse());
+				return true;
+			}
+		);
 	}
 	
 	@Override

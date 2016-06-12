@@ -3,14 +3,17 @@ package com.jwetherell.algorithms.data_structures;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gnu.trove.procedure.TObjectProcedure;
 import gnu.trove.set.hash.THashSet;
 
 /**
@@ -19,10 +22,10 @@ import gnu.trove.set.hash.THashSet;
  * with any given interval or point.
  *
  * http://en.wikipedia.org/wiki/Interval_tree
- * 
+ *
  * @author @copyright Justin Wetherell <phishman3579@gmail.com>
  * Apache license v 2.0
- * 
+ *
  * Changes by Olivier Cinquin <olivier.cinquin@uci.edu> 2014-2015, to fix a couple
  * bugs and improve performance, in part by minimizing object creation as a
  * result of query processing. See also extended tests in
@@ -68,7 +71,7 @@ public class IntervalTree<T> implements Serializable {
 
 	/**
 	 * Create interval tree from list of IntervalData objects;
-	 * 
+	 *
 	 * @param intervals
 	 *            is a list of IntervalData objects
 	 */
@@ -123,7 +126,7 @@ public class IntervalTree<T> implements Serializable {
 
 	/**
 	 * Stabbing query
-	 * 
+	 *
 	 * @param index
 	 *            to query for.
 	 * @return data at index.
@@ -132,9 +135,17 @@ public class IntervalTree<T> implements Serializable {
 		return root.query(index);
 	}
 
+	public boolean contains(long position) {
+		return root.contains(position);
+	}
+
+	public boolean forEach(long index, Predicate<T> keepGoingPredicate) {
+		return root.forEach(index, keepGoingPredicate);
+	}
+
 	/**
 	 * Range query
-	 * 
+	 *
 	 * @param start
 	 *            of range to query for.
 	 * @param end
@@ -209,7 +220,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Stabbing query; WARNING: do not modify returned object
-		 * 
+		 *
 		 * @param index to query for.
 		 * @return data at index.
 		 */
@@ -269,9 +280,65 @@ public class IntervalTree<T> implements Serializable {
 			return results == null ? IntervalTree.IntervalData.EMPTY : results;
 		}
 
+		public boolean contains(long index) {
+			return forEach(index, i -> false);
+		}
+
+		 /** Stabbing query
+		 *
+		 * @param index to query for
+		 * @param keepGoingPredicate
+		 * @return true if at least one element was found
+		 */
+		public boolean forEach(long index, Predicate<T> keepGoingPredicate) {
+			Interval<T> i = this;
+			boolean foundOne = false;
+			while (i != null) {
+				if (index < i.center) {
+					// overlap is sorted by start point
+					final List<IntervalData<T>> overlapCopy = i.overlap;
+					final int size = overlapCopy.size();
+					for (int dataIndex = 0; dataIndex < size; dataIndex++) {
+						final IntervalData<T> data = overlapCopy.get(dataIndex);
+						if (data.start > index)
+							break;
+
+						if (data.hasIndex(index)) {
+							foundOne = !data.set.isEmpty();
+							if (!data.forEach(keepGoingPredicate)) {
+								return foundOne;
+							}
+						}
+					}
+				} else if (index >= i.center) {
+					// overlapEnd is sorted by end point
+					final List<IntervalData<T>> overlapCopy = i.overlapEnd;
+					final int size = overlapCopy.size();
+					for (int dataIndex = 0; dataIndex < size; dataIndex++) {
+						final IntervalData<T> data = overlapCopy.get(dataIndex);
+						if (data.end < index)
+							break;
+
+						if (data.hasIndex(index)) {
+							foundOne = !data.set.isEmpty();
+							if (!data.forEach(keepGoingPredicate)) {
+								return foundOne;
+							}
+						}
+					}
+				}
+				if (index < i.center) {
+					i = i.left;
+				} else {
+					i = i.right;
+				}
+			}
+			return foundOne;
+		}
+
 		/**
 		 * Range query
-		 * 
+		 *
 		 * @param start
 		 *            of range to query for.
 		 * @param end
@@ -332,13 +399,41 @@ public class IntervalTree<T> implements Serializable {
 		private static final long serialVersionUID = -6998782952815928057L;
 		private long start = Long.MIN_VALUE;
 		private long end = Long.MAX_VALUE;
-		private final @NonNull Set<T> set;
+		private final @NonNull THashSet<T> set;
+		@SuppressWarnings("rawtypes")
+		private final static THashSet emptyTHashSet = new THashSet() {
+			@Override
+			public boolean add(Object obj) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean addAll(Collection collection) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean remove(Object obj) {
+				throw new UnsupportedOperationException();
+			};
+
+			@Override
+			public boolean removeAll(Collection collection) {
+				throw new UnsupportedOperationException();
+			};
+
+			@Override
+			public Object removeAndGet(Object arg0) {
+				throw new UnsupportedOperationException();
+			};
+		};
+
 		@SuppressWarnings({ "rawtypes", "null" })
-		public final static IntervalData EMPTY = new IntervalData (Collections.emptySet(), Long.MIN_VALUE, Long.MIN_VALUE);
+		public final static IntervalData EMPTY = new IntervalData (emptyTHashSet, Long.MIN_VALUE, Long.MIN_VALUE);
 
 		/**
 		 * Interval data using object as its unique identifier
-		 * 
+		 *
 		 * @param object
 		 *            Object which defines the interval data
 		 */
@@ -350,8 +445,22 @@ public class IntervalTree<T> implements Serializable {
 		}
 
 		/**
+		 *
+		 * @param keepGoingPredicate
+		 * @return True if keep going (NOT if found an object)
+		 */
+		public boolean forEach(Predicate<T> keepGoingPredicate) {
+			return set.forEach(new TObjectProcedure<T>() {
+				@Override
+				public boolean execute(T arg0) {
+					return keepGoingPredicate.test(arg0);
+				}
+			});
+		}
+
+		/**
 		 * Interval data using object as its unique identifier
-		 * 
+		 *
 		 * @param object
 		 *            Object which defines the interval data
 		 */
@@ -364,7 +473,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Interval data list which should all be unique
-		 * 
+		 *
 		 * @param list
 		 *            of interval data objects
 		 */
@@ -374,7 +483,7 @@ public class IntervalTree<T> implements Serializable {
 			this.set = new THashSet<>(set);
 		}
 
-		private IntervalData(@NonNull Set<T> uncopiedSet, long start, long end) {
+		private IntervalData(@NonNull THashSet<T> uncopiedSet, long start, long end) {
 			this.start = start;
 			this.end = end;
 			this.set = uncopiedSet;
@@ -382,7 +491,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Get the start of this interval
-		 * 
+		 *
 		 * @return Start of interval
 		 */
 		public long getStart() {
@@ -391,7 +500,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Get the end of this interval
-		 * 
+		 *
 		 * @return End of interval
 		 */
 		public long getEnd() {
@@ -400,7 +509,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Get the data set in this interval
-		 * 
+		 *
 		 * @return Unmodifiable collection of data objects
 		 */
 		@SuppressWarnings("null")
@@ -429,7 +538,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Combine this IntervalData with data.
-		 * 
+		 *
 		 * @param data to combine with.
 		 * @return Data which represents the combination.
 		 */
@@ -444,7 +553,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Deep copy of data.
-		 * 
+		 *
 		 * @return deep copy.
 		 */
 		public IntervalData<T> copy() {
@@ -453,7 +562,7 @@ public class IntervalTree<T> implements Serializable {
 
 		/**
 		 * Query inside this data object.
-		 * 
+		 *
 		 * @param start
 		 *            of range to query for.
 		 * @param end
@@ -471,14 +580,14 @@ public class IntervalTree<T> implements Serializable {
 		public boolean hasIndex(long index) {
 			return index >= this.start && index <= this.end;
 		}
-		
+
 		public boolean hasInterval(long start1, long end1) {
 			return end1 >= this.start && start1 <= this.end;
 		}
 
 		/**
 		 * Query inside this data object.
-		 * 
+		 *
 		 * @param start
 		 *            of range to query for.
 		 * @param end
@@ -546,4 +655,5 @@ public class IntervalTree<T> implements Serializable {
 			return false;
 		}
 	}
+
 }
