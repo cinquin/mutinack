@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -56,12 +56,12 @@ import uk.org.cinquin.mutinack.sequence_IO.IteratorPrefetcher;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public class ReadLoader {
-	
+
 	private static final boolean IGNORE_SECONDARY_MAPPINGS = true;
-	
+
 	private static final Logger logger = LoggerFactory.getLogger("ReadLoader");
 	private static final Logger statusLogger = LoggerFactory.getLogger("ReadLoaderStatus");
-	
+
 	@SuppressWarnings("resource")
 	public static void load(Mutinack analyzer, SubAnalyzer subAnalyzer, AnalysisChunk analysisChunk,
 			Parameters argValues, List<AnalysisChunk> analysisChunks,
@@ -72,7 +72,7 @@ public class ReadLoader {
 		final int startAt = analysisChunk.startAtPosition;
 		final SettableInteger pauseAt = analysisChunk.pauseAtPosition;
 		final SettableInteger lastProcessedPosition = analysisChunk.lastProcessedPosition;
-		
+
 		lastProcessable.set(startAt - 1);
 		lastProcessedPosition.set(startAt - 1);
 		pauseAt.set(lastProcessable.get() + PROCESSING_CHUNK);
@@ -93,11 +93,11 @@ public class ReadLoader {
 			info = (stream, userRequestNumber) -> {
 				NumberFormat formatter = DoubleAdderFormatter.nf.get();
 				stream.println("Analyzer " + analyzer.name +
-						" contig " + contig + 
+						" contig " + contig +
 						" range: " + (analysisChunk.startAtPosition + "-" + analysisChunk.terminateAtPosition) +
 						"; pauseAtPosition: " + formatter.format(pauseAt.get()) +
 						"; lastProcessedPosition: " + formatter.format(lastProcessedPosition.get()) + "; " +
-						formatter.format(100f * (lastProcessedPosition.get() - analysisChunk.startAtPosition) / 
+						formatter.format(100f * (lastProcessedPosition.get() - analysisChunk.startAtPosition) /
 								(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
 						);
 			};
@@ -210,14 +210,14 @@ public class ReadLoader {
 										readAheadStash.put(pair);
 										intersectionWaitUntil.put(i, ir5p);
 										break;
-									} 
+									}
 								}
 							}
 						}
 						previous5p = current5p;
 
 						if (nIntersect > 0 &&
-								intersectReads.get(new Pair<>(getRecordNameWithPairSuffix(samRecord), 
+								intersectReads.get(new Pair<>(getRecordNameWithPairSuffix(samRecord),
 										current5p)) < nIntersect) {
 							analyzer.stats.forEach(s -> s.nRecordsNotInIntersection2.accept(location));
 							continue;
@@ -258,6 +258,7 @@ public class ReadLoader {
 							if (analyzer.stats.get(0).nRecordsProcessed.sum() > argValues.nRecordsToProcess) {
 								statusLogger.info("Analysis of contig " + contig + " stopping "
 										+ "because it processed over " + argValues.nRecordsToProcess + " records");
+								phaser.forceTermination();
 								break;
 							}
 						}
@@ -320,8 +321,8 @@ public class ReadLoader {
 							 * Meat of the processing is done here by calling method processRead.
 							 * Only process the reads that will contribute to mutation candidates to be analyzed in the
 							 * next round.
-							 */									
-							Iterator<Pair<ExtendedSAMRecord, @NonNull ReferenceSequence>> it = 
+							 */
+							Iterator<Pair<ExtendedSAMRecord, @NonNull ReferenceSequence>> it =
 									readsToProcess.values().iterator();
 							final int localPauseAt = pauseAt.get();
 							while (it.hasNext()) {
@@ -340,7 +341,7 @@ public class ReadLoader {
 								}
 							}
 							firstRun = false;
-							phaser.arriveAndAwaitAdvance();	
+							phaser.arriveAndAwaitAdvance();
 						}
 						if (finishUp) {
 							break;
@@ -376,7 +377,7 @@ public class ReadLoader {
 			}
 		} catch (Throwable t) {
 			Util.printUserMustSeeMessage("Exception " + t.getMessage() + " " +
-					(t.getCause() != null ? (t.getCause() + " ") : "") + 
+					(t.getCause() != null ? (t.getCause() + " ") : "") +
 					"on thread " + Thread.currentThread());
 			/*if (argValues.terminateImmediatelyUponError) {
 				t.printStackTrace();
@@ -384,7 +385,7 @@ public class ReadLoader {
 			}*/
 			analyzer.groupSettings.errorOccurred();
 			phaser.forceTermination();
-			throw new RuntimeException("Exception while processing contig " + lastContigName + 
+			throw new RuntimeException("Exception while processing contig " + lastContigName +
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
 		} finally {
 			if (info != null) {
@@ -412,7 +413,7 @@ public class ReadLoader {
 		//that chunk
 		//analysisChunk.subAnalyzers.clear();
 	}
-	
+
 	static final boolean shouldLog(Level level) {
 		return logger.isEnabled(level);
 	}
