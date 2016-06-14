@@ -131,7 +131,7 @@ public class BclReader implements CloseableIterator<BclReader.BclValue> {
         return UnsignedTypeUtil.uIntToLong(headerBuf.getInt());
     }
 
-    public class BclValue {
+    public static class BclValue {
         public final byte base;
         public final byte quality;
 

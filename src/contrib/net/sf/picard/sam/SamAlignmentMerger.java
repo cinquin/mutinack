@@ -228,7 +228,7 @@ public class SamAlignmentMerger extends AbstractAlignmentMerger {
         };
     }
 
-    private class SuffixTrimingSamRecordIterator implements CloseableIterator<SAMRecord> {
+    private static class SuffixTrimingSamRecordIterator implements CloseableIterator<SAMRecord> {
         private final CloseableIterator<SAMRecord> underlyingIterator;
         private final String suffixToTrim;
 

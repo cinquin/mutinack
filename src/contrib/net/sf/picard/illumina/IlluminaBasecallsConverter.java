@@ -302,7 +302,7 @@ public class IlluminaBasecallsConverter<CLUSTER_OUTPUT_RECORD> {
     /**
      * A Runnable that carries a priority which is used to compare and order other PriorityRunnables in a task queue.
      */
-    private abstract class PriorityRunnable implements Runnable {
+    private static abstract class PriorityRunnable implements Runnable {
         private final int priority;
 
         /**

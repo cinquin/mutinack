@@ -86,7 +86,7 @@ public class SamRecordIntervalIteratorFactory {
      * FilteringIterator ctor could take a boolean "advance" that would tell it whether or not to call getNextRecord
      * in the ctor, so that it could be delayed in the subclass.  If this pattern happens again, we should do that. 
      */
-    private class StopAfterFilteringIterator implements CloseableIterator<SAMRecord> {
+    private static class StopAfterFilteringIterator implements CloseableIterator<SAMRecord> {
         private final int stopAfterSequence;
         private final int stopAfterPosition;
         private final Iterator<SAMRecord> iterator;

@@ -299,7 +299,7 @@ public class IlluminaFileUtil {
     /**
      * An object providing utilities for locating Illumina files of specific types
      */
-    public abstract class ParameterizedFileUtil {
+    public static abstract class ParameterizedFileUtil {
         /**
          * The file extension for this class, file extension does not have the standard meaning
          * in this instance.  It means, all the characters that come after the identifying portion of

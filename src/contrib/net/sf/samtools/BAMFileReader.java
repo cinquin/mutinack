@@ -888,7 +888,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
     /**
      * A decorating iterator that filters out records that do not match the given reference and start position.
      */
-    private class BAMStartingAtIteratorFilter implements BAMIteratorFilter {
+    private static class BAMStartingAtIteratorFilter implements BAMIteratorFilter {
 
         private final int mReferenceIndex;
         private final int mRegionStart;
@@ -938,7 +938,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
     /**
      * Filters out records that do not match any of the given intervals and query type.
      */
-    private class BAMQueryMultipleIntervalsIteratorFilter implements BAMIteratorFilter {
+    private static class BAMQueryMultipleIntervalsIteratorFilter implements BAMIteratorFilter {
         final SAMFileReader.QueryInterval[] intervals;
         final boolean contained;
         int intervalIndex = 0;

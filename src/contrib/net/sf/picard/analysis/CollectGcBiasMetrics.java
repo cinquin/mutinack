@@ -318,7 +318,7 @@ public class CollectGcBiasMetrics extends CommandLineProgram {
     }
 
     /** Keeps track of current GC calculation state. */
-    class CalculateGcState {
+    static class CalculateGcState {
         boolean init = true ;
         int nCount ;
         int gcCount ;

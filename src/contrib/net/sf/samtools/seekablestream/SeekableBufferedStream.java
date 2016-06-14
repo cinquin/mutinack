@@ -36,7 +36,7 @@ import java.io.InputStream;
 public class SeekableBufferedStream extends SeekableStream {
 
     /** Little extension to buffered input stream to give access to the available bytes in the buffer. */
-    private class ExtBufferedInputStream extends BufferedInputStream {
+    private static class ExtBufferedInputStream extends BufferedInputStream {
         private ExtBufferedInputStream(final InputStream inputStream, final int i) {
             super(inputStream, i);
         }

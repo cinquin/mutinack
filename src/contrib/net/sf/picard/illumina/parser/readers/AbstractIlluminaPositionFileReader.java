@@ -51,7 +51,7 @@ public abstract class AbstractIlluminaPositionFileReader implements CloseableIte
      */
     public static final float MIN_POS = -10.0f;
 
-    public class PositionInfo {
+    public static class PositionInfo {
         /** The x-position as it occurs in the file being read */
         public final float xPos;
 

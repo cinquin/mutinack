@@ -229,7 +229,7 @@ public class MarkIlluminaAdapters extends CommandLineProgram {
         return 0;
     }
 
-    private class CustomAdapterPair implements AdapterPair {
+    private static class CustomAdapterPair implements AdapterPair {
 
         final String fivePrime, threePrime, fivePrimeReadOrder;
         final byte[]  fivePrimeBytes, threePrimeBytes, fivePrimeReadOrderBytes;

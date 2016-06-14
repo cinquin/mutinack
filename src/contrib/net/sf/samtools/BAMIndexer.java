@@ -152,7 +152,7 @@ public class BAMIndexer {
      * processAlignment is called for each alignment until a new reference is encountered, then
      * processReference is called when all records for the reference have been processed.
      */
-    private class BAMIndexBuilder {
+    private static class BAMIndexBuilder {
 
         private final SAMSequenceDictionary sequenceDictionary;
 

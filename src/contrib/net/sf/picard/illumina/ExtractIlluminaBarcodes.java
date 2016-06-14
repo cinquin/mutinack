@@ -500,7 +500,7 @@ public class ExtractIlluminaBarcodes extends CommandLineProgram {
         private final int maxNoCalls, maxMismatches, minMismatchDelta, minimumBaseQuality;
 
         /** Utility class to hang onto data about the best match for a given barcode */
-        class BarcodeMatch {
+        static class BarcodeMatch {
             boolean matched;
             String barcode;
             int mismatches;
