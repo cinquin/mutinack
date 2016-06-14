@@ -39,8 +39,6 @@ import contrib.net.sf.picard.fastq.BamToBfqWriter;
  */
 public class BamToBfq extends CommandLineProgram {
 
-    private static final String PROGRAM_VERSION = "1.0";
-
     // The following attributes define the command-line arguments
     @Usage
     public String USAGE = getStandardUsagePreamble() + "Create BFQ files for use by the Maq aligner.";

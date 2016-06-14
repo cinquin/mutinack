@@ -85,7 +85,8 @@ public class FixMateInformation extends CommandLineProgram {
         new FixMateInformation().instanceMainWithExit(args);
     }
 
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         // Open up the input
         boolean allQueryNameSorted = true;
         final List<SAMFileReader> readers = new ArrayList<>();

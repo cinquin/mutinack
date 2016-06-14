@@ -145,7 +145,8 @@ public abstract class AbstractDuplicateFindingAlgorithm extends CommandLineProgr
         final boolean[] opticalDuplicateFlags = new boolean[length];
 
         Collections.sort(list, new Comparator<PhysicalLocation>() {
-            public int compare(final PhysicalLocation lhs, final PhysicalLocation rhs) {
+            @Override
+						public int compare(final PhysicalLocation lhs, final PhysicalLocation rhs) {
                 int retval = lhs.getReadGroup() - rhs.getReadGroup();
                 if (retval == 0) retval = lhs.getTile() - rhs.getTile();
                 if (retval == 0) retval = lhs.getX() - rhs.getX();

@@ -123,7 +123,8 @@ public class FastqToSam extends CommandLineProgram {
     }
 
     /* Simply invokes the right method for unpaired or paired data. */
-    protected int doWork() {
+    @Override
+		protected int doWork() {
             final QualityEncodingDetector detector = new QualityEncodingDetector();
             final FastqReader reader = new FastqReader(FASTQ,ALLOW_AND_IGNORE_EMPTY_LINES);
             if (FASTQ2 == null) {

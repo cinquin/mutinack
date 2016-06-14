@@ -65,7 +65,8 @@ class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements
      * @param that another iterator to compare to
      * @return a negative, 0 or positive number as described in the Comparator interface
      */
-    public int compareTo(final ComparableSamRecordIterator that) {
+    @Override
+		public int compareTo(final ComparableSamRecordIterator that) {
         if (this.comparator.getClass() != that.comparator.getClass()) {
             throw new IllegalStateException("Attempt to compare two ComparableSAMRecordIterators that " +
                     "have different orderings internally");

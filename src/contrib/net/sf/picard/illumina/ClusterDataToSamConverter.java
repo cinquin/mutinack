@@ -50,7 +50,6 @@ public class ClusterDataToSamConverter implements
         IlluminaBasecallsConverter.ClusterDataConverter<IlluminaBasecallsToSam.SAMRecordsForCluster> {
 
 
-    private final String runBarcode;
     private final String readGroupId;
     private final SamRecordFilter filters = new SolexaNoiseFilter();
     private final boolean isPairedEnd;
@@ -74,7 +73,6 @@ public class ClusterDataToSamConverter implements
                                      final String readGroupId,
                                      final ReadStructure readStructure,
                                      final List<IlluminaUtil.IlluminaAdapterPair> adapters) {
-        this.runBarcode  = runBarcode;
         this.readGroupId = readGroupId;
         
         this.readNameEncoder = new IlluminaReadNameEncoder(runBarcode);

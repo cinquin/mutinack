@@ -54,7 +54,8 @@ public class ClusterData {
         }
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
         return "ClusterData(lane: " + lane + "; tile: " + tile + "; x: " + x + "; y: " + y + "; pf: " + pf +
                 "; matchedBarcode: " + matchedBarcode + ")";
     }

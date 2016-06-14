@@ -109,16 +109,17 @@ public abstract class AbstractAlignmentMerger {
     private final SortOrder sortOrder;
     private MultiHitAlignedReadIterator alignedIterator = null;
     private boolean clipOverlappingReads = true;
-    private int maxRecordsInRam = MAX_RECORDS_IN_RAM;
     private final PrimaryAlignmentSelectionStrategy primaryAlignmentSelectionStrategy;
     private boolean keepAlignerProperPairFlags = false;
     private boolean addMateCigar = false;
 
     private final SamRecordFilter alignmentFilter = new SamRecordFilter() {
-        public boolean filterOut(final SAMRecord record) {
+        @Override
+				public boolean filterOut(final SAMRecord record) {
             return ignoreAlignment(record);
         }
-        public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+        @Override
+				public boolean filterOut(final SAMRecord first, final SAMRecord second) {
             throw new UnsupportedOperationException("Paired SamRecordFilter not implemented!");
         }
     };
@@ -220,7 +221,6 @@ public abstract class AbstractAlignmentMerger {
 
     /** Allows the caller to override the maximum records in RAM. */
     public void setMaxRecordsInRam(final int maxRecordsInRam) {
-        this.maxRecordsInRam = maxRecordsInRam;
     }
 
     /**

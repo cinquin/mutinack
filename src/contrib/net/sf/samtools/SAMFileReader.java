@@ -718,7 +718,7 @@ public class SAMFileReader implements Iterable<SAMRecord>, Closeable {
 
         try {
             final GZIPInputStream gunzip = new GZIPInputStream(stream);
-            final int ch = gunzip.read();
+            gunzip.read();
             return true;
         }
         catch (final IOException ioe) {

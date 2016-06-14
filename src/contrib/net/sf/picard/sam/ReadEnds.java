@@ -49,15 +49,23 @@ class ReadEnds implements MarkDuplicates.PhysicalLocation {
 
     boolean isPaired() { return this.read2Sequence != -1; }
 
-    public short getReadGroup() { return this.readGroup; }
-    public void setReadGroup(short readGroup) { this.readGroup = readGroup; }
+    @Override
+		public short getReadGroup() { return this.readGroup; }
+    @Override
+		public void setReadGroup(short readGroup) { this.readGroup = readGroup; }
 
-    public short getTile() { return this.tile; }
-    public void setTile(short tile) { this.tile = tile; }
+    @Override
+		public short getTile() { return this.tile; }
+    @Override
+		public void setTile(short tile) { this.tile = tile; }
 
-    public short getX() { return this.x; }
-    public void setX(short x) { this.x = x; }
+    @Override
+		public short getX() { return this.x; }
+    @Override
+		public void setX(short x) { this.x = x; }
 
-    public short getY() { return this.y; }
-    public void setY(short y) { this.y = y; }
+    @Override
+		public short getY() { return this.y; }
+    @Override
+		public void setY(short y) { this.y = y; }
 }

@@ -28,8 +28,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Set;
 
-import contrib.net.sf.picard.PicardException;
-
 import java.util.HashSet;
 
 /**

@@ -282,7 +282,6 @@ public class BclReader implements CloseableIterator<BclReader.BclValue> {
         if (!(inputStream instanceof BlockCompressedInputStream)) {
             throw new UnsupportedOperationException("Seeking only allowed on bzgf");
         } else {
-            final BlockCompressedInputStream bcis = (BlockCompressedInputStream)inputStream;
             try {
                 ((BlockCompressedInputStream) inputStream).seek(virtualFilePointer);
             } catch (IOException e) {

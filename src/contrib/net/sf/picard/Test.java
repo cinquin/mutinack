@@ -1,8 +1,6 @@
 package contrib.net.sf.picard;
 
 import java.util.StringTokenizer;
-import java.util.regex.Pattern;
-
 import contrib.net.sf.samtools.util.StopWatch;
 import contrib.net.sf.samtools.util.StringUtil;
 

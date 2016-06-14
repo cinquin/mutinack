@@ -152,7 +152,8 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
    *                            <code>Pair</code>.
    * @see java.lang.Comparable
    */
-  @SuppressWarnings("unchecked")
+  @Override
+	@SuppressWarnings("unchecked")
   public int compareTo(Pair<T1,T2> another) {
     if (first() instanceof Comparable) {
       int comp = ((Comparable<T1>) first()).compareTo(another.first());

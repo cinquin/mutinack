@@ -490,7 +490,8 @@ public class CollectionUtils {
 
   public static <C extends Comparable<C>> Comparator<List<C>> getListComparator() {
     return new Comparator<List<C>>() {
-      public int compare(List<C> list1, List<C> list2) {
+      @Override
+			public int compare(List<C> list1, List<C> list2) {
         return compareLists(list1, list2);
       }
     };

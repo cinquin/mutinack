@@ -67,7 +67,8 @@ public class BuildBamIndex extends CommandLineProgram {
      * readable and that the output file can be written to.  Then iterates through
      * all the records generating a BAM Index, then writes the bai file.
      */
-    protected int doWork() {
+    @Override
+		protected int doWork() {
 
         try {
             inputUrl = new URL(INPUT);

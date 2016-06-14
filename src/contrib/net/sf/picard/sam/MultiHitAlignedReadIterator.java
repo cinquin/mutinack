@@ -64,11 +64,13 @@ class MultiHitAlignedReadIterator implements CloseableIterator<HitsForInsert> {
         peekIterator = new PeekableIterator<>(new FilteringIterator(querynameOrderIterator,
                 new SamRecordFilter() {
                     // Filter unmapped reads.
-                    public boolean filterOut(final SAMRecord record) {
+                    @Override
+										public boolean filterOut(final SAMRecord record) {
                         return record.getReadUnmappedFlag() || SAMUtils.cigarMapsNoBasesToRef(record.getCigar());
                     }
 
-                    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+                    @Override
+										public boolean filterOut(final SAMRecord first, final SAMRecord second) {
                         return ((first.getReadUnmappedFlag() || SAMUtils.cigarMapsNoBasesToRef(first.getCigar()))
                                 && (second.getReadUnmappedFlag() || SAMUtils.cigarMapsNoBasesToRef(second.getCigar())));
                     }
@@ -78,18 +80,21 @@ class MultiHitAlignedReadIterator implements CloseableIterator<HitsForInsert> {
         advance();
     }
 
-    public void close() {
+    @Override
+		public void close() {
         peekIterator.close();
     }
 
-    public boolean hasNext() {
+    @Override
+		public boolean hasNext() {
         return theNext != null;
     }
 
     /**
      * @throws IllegalStateException if the input is not queryname-sorted.
      */
-    public HitsForInsert next() {
+    @Override
+		public HitsForInsert next() {
         if (!hasNext()) throw new NoSuchElementException();
         final HitsForInsert ret = theNext;
         advance();
@@ -201,7 +206,8 @@ class MultiHitAlignedReadIterator implements CloseableIterator<HitsForInsert> {
    }
 
     /** Unsupported operation. */
-    public void remove() {
+    @Override
+		public void remove() {
         throw new UnsupportedOperationException();
     }
 }

@@ -16,7 +16,8 @@ public class Comparators {
   public static <T> Comparator<T> chain(final Comparator<? super T> c1,
                                         final Comparator<? super T> c2) {
     return new Comparator<T>() {
-      public int compare(T o1, T o2) {
+      @Override
+			public int compare(T o1, T o2) {
         int x = c1.compare(o1, o2);
         return (x == 0 ? c2.compare(o1, o2) : x);
       }
@@ -30,7 +31,8 @@ public class Comparators {
    */
   public static <T> Comparator<T> chain(final List<Comparator<? super T>> c) {
     return new Comparator<T>() {
-      public int compare(T o1, T o2) {
+      @Override
+			public int compare(T o1, T o2) {
         int x = 0;
         Iterator<Comparator<? super T>> it = c.iterator();
         while (x == 0 && it.hasNext()) {
@@ -51,7 +53,8 @@ public class Comparators {
    */
   public static <T> Comparator<T> reverse(final Comparator<? super T> c) {
     return new Comparator<T>() {
-      public int compare(T o1, T o2) {
+      @Override
+			public int compare(T o1, T o2) {
         int x = c.compare(o1, o2);
         return -x;
       }

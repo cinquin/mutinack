@@ -49,8 +49,8 @@ public class SamFileHeaderMerger {
      */
     private static final char [] INT_TO_BASE36 = new char[36];
     static {
-        int aVal    = (int) 'A';
-        int zeroVal = (int) '0';
+        int aVal    = 'A';
+        int zeroVal = '0';
 
         for(int i = 0; i < 10; i++) {
             INT_TO_BASE36[i] = (char)(zeroVal + i);
@@ -93,21 +93,24 @@ public class SamFileHeaderMerger {
 
     //HeaderRecordFactory that creates SAMReadGroupRecord instances.
     private static final HeaderRecordFactory<SAMReadGroupRecord> READ_GROUP_RECORD_FACTORY = new HeaderRecordFactory<SAMReadGroupRecord>() {
-        public SAMReadGroupRecord createRecord(final String id, final SAMReadGroupRecord srcReadGroupRecord) {
+        @Override
+				public SAMReadGroupRecord createRecord(final String id, final SAMReadGroupRecord srcReadGroupRecord) {
             return new SAMReadGroupRecord(id, srcReadGroupRecord);
         }
     };
 
     //HeaderRecordFactory that creates SAMProgramRecord instances.
     private static final HeaderRecordFactory<SAMProgramRecord> PROGRAM_RECORD_FACTORY = new HeaderRecordFactory<SAMProgramRecord>() {
-        public SAMProgramRecord createRecord(final String id, final SAMProgramRecord srcProgramRecord) {
+        @Override
+				public SAMProgramRecord createRecord(final String id, final SAMProgramRecord srcProgramRecord) {
             return new SAMProgramRecord(id, srcProgramRecord);
         }
     };
 
     //comparator used to sort lists of program group and read group records
     private static final Comparator<AbstractSAMHeaderRecord> RECORD_ID_COMPARATOR = new Comparator<AbstractSAMHeaderRecord>() {
-        public int compare(final AbstractSAMHeaderRecord o1, final AbstractSAMHeaderRecord o2) {
+        @Override
+				public int compare(final AbstractSAMHeaderRecord o1, final AbstractSAMHeaderRecord o2) {
             return o1.getId().compareTo(o2.getId());
         }
     };

@@ -13,7 +13,7 @@ public class UnsignedTypeUtil {
 
     /** Convert an unsigned byte to a signed short */
     public static int uByteToShort(final byte unsignedByte) {
-        return (short) unsignedByte & 0xFF;
+        return unsignedByte & 0xFF;
     }
 
     /** Convert an unsigned short to an Int */

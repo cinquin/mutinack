@@ -183,8 +183,6 @@ public class CollectGcBiasMetrics extends CommandLineProgram {
         final double totalWindows = sum(windowsByGc);
         final double totalReads   = sum(readsByGc);
         final double meanReadsPerWindow = totalReads / totalWindows;
-        final double minimumWindowsToCountInSummary = totalWindows * this.MINIMUM_GENOME_FRACTION;
-
         for (int i=0; i<windowsByGc.length; ++i) {
             if (windowsByGc[i] == 0) continue;
 
@@ -194,7 +192,7 @@ public class CollectGcBiasMetrics extends CommandLineProgram {
             m.READ_STARTS         = readsByGc[i];
             if (errorsByGc[i] > 0) m.MEAN_BASE_QUALITY = QualityUtil.getPhredScoreFromObsAndErrors(basesByGc[i], errorsByGc[i]);
             m.NORMALIZED_COVERAGE = (m.READ_STARTS / (double) m.WINDOWS) / meanReadsPerWindow;
-            m.ERROR_BAR_WIDTH     = (Math.sqrt(m.READ_STARTS) / (double) m.WINDOWS) / meanReadsPerWindow;
+            m.ERROR_BAR_WIDTH     = (Math.sqrt(m.READ_STARTS) / m.WINDOWS) / meanReadsPerWindow;
 
             metricsFile.addMetric(m);
         }

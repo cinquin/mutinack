@@ -55,34 +55,41 @@ class DiskReadEndsMap implements ReadEndsMap {
         pairInfoMap = new CoordinateSortedPairInfoMap<>(maxOpenFiles, new Codec());
     }
 
-    public ReadEnds remove(int mateSequenceIndex, String key) {
+    @Override
+		public ReadEnds remove(int mateSequenceIndex, String key) {
         return pairInfoMap.remove(mateSequenceIndex, key);
     }
 
-    public void put(int mateSequenceIndex, String key, ReadEnds readEnds) {
+    @Override
+		public void put(int mateSequenceIndex, String key, ReadEnds readEnds) {
         pairInfoMap.put(mateSequenceIndex, key, readEnds);
     }
 
-    public int size() {
+    @Override
+		public int size() {
         return pairInfoMap.size();
     }
 
-    public int sizeInRam() {
+    @Override
+		public int sizeInRam() {
         return pairInfoMap.sizeInRam();
     }
 
     private static class Codec implements CoordinateSortedPairInfoMap.Codec<String, ReadEnds> {
         private final ReadEndsCodec readEndsCodec = new ReadEndsCodec();
 
-        public void setInputStream(final InputStream is) {
+        @Override
+				public void setInputStream(final InputStream is) {
             readEndsCodec.setInputStream(is);
         }
 
-        public void setOutputStream(final OutputStream os) {
+        @Override
+				public void setOutputStream(final OutputStream os) {
             readEndsCodec.setOutputStream(os);
         }
 
-        public Map.Entry<String, ReadEnds> decode() {
+        @Override
+				public Map.Entry<String, ReadEnds> decode() {
             try {
                 final String key = readEndsCodec.getInputStream().readUTF();
                 final ReadEnds record = readEndsCodec.decode();
@@ -92,7 +99,8 @@ class DiskReadEndsMap implements ReadEndsMap {
             }
         }
 
-        public void encode(final String key, final ReadEnds readEnds) {
+        @Override
+				public void encode(final String key, final ReadEnds readEnds) {
             try {
                 readEndsCodec.getOutputStream().writeUTF(key);
                 readEndsCodec.encode(readEnds);

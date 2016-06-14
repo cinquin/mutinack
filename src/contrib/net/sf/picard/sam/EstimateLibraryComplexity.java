@@ -98,17 +98,25 @@ public class EstimateLibraryComplexity extends AbstractDuplicateFindingAlgorithm
         byte[] read1;
         byte[] read2;
 
-        public short getReadGroup() { return this.readGroup; }
-        public void setReadGroup(final short readGroup) { this.readGroup = readGroup; }
+        @Override
+				public short getReadGroup() { return this.readGroup; }
+        @Override
+				public void setReadGroup(final short readGroup) { this.readGroup = readGroup; }
 
-        public short getTile() { return this.tile; }
-        public void setTile(final short tile) { this.tile = tile; }
+        @Override
+				public short getTile() { return this.tile; }
+        @Override
+				public void setTile(final short tile) { this.tile = tile; }
 
-        public short getX() { return this.x; }
-        public void setX(final short x) { this.x = x; }
+        @Override
+				public short getX() { return this.x; }
+        @Override
+				public void setX(final short x) { this.x = x; }
 
-        public short getY() { return this.y; }
-        public void setY(final short y) { this.y = y; }
+        @Override
+				public short getY() { return this.y; }
+        @Override
+				public void setY(final short y) { this.y = y; }
     }
 
     /**
@@ -118,15 +126,18 @@ public class EstimateLibraryComplexity extends AbstractDuplicateFindingAlgorithm
         private DataOutputStream out;
         private DataInputStream in;
 
-        public void setOutputStream(final OutputStream out) {
+        @Override
+				public void setOutputStream(final OutputStream out) {
             this.out = new DataOutputStream(out);
         }
 
-        public void setInputStream(final InputStream in) {
+        @Override
+				public void setInputStream(final InputStream in) {
             this.in= new DataInputStream(in);
         }
 
-        public void encode(final PairedReadSequence val) {
+        @Override
+				public void encode(final PairedReadSequence val) {
             try {
                 this.out.writeShort(val.readGroup);
                 this.out.writeShort(val.tile);
@@ -142,7 +153,8 @@ public class EstimateLibraryComplexity extends AbstractDuplicateFindingAlgorithm
             }
         }
 
-        public PairedReadSequence decode() {
+        @Override
+				public PairedReadSequence decode() {
             try {
                 final PairedReadSequence val = new PairedReadSequence();
                 try {
@@ -185,7 +197,8 @@ public class EstimateLibraryComplexity extends AbstractDuplicateFindingAlgorithm
     class PairedReadComparator implements Comparator<PairedReadSequence> {
         final int BASES = EstimateLibraryComplexity.this.MIN_IDENTICAL_BASES;
 
-        public int compare(final PairedReadSequence lhs, final PairedReadSequence rhs) {
+        @Override
+				public int compare(final PairedReadSequence lhs, final PairedReadSequence rhs) {
             // First compare the first N bases of the first read
             for (int i=0; i<BASES; ++i) {
                 final int retval = lhs.read1[i] - rhs.read1[i];

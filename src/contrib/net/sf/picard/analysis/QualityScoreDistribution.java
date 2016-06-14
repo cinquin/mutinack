@@ -122,8 +122,8 @@ public class QualityScoreDistribution extends SinglePassSamProgram {
         final Histogram<Byte> oqHisto = new Histogram<>("QUALITY", "COUNT_OF_OQ");
 
         for (int i=0; i< qCounts.length; ++i) {
-            if (qCounts[i]  > 0) qHisto.increment( (byte) i, (double) qCounts[i]);
-            if (oqCounts[i] > 0) oqHisto.increment((byte) i, (double) oqCounts[i]);
+            if (qCounts[i]  > 0) qHisto.increment( (byte) i, qCounts[i]);
+            if (oqCounts[i] > 0) oqHisto.increment((byte) i, oqCounts[i]);
         }
 
         final MetricsFile<?,Byte> metrics = getMetricsFile();

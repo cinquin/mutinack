@@ -69,7 +69,8 @@ public class IntervalList implements Iterable<Interval> {
     public SAMFileHeader getHeader() { return header; }
 
     /** Returns an iterator over the intervals. */
-    public Iterator<Interval> iterator() { return this.intervals.iterator(); }
+    @Override
+		public Iterator<Interval> iterator() { return this.intervals.iterator(); }
 
     /** Adds an interval to the list of intervals. */
     public void add(final Interval interval) { this.intervals.add(interval); }
@@ -624,7 +625,8 @@ class IntervalCoordinateComparator implements Comparator<Interval> {
         this.header = header;
     }
 
-    public int compare(final Interval lhs, final Interval rhs) {
+    @Override
+		public int compare(final Interval lhs, final Interval rhs) {
         final int lhsIndex = this.header.getSequenceIndex(lhs.getSequence());
         final int rhsIndex = this.header.getSequenceIndex(rhs.getSequence());
         int retval = lhsIndex - rhsIndex;

@@ -151,7 +151,8 @@ public class MarkDuplicates extends AbstractDuplicateFindingAlgorithm {
      * Then makes a pass through those determining duplicates before re-reading the
      * input file and writing it out with duplication flags set correctly.
      */
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         for (final File f : INPUT) IoUtil.assertFileIsReadable(f);
         IoUtil.assertFileIsWritable(OUTPUT);
         IoUtil.assertFileIsWritable(METRICS_FILE);
@@ -568,7 +569,7 @@ public class MarkDuplicates extends AbstractDuplicateFindingAlgorithm {
     private void generateDuplicateIndexes() {
         // Keep this number from getting too large even if there is a huge heap.
         final int maxInMemory = (int) Math.min((Runtime.getRuntime().maxMemory() * 0.25) / SortingLongCollection.SIZEOF,
-                (double)(Integer.MAX_VALUE - 5));
+                Integer.MAX_VALUE - 5);
         log.info("Will retain up to " + maxInMemory + " duplicate indices before spilling to disk.");
         this.duplicateIndexes = new SortingLongCollection(maxInMemory, TMP_DIR.toArray(new File[TMP_DIR.size()]));
 
@@ -722,7 +723,8 @@ public class MarkDuplicates extends AbstractDuplicateFindingAlgorithm {
 
     /** Comparator for ReadEnds that orders by read1 position then pair orientation then read2 position. */
     static class ReadEndsComparator implements Comparator<ReadEnds> {
-        public int compare(final ReadEnds lhs, final ReadEnds rhs) {
+        @Override
+				public int compare(final ReadEnds lhs, final ReadEnds rhs) {
             int retval = lhs.libraryId - rhs.libraryId;
             if (retval == 0) retval = lhs.read1Sequence - rhs.read1Sequence;
             if (retval == 0) retval = lhs.read1Coordinate - rhs.read1Coordinate;

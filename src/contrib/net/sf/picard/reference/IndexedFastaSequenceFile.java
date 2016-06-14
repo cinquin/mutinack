@@ -258,7 +258,8 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * A simple toString implementation for debugging.
      * @return String representation of the file.
      */
-    public String toString() {
+    @Override
+		public String toString() {
         return this.file.getAbsolutePath();
     }
 

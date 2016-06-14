@@ -44,7 +44,8 @@ public class BestEndMapqPrimaryAlignmentStrategy implements PrimaryAlignmentSele
     /**
      * Primary alignment was filtered out.  Need to select a new one.
      */
-    public void pickPrimaryAlignment(final HitsForInsert hits) {
+    @Override
+		public void pickPrimaryAlignment(final HitsForInsert hits) {
 
         if (hits.numHits() == 0) throw new IllegalArgumentException("No alignments to pick from");
         Collections.sort(hits.firstOfPairOrFragment, MAPQ_COMPARATOR);
@@ -87,7 +88,8 @@ public class BestEndMapqPrimaryAlignmentStrategy implements PrimaryAlignmentSele
 
     // Sorts in descending order, but 255 is considered > 0 but < 1, and unmapped is worst of all
     private static class MapqComparator implements Comparator<SAMRecord> {
-        public int compare(final SAMRecord rec1, final SAMRecord rec2) {
+        @Override
+				public int compare(final SAMRecord rec1, final SAMRecord rec2) {
             if (rec1.getReadUnmappedFlag()) {
                 if (rec2.getReadUnmappedFlag()) return 0;
                 else return 1;

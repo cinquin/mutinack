@@ -154,7 +154,8 @@ public class SamAlignmentMerger extends AbstractAlignmentMerger {
      * that the alignment records are pre-sorted.  If not, catches the exception, forces a sort, and
      * tries again.
      */
-    public void mergeAlignment() {
+    @Override
+		public void mergeAlignment() {
         try {
             super.mergeAlignment();
         }
@@ -169,7 +170,8 @@ public class SamAlignmentMerger extends AbstractAlignmentMerger {
     /**
      * Reads the aligned SAM records into a SortingCollection and returns an iterator over that collection
      */
-    protected CloseableIterator<SAMRecord> getQuerynameSortedAlignedRecords() {
+    @Override
+		protected CloseableIterator<SAMRecord> getQuerynameSortedAlignedRecords() {
 
         final CloseableIterator<SAMRecord> mergingIterator;
         final SAMFileHeader header;
@@ -291,16 +293,19 @@ public class SamAlignmentMerger extends AbstractAlignmentMerger {
             header = headerMerger.getMergedHeader();
         }
 
-        public void close() {
+        @Override
+				public void close() {
             read1Iterator.close();
             read2Iterator.close();
         }
 
-        public boolean hasNext() {
+        @Override
+				public boolean hasNext() {
             return read1Iterator.hasNext() || read2Iterator.hasNext();
         }
 
-        public SAMRecord next() {
+        @Override
+				public SAMRecord next() {
             if (read1Iterator.hasNext()) {
                 if (read2Iterator.hasNext()) {
                     return (read1Iterator.peek().getReadName().compareTo(read2Iterator.peek().getReadName()) <= 0)
@@ -316,7 +321,8 @@ public class SamAlignmentMerger extends AbstractAlignmentMerger {
             }
         }
 
-        public void remove() {
+        @Override
+				public void remove() {
             throw new UnsupportedOperationException("remove() not supported");
         }
 
@@ -334,7 +340,8 @@ public class SamAlignmentMerger extends AbstractAlignmentMerger {
      * For now, we only ignore those alignments that have more than <code>maxGaps</code> insertions
      * or deletions.
      */
-    protected boolean ignoreAlignment(final SAMRecord sam) {
+    @Override
+		protected boolean ignoreAlignment(final SAMRecord sam) {
         if (maxGaps == -1) return false;
         int gaps = 0;
         for (final CigarElement el : sam.getCigar().getCigarElements()) {

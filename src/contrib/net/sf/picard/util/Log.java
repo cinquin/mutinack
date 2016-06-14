@@ -45,7 +45,6 @@ public final class Log {
 
     private static LogLevel globalLogLevel = LogLevel.DEBUG;
 
-    private final Class<?> clazz;
     private final String className;
     private final PrintStream out = System.err;
 
@@ -53,7 +52,6 @@ public final class Log {
      * Private constructor
      */
     private Log(final Class<?> clazz) {
-        this.clazz = clazz;
         this.className = clazz.getSimpleName();
     }
 

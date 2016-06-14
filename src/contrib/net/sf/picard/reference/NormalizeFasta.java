@@ -14,7 +14,6 @@ import contrib.net.sf.picard.reference.ReferenceSequence;
 import contrib.net.sf.picard.reference.ReferenceSequenceFile;
 import contrib.net.sf.picard.reference.ReferenceSequenceFileFactory;
 import contrib.net.sf.picard.util.Log;
-import contrib.net.sf.samtools.util.CloserUtil;
 import contrib.net.sf.samtools.util.RuntimeIOException;
 
 /**

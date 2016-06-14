@@ -105,7 +105,8 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     }
 
     /** Returns the full path to the reference file. */
-    public String toString() {
+    @Override
+		public String toString() {
         return this.file.getAbsolutePath();
     }
 

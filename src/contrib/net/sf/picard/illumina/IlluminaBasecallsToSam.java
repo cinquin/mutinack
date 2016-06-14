@@ -510,7 +510,7 @@ public class IlluminaBasecallsToSam extends CommandLineProgram {
             for (int i = 1; i < numRecords; ++i) {
                 ret.records[i] = bamCodec.decode();
                 if (ret.records[i] == null) {
-                    throw new IllegalStateException(String.format("Expected to read % records but read only %d", numRecords, i));
+                    throw new IllegalStateException(String.format("Expected to read %s records but read only %d", numRecords, i));
                 }
             }
             return ret;

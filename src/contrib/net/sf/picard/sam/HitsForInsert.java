@@ -203,15 +203,12 @@ class HitsForInsert {
             }
         }
 
-        // Now renumber any correlated alignments, and remove hit index if no correlated read.
-        int hi = 0;
         for (int i = 0; i < numHits(); ++i) {
             final SAMRecord first = getFirstOfPair(i);
             final SAMRecord second = getSecondOfPair(i);
             if (first != null && second != null) {
                 first.setAttribute(SAMTag.HI.name(), i);
                 second.setAttribute(SAMTag.HI.name(), i);
-                ++hi;
             } else if (first != null) {
                 first.setAttribute(SAMTag.HI.name(), null);
             } else {
@@ -259,7 +256,8 @@ class HitsForInsert {
 
     // null HI tag sorts after any non-null.
     private static class HitIndexComparator implements Comparator<SAMRecord> {
-        public int compare(final SAMRecord rec1, final SAMRecord rec2) {
+        @Override
+				public int compare(final SAMRecord rec1, final SAMRecord rec2) {
             final Integer hi1 = rec1.getIntegerAttribute(SAMTag.HI.name());
             final Integer hi2 = rec2.getIntegerAttribute(SAMTag.HI.name());
             if (hi1 == null) {

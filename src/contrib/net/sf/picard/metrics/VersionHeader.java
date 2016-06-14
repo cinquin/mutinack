@@ -44,7 +44,8 @@ public class VersionHeader implements Header {
         this.versionString = fields[1];
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
         return this.versionedItem + "\t" + this.versionString;
     }
 
@@ -59,7 +60,8 @@ public class VersionHeader implements Header {
     }
 
     /** Equals method that checks that both the item and version string are equal. */
-    public boolean equals(Object o) {
+    @Override
+		public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 

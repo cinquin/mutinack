@@ -62,8 +62,6 @@ class CycleIlluminaFileMap extends TreeMap<Integer, CycleFilesIterator> {
             throw new PicardException("Expected CycledIlluminaFileMap to contain " + expectedTiles + " tiles but only " + size() + " were found!");
         }
 
-        File curFile = null;
-
         for (final int tile : expectedTiles) {
             get(tile).assertValid(expectedCycles);
         }

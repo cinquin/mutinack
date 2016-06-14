@@ -215,10 +215,9 @@ public class IntervalListTools extends CommandLineProgram {
         }
 
         final IntervalList output = new IntervalList(header);
-        long total = 0;
         for (final Interval i : finalIntervals) {
             output.add(i);
-            total += i.length();
+            i.length();
         }
 
         int intervals = 0;

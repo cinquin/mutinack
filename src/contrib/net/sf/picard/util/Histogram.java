@@ -85,10 +85,12 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
         public double getValue() { return value; }
 
         /** Returns the String format for the value in the bin. */
-        public String toString() { return String.valueOf(this.value); }
+        @Override
+				public String toString() { return String.valueOf(this.value); }
 
         /** Checks the equality of the bin by ID and value. */
-        public boolean equals(final Object o) {
+        @Override
+				public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
@@ -149,7 +151,8 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
     public void setValueLabel(final String valueLabel) { this.valueLabel = valueLabel; }
 
     /** Checks that the labels and values in the two histograms are identical. */
-    public boolean equals(final Object o) {
+    @Override
+		public boolean equals(final Object o) {
         return o != null &&
                 (o instanceof Histogram) &&
                 ((Histogram) o).binLabel.equals(this.binLabel) &&

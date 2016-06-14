@@ -65,7 +65,8 @@ public class BamIndexStats extends CommandLineProgram {
      * Main method for the program.  Checks that input file is present and
      * readable, then iterates through the index printing meta data to stdout.
      */
-    protected int doWork() {
+    @Override
+		protected int doWork() {
 
         if (INPUT.getName().endsWith(BAMIndex.BAMIndexSuffix))
                log.warn("INPUT should be BAM file not index file");

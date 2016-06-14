@@ -81,5 +81,6 @@ public interface ReferenceSequenceFile {
     /**
      * @return Reference name, file name, or something other human-readable representation.
      */
-    String toString();
+    @Override
+		String toString();
 }

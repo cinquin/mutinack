@@ -147,7 +147,8 @@ public class Interval implements Comparable<Interval>, Cloneable {
      * Sort based on sequence.compareTo, then start pos, then end pos
      * with null objects coming lexically last
      */
-    public int compareTo(final Interval that) {
+    @Override
+		public int compareTo(final Interval that) {
         if (that == null) return -1; // nulls last
 
         int result = this.sequence.compareTo(that.sequence);
@@ -164,7 +165,8 @@ public class Interval implements Comparable<Interval>, Cloneable {
     }
 
     /** Equals method that agrees with {@link #compareTo(Interval)}. */
-    public boolean equals(final Object other) {
+    @Override
+		public boolean equals(final Object other) {
         if (!(other instanceof Interval)) return false;
         else if (this == other) return true;
         else {
@@ -181,7 +183,8 @@ public class Interval implements Comparable<Interval>, Cloneable {
         return result;
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
         return getSequence() + ":" + start + "-" + end;
     }
 

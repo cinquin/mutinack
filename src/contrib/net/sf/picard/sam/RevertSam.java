@@ -121,7 +121,8 @@ public class RevertSam extends CommandLineProgram {
         return null;
     }
 
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         IoUtil.assertFileIsReadable(INPUT);
         IoUtil.assertFileIsWritable(OUTPUT);
 

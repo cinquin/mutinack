@@ -93,7 +93,7 @@ public class BamToBfqWriter {
         this.outputPrefix = outputPrefix;
         this.pairedReads = pairedReads;
         if (total != null) {
-            final double writeable = (double)countWritableRecords();
+            final double writeable = countWritableRecords();
             this.increment = (int)Math.floor(writeable/total.doubleValue());
             if (this.increment == 0) {
                 this.increment = 1;

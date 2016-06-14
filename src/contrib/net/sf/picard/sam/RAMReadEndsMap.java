@@ -41,21 +41,24 @@ class RAMReadEndsMap implements ReadEndsMap {
      */
     private List<Map<String, ReadEnds>> mapPerSequence = new ArrayList<>();
 
-    public ReadEnds remove(int mateSequenceIndex, String key) {
+    @Override
+		public ReadEnds remove(int mateSequenceIndex, String key) {
         if (mateSequenceIndex >= mapPerSequence.size()) {
             return null;
         }
         return mapPerSequence.get(mateSequenceIndex).remove(key);
     }
 
-    public void put(int mateSequenceIndex, String key, ReadEnds readEnds) {
+    @Override
+		public void put(int mateSequenceIndex, String key, ReadEnds readEnds) {
         while (mateSequenceIndex >= mapPerSequence.size()) {
             mapPerSequence.add(new HashMap<>());
         }
         mapPerSequence.get(mateSequenceIndex).put(key, readEnds);
     }
 
-    public int size() {
+    @Override
+		public int size() {
         int total = 0;
         for (Map<String, ReadEnds> map : mapPerSequence) {
             total += map.size();
@@ -66,7 +69,8 @@ class RAMReadEndsMap implements ReadEndsMap {
     /**
      * @return number of elements stored in RAM.  Always <= size()
      */
-    public int sizeInRam() {
+    @Override
+		public int sizeInRam() {
         return size();
     }
 }

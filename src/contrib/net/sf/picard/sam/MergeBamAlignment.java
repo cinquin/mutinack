@@ -252,7 +252,8 @@ public class MergeBamAlignment extends CommandLineProgram {
      * @return null if command line is valid.  If command line is invalid, returns
      *         an array of error messages to be written to the appropriate place.
      */
-    protected String[] customCommandLineValidation() {
+    @Override
+		protected String[] customCommandLineValidation() {
 
         if ((PROGRAM_RECORD_ID != null || PROGRAM_GROUP_VERSION != null ||
              PROGRAM_GROUP_COMMAND_LINE != null) &&

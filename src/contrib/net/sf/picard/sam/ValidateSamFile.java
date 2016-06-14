@@ -39,6 +39,7 @@ import contrib.net.sf.picard.reference.ReferenceSequenceFile;
 import contrib.net.sf.picard.reference.ReferenceSequenceFileFactory;
 import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMValidationError;
+import contrib.net.sf.samtools.util.IOUtil;
 
 import java.util.ArrayList;
 
@@ -153,7 +154,7 @@ public class ValidateSamFile extends CommandLineProgram {
             if (VALIDATE_INDEX){
                 validator.setValidateIndex(VALIDATE_INDEX);
             }
-            if (IoUtil.isRegularPath(INPUT)) {
+            if (IOUtil.isRegularPath(INPUT)) {
                 // Do not check termination if reading from a stream
                 validator.validateBamFileTermination(INPUT);
             }

@@ -47,10 +47,8 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, FileOutpu
 
         // Explicitly GC after this many calls to close() in order to force file handles to truly be released.
 
-        private static final int GC_FREQUENCY = 10000;
-        private int numCloses = 0;
-
-        public FileOutputStream makeValue(final File file) {
+        @Override
+				public FileOutputStream makeValue(final File file) {
             try {
                 return new FileOutputStream(file, true);
             } catch (FileNotFoundException e) {
@@ -66,7 +64,8 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, FileOutpu
             }
         }
 
-        public void finalizeValue(final File file, final FileOutputStream fileOutputStream) {
+        @Override
+				public void finalizeValue(final File file, final FileOutputStream fileOutputStream) {
             try {
                 fileOutputStream.close();
             } catch (IOException e) {

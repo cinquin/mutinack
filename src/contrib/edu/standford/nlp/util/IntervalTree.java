@@ -312,11 +312,6 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 		}
 	}
 
-	@SuppressWarnings("unused")
-	private void adjustUpwards(TreeNode<E,T> node) {
-		adjustUpwards(node, null);
-	}
-
 	// Adjust upwards starting at this node until stopAt
 	private void adjustUpwards(TreeNode<E,T> node, TreeNode<E,T> stopAt) {
 		TreeNode<E,T> n = node;

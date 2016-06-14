@@ -68,7 +68,7 @@ public class BamIndexValidator {
                     try {
                         if (l != 0) {
                             final CloseableIterator<SAMRecord> iter = reader.iterator(new BAMFileSpan(new Chunk(l, l + 1)));
-                            BAMRecord b = (BAMRecord) iter.next();   // read the first record identified by the linear index
+                            iter.next();
                             indexCount++;
                             iter.close();
                         }

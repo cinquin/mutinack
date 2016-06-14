@@ -43,18 +43,21 @@ public class FilteredIterator<T> implements Iterator<T> {
     }
   }
 
-  public boolean hasNext() {
+  @Override
+	public boolean hasNext() {
     return hasCurrentCandidate();
   }
 
-  public T next() {
+  @Override
+	public T next() {
     T result = currentCandidate();
     advanceCandidate();
     skipUnacceptableCandidates();
     return result;
   }
 
-  public void remove() {
+  @Override
+	public void remove() {
     throw new UnsupportedOperationException();
   }
 
@@ -70,7 +73,8 @@ public class FilteredIterator<T> implements Iterator<T> {
     Iterator<String> i = new FilteredIterator<String>(c.iterator(), new Filter<String>() {
       private static final long serialVersionUID = 1L;
 
-      public boolean accept(String o) {
+      @Override
+			public boolean accept(String o) {
         return o.length() == 1;
       }
     });

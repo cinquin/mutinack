@@ -8,14 +8,17 @@ import java.util.Iterator;
  */
 abstract public class AbstractIterator<E> implements Iterator<E> {
 
-  abstract public boolean hasNext();
+  @Override
+	abstract public boolean hasNext();
 
-  abstract public E next();
+  @Override
+	abstract public E next();
 
   /**
    * Throws an <code>UnupportedOperationException</code>.
    */
-  public void remove() {
+  @Override
+	public void remove() {
     throw new UnsupportedOperationException();
   }
 

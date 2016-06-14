@@ -77,7 +77,8 @@ public class ReorderSam extends CommandLineProgram {
         new ReorderSam().instanceMainWithExit(argv);
     }
 
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         IoUtil.assertFileIsReadable(INPUT);
         IoUtil.assertFileIsReadable(REFERENCE);
         IoUtil.assertFileIsWritable(OUTPUT);

@@ -46,7 +46,8 @@ public class BestMapqPrimaryAlignmentSelectionStrategy implements PrimaryAlignme
     /**
      * Primary alignment was filtered out.  Need to select a new one.
      */
-    public void pickPrimaryAlignment(final HitsForInsert hits) {
+    @Override
+		public void pickPrimaryAlignment(final HitsForInsert hits) {
 
         if (hits.numHits() == 0) throw new IllegalArgumentException("No alignments to pick from");
         hits.coordinateByHitIndex();

@@ -143,8 +143,7 @@ public class RefFlatReader {
                                                       ") in refFlat file for gene " + geneName);
             }
 
-            // This adds it to the Gene also
-            final Transcript tx = makeTranscriptFromRefFlatLine(gene, row);
+            makeTranscriptFromRefFlatLine(gene, row);
         }
 
         return gene;

@@ -96,7 +96,8 @@ public class CreateSequenceDictionary extends CommandLineProgram {
     /**
      * Use reference filename to create URI to go into header if URI was not passed on cmd line.
      */
-    protected String[] customCommandLineValidation() {
+    @Override
+		protected String[] customCommandLineValidation() {
         if (URI == null) {
             URI = "file:" + REFERENCE.getAbsolutePath();
         }
@@ -109,7 +110,8 @@ public class CreateSequenceDictionary extends CommandLineProgram {
      *
      * @return program exit status.
      */
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         if (OUTPUT.exists()) {
             throw new PicardException(OUTPUT.getAbsolutePath() +
                     " already exists.  Delete this file and try again, or specify a different output file.");

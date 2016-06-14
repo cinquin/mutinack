@@ -96,7 +96,8 @@ public class BasicInputParser extends AbstractInputParser
      *
      * @return  String or null if there is no next line
      */
-    protected byte[] readNextLine()
+    @Override
+		protected byte[] readNextLine()
     {
         try {
             final String line = reader.readLine();
@@ -130,7 +131,8 @@ public class BasicInputParser extends AbstractInputParser
     /**
      * Closes the underlying stream
      */
-    public void close() {
+    @Override
+		public void close() {
         if (reader != null)  {
             reader.close();
         }
@@ -141,7 +143,8 @@ public class BasicInputParser extends AbstractInputParser
      *
      * @return  the name of the file being parsed
      */
-    public String getFileName() {
+    @Override
+		public String getFileName() {
         return this.currentFileName != null ? this.currentFileName : "(file name unavailable)";
     }
 

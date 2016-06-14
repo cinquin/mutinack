@@ -80,12 +80,14 @@ public class AsyncIterator<T> implements CloseableIterator<T> {
         checkAndRethrow();
     }
 
-    public boolean hasNext() {
+    @Override
+		public boolean hasNext() {
         assertOpen();
         return theNext != null;
     }
 
-    public T next() {
+    @Override
+		public T next() {
         assertOpen();
         if (!hasNext()) throw new NoSuchElementException();
         final T ret = theNext;
@@ -93,14 +95,16 @@ public class AsyncIterator<T> implements CloseableIterator<T> {
         return ret;
     }
 
-    public void remove() {
+    @Override
+		public void remove() {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Stops the thread and then calls synchronouslyClose() to allow implementation to do any one time clean up.
      */
-    public void close() {
+    @Override
+		public void close() {
         checkAndRethrow();
 
         assertOpen();
@@ -141,7 +145,8 @@ public class AsyncIterator<T> implements CloseableIterator<T> {
 
         public boolean isDone() { return readerDone.get(); }
 
-        public void run() {
+        @Override
+				public void run() {
             try {
                 boolean isEof = false;
                 while (!isClosed.get() && !isEof) {

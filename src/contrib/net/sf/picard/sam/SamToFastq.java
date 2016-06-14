@@ -127,7 +127,8 @@ public class SamToFastq extends CommandLineProgram {
         System.exit(new SamToFastq().instanceMain(argv));
     }
 
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         IoUtil.assertFileIsReadable(INPUT);
         final SAMFileReader reader = new SAMFileReader(IoUtil.openFileForReading(INPUT));
         final Map<String, SAMRecord> firstSeenMates = new HashMap<>();
@@ -344,7 +345,8 @@ public class SamToFastq extends CommandLineProgram {
      * @return null if command line is valid.  If command line is invalid, returns an array of error
      * messages to be written to the appropriate place.
      */
-    protected String[] customCommandLineValidation() {
+    @Override
+		protected String[] customCommandLineValidation() {
         if (INTERLEAVE && SECOND_END_FASTQ != null) {
             return new String[]{
                     "Cannot set INTERLEAVE to true and pass in a SECOND_END_FASTQ"

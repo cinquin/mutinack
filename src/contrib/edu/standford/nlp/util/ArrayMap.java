@@ -26,15 +26,18 @@ public final class ArrayMap<K,V> extends AbstractMap<K,V> implements Serializabl
     @SuppressWarnings({"NonSerializableFieldInSerializableClass"})
     private V value;
 
-    public K getKey() {
+    @Override
+		public K getKey() {
       return key;
     }
 
-    public V getValue() {
+    @Override
+		public V getValue() {
       return value;
     }
 
-    public V setValue(V o) {
+    @Override
+		public V setValue(V o) {
       V old = value;
       value = o;
       return old;
@@ -63,7 +66,8 @@ public final class ArrayMap<K,V> extends AbstractMap<K,V> implements Serializabl
       this.value = value;
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
       return key + "=" + value;
     }
   }

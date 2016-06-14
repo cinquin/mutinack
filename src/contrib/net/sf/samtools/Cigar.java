@@ -25,7 +25,6 @@ package contrib.net.sf.samtools;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * A list of CigarElements, which describes how a read aligns with the reference.
@@ -260,7 +259,8 @@ public class Cigar {
         return cigarElements != null ? cigarElements.hashCode() : 0;
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
         return TextCigarCodec.getSingleton().encode(this);
     }
 }

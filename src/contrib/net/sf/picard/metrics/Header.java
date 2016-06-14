@@ -33,7 +33,8 @@ package contrib.net.sf.picard.metrics;
  */
 public interface Header {
     /** Converts the header to a String for persisting to a file. */
-    String toString();
+    @Override
+		String toString();
 
     /** Parses the data contained in the String version of the header. */
     void parse(String in);

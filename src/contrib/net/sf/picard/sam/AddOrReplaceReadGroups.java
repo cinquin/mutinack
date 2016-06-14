@@ -68,7 +68,8 @@ public class AddOrReplaceReadGroups extends CommandLineProgram {
         new AddOrReplaceReadGroups().instanceMainWithExit(argv);
     }
 
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         IoUtil.assertFileIsReadable(INPUT);
         IoUtil.assertFileIsWritable(OUTPUT);
 

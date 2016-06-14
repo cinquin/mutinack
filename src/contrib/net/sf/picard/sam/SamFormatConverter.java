@@ -42,8 +42,6 @@ import contrib.net.sf.samtools.*;
  */
 public class SamFormatConverter extends CommandLineProgram {
 
-    private static final String PROGRAM_VERSION = "1.0";
-
     // The following attributes define the command-line arguments
     @Usage
     public String USAGE = getStandardUsagePreamble() + "Convert a BAM file to a SAM file, or BAM to SAM.\n" + "" +
@@ -57,7 +55,8 @@ public class SamFormatConverter extends CommandLineProgram {
     }
 
 
-    protected int doWork() {
+    @Override
+		protected int doWork() {
         IoUtil.assertFileIsReadable(INPUT);
         IoUtil.assertFileIsWritable(OUTPUT);
         final SAMFileReader reader = new SAMFileReader(INPUT);

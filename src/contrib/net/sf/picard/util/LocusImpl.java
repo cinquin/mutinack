@@ -36,14 +36,16 @@ public class LocusImpl implements Locus {
         this.sequenceIndex = sequenceIndex;
     }
 
-    public int getSequenceIndex() {
+    @Override
+		public int getSequenceIndex() {
         return sequenceIndex;
     }
 
     /**
      * @return 1-based position
      */
-    public int getPosition() {
+    @Override
+		public int getPosition() {
         return position;
     }
 }

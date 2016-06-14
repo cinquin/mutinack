@@ -45,7 +45,8 @@ public class Filters {
      *
      * @param obj an object to test
      */
-    public boolean accept(T obj) {
+    @Override
+		public boolean accept(T obj) {
       return judgment;
     }
 
@@ -118,14 +119,16 @@ public class Filters {
      *
      * @param obj an object to test
      */
-    public boolean accept(E obj) {
+    @Override
+		public boolean accept(E obj) {
       if (args.contains(obj)) {
         return judgment;
       }
       return !judgment;
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
       return "(" + judgment +":" + args + ")";
     }
 
@@ -160,7 +163,8 @@ public class Filters {
       this.conjunction = conjunction;
     }
 
-    public boolean accept(E o) {
+    @Override
+		public boolean accept(E o) {
       if (conjunction) {
         return (f1.accept(o) && f2.accept(o));
       }
@@ -190,7 +194,8 @@ public class Filters {
       filters.add(filter);
     }
 
-    public boolean accept(T obj) {
+    @Override
+		public boolean accept(T obj) {
       for (Filter<T> f:filters) {
         if (f.accept(obj)) return true;
       }
@@ -219,7 +224,8 @@ public class Filters {
       filters.add(filter);
     }
 
-    public boolean accept(T obj) {
+    @Override
+		public boolean accept(T obj) {
       for (Filter<T> f:filters) {
         if (!f.accept(obj)) return false;
       }
@@ -259,11 +265,13 @@ public class Filters {
       this(filter, true);
     }
 
-    public boolean accept(E o) {
+    @Override
+		public boolean accept(E o) {
       return (negated ^ filter.accept(o)); // xor
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
       return "NOT(" + filter.toString() + ")";
     }
   
@@ -291,7 +299,8 @@ public class Filters {
       this.random = random;
     }
 
-    public boolean accept(E o) {
+    @Override
+		public boolean accept(E o) {
       return (random.nextDouble() < fraction);
     }
   }

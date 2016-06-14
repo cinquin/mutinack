@@ -33,12 +33,15 @@ class ReadEndsCodec implements SortingCollection.Codec<ReadEnds> {
     private DataInputStream in;
     private DataOutputStream out;
 
-    public SortingCollection.Codec<ReadEnds> clone() {
+    @Override
+		public SortingCollection.Codec<ReadEnds> clone() {
         return new ReadEndsCodec();
     }
 
-    public void setOutputStream(final OutputStream os) { this.out = new DataOutputStream(os); }
-    public void setInputStream(final InputStream is) { this.in = new DataInputStream(is); }
+    @Override
+		public void setOutputStream(final OutputStream os) { this.out = new DataOutputStream(os); }
+    @Override
+		public void setInputStream(final InputStream is) { this.in = new DataInputStream(is); }
 
     public DataInputStream getInputStream() {
         return in;
@@ -48,7 +51,8 @@ class ReadEndsCodec implements SortingCollection.Codec<ReadEnds> {
         return out;
     }
 
-    public void encode(final ReadEnds read) {
+    @Override
+		public void encode(final ReadEnds read) {
         try {
             this.out.writeShort(read.score);
             this.out.writeShort(read.libraryId);
@@ -73,7 +77,8 @@ class ReadEndsCodec implements SortingCollection.Codec<ReadEnds> {
         }
     }
 
-    public ReadEnds decode() {
+    @Override
+		public ReadEnds decode() {
         final ReadEnds read = new ReadEnds();
         try {
             // If the first read results in an EOF we've exhausted the stream

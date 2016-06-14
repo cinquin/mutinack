@@ -251,7 +251,8 @@ public class SAMValidationError {
         this.recordNumber = recordNumber;
     }
 
-    public String toString() {
+    @Override
+		public String toString() {
         final StringBuilder builder = new StringBuilder();
         builder.append(type.severity.toString());
         builder.append(": ");

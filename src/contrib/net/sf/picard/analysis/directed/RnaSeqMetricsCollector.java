@@ -252,7 +252,7 @@ public class RnaSeqMetricsCollector extends SAMRecordMultiLevelCollector<RnaSeqM
             final Histogram<Double> cvs = new Histogram<>();
             final Histogram<Double> fivePrimeSkews = new Histogram<>();
             final Histogram<Double> threePrimeSkews = new Histogram<>();
-            final Histogram<Double> gapBasesPerKb = new Histogram<>();
+            new Histogram<>();
             final Histogram<Double> fiveToThreeSkews = new Histogram<>();
             String prefix = null;
             if (this.metrics.READ_GROUP != null) {

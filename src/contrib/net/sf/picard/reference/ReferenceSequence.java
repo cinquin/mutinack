@@ -66,7 +66,8 @@ public class ReferenceSequence {
     /** Gets the length of this reference sequence in bases. */
     public int length() { return length; }
     
-    public String toString() {
+    @Override
+		public String toString() {
         return "ReferenceSequence " + getName();
     }
 }

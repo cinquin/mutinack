@@ -91,7 +91,8 @@ public abstract class AbstractIlluminaPositionFileReader implements CloseableIte
             return Math.round(pos * 10 + 1000);
         }
 
-        public boolean equals(final Object other) {
+        @Override
+				public boolean equals(final Object other) {
             if(other == null || other.getClass() != AbstractIlluminaPositionFileReader.PositionInfo.class) {
                 return false;
             }

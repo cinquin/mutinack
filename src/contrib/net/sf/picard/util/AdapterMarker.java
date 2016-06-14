@@ -292,16 +292,25 @@ public class AdapterMarker {
             this.fivePrimeBytes = StringUtil.stringToBytes(this.fivePrime);
         }
 
-        public String get3PrimeAdapter(){ return threePrime; }
-        public String get5PrimeAdapter(){ return fivePrime; }
-        public String get3PrimeAdapterInReadOrder(){ return threePrime; }
-        public String get5PrimeAdapterInReadOrder() { return fivePrimeReadOrder; }
-        public byte[] get3PrimeAdapterBytes() { return threePrimeBytes; }
-        public byte[] get5PrimeAdapterBytes() { return fivePrimeBytes; }
-        public byte[] get3PrimeAdapterBytesInReadOrder() { return threePrimeBytes; }
-        public byte[] get5PrimeAdapterBytesInReadOrder()  { return fivePrimeReadOrderBytes; }
+        @Override
+				public String get3PrimeAdapter(){ return threePrime; }
+        @Override
+				public String get5PrimeAdapter(){ return fivePrime; }
+        @Override
+				public String get3PrimeAdapterInReadOrder(){ return threePrime; }
+        @Override
+				public String get5PrimeAdapterInReadOrder() { return fivePrimeReadOrder; }
+        @Override
+				public byte[] get3PrimeAdapterBytes() { return threePrimeBytes; }
+        @Override
+				public byte[] get5PrimeAdapterBytes() { return fivePrimeBytes; }
+        @Override
+				public byte[] get3PrimeAdapterBytesInReadOrder() { return threePrimeBytes; }
+        @Override
+				public byte[] get5PrimeAdapterBytesInReadOrder()  { return fivePrimeReadOrderBytes; }
 
-        public String getName() { return this.name; }
+        @Override
+				public String getName() { return this.name; }
 
         public void setName(final String name) {
             this.name = name;

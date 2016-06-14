@@ -327,14 +327,6 @@ public class SAMTextHeaderCodec {
             return mHeaderRecordType;
         }
 
-        boolean containsKey(final String key) {
-            return mKeyValuePairs.containsKey(key);
-        }
-
-        String getValue(final String key) {
-            return mKeyValuePairs.get(key);
-        }
-
         String removeValue(final String key) {
             final String ret = mKeyValuePairs.get(key);
             mKeyValuePairs.remove(key);

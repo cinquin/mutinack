@@ -54,7 +54,8 @@ implements Iterable<String[]>, CloseableIterator<String[]> {
     /**
      * Closes this stream and releases any system resources associated with it.
      */
-    public abstract void close();
+    @Override
+		public abstract void close();
 
     /**
      * @return the next line of text from the underlying stream(s) or null if there is no next line
@@ -69,7 +70,8 @@ implements Iterable<String[]>, CloseableIterator<String[]> {
     /**
      * @return an iterator over a set of elements of type String[]
      */
-    public Iterator<String[]> iterator() {
+    @Override
+		public Iterator<String[]> iterator() {
         if (isIterating()) {
             throw new IllegalStateException("iterator() method can only be called once, before the" +
                     "first call to hasNext()");
