@@ -1,4 +1,4 @@
-package contrib.edu.standford.nlp.util;
+package contrib.edu.stanford.nlp.util;
 
 /**
  * An interface for classes that act as a function transforming one object

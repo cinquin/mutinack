@@ -1,9 +1,9 @@
-package contrib.edu.standford.nlp.util.concurrent;
+package contrib.edu.stanford.nlp.util.concurrent;
 
 import java.util.Set;
 
-import contrib.edu.standford.nlp.util.Generics;
-import contrib.edu.standford.nlp.util.Interner;
+import contrib.edu.stanford.nlp.util.Generics;
+import contrib.edu.stanford.nlp.util.Interner;
 
 
 /**

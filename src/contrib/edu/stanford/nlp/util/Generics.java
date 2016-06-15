@@ -1,4 +1,4 @@
-package contrib.edu.standford.nlp.util;
+package contrib.edu.stanford.nlp.util;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
@@ -18,7 +18,7 @@ import java.util.TreeSet;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-import contrib.edu.standford.nlp.util.concurrent.SynchronizedInterner;
+import contrib.edu.stanford.nlp.util.concurrent.SynchronizedInterner;
 
 
 /**

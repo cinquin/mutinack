@@ -24,8 +24,8 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import contrib.edu.standford.nlp.util.HasInterval;
-import contrib.edu.standford.nlp.util.Interval;
+import contrib.edu.stanford.nlp.util.HasInterval;
+import contrib.edu.stanford.nlp.util.Interval;
 import uk.org.cinquin.mutinack.SequenceLocation;
 
 /**

@@ -50,8 +50,8 @@ import java.util.stream.StreamSupport;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import contrib.edu.standford.nlp.util.HasInterval;
-import contrib.edu.standford.nlp.util.Interval;
+import contrib.edu.stanford.nlp.util.HasInterval;
+import contrib.edu.stanford.nlp.util.Interval;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.TObjectIntHashMap;

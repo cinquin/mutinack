@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import contrib.edu.standford.nlp.util.IntervalTree;
+import contrib.edu.stanford.nlp.util.IntervalTree;
 import contrib.net.sf.picard.util.IterableAdapter;
 
 public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements DuplexKeeper  {

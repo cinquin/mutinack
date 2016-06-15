@@ -1,4 +1,4 @@
-package contrib.edu.standford.nlp.util;
+package contrib.edu.stanford.nlp.util;
 
 import java.io.BufferedReader;
 import java.io.File;

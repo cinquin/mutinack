@@ -25,8 +25,8 @@ import java.util.Objects;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import contrib.edu.standford.nlp.util.HasInterval;
-import contrib.edu.standford.nlp.util.Interval;
+import contrib.edu.stanford.nlp.util.HasInterval;
+import contrib.edu.stanford.nlp.util.Interval;
 import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
