@@ -81,11 +81,22 @@
     </path>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+           <compilerarg value="-XDignore.symbol.file"/>
+           <src path="src"/>
+           <include name="contrib/edu/**/*.java"/>
+           <include name="contrib/net/**/*.java"/>
+           <include name="**/*PB.java"/>
+           <classpath refid="SequenceAnalysis.classpath"/>
+           <compilerclasspath refid="errorprone"/>
+        </javac>
+
         <javac compiler="com.google.errorprone.ErrorProneAntCompilerAdapter" encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
-           <compilerarg value="-XDignore.symbol.file" />
-            <src path="src"/>
-            <classpath refid="SequenceAnalysis.classpath"/>
-            <compilerclasspath refid="errorprone"/>
+           <compilerarg value="-XDignore.symbol.file"/>
+           <compilerarg value="-Xep:Finally:OFF"/>
+           <src path="src"/>
+           <classpath refid="SequenceAnalysis.classpath"/>
+           <compilerclasspath refid="errorprone"/>
         </javac>
     </target>
     <target name="UtilTest">
