@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -48,19 +48,19 @@ import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class Server extends UnicastRemoteObject implements RemoteMethods {
-	
+
 	private static final long serialVersionUID = 7331182254489507945L;
 	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
-	
+
 	public final static int PING_INTERVAL_SECONDS = 20;
 
 	private final Map<Job, Job> jobs = new ConcurrentHashMap<>();
 	private final String recordRunsTo;
 	private final Map<String, Parameters> recordedRuns;
-	
+
 	@SuppressWarnings("unused")
 	private static Registry registry;
-	
+
 	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 
 	private void dumpRecordedRuns() {
@@ -83,16 +83,16 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 					os.write(conf.asByteArray(recordedRuns));
 				} catch (IOException e1) {
 					throw new RuntimeException("Could not save cached data to "
-							+ recordRunsTo, e1);
+						+ recordRunsTo, e1);
 				}
 			} else {
 				throw new RuntimeException("Could not save cached data to "
-						+ recordRunsTo, e);
+					+ recordRunsTo, e);
 			}
 		}
 		System.err.println("Dumped " + recordedRuns.size() + " runs to file " + recordRunsTo);
 	}
-	
+
 	public static void createRegistry(String suggestedHostName) {
 		String hostName = getHostName(suggestedHostName);
 		System.setProperty("java.rmi.server.hostname", hostName);
@@ -114,7 +114,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		}
 
 	}
-	
+
 	public static String getHostName(String suggestedName) {
 		String result;
 		if ("".equals(suggestedName)) {
@@ -142,32 +142,29 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			recordedRuns = null;
 		}
 		final AtomicBoolean firstRun = new AtomicBoolean(true);
-		
+
 		String hostName1 = getHostName(hostName0);
 
 		ActionListener rebindRunnable = event -> {
+			if (!rebindTimer.isRunning())
+				return;
+			try {
+				if (firstRun.get()) {
+					Naming.rebind("//" + hostName1 + "/mutinack", Server.this);
+					System.out.println("Server " + "//" + hostName1 + "/mutinack"
+						+ " bound in registry");
+				}
+			} catch (Exception e) {
+				System.err.println("RMI server rebinding exception:" + e);
+				e.printStackTrace(System.err);
+			}
+			firstRun.set(false);
+		};
 
-            synchronized (rebindTimer) {
-                if (!rebindTimer.isRunning())
-                    return;
-                try {
-                    if (firstRun.get()) {
-                        Naming.rebind("//" + hostName1 + "/mutinack", Server.this);
-                        System.out.println("Server " + "//" + hostName1 + "/mutinack"
-                                + " bound in registry");
-                    }
-                } catch (Exception e) {
-                    System.err.println("RMI server rebinding exception:" + e);
-                    e.printStackTrace(System.out);
-                }
-                firstRun.set(false);
-            }
-        };
-		
 		rebindTimer = new Timer(300 * 1000, rebindRunnable); //Run every 5min
 		rebindTimer.setInitialDelay(0);
 		rebindTimer.start();
-		
+
 		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
 		Thread shutdownHook = new Thread(this::dumpRecordedRuns);
 		Runtime.getRuntime().addShutdownHook(shutdownHook);
@@ -200,24 +197,24 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	public EvaluationResult submitJob(String clientID, Job job) throws RemoteException, InterruptedException {
 		job.timeSubmitted = System.nanoTime();
 		if (job.completed) {
-			throw new IllegalArgumentException("Job " + job + " from client " + clientID + 
-					" already marked as completed");
+			throw new IllegalArgumentException("Job " + job + " from client " + clientID +
+				" already marked as completed");
 		}
 		jobs.put(job, job);
 		queue.put(job);
-		
+
 		if (recordedRuns != null) {
 			recordedRuns.put(job.parameters.runName, job.parameters);
 			System.err.println("Recorded job " + job.parameters.runName);
 		}
-		
+
 		synchronized(job) {
 			while (!job.completed) {
 				job.wait(PING_INTERVAL_SECONDS * 1_000);
 				if (!job.completed && job.timeGivenToWorker > 0 &&
 					(System.currentTimeMillis() - job.timeLastWorkerPing > 3 * PING_INTERVAL_SECONDS * 1_000)) {
-						throw new RuntimeException("Worker " + job.workerID + " unresponsive while " +
-							"processing " + job);
+					throw new RuntimeException("Worker " + job.workerID + " unresponsive while " +
+						"processing " + job);
 				}
 			}
 		}

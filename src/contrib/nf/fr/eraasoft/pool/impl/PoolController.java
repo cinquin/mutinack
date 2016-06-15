@@ -9,15 +9,16 @@ import contrib.nf.fr.eraasoft.pool.PoolSettings;
 
 public class PoolController extends Thread {
 	static PoolController instance = null;
-	
+
 	boolean alive = false;
-	Set<PoolSettings<?>> listPoolSettings = Collections.synchronizedSet(new HashSet<PoolSettings<?>>());
+	final Set<PoolSettings<?>> listPoolSettings =
+		Collections.synchronizedSet(new HashSet<PoolSettings<?>>());
 
 	private PoolController() {
 		setName("PoolController");
 	}
 	/**
-	 * 
+	 *
 	 */
 	private static synchronized void launch() {
 		if (instance == null) {
@@ -28,13 +29,13 @@ public class PoolController extends Thread {
 			instance.start();
 		}
 	}
-	
-	
+
+
 	public static synchronized void addPoolSettings(PoolSettings<?> poolSettings) {
 		launch();
 		instance.listPoolSettings.add(poolSettings);
 	}
-	
+
 	public static synchronized void removePoolSettings(PoolSettings<?> poolSettings) {
 		poolSettings.clearCurrentPool();
 		instance.listPoolSettings.remove(poolSettings);
@@ -43,7 +44,7 @@ public class PoolController extends Thread {
 	public static void shutdown() {
 		if (instance != null) {
 			instance.alive = false;
-			
+
 			for (PoolSettings<?> poolSettings : instance.listPoolSettings) {
 				if (poolSettings.pool(false) instanceof Controllable) {
 					Controllable controllable = (Controllable) poolSettings.pool(false);
@@ -75,8 +76,8 @@ public class PoolController extends Thread {
 	/**
 	 * Remove idle <br>
 	 * Validate idle
-	 * 
-	 * 
+	 *
+	 *
 	 */
 	private void checkPool() {
 		synchronized (listPoolSettings) {
@@ -99,7 +100,7 @@ public class PoolController extends Thread {
 					controllable.validateIdles();
 
 				}
-			}	
+			}
 		}
 	}
 

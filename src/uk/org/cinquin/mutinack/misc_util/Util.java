@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -56,8 +56,9 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
+@SuppressWarnings("TypeParameterUnusedInFormals")
 public class Util {
-	
+
 	/**
 	 * Utility function to improve Null annotation checking by removing spurious
 	 * warnings (in particular for fields that can go from being null to being non-null,
@@ -70,15 +71,15 @@ public class Util {
 		if (o == null) throw new AssertionFailedException();
 		return o;
 	}
-	
+
 	public static<T> @NonNull Optional<T> emptyOptional() {
 		return nonNullify(Optional.empty());
 	}
-	
+
 	public static<T> @Nullable T nullableify(@NonNull T o) {
 		return o;
 	}
-		
+
 	public static<T> @NonNull Set<T> getDuplicates(Collection<T> collection) {
 		Set<T> set = new HashSet<>();
 		Set<T> result = new HashSet<>();
@@ -89,12 +90,12 @@ public class Util {
 		}
 		return result;
 	}
-	
+
 	public static Pair<List<String>, List<Integer>> parseListPositions(List<String> l,
 			boolean noContigRepeat, String errorMessagePrefix) {
 		final List<String> contigNames = l.stream().map
 				(s -> s.split(":")[0]).collect(Collectors.toList());
-		
+
 		Set<String> dup;
 		if (noContigRepeat && (!(dup = Util.getDuplicates(contigNames)).isEmpty())) {
 			throw new IllegalArgumentException(errorMessagePrefix + " may only appear once per contig; " +
@@ -103,10 +104,10 @@ public class Util {
 
 		final List<Integer> positionsInContig = l.stream().map
 				(s -> Integer.valueOf(s.split(":")[1])).collect(Collectors.toList());
-		
+
 		return new Pair<>(contigNames, positionsInContig);
 	}
-	
+
 	public static void checkPositionsOrdering(Pair<List<String>, List<Integer>> p,
 			Pair<List<String>, List<Integer>> p2) {
 		List<String> names1 = p.fst;
@@ -124,14 +125,14 @@ public class Util {
 			}
 		}
 	}
-	
+
 	public static @NonNull String truncateString(@NonNull String s) {
 		String result = s.length() > 500 ?
 				s.substring(0, 500) + " ..."
-				: s;	
+				: s;
 		return result;
 	}
-	
+
 	public static @NonNull String greenB(boolean colorize) {
 		return colorize ? "\033[1;42m" : "";
 	}
@@ -169,7 +170,7 @@ public class Util {
 		}
 		return true;
 	}
-	
+
 	public static int nMismatches(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
 			throw new IllegalArgumentException();
@@ -186,9 +187,9 @@ public class Util {
 		}
 		return nMismatches;
 	}
-	
+
 	private static final @NonNull AtomicInteger nRead = new AtomicInteger();
-	
+
 	public static void readFileIntoMap(File file, Map<String, FastQRead> rawReads, int pairID) {
 		Signals.SignalProcessor infoSignalHandler = signal ->
 				System.err.println("Currently reading records from file " + file.getAbsolutePath() + "; " +
@@ -203,7 +204,7 @@ public class Util {
 		LinkedBlockingQueue<FourLines> processingQueue = new LinkedBlockingQueue<>(100);
 		final Handle<Throwable> exception = new Handle<>();
 		final List<Thread> threads = new ArrayList<>();
-		Runnable r = () -> 
+		Runnable r = () ->
 		{
 			try {
 			while (true) {
@@ -217,20 +218,20 @@ public class Util {
 				String line2 = localFourLines.lines.get(1);
 				//String line3 = localFourLines.lines.get(2);
 				String line4 = localFourLines.lines.get(3);
-				
+
 				String name = line1.substring(1, line1.indexOf(" ")) + "--";
 				if (pairID != 0) {
 					name += pairIDs;
 				}
 				FastQRead read = new FastQRead(nonNullify(line2.substring(0, 6).getBytes()));
-				
+
 				byte[] qualities = new byte [6];
 				read.qualities = qualities;
 				byte[] qualityBytes = StringUtil.stringToBytes(line4);
 				for (int i = 0; i < 6; i++) {
 					qualities [i]=(byte) ((qualityBytes[i] & 0xFF) - 33);
 				}
-				
+
 				if (rawReads.put(name, read) != null) {
 					throw new RuntimeException("Read " + readNameHandle[0] +
 							" was found twice in file " + file.getName());
@@ -272,7 +273,7 @@ public class Util {
 					lineModulo.set(0);
 				}
 			});
-			
+
 			if (exception.get() != null) {
 				throw new RuntimeException(exception.get());
 			}
@@ -299,15 +300,15 @@ public class Util {
 			Signals.removeSignalProcessor("INFO", infoSignalHandler);
 		}
 	}
-	
+
 	private static final class FourLines {
 		final @NonNull List<String> lines = new ArrayList<>(4);
 	}
-	
+
 	public static String getRecordNameWithPairSuffix(SAMRecord record) {
 		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1"))/*.intern()*/;
 	}
-	
+
 	//Keep separate maps for variable and constant barcodes so we can have stats for each
 	public static final Map<ByteArray, ByteArray> internedVariableBarcodes = new ConcurrentHashMap<>(200);
 	public static final Map<ByteArray, ByteArray> internedConstantBarcodes = new ConcurrentHashMap<>(200);
@@ -324,7 +325,7 @@ public class Util {
 		intern.nHits.increment();
 		return intern.array;
 	}
-	
+
 	public static byte @NonNull[] getInternedVB(byte @NonNull[] barcode) {
 		return getInternedArray(barcode, internedVariableBarcodes);
 	}
@@ -332,7 +333,7 @@ public class Util {
 	public static byte @NonNull[] getInternedCB(byte @NonNull[] barcode) {
 		return getInternedArray(barcode, internedConstantBarcodes);
 	}
-	
+
 	public static final ThreadLocal<NumberFormat> shortLengthFloatFormatter = new ThreadLocal<NumberFormat>() {
 		@Override
 		protected NumberFormat initialValue(){
@@ -361,16 +362,16 @@ public class Util {
 			negativeStrand = rec.getReadNegativeStrandFlag();
 			alignmentStart = rec.getAlignmentStart();
 		}
-		
+
 		public SimpleAlignmentInfo(boolean negativeStrand, int alignmentStart) {
 			this.negativeStrand = negativeStrand;
 			this.alignmentStart = alignmentStart;
 		}
-		
+
 		public final boolean negativeStrand;
 		public final int alignmentStart;
 	}
-	
+
 	/**
 	 * Computes the orientation of the two alignments.
 	 * @param r1, r2
@@ -382,7 +383,7 @@ public class Util {
 		}
 
 		int sign = r1.negativeStrand ? -1 : +1;
-		
+
 		if ((r2.alignmentStart - r1.alignmentStart) * sign > 0) {
 			return PairOrientation.FR;
 		} else {
@@ -399,7 +400,7 @@ public class Util {
 			}
 		}
 	}
-	
+
 	//This method was adapted from http://left.subtree.org/2012/04/13/counting-the-number-of-reads-in-a-bam-file/
 	public static long getTotalReadCount(SAMFileReader sam) {
 		int count = 0;
@@ -413,14 +414,14 @@ public class Util {
 
 		return count + index.getNoCoordinateCount();
 	}
-	
+
 	public static void printUserMustSeeMessage(String s) {
 		if (System.console() == null) {
 			System.err.println(s);
 		}
 		System.out.println(s);
 	}
-	
+
 	public static void versionCheck() {
 		try (Scanner scanner = new Scanner(new URL("http://cinquin.org.uk/static/mutinack/latestVersion.txt").openStream(), "UTF-8")) {
 			String s = scanner.useDelimiter("\n").next();
@@ -444,7 +445,7 @@ public class Util {
 		}
 		return indexMap;
 	}
-	
+
 	public static boolean isSerializable(Object o) {
 		NullOutputStream os = new NullOutputStream();
 		try {
@@ -456,5 +457,5 @@ public class Util {
 		}
 		return true;
 	}
-	
+
 }
