@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,30 +46,35 @@ public class StaticStuffToAvoidMutating {
 
 	static final Logger logger = LoggerFactory.getLogger(StaticStuffToAvoidMutating.class);
 
-	private static final Map<String, ReferenceSequence> contigSequences = new ConcurrentHashMap<>();
+	private static final Map<String, ReferenceSequence> contigSequences =
+		new ConcurrentHashMap<>();
 	private static ReferenceSequenceFile refFile;
 	
 	private static ExecutorService executorService;
 	
+	private static final int HARD_MAX_THREADS_PER_POOL = 250;
+
 	public static void instantiateThreadPools(int nMaxThreads) {
 		if (getExecutorService() != null) {
 			return;
 		}
 		
-		if (nMaxThreads > 150) {
-			logger.warn("Capping number of threads from " + 
-					nMaxThreads + " to 150");
-			nMaxThreads = 150;
+		if (nMaxThreads > HARD_MAX_THREADS_PER_POOL) {
+			logger.warn("Capping number of threads from " + nMaxThreads +
+				" to " + HARD_MAX_THREADS_PER_POOL);
+			nMaxThreads = HARD_MAX_THREADS_PER_POOL;
 		}
 		
 		setExecutorService(new ThreadPoolExecutor(0, nMaxThreads,
                 300, TimeUnit.SECONDS, new SynchronousQueue<>(),
-                new NamedPoolThreadFactory("Mutinack executor pool - ")));
+                new NamedPoolThreadFactory("Mutinack executor pool - "),
+                new ThreadPoolExecutor.CallerRunsPolicy()));
 		
 		if (ParFor.threadPool == null) {
 			ParFor.threadPool = new ThreadPoolExecutor(0, nMaxThreads,
 					300, TimeUnit.SECONDS, new SynchronousQueue<>(),
-					new NamedPoolThreadFactory("Mutinack ParFor pool - "));
+					new NamedPoolThreadFactory("Mutinack ParFor pool - "),
+					new ThreadPoolExecutor.AbortPolicy());
 		}
 	}
 	
@@ -100,7 +106,7 @@ public class StaticStuffToAvoidMutating {
 		ParFor.shutdownExecutor();
 	}
 
-	public static void loadContigs(String referenceGenome, @NonNull Map<Integer, @NonNull String> contigNames) {
+	public static void loadContigs(String referenceGenome, List<@NonNull String> contigNames) {
 		if (refFile == null) {
 			try {
 				refFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
@@ -110,7 +116,7 @@ public class StaticStuffToAvoidMutating {
 			}
 		}
 		
-		for (String contigName: contigNames.values()) {
+		for (String contigName: contigNames) {
 			contigSequences.computeIfAbsent(contigName, name -> {
 				try {
 					ReferenceSequence ref = refFile.getSequence(contigName);
@@ -130,11 +136,10 @@ public class StaticStuffToAvoidMutating {
 		return contigSequences.get(name);
 	}
 	
-	@SuppressWarnings("null")
-	public static @NonNull Map<@NonNull String, Integer> loadContigsFromFile(
+	public static @NonNull Map<@NonNull String, @NonNull Integer> loadContigsFromFile(
 			String referenceGenome) {
 		return FileCache.getCached(referenceGenome, ".info", path -> {
-			@NonNull Map<@NonNull String, Integer> contigSizes0 = new HashMap<>();
+			@NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 = new HashMap<>();
 			try(Stream<String> lines = Files.lines(Paths.get(referenceGenome))) {
 				Handle<String> currentName = new Handle<>();
 				SettableInteger currentLength = new SettableInteger(0);
@@ -163,8 +168,7 @@ public class StaticStuffToAvoidMutating {
 					}
 				});
 				String curName = currentName.get();
-				Objects.requireNonNull(curName);
-				contigSizes0.put(curName, currentLength.get());
+				contigSizes0.put(Objects.requireNonNull(curName), currentLength.get());
 				return Collections.unmodifiableMap(contigSizes0);
 			} catch (IOException e) {
 				throw new RuntimeException("Problem reading size of contigs from reference file " + path, e);

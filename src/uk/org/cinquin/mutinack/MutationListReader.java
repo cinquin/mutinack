@@ -17,7 +17,7 @@
 
 package uk.org.cinquin.mutinack;
 
-import static uk.org.cinquin.mutinack.features.BedReader.invertMap;
+import static uk.org.cinquin.mutinack.features.BedReader.invertList;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -43,11 +43,11 @@ public class MutationListReader {
 	@SuppressWarnings("resource")
 	public static Map<Pair<@NonNull SequenceLocation, @NonNull String>, 
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> readMutationList(
-		String path, String readerName, Map<@NonNull Integer, @NonNull String> indexContigNameMap,
+		String path, String readerName, List<@NonNull String> contigNames,
 		@NonNull Set<String> sampleNames, @NonNull Set<String> unknownSamples) {
 		try {
 			return readMutationList(new BufferedReader(new FileReader(new File(path))), readerName,
-				indexContigNameMap, sampleNames, unknownSamples);
+				contigNames, sampleNames, unknownSamples);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -55,7 +55,7 @@ public class MutationListReader {
 
 	public static ConcurrentMap<Pair<@NonNull SequenceLocation, @NonNull String>,
 		@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> readMutationList(
-		BufferedReader reader, String readerName, Map<@NonNull Integer, @NonNull String> indexContigNameMap,
+		BufferedReader reader, String readerName, List<@NonNull String> contigNames,
 		@NonNull Set<String> sampleNames, @NonNull Set<String> unknownSamples) {
 
 		final ConcurrentMap<Pair<@NonNull SequenceLocation, @NonNull String>,
@@ -79,7 +79,7 @@ public class MutationListReader {
 					final String mutationKind = components[4];
 					final String extra = /*String.join("\t", Arrays.asList(
 						Arrays.copyOfRange(components, 5, components.length)));*/ l;
-					final Map<String, Integer> reverseIndex = invertMap(indexContigNameMap);
+					final Map<String, Integer> reverseIndex = invertList(contigNames);
 					final Integer contigIndex = reverseIndex.get(contigName);
 					if (contigIndex == null) {
 						throw new IllegalArgumentException("Could not find contig " + contigName);

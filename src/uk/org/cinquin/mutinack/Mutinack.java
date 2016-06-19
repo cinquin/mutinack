@@ -17,7 +17,12 @@
 package uk.org.cinquin.mutinack;
 
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
-import static uk.org.cinquin.mutinack.misc_util.Util.*;
+import static uk.org.cinquin.mutinack.misc_util.Util.blueF;
+import static uk.org.cinquin.mutinack.misc_util.Util.greenB;
+import static uk.org.cinquin.mutinack.misc_util.Util.internedVariableBarcodes;
+import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
+import static uk.org.cinquin.mutinack.misc_util.Util.printUserMustSeeMessage;
+import static uk.org.cinquin.mutinack.misc_util.Util.reset;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -52,6 +57,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
@@ -69,6 +75,8 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+//import com.google.monitoring.runtime.instrumentation.AllocationRecorder;
+//import com.google.monitoring.runtime.instrumentation.Sampler;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -103,6 +111,7 @@ import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
+import uk.org.cinquin.mutinack.misc_util.SettableLong;
 import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Signals.SignalProcessor;
 import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
@@ -123,6 +132,9 @@ import uk.org.cinquin.parfor.ParFor;
 
 public class Mutinack implements Actualizable {
 	
+	static ConcurrentHashMap<String, SettableLong> objectAllocations =
+		new ConcurrentHashMap<>(1000);
+
 	static {
 		if (! new File("logback.xml").isFile()) {
 			ch.qos.logback.classic.Logger root =
@@ -132,6 +144,15 @@ public class Mutinack implements Actualizable {
 			stdErrAppender.setTarget("System.err");
 			root.addAppender(stdErrAppender);
 		}
+
+
+		/*AllocationRecorder.addSampler(new Sampler() {
+			@Override
+			public void sampleAllocation(int count, String desc, Object newObj, long size) {
+				objectAllocations.computeIfAbsent(desc, key -> new SettableLong(0)).
+					incrementAndGet();
+			}
+		});*/
 	}
 	
 	public static final Logger logger = LoggerFactory.getLogger("Mutinack");
@@ -233,6 +254,7 @@ public class Mutinack implements Actualizable {
 	final int unclippedBarcodeLength;
 	public @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
 	private String finalOutputBaseName;
+	public boolean notifiedUnpairedReads = false;
 
 	public Mutinack(
 			MutinackGroup groupSettings,
@@ -567,33 +589,51 @@ public class Mutinack implements Actualizable {
 				}
 			}
 
-			final @NonNull List<@NonNull String> contigs;
+			final @NonNull List<@NonNull String> contigNames;
 			final @NonNull Map<@NonNull String, Integer> contigSizes;
+			final @NonNull List<@NonNull String> contigNamesToProcess;
 
 			if (argValues.readContigsFromFile) {
-				contigSizes = StaticStuffToAvoidMutating.loadContigsFromFile(argValues.referenceGenome);
-				contigs = new ArrayList<>();
-				contigs.addAll(contigSizes.keySet());
-				contigs.sort(null);
+				final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 =
+					new HashMap<>(
+						StaticStuffToAvoidMutating.loadContigsFromFile(argValues.referenceGenome));
+
+				try (SAMFileReader tempReader = new SAMFileReader(
+						new File(argValues.inputReads.get(0)))) {
+					final List<String> sequenceNames = tempReader.getFileHeader().
+						getSequenceDictionary().getSequences().stream().
+						map(s -> s.getSequenceName()).collect(Collectors.toList());
+
+					contigSizes0.entrySet().removeIf(e -> {
+						if (!sequenceNames.contains(e.getKey())) {
+							printUserMustSeeMessage("Reference sequence " + e.getKey() + " not present in sample header; ignoring");
+							return true;
+						}
+						return false;
+					}
+					);
+				}
+				contigSizes = Collections.unmodifiableMap(contigSizes0);
+				List<@NonNull String> contigNames0 = new ArrayList<>(contigSizes0.keySet());
+				contigNames0.sort(null);
+				contigNames = Collections.unmodifiableList(contigNames0);
+				contigNamesToProcess = contigNames;
 			} else if (!argValues.contigNamesToProcess.equals(new Parameters().contigNamesToProcess)) {
 				throw new IllegalArgumentException("Contig names specified both in file and as " +
 						"command line argument; pick only one method");
 			} else {
-				contigs = argValues.contigNamesToProcess;
+				contigNames = argValues.contigNamesToProcess;
 				contigSizes = Collections.emptyMap();
+				contigNamesToProcess = argValues.contigNamesToProcess;
 			}
 
-			@NonNull Map<@NonNull Integer, @NonNull String> contigNames =
-					new HashMap<>();
-			for (int i = 0; i < contigs.size(); i++) {
-				contigNames.put(i, contigs.get(i));
-				groupSettings.indexContigNameReverseMap.put(contigs.get(i), i);
+			for (int i = 0; i < contigNames.size(); i++) {
+				groupSettings.indexContigNameReverseMap.put(contigNames.get(i), i);
 			}
-			contigNames = Collections.unmodifiableMap(contigNames);
-			groupSettings.setIndexContigNameMap(contigNames);
+			groupSettings.setContigNames(contigNames);
 			
 			StaticStuffToAvoidMutating.loadContigs(argValues.referenceGenome,
-					contigNames);
+				contigNames);
 
 			groupSettings.forceOutputAtLocations.clear();
 			for (String forceOutputFilePath: argValues.forceOutputAtPositionsFile) {
@@ -608,7 +648,7 @@ public class Mutinack implements Actualizable {
 								final String contig = loc.substring(0, columnPosition);
 								final String pos = loc.substring(columnPosition + 1);
 								double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
-								final SequenceLocation parsedLocation = new SequenceLocation(contigs.indexOf(contig), contig,
+								final SequenceLocation parsedLocation = new SequenceLocation(contigNames.indexOf(contig), contig,
 										(int) Math.floor(position), position - Math.floor(position) > 0);
 								if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 									Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
@@ -672,7 +712,7 @@ public class Mutinack implements Actualizable {
 			for (String bed: argValues.excludeRegionsInBED) {
 				try {
 					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							groupSettings.getIndexContigNameMap(), bed, false);
+							groupSettings.getContigNames(), bed, false);
 					excludeBEDs.add(reader);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + bed, e);
@@ -683,7 +723,7 @@ public class Mutinack implements Actualizable {
 			for (String bed: argValues.repetiveRegionBED) {
 				try {
 					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							groupSettings.getIndexContigNameMap(), bed, false);
+							groupSettings.getContigNames(), bed, false);
 					repetitiveBEDs.add(reader);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + bed, e);
@@ -862,11 +902,11 @@ public class Mutinack implements Actualizable {
 					});
 				}
 
-				for (int contigIndex = 0; contigIndex < argValues.contigNamesToProcess.size(); contigIndex++) {
+				for (int contigIndex = 0; contigIndex < contigNamesToProcess.size(); contigIndex++) {
 					final int finalContigIndex = contigIndex;
 					final SerializablePredicate<SequenceLocation> p = 
 							l -> l.contigIndex == finalContigIndex;
-					final String contigName = argValues.contigNamesToProcess.get(contigIndex);
+					final String contigName = contigNamesToProcess.get(contigIndex);
 					analyzer.stats.forEach(s -> {
 						s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
 						s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
@@ -884,7 +924,7 @@ public class Mutinack implements Actualizable {
 				if (argValues.bedDisagreementOrienter != null) {
 					try {
 						analyzer.codingStrandTester = BedReader.getCachedBedFileReader(argValues.bedDisagreementOrienter, ".cached",
-								groupSettings.getIndexContigNameMap(), "", false);
+								groupSettings.getContigNames(), "", false);
 					} catch (Exception e) {
 						throw new RuntimeException("Problem with BED file " + 
 								argValues.bedDisagreementOrienter, e);
@@ -901,7 +941,7 @@ public class Mutinack implements Actualizable {
 						final File f = new File(fileName);
 						final String filterName = f.getName();
 						final GenomeFeatureTester filter = BedReader.getCachedBedFileReader(fileName, ".cached",
-								groupSettings.getIndexContigNameMap(), filterName, false);
+								groupSettings.getContigNames(), filterName, false);
 						final BedComplement notFilter = new BedComplement(filter);
 						final String notFilterName = "NOT " + f.getName();
 						analyzer.filtersForCandidateReporting.put(filterName, filter);
@@ -952,7 +992,7 @@ public class Mutinack implements Actualizable {
 						final File f = new File(fileName);
 						final String filterName = "NOT " + f.getName();
 						final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-								groupSettings.getIndexContigNameMap(), filterName, false);
+								groupSettings.getContigNames(), filterName, false);
 						final BedComplement filter = new BedComplement(filter0);
 						analyzer.stats.forEach(s -> {
 							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
@@ -983,7 +1023,7 @@ public class Mutinack implements Actualizable {
 				for (index = 0; index < argValues.reportBreakdownForBED.size(); index++) {
 					try {
 						final File f = new File(argValues.reportBreakdownForBED.get(index));
-						final BedReader filter = new BedReader(groupSettings.getIndexContigNameMap(), 
+						final BedReader filter = new BedReader(groupSettings.getContigNames(),
 								new BufferedReader(new FileReader(f)), f.getName(),
 								argValues.bedFeatureSuppInfoFile == null ? null :
 									new BufferedReader(new FileReader(argValues.bedFeatureSuppInfoFile)), false);
@@ -1098,7 +1138,7 @@ public class Mutinack implements Actualizable {
 
 			final List<AnalysisChunk> analysisChunks = new ArrayList<>();
 
-			for (int contigIndex0 = 0; contigIndex0 < contigs.size(); contigIndex0++) {
+			for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
 				final int contigIndex = contigIndex0;
 
 				final int startContigAtPosition;
@@ -1145,7 +1185,7 @@ public class Mutinack implements Actualizable {
 							: startSubAt + subAnalyzerSpan - 1;
 
 					analysisChunk.contig = contigIndex;
-					analysisChunk.contigName = contigs.get(contigIndex);
+					analysisChunk.contigName = contigNames.get(contigIndex);
 					analysisChunk.startAtPosition = startSubAt;
 					analysisChunk.terminateAtPosition = terminateAtPosition;
 					analysisChunk.pauseAtPosition = new SettableInteger();
@@ -1175,7 +1215,7 @@ public class Mutinack implements Actualizable {
 				}//End parallelization loop over analysisChunks
 			}//End loop over contig index
 
-			final int endIndex = contigs.size() - 1;
+			final int endIndex = contigNames.size() - 1;
 			final ParFor parFor = new ParFor("contig loop", 0, endIndex, null, true);
 
 			for (int worker = 0; worker < parFor.getNThreads(); worker++) 
@@ -1193,7 +1233,7 @@ public class Mutinack implements Actualizable {
 
 							Runnable r = () -> ReadLoader.load(analyzer, subAnalyzer, analysisChunk,
                                     argValues, analysisChunks,
-                                    groupSettings.PROCESSING_CHUNK, contigs, contigIndex,
+                                    groupSettings.PROCESSING_CHUNK, contigNames, contigIndex,
                                     alignmentWriter0, StaticStuffToAvoidMutating::getContigSequence);
 							futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
 						}//End loop over parallelization factor
@@ -1293,7 +1333,7 @@ public class Mutinack implements Actualizable {
 			}
 			
 			if (mutationAnnotationWriter != null) {//Unnecessary test, performed to suppress null warning
-				for (@NonNull List<Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
+				for (@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
 						groupSettings.mutationsToAnnotate.values()) {
 					for (Pair<@NonNull Mutation, @NonNull String> leftBehind: leftBehindList) {
 						mutationAnnotationWriter.append(leftBehind.snd + "\tNOT FOUND\n");
@@ -1449,6 +1489,11 @@ public class Mutinack implements Actualizable {
 
 			stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) + 
 					((int) processingThroughput()) + " records / s");
+
+			if (!objectAllocations.isEmpty()) {
+				stream.println(objectAllocations);
+				objectAllocations.forEachValue(10, sl -> sl.set(0));
+			}
 
 			for (String counter: s.nPosCandidatesForUniqueMutation.getCounterNames()) {
 				final double mutationRate = s.nPosCandidatesForUniqueMutation.getSum(counter) / 

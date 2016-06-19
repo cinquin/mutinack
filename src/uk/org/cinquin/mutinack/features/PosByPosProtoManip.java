@@ -37,8 +37,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -59,10 +59,10 @@ import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.ContigNumbers;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
+import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.Counter;
@@ -262,10 +262,9 @@ public class PosByPosProtoManip {
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().
 				map(cn -> cn.getContigName()).collect(Collectors.toList());
 		contigNames0.sort(null);
-		Map<Integer, @NonNull String> contigNameMap = Util.indexNameMap(contigNames0);
 		GenomeFeatureTester reader;
 		try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
-			GenomeFeatureTester reader0 = new BedReader(contigNameMap, 
+			GenomeFeatureTester reader0 = new BedReader(contigNames0,
 					new BufferedReader(fileReader),
 					argValues.domainBedFile, null, false);
 			if (argValues.invertInputs) {
@@ -348,7 +347,6 @@ public class PosByPosProtoManip {
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(cn -> cn.getContigName()).
 				collect(Collectors.toList());
 		contigNames0.sort(null);
-		Map<Integer, @NonNull String> nameMap = Util.indexNameMap(contigNames0);
 		Map<String, Integer> contigIndices = new HashMap<>();
 		for (int i = 0; i < contigNames0.size(); i++) {
 			contigIndices.put(contigNames0.get(i), i);
@@ -375,7 +373,7 @@ public class PosByPosProtoManip {
 		final GenomeFeatureTester reader;
 		if (argValues.domainBedFile.length() > 0) {
 			try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
-				GenomeFeatureTester reader0 = new BedReader(nameMap, 
+				GenomeFeatureTester reader0 = new BedReader(contigNames0,
 						new BufferedReader(fileReader),
 						argValues.domainBedFile, null, false);
 				if (argValues.invertInputs) {

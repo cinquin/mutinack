@@ -21,9 +21,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -48,16 +47,12 @@ public class BedFileExpMovingAverage {
 		System.err.println("parseExpressionLevel: " + parseExpressionLevel);
 		System.err.println("truncateAt: " + truncate);
 		
-		final Map<Integer, @NonNull String> indexContigNameMap = new ConcurrentHashMap<>();
-		final List<String> contigNames = Parameters.defaultTruncateContigNames;
-		
-		for (int i = 0; i < contigNames.size(); i++) {
-			indexContigNameMap.put(i, Util.nonNullify(contigNames.get(i)));
-		}
+		final List<@NonNull String> contigNames =
+			new ArrayList<>(Parameters.defaultTruncateContigNames);
 
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
 
-			BedReader bedReader = new BedReader(indexContigNameMap, 
+			BedReader bedReader = new BedReader(contigNames,
 					new BufferedReader(fileReader), refFile, null, false);
 
 			for (int contig = 0; contig < contigNames.size(); contig++) {

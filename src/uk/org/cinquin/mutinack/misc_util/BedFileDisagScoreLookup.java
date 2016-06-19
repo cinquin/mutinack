@@ -26,9 +26,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -58,17 +56,13 @@ public class BedFileDisagScoreLookup {
 		final float minLength = Float.parseFloat(args[2]);
 		final float maxLength = Float.parseFloat(args[3]);
 		
-		final Map<Integer, @NonNull String> indexContigNameMap = new HashMap<>();
-		final List<@NonNull String> contigNames = Parameters.defaultTruncateContigNames;
-		
-		for (int i = 0; i < contigNames.size(); i++) {
-			indexContigNameMap.put(i, contigNames.get(i));
-		}
+		final List<@NonNull String> contigNames =
+			new ArrayList<>(Parameters.defaultTruncateContigNames);
 		
 		final BedReader scores;
 		try (BufferedReader br = new BufferedReader(new FileReader(
 				new File(scoreBedFile)))) {
-			scores = new BedReader(indexContigNameMap, br, "scores reader", null, true);
+			scores = new BedReader(contigNames, br, "scores reader", null, true);
 		}
 
 		SettableInteger inRange = new SettableInteger(0);
@@ -90,7 +84,7 @@ public class BedFileDisagScoreLookup {
 				final int position = Integer.parseInt(split[1]);
 				Collection<GenomeInterval> intervals = scores.apply(
 					new SequenceLocation(contigNames.indexOf(contig),
-						indexContigNameMap, position));
+						contigNames, position));
 				
 				List<String> addToEnd = new ArrayList<>();
 				Arrays.stream(split).skip(3).forEach(addToEnd::add);

@@ -351,7 +351,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads() {
 		if (concurringReads == null) {
-			concurringReads = new TObjectIntHashMap<>(500, 0.5f, 1_000_000);
+			concurringReads = new TObjectIntHashMap<>(300, 0.5f, 1_000_000);
 			if (initialConcurringRead != null) {
 				concurringReads.put(initialConcurringRead, initialLigationSiteD);
 			}
@@ -360,7 +360,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 	
 	private static final TObjectIntMap<ExtendedSAMRecord>
-		emptyObjectIntHashMap = new TObjectIntHashMap<>(0);
+		EMPTY_OBJECTINT_HASHMAP = new TObjectIntHashMap<>(0);
+
+       private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
 	
 	@SuppressWarnings("null")
 	@Override
@@ -369,9 +371,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			return concurringReads;
 		} else {
 			if (initialConcurringRead == null) {
-				return emptyObjectIntHashMap;
+				return EMPTY_OBJECTINT_HASHMAP;
 			} else {
-				return new SingletonObjectIntMap<>(initialConcurringRead, initialLigationSiteD);
+				if (singletonConcurringRead == null) {
+					singletonConcurringRead =
+						new SingletonObjectIntMap<>(initialConcurringRead, initialLigationSiteD);
+				}
+				return singletonConcurringRead;
 			}
 		}
 	}
@@ -447,7 +453,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 	
 	public void addBasePhredQualityScore(byte q) {
-		Assert.isFalse(q < 0, "Negative Phred quality score: %s", q);
+		Assert.isFalse(q < 0, "Negative Phred quality score: %s"/*, q*/);
 		if (phredQualityScores == null && singleBasePhredQuality == -1) {
 			singleBasePhredQuality = q;
 		} else {
@@ -535,8 +541,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public void mergeWith(@NonNull CandidateSequenceI candidate) {
-		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s",
-				this, candidate, candidate.getNonMutableConcurringReads());
+		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s"/*,
+				this, candidate, candidate.getNonMutableConcurringReads()*/);
 		Assert.isFalse(getSupplQuality() != null || candidate.getSupplQuality() != null);
 		getMutableConcurringReads().putAll(candidate.getNonMutableConcurringReads());
 		candidate.addPhredQualitiesToList(getPhredQualityScores());

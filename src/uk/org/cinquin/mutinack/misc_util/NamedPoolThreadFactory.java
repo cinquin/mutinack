@@ -22,6 +22,7 @@ import java.util.concurrent.ThreadFactory;
 public class NamedPoolThreadFactory implements ThreadFactory {
 	private int counter = 0;
 	final String name;
+
 	public NamedPoolThreadFactory(String name) {
 		this.name = name;
 	}

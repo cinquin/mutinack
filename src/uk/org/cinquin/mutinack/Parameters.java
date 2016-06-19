@@ -128,7 +128,7 @@ public final class Parameters implements Serializable {
 	public List<Integer> minMappingQIntersect = new ArrayList<>();
 
 	@FilePath
-	@Parameter(names = "-referenceGenome", description = "Reference genome in FASTA format; index file must be present and for now contigs must appear in alphabetical order",
+	@Parameter(names = "-referenceGenome", description = "Reference genome in FASTA format; index file must be present",
 			required = true)
 	public String referenceGenome = "";
 

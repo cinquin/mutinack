@@ -40,7 +40,7 @@ public class CounterWithSeqLocOnly extends Counter implements ICounterSeqLoc, Se
 	public CounterWithSeqLocOnly(boolean sortByValue, MutinackGroup groupSettings) {
 		super(sortByValue, groupSettings);
 		List<SerializableFunction<Object, Object>> contigNames0 = new ArrayList<>();
-		contigNames0.add(groupSettings.getIndexContigNameMap()::get);
+		contigNames0.add((Object i) -> groupSettings.getContigNames().get((Integer) i));
 		contigNames0.add(i -> ((Integer) i) * groupSettings.BIN_SIZE);
 		setKeyNamePrintingProcessor(contigNames0);
 	}

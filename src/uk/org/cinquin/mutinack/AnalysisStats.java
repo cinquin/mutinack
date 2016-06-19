@@ -272,6 +272,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = TERSE)
 	public final StatsCollector nRecordsProcessed = new StatsCollector();
 
+	@PrintInStatus(outputLevel = TERSE)
+	public final StatsCollector ignoredUnpairedReads = new StatsCollector();
+
 	@PrintInStatus(outputLevel = VERBOSE)
 	public final StatsCollector nRecordsInFile = new StatsCollector();
 

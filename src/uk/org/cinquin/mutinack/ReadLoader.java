@@ -52,6 +52,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.sequence_IO.IteratorPrefetcher;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
@@ -82,18 +83,18 @@ public class ReadLoader {
 		String lastContigName = null;
 		BiConsumer<PrintStream, Integer> info = null;
 		try {
-			final String contig = contigs.get(contigIndex);
+			final String contigName = contigs.get(contigIndex);
 			final int truncateAtPosition = analysisChunk.terminateAtPosition;
 
 			final Set<String> droppedReads = analyzer.dropReadProbability > 0 ? new HashSet<>(1_000_000) : null;
 			final Set<String> keptReads = analyzer.dropReadProbability > 0 ?  new HashSet<>(1_000_000) : null;
 
-			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigs.get(contigIndex), 0);
+			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigName, 0);
 
 			info = (stream, userRequestNumber) -> {
 				NumberFormat formatter = DoubleAdderFormatter.nf.get();
 				stream.println("Analyzer " + analyzer.name +
-						" contig " + contig +
+						" contig " + contigName +
 						" range: " + (analysisChunk.startAtPosition + "-" + analysisChunk.terminateAtPosition) +
 						"; pauseAtPosition: " + formatter.format(pauseAt.get()) +
 						"; lastProcessedPosition: " + formatter.format(lastProcessedPosition.get()) + "; " +
@@ -109,17 +110,17 @@ public class ReadLoader {
 			SAMRecordIterator it0 = null;
 			try {
 
-				if (contigs.get(0).equals(contig)) {
+				if (contigs.get(0).equals(contigName)) {
 					analyzer.stats.forEach(s -> s.nRecordsInFile.add(contigLocation, Util.getTotalReadCount(bamReader)));
 				}
 
 				int furthestPositionReadInContig = 0;
 				final int maxInsertSize = analyzer.maxInsertSize;
 				final QueryInterval[] bamContig = {
-						bamReader.makeQueryInterval(contig, Math.max(1, startAt - maxInsertSize + 1))};
+						bamReader.makeQueryInterval(contigName, Math.max(1, startAt - maxInsertSize + 1))};
 				analyzer.timeStartProcessing = System.nanoTime();
-				final Map<String, Pair<ExtendedSAMRecord, @NonNull ReferenceSequence>> readsToProcess =
-						new HashMap<>(5_000);
+				final Map<String, Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence>>
+					readsToProcess = new HashMap<>(5_000);
 
 				subAnalyzer.truncateProcessingAt = truncateAtPosition;
 				subAnalyzer.startProcessingAt = startAt;
@@ -163,7 +164,8 @@ public class ReadLoader {
 							//if reading from an already-annotated BAM file
 						}
 
-						final SequenceLocation location = new SequenceLocation(samRecord);
+						final SequenceLocation location = new SequenceLocation(contigIndex, contigName,
+							samRecord.getAlignmentStart());
 
 						final int current5p = samRecord.getAlignmentStart();
 						if (current5p < previous5p) {
@@ -238,35 +240,48 @@ public class ReadLoader {
 								//If mate is in a different contig, do not store a reference
 								//to the read name in droppedReads since this thread will never
 								//encounter the mate
-								if (Integer.compare(samRecord.getMateReferenceIndex(), samRecord.getReferenceIndex()) == 0)
+								if (samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex()))
 									droppedReads.add(readName);
 								continue;
 							} else {//Keep the pair
 								//If mate is in a different contig, do not store a reference
 								//to the read name in keptReads since this thread will never
 								//encounter the mate
-								if (Integer.compare(samRecord.getMateReferenceIndex(), samRecord.getReferenceIndex()) == 0)
+								if (samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex()))
 									keptReads.add(readName);
 							}
 						}
 
 						analyzer.stats.forEach(s -> s.nRecordsProcessed.increment(location));
 
+						if (!samRecord.getReadPairedFlag()) {
+							if (!analyzer.notifiedUnpairedReads) {
+								Util.printUserMustSeeMessage("Ignoring unpaired reads");
+								analyzer.notifiedUnpairedReads = true;
+							}
+							analyzer.stats.forEach(s -> s.ignoredUnpairedReads.increment(location));
+							continue;
+						}
+
 						if (contigs.size() < 100 && !argValues.rnaSeq) {
 							//Summing below is a bottleneck when there are a large
 							//number of contigs (tens of thousands)
 							if (analyzer.stats.get(0).nRecordsProcessed.sum() > argValues.nRecordsToProcess) {
-								statusLogger.info("Analysis of contig " + contig + " stopping "
+								statusLogger.info("Analysis of contig " + contigName + " stopping "
 										+ "because it processed over " + argValues.nRecordsToProcess + " records");
 								phaser.forceTermination();
 								break;
 							}
 						}
 
-						final String contigName = samRecord.getReferenceName();
-						if ("*".equals(contigName)) {
+						final String samRecordContigName = samRecord.getReferenceName();
+						if ("*".equals(samRecordContigName)) {
 							analyzer.stats.forEach(s -> s.nRecordsUnmapped.increment(location));
 							continue;
+						}
+
+						if (!samRecordContigName.equals(contigName)) {
+							throw new AssertionFailedException(samRecordContigName + " vs " + contigName);
 						}
 
 						if (IGNORE_SECONDARY_MAPPINGS && samRecord.getNotPrimaryAlignmentFlag()) {
@@ -290,7 +305,7 @@ public class ReadLoader {
 
 						final boolean finishUp;
 						if (lastProcessable.get() >= truncateAtPosition + maxInsertSize) {
-							statusLogger.debug("Analysis of contig " + contig + " stopping "
+							statusLogger.debug("Analysis of contig " + contigName + " stopping "
 									+ "because it went past " + truncateAtPosition);
 							finishUp = true;
 						} else {
@@ -301,6 +316,15 @@ public class ReadLoader {
 
 						//Put samRecord into the cache
 						ExtendedSAMRecord extended = subAnalyzer.getExtended(samRecord, location);
+
+						if (!extended.getReferenceName().equals(contigName)) {
+							throw new AssertionFailedException(extended.getReferenceName() + " vs " + contigName);
+						}
+
+						if (extended.getReferenceIndex() != contigIndex) {
+							throw new AssertionFailedException(extended.getReferenceIndex() + " vs " + contigIndex);
+						}
+
 						//Put samRecord into map of reads to possibly be processed in next batch
 						if (readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref)) != null) {
 							throw new RuntimeException("Read " + extended.getFullName() + " read twice from " +
@@ -336,7 +360,7 @@ public class ReadLoader {
 								}
 								if (read.getAlignmentStart() - 1 <= localPauseAt ||
 										read.getMateAlignmentStart() - 1 <= localPauseAt) {
-									subAnalyzer.processRead(read.record, rec.snd);
+									subAnalyzer.processRead(location, read, rec.snd);
 									it.remove();
 								}
 							}
@@ -354,7 +378,9 @@ public class ReadLoader {
 
 				if (lastProcessedPosition.get() < truncateAtPosition) {
 					readsToProcess.forEach((k, v) -> {
-						subAnalyzer.processRead(v.fst.record, v.snd);
+						final SequenceLocation location = new SequenceLocation(contigIndex, contigName,
+							v.fst.record.getAlignmentStart());
+						subAnalyzer.processRead(location, v.fst, v.snd);
 					});
 				}
 
@@ -368,7 +394,7 @@ public class ReadLoader {
 					phaser.arriveAndAwaitAdvance();
 				}
 
-				logger.debug("Done processing contig " + contig + " of file " + analyzer.inputBam);
+				logger.debug("Done processing contig " + contigName + " of file " + analyzer.inputBam);
 			} finally {
 				if (it0 != null) {
 					it0.close();

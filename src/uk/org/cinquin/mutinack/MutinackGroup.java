@@ -63,7 +63,7 @@ public class MutinackGroup implements Closeable, Serializable {
 	
 	public final transient Collection<BiConsumer<PrintStream, Integer>>
 		statusUpdateTasks = new ArrayList<>();
-	private Map<Integer, @NonNull String> indexContigNameMap;
+	private List<@NonNull String> contigNames;
 	public final Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
 	public final Map<SequenceLocation, Boolean> forceOutputAtLocations = new HashMap<>();
 	public final ConcurrentMap<Pair<SequenceLocation, String>,
@@ -147,13 +147,13 @@ public class MutinackGroup implements Closeable, Serializable {
 		this.VARIABLE_BARCODE_END = variableBarcodeEnd;
 	}
 
-	public Map<Integer, @NonNull String> getIndexContigNameMap() {
-		Assert.isNonNull(indexContigNameMap, "Uninitialized indexContigNameMap");
-		return indexContigNameMap;
+	public @NonNull List<@NonNull String> getContigNames() {
+		Assert.isNonNull(contigNames, "Uninitialized contigNames");
+		return Objects.requireNonNull(contigNames);
 	}
 
-	public void setIndexContigNameMap(Map<Integer, @NonNull String> indexContigNameMap) {
-		this.indexContigNameMap = indexContigNameMap;
+	public void setContigNames(@NonNull List<@NonNull String> contigNames) {
+		this.contigNames = contigNames;
 	}
 
 	public void errorOccurred() {

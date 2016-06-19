@@ -23,10 +23,9 @@ import static org.junit.Assert.assertTrue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.junit.Ignore;
@@ -39,19 +38,15 @@ import uk.org.cinquin.mutinack.features.ParseRTException;
 public class BedReaderTest {
 	
 	public BedReaderTest() throws IOException {
-		mapNames = new HashMap<>();
-		int index = 0;
-		for (String name: contigNames) {
-			mapNames.put(index++, name);
-		}
-		bc = new BedReader(mapNames, new BufferedReader(new StringReader(bed)),
+		contigNames1 = new ArrayList<>(contigNames);
+		bc = new BedReader(contigNames1, new BufferedReader(new StringReader(bed)),
 			"test reader", null, false);
 	}
 	
 	private final List<@NonNull String> contigNames = Arrays.asList(
 			"chrI", "chrII", "chrIII", "chrIV", "chrM", "chrV", "chrX");
 	
-	private final @NonNull Map<Integer, @NonNull String>  mapNames;
+	private final List<@NonNull String>  contigNames1;
 
 	private static final String bed = "chrI	6_029_950	6_033_366	NM_001025782	0	+	6029950	6033366	0	4	\"707,586,522,138,\"	\"0,1110,2238,3278,\"	B0025.1	Caenorhabditis elegans	related to yeast Vacuolar Protein Sorting factor\n" +
 			"chrI	6_028_501	6_033_366	NM_001025783	0	+	6028501	6033366	0	6	\"150,591,707,586,522,138,\"	\"0,659,1449,2559,3687,4727,\"	B0025.1	Caenorhabditis elegans	related to yeast Vacuolar Protein Sorting factor\n" + 
@@ -64,15 +59,15 @@ public class BedReaderTest {
 	final BedReader bc;
 	@Test
 	public void test() throws ParseRTException {
-		assertTrue(bc.test(new SequenceLocation(0, mapNames, 6_028_500)));
-		assertFalse(bc.test(new SequenceLocation(0, mapNames, 6_028_499)));
-		assertFalse(bc.test(new SequenceLocation(1, mapNames, 6_028_500)));
-		assertTrue(bc.test(new SequenceLocation(6, mapNames, 7_824_630)));
-		assertTrue(bc.test(new SequenceLocation(6, mapNames, 7_824_631)));
-		assertFalse(bc.test(new SequenceLocation(6, mapNames, 7_825_216)));
-		assertFalse(bc.test(new SequenceLocation(6, mapNames, 0)));
-		assertFalse(bc.test(new SequenceLocation(6, mapNames, Integer.MAX_VALUE)));
-		assertFalse(bc.test(new SequenceLocation(0, mapNames, 0)));
+		assertTrue(bc.test(new SequenceLocation(0, contigNames1, 6_028_500)));
+		assertFalse(bc.test(new SequenceLocation(0, contigNames1, 6_028_499)));
+		assertFalse(bc.test(new SequenceLocation(1, contigNames1, 6_028_500)));
+		assertTrue(bc.test(new SequenceLocation(6, contigNames1, 7_824_630)));
+		assertTrue(bc.test(new SequenceLocation(6, contigNames1, 7_824_631)));
+		assertFalse(bc.test(new SequenceLocation(6, contigNames1, 7_825_216)));
+		assertFalse(bc.test(new SequenceLocation(6, contigNames1, 0)));
+		assertFalse(bc.test(new SequenceLocation(6, contigNames1, Integer.MAX_VALUE)));
+		assertFalse(bc.test(new SequenceLocation(0, contigNames1, 0)));
 	}
 	
 	@Test(expected=IndexOutOfBoundsException.class)
@@ -97,7 +92,7 @@ public class BedReaderTest {
 				"chrX	7823625	7825216	NM_182444	0	+	7823625	7825216	0	4	\"313,32,687,258,\"	\"0,463,597,1333,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" + 
 				"";
 		
-		new BedReader(mapNames, new BufferedReader(new StringReader(bed1)),
+		new BedReader(contigNames1, new BufferedReader(new StringReader(bed1)),
 			"test reader", null, false);
 		throw new RuntimeException();
 	}
@@ -114,7 +109,7 @@ public class BedReaderTest {
 				"chrX	7823625	7825216	NM_182444	0	+	7823625	7825216	0	4	\"313,32,687,258,\"	\"0,463,597,1333,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" + 
 				"";
 		
-		new BedReader(mapNames, new BufferedReader(new StringReader(bed2)),
+		new BedReader(contigNames1, new BufferedReader(new StringReader(bed2)),
 			"test reader", null, false);
 		throw new RuntimeException();
 	}
@@ -129,7 +124,7 @@ public class BedReaderTest {
 				"chrX	7823625	7825216	NM_182444	0	+	7823625	7825216	0	4	\"313,32,687,258,\"	\"0,463,597,1333,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" + 
 				"";
 		
-		new BedReader(mapNames, new BufferedReader(new StringReader(bed3)),
+		new BedReader(contigNames1, new BufferedReader(new StringReader(bed3)),
 			"test reader", null, false);
 		throw new RuntimeException();
 	}

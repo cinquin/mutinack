@@ -19,7 +19,7 @@ package uk.org.cinquin.mutinack.tests;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.junit.Test;
@@ -50,11 +50,11 @@ public class TestPhredLigSiteFormatting {
 	@Test
 	public void test() throws JsonGenerationException, JsonMappingException, IOException {
 		try (MutinackGroup settings = new MutinackGroup()) {
-			settings.setIndexContigNameMap(new HashMap<Integer, @NonNull String>() {
+			settings.setContigNames(new ArrayList<@NonNull String>() {
 				private static final long serialVersionUID = 6273864437450331956L;
 
 				{
-					put(0, "chrI");
+					add("chrI");
 				}});
 			MultiCounter<ComparablePair<Integer, Integer>> phredAndLigSiteDistance = 
 				new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, settings),

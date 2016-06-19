@@ -17,11 +17,11 @@
 
 package uk.org.cinquin.mutinack.misc_util;
 
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.function.Supplier;
+
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public class Assert {
 	@SuppressWarnings("rawtypes")
@@ -42,6 +42,12 @@ public class Assert {
 		}
 	}
 	
+	public static void isTrue(boolean condition, String message) {
+		if (!condition) {
+			isTrue(condition, message, "");
+		}
+	}
+
 	public static void isTrue(boolean condition, Supplier<String> format, Object... args) {
 		if (!condition) {
 			isTrue(condition, format.get(), args);
@@ -52,14 +58,28 @@ public class Assert {
 		isTrue(!condition, format, args);
 	}
 
-	public static void isFalse(boolean condition, Supplier<String> format, Object... args) {
+	public static void isFalse(boolean condition, String message) {
+		if (condition) {
+			isFalse(condition, message, "");
+		}
+	}
+
+	public static void isFalseVarArg(boolean condition, Supplier<String> format, Object... args) {
 		isTrue(!condition, format, args);
 	}
 
-	public static void isTrue(Supplier<Boolean> s, String format, Object... args) {
+	public static void isFalse(boolean condition, Supplier<String> message) {
+		isTrue(!condition, message);
+	}
+
+	public static void isTrueVarArg(Supplier<Boolean> s, String format, Object... args) {
 		isTrue(s.get(), format, args);
 	}
 	
+	public static void isTrue(Supplier<Boolean> s, String message) {
+		isTrue(s.get(), message);
+	}
+
 	public static void isTrue(Supplier<Boolean> s, boolean nonTrivial, String format, Object... args) {
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS || !nonTrivial) {
 			isTrue(s.get(), format, args);

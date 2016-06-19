@@ -52,7 +52,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -236,6 +235,21 @@ public final class SubAnalyzer {
 		return result;
 	}
 
+	private static class InterningSet<T> extends THashSet<T> {
+		public InterningSet(int i) {
+			super(i);
+		}
+
+		public T intern(T l) {
+			T previous = get(l);
+			if (previous != null) {
+				return previous;
+			}
+			add(l);
+			return l;
+		}
+	}
+
 	/**
 	 * Group reads into duplexes.
 	 * @param finalResult
@@ -258,6 +272,9 @@ public final class SubAnalyzer {
 		@NonNull DuplexKeeper duplexKeeper =
 				getDuplexKeeper(fallBackOnIntervalTree);
 				
+		InterningSet<SequenceLocation> sequenceLocationCache =
+			new InterningSet<>(500);
+
 		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance(
 				analyzer.groupSettings);
 		
@@ -265,7 +282,7 @@ public final class SubAnalyzer {
 		
 		for (final @NonNull ExtendedSAMRecord rExtended: extSAMCache.values()) {
 
-			final @NonNull SequenceLocation location = new SequenceLocation(rExtended.record);
+			final @NonNull SequenceLocation location = rExtended.getLocation();
 
 			final byte @NonNull[] barcode = rExtended.variableBarcode;
 			final byte @NonNull[] mateBarcode = rExtended.getMateVariableBarcode();
@@ -385,14 +402,18 @@ public final class SubAnalyzer {
 					
 					Assert.noException(duplexRead::assertAllBarcodesEqual);
 
-					duplexRead.rightAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getUnclippedStart());
-					duplexRead.rightAlignmentEnd =  new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getUnclippedEnd());
-					duplexRead.leftAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getMateUnclippedStart());
-					duplexRead.leftAlignmentEnd = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getMateUnclippedEnd());					
+					duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							rExtended.getReferenceName(), rExtended.getUnclippedStart()));
+					duplexRead.rightAlignmentEnd =  sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							rExtended.getReferenceName(), rExtended.getUnclippedEnd()));
+					duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							rExtended.getReferenceName(), rExtended.getMateUnclippedStart()));
+					duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							rExtended.getReferenceName(), rExtended.getMateUnclippedEnd()));
 				} else {//Read on positive strand
 
 					if (rExtended.getMateAlignmentStart() == rExtended.getAlignmentStart()) {
@@ -410,21 +431,25 @@ public final class SubAnalyzer {
 					
 					Assert.noException(duplexRead::assertAllBarcodesEqual);
 
-					duplexRead.leftAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getUnclippedStart());
-					duplexRead.leftAlignmentEnd = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getUnclippedEnd());
-					duplexRead.rightAlignmentStart = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getMateUnclippedStart());
-					duplexRead.rightAlignmentEnd = new SequenceLocation(r.getReferenceIndex(),
-							r.getReferenceName(), rExtended.getMateUnclippedEnd());
+					duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getUnclippedStart()));
+					duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getUnclippedEnd()));
+					duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getMateUnclippedStart()));
+					duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
+						new SequenceLocation(rExtended.getReferenceIndex(),
+							r.getReferenceName(), rExtended.getMateUnclippedEnd()));
 				}
 
 				Assert.isFalse(
 					duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0,
-					"Misordered duplex: %s -- %s %s %s", duplexRead.leftAlignmentStart,
+					"Misordered duplex: %s -- %s %s %s"/*, duplexRead.leftAlignmentStart,
 					duplexRead.leftAlignmentEnd, duplexRead,
-					(Supplier<String>) rExtended::getFullName);
+					(Supplier<String>) rExtended::getFullName*/);
 			}//End new duplex creation
 		}//End loop over reads
 		
@@ -931,7 +956,9 @@ public final class SubAnalyzer {
 				case 'T' : stats.nPosQualityPoorT.increment(location); break;
 				case 'G' : stats.nPosQualityPoorG.increment(location); break;
 				case 'C' : stats.nPosQualityPoorC.increment(location); break;
-				case 'X' : break;//Ignore because we do not have a record of wildtype sequence
+				case 'X' :
+				case 'N' :
+					break;//Ignore because we do not have a record of wildtype sequence
 				default : throw new AssertionFailedException();
 			}
 		} else if (maxQuality == DUBIOUS) {
@@ -1021,15 +1048,15 @@ public final class SubAnalyzer {
 	 * @param ref
 	 * @return the furthest position in the contig covered by the read
 	 */
-	int processRead(final @NonNull SAMRecord rec, final @NonNull ReferenceSequence ref) {
-
-		@NonNull SequenceLocation location = new SequenceLocation(rec);
-
-		final ExtendedSAMRecord extendedRec = getExtended(rec, location);
-		Assert.isFalse(extendedRec.processed, "Double processing of record %s", extendedRec.getFullName());
+	int processRead(@NonNull SequenceLocation location,
+			final @NonNull ExtendedSAMRecord extendedRec, final @NonNull ReferenceSequence ref) {
 		
+		Assert.isFalse(extendedRec.processed, "Double processing of record %s"/*,
+		 extendedRec.getFullName()*/);
 		extendedRec.processed = true;
 		
+		final SAMRecord rec = extendedRec.record;
+
 		final boolean readOnNegativeStrand = rec.getReadNegativeStrandFlag();
 		final byte[] readBases = rec.getReadBases();
 		final byte[] refBases = ref.getBases();
@@ -1159,7 +1186,8 @@ public final class SubAnalyzer {
 								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand + 
 								"; insert size: " + insertSize + ")");
 						}
-						location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment, true);
+						location = new SequenceLocation(extendedRec.getLocation().contigIndex,
+							extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
 						int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
 						int distance1 = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
 						int distance = Math.max(distance0, distance1);
@@ -1265,9 +1293,10 @@ public final class SubAnalyzer {
 							}
 
 							final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
-							location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refEndOfPreviousAlignment + 1);
-							final @NonNull SequenceLocation deletionEnd = new SequenceLocation(ref.getContigIndex(),
-								ref.getName(), location.position + deletionLength);
+							location = new SequenceLocation(extendedRec.getLocation().contigIndex,
+								extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1);
+							final @NonNull SequenceLocation deletionEnd = new SequenceLocation(extendedRec.getLocation().contigIndex,
+								extendedRec.getLocation().getContigName(), location.position + deletionLength);
 
 							final byte @Nullable[] deletedSequence = notRnaSeq ?
 								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition)
@@ -1277,8 +1306,8 @@ public final class SubAnalyzer {
 							//So disagreements between deletions that have only overlapping
 							//spans are detected.
 							for (int i = 1; i < deletionLength; i++) {
-								SequenceLocation location2 = new SequenceLocation(ref.getContigIndex(),
-									ref.getName(), refEndOfPreviousAlignment + 1 + i);
+								SequenceLocation location2 = new SequenceLocation(extendedRec.getLocation().contigIndex,
+									extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
 								CandidateSequence hiddenCandidate = new CandidateDeletion(analyzer.idx, location2, extendedRec, Integer.MAX_VALUE,
 									location, deletionEnd);
 								hiddenCandidate.setHidden(true);
@@ -1297,7 +1326,8 @@ public final class SubAnalyzer {
 							}
 
 							final CandidateSequence candidate = new CandidateDeletion(analyzer.idx, location, extendedRec, distance,
-								location, new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition));
+								location, new SequenceLocation(extendedRec.getLocation().contigIndex,
+									extendedRec.getLocation().getContigName(), refPosition));
 
 							if (!extendedRec.formsWrongPair()) {
 								candidate.acceptLigSiteDistance(distance);
@@ -1347,12 +1377,14 @@ public final class SubAnalyzer {
 				}
 				boolean insertCandidateAtRegularPosition = true;
 				final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
-					new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition, true)
+					new SequenceLocation(extendedRec.getLocation().contigIndex,
+						extendedRec.getLocation().getContigName(), refPosition, true)
 					: null;
 					/*final boolean endOfRead = readOnNegativeStrand ? readPosition == 0 :
 				readPosition == effectiveReadLength - 1;*/
 
-				location = new SequenceLocation(ref.getContigIndex(), ref.getName(), refPosition);
+				location = new SequenceLocation(extendedRec.getLocation().contigIndex,
+					extendedRec.getLocation().getContigName(), refPosition);
 
 				if (baseQualities[readPosition] < analyzer.minBasePhredScoreQ1) {
 					stats.nBasesBelowPhredScore.increment(location);

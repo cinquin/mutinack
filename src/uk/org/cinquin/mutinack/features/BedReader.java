@@ -72,10 +72,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	
 	@SuppressWarnings("resource")
 	public static BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			Map<Integer, @NonNull String> indexContigNameMap, String readerName, boolean parseScore) {
+			List<@NonNull String> contigNames, String readerName, boolean parseScore) {
 		return FileCache.getCached(path0, cacheExtension, path -> {
 			try {
-				return new BedReader(indexContigNameMap, 
+				return new BedReader(contigNames,
 					new BufferedReader(new FileReader(new File(path))), readerName, null, false);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -93,11 +93,21 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		return result;
 	}
 	
+	public final static <V> Map<V, Integer> invertList(List<V> list) {
+		Map<V, Integer> result = new HashMap<>();
+		for (int i = 0; i < list.size(); i++) {
+			if (result.put(list.get(i), i) != null) {
+				throw new IllegalArgumentException("Repeated entry " + list.get(i));
+			}
+		}
+		return result;
+	}
+
 	@SuppressWarnings("null")
-	public BedReader(Map<Integer, @NonNull String> indexContigNameMap, BufferedReader reader,
+	public BedReader(List<@NonNull String> contigNames, BufferedReader reader,
 			String readerName, BufferedReader suppInfoReader, boolean parseScore) throws ParseRTException {
 		
-		Map<String, Integer> reverseIndex = invertMap(indexContigNameMap);
+		Map<String, Integer> reverseIndex = invertList(contigNames);
 		
 		this.readerName = readerName;
 		bedFileIntervals = new MapOfLists<>();
@@ -105,10 +115,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		int entryCount = 0;
 		final AtomicInteger lineCount = new AtomicInteger(0);
 
-		for (Entry<Integer, @NonNull String> s: indexContigNameMap.entrySet()) {
+		for (int i = 0; i < contigNames.size(); i++) {
 			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(s.getValue(), new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", s.getKey(), s.getValue(), -1, -1, null, Optional.empty(), 0)));
+			bedFileIntervals.addAt(contigNames.get(i), new IntervalTree.IntervalData<>(-1, -1,
+					new GenomeInterval("", i, contigNames.get(i), -1, -1, null, Optional.empty(), 0)));
 		}
 		
 		try(Stream<String> lines = reader.lines()) {

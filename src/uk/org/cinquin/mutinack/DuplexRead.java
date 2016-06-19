@@ -15,7 +15,20 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package uk.org.cinquin.mutinack;
-import static uk.org.cinquin.mutinack.Assay.*;
+import static uk.org.cinquin.mutinack.Assay.AVERAGE_N_CLIPPED;
+import static uk.org.cinquin.mutinack.Assay.BOTTOM_STRAND_MAP_Q2;
+import static uk.org.cinquin.mutinack.Assay.CLOSE_TO_LIG;
+import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q0;
+import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q1;
+import static uk.org.cinquin.mutinack.Assay.CONSENSUS_THRESHOLDS_1;
+import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
+import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
+import static uk.org.cinquin.mutinack.Assay.MISSING_STRAND;
+import static uk.org.cinquin.mutinack.Assay.N_READS_PER_STRAND;
+import static uk.org.cinquin.mutinack.Assay.N_READS_WRONG_PAIR;
+import static uk.org.cinquin.mutinack.Assay.N_STRANDS_DISAGREEMENT;
+import static uk.org.cinquin.mutinack.Assay.N_STRAND_READS_ABOVE_MIN_PHRED;
+import static uk.org.cinquin.mutinack.Assay.TOP_STRAND_MAP_Q2;
 import static uk.org.cinquin.mutinack.MutationType.DELETION;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
@@ -35,7 +48,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -44,7 +56,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -61,6 +72,7 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.IntMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
@@ -486,7 +498,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		final @NonNull List<@NonNull DuplexDisagreement> duplexDisagreements = 
 				new ArrayList<>();
 		stats.nPosDuplex.accept(location);
-		final Entry<CandidateSequence, SettableInteger> bottom, top;
+		final Entry<CandidateSequence, Integer> bottom, top;
 		boolean disagreement = false;
 
 		//Find if there is a clear candidate with which duplexRead is
@@ -504,17 +516,19 @@ public final class DuplexRead implements HasInterval<Integer> {
 		bottomCounter.compute();
 		
 		{//Make sure we do not leak bottom0 or top0
-			final Entry<CandidateSequence, SettableInteger> bottom0 = bottomCounter.candidateCounts.entrySet().stream().
-					max((a,b) -> Integer.compare(a.getValue().get(), b.getValue().get())).
-					orElse(null);
-			bottom = bottom0 == null ? null :
-				new AbstractMap.SimpleImmutableEntry<>(bottom0.getKey(), bottom0.getValue());
+			final CandidateSequence bottom0, top0;
 
-			final Entry<CandidateSequence, SettableInteger> top0 = topCounter.candidateCounts.entrySet().stream().
-					max((a,b) -> Integer.compare(a.getValue().get(), b.getValue().get())).
-					orElse(null);
+			IntMinMax<CandidateSequence> ir1 = new IntMinMax<>();
+			bottomCounter.candidateCounts.forEach((c, si) -> ir1.acceptMax(si.get(), c));
+			bottom0 = ir1.getKeyMax();
+			bottom = bottom0 == null ? null :
+				new AbstractMap.SimpleImmutableEntry<>(bottom0, ir1.getMax());
+
+			IntMinMax<CandidateSequence> ir2 = new IntMinMax<>();
+			topCounter.candidateCounts.forEach((c, si) -> ir2.acceptMax(si.get(), c));
+			top0 = ir2.getKeyMax();
 			top = top0 == null ? null :
-				new AbstractMap.SimpleImmutableEntry<>(top0.getKey(), top0.getValue());
+				new AbstractMap.SimpleImmutableEntry<>(top0, ir2.getMax());
 		}
 		
 		final List<ExtendedSAMRecord> allRecords = 
@@ -563,8 +577,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 			}
 		}
 						
-		nReadsWrongPair = (int) allRecords.stream().filter(ExtendedSAMRecord::formsWrongPair).
-				count();
+		final SettableInteger counter = new SettableInteger(0);
+		allRecords.forEach(r -> {
+			if (r.formsWrongPair()) {
+				counter.getAndIncrement();
+			}
+		});
+		nReadsWrongPair = counter.get();
 		
 		if (nReadsWrongPair > 0) {
 			dq.addUnique(N_READS_WRONG_PAIR, DUBIOUS);
@@ -588,38 +607,51 @@ public final class DuplexRead implements HasInterval<Integer> {
 			dq.addUnique(AVERAGE_N_CLIPPED, DUBIOUS);
 		}
 		
-		dq.addUnique(TOP_STRAND_MAP_Q2, topCounter.keptRecords.stream().
-				mapToInt(r -> r.record.getMappingQuality()).
-				max().orElse(255) >= analyzer.minMappingQualityQ2 ? MAXIMUM : DUBIOUS);
-		
-		dq.addUnique(BOTTOM_STRAND_MAP_Q2, bottomCounter.keptRecords.stream().
-				mapToInt(r -> r.record.getMappingQuality()).
-				max().orElse(255) >= analyzer.minMappingQualityQ2 ? MAXIMUM : DUBIOUS);
+		dq.addUnique(TOP_STRAND_MAP_Q2,
+			new IntMinMax<ExtendedSAMRecord>().defaultMax(255).
+				acceptMax(topCounter.keptRecords,
+					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
+				getMax()
+			>= analyzer.minMappingQualityQ2 ?
+				MAXIMUM :
+				DUBIOUS);
+
+		dq.addUnique(BOTTOM_STRAND_MAP_Q2,
+			new IntMinMax<ExtendedSAMRecord>().defaultMax(255).
+				acceptMax(bottomCounter.keptRecords,
+					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
+			getMax()
+			>= analyzer.minMappingQualityQ2 ?
+				MAXIMUM :
+				DUBIOUS);
 		
 		final boolean bothStrandsPresent = bottom != null && top != null;
 		final boolean thresholds2Met, thresholds1Met;
 
-		thresholds2Met = ((top != null) ? top.getValue().get() >= analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
-			(bottom != null ? bottom.getValue().get() >= analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate : false);
+		thresholds2Met = ((top != null) ? top.getValue() >= analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
+			(bottom != null ? bottom.getValue() >= analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate : false);
 
-		thresholds1Met = (top != null ? top.getValue().get() >= analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate : true) &&
-			(bottom != null ? bottom.getValue().get() >= analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate : true);
+		thresholds1Met = (top != null ? top.getValue() >= analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate : true) &&
+			(bottom != null ? bottom.getValue() >= analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate : true);
 		
 		if (!thresholds1Met) {
 			//TODO Following quality assignment is redundant with CONSENSUS_Q0 below
 			dq.addUnique(CONSENSUS_THRESHOLDS_1, ATROCIOUS);
 			stats.nConsensusQ1NotMet.increment(location);
 			if (analyzer.logReadIssuesInOutputBam) {
-				issues.add(location + " CS0Y_" + (top != null ? top.getValue().get() : "x") +
+				issues.add(location + " CS0Y_" + (top != null ? top.getValue() : "x") +
 						"_" + nTopStrandsWithCandidate + "_" +
-						(bottom != null ? bottom.getValue().get() : "x") + 
+						(bottom != null ? bottom.getValue() : "x") +
 						"_" + nBottomStrandsWithCandidate);
 			}
 		}
 
 		//TODO compute consensus insert size instead of extremes
-		final IntSummaryStatistics insertSizeStats = Stream.concat(bottomStrandRecords.stream(), topStrandRecords.stream()).
-				mapToInt(r -> Math.abs(r.getInsertSize())).summaryStatistics();
+		final IntMinMax<ExtendedSAMRecord> insertSizeStats = new IntMinMax<ExtendedSAMRecord>().
+			acceptMinMax(bottomStrandRecords,
+				er -> Math.abs(((ExtendedSAMRecord) er).getInsertSize())).
+			acceptMinMax(topStrandRecords,
+				er -> Math.abs(((ExtendedSAMRecord) er).getInsertSize()));
 
 		maxInsertSize = insertSizeStats.getMax();
 		final int localMinInsertSize = insertSizeStats.getMin();
@@ -667,42 +699,42 @@ public final class DuplexRead implements HasInterval<Integer> {
 				dq.addUnique(CONSENSUS_Q1, DUBIOUS);
 				stats.nPosDuplexWithLackOfStrandConsensus2.increment(location);
 				if (analyzer.logReadIssuesInOutputBam) {
-					if (top.getValue().get() < analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate)
+					if (top.getValue() < analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate)
 						issues.add(location + " CS1T_" + shortLengthFloatFormatter.get().format
-								(((float) top.getValue().get()) / nTopStrandsWithCandidate));
-					if (bottom.getValue().get() < analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate)
+								(((float) top.getValue()) / nTopStrandsWithCandidate));
+					if (bottom.getValue() < analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate)
 						issues.add(location + " CS1B_" + shortLengthFloatFormatter.get().format
-								(((float) bottom.getValue().get()) / nBottomStrandsWithCandidate));
+								(((float) bottom.getValue()) / nBottomStrandsWithCandidate));
 				}
 			} else {
 				dq.addUnique(CONSENSUS_Q0, POOR);
 				stats.nPosDuplexWithLackOfStrandConsensus1.increment(location);
 				if (analyzer.logReadIssuesInOutputBam) {
-					if (top.getValue().get() < analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate)
+					if (top.getValue() < analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate)
 						issues.add(location + " CS0T_" + shortLengthFloatFormatter.get().format
-								(((float) top.getValue().get()) / nTopStrandsWithCandidate));
-					if (bottom.getValue().get() < analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate)
+								(((float) top.getValue()) / nTopStrandsWithCandidate));
+					if (bottom.getValue() < analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate)
 						issues.add(location + " CS0B_" + shortLengthFloatFormatter.get().format
-								(((float) bottom.getValue().get()) / nBottomStrandsWithCandidate));
+								(((float) bottom.getValue()) / nBottomStrandsWithCandidate));
 				}
 			}
 		} else {//Only the top or bottom strand is represented
-			Entry<CandidateSequence, SettableInteger> strand = top != null ? top : bottom;
+			Entry<CandidateSequence, Integer> strand = top != null ? top : bottom;
 			float total = nTopStrandsWithCandidate + nBottomStrandsWithCandidate; //One is 0, doesn't matter which
-			if (strand != null && strand.getValue().get() < analyzer.minConsensusThresholdQ1 * total) {
+			if (strand != null && strand.getValue() < analyzer.minConsensusThresholdQ1 * total) {
 				if (analyzer.logReadIssuesInOutputBam) {
 					issues.add(location + " CS0X_" + shortLengthFloatFormatter.get().format
-							(strand.getValue().get() / total));
+							(strand.getValue() / total));
 				}
 			}
 			dq.addUnique(MISSING_STRAND, DUBIOUS);
 		}
 
 		final boolean enoughReadsForQ2Disag = bottom != null && 
-				bottom.getValue().get() >= analyzer.minReadsPerStrandForDisagreement
+				bottom.getValue() >= analyzer.minReadsPerStrandForDisagreement
 				&&
 				top != null &&
-				top.getValue().get() >= analyzer.minReadsPerStrandForDisagreement;
+				top.getValue() >= analyzer.minReadsPerStrandForDisagreement;
 
 		final boolean highEnoughQualForQ2Disagreement =
 			dq.getMin().compareTo(GOOD) >= 0 &&
@@ -840,8 +872,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 								if (bottomStrandRecords.contains(read) ||
 										topStrandRecords.contains(read)) {
 									Assert.isFalse(dist == Integer.MAX_VALUE || dist == Integer.MIN_VALUE,
-											"%s distance for mutation %s read %s file %s" ,
-												dist, actualMutant, read, analyzer.inputBam.getAbsolutePath());
+											"%s distance for mutation %s read %s file %s"/*,
+												dist, actualMutant, read, analyzer.inputBam.getAbsolutePath()*/);
 									if (dist < minDist.get()) {
 										minDist.set(dist);
 										minDistanceRead.set(read);

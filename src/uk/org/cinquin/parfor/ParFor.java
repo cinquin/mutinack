@@ -23,7 +23,7 @@ public final class ParFor {
 	static final Logger logger = LoggerFactory.getLogger("Parfor");
 	/**
 	 * Profiling suggests setting thread names represents a substantial
-	 * cost when doing many short Parfor runs.
+	 * cost when doing many short ParFor runs.
 	 */
 	private static final boolean SET_THREAD_NAMES = false;
 
@@ -76,7 +76,7 @@ public final class ParFor {
 		if (threadPool == null) {
 			synchronized(ParFor.class) {
 				if (ParFor.threadPool == null) {
-					StaticStuffToAvoidMutating.instantiateThreadPools(64);
+					StaticStuffToAvoidMutating.instantiateThreadPools(128);
 				}
 			}
 			threadPool = ParFor.threadPool;
@@ -98,7 +98,7 @@ public final class ParFor {
 	}
 
 	public ParFor(String name, int startIndex, int endIndex, ProgressReporter progressBar, boolean stopAllUponException) {
-		this(startIndex, endIndex,progressBar, threadPool, stopAllUponException);
+		this(startIndex, endIndex, progressBar, threadPool, stopAllUponException);
 		if (name != null)
 			setName(name);
 	}

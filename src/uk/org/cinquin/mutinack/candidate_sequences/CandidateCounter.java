@@ -16,12 +16,6 @@
  */
 package uk.org.cinquin.mutinack.candidate_sequences;
 
-import uk.org.cinquin.mutinack.ExtendedSAMRecord;
-import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
-import uk.org.cinquin.mutinack.misc_util.SettableInteger;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +24,11 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
+import uk.org.cinquin.mutinack.ExtendedSAMRecord;
+import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.SettableInteger;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
 	private final @NonNull Set<CandidateSequence> candidates;
@@ -47,7 +46,7 @@ public final class CandidateCounter {
 		this.candidates = candidates;
 		this.location = location;
 		keptRecords = new THashSet<>();
-		candidateCounts = new THashMap<>(100);
+		candidateCounts = new THashMap<>(5);
 	}
 
 	public void reset() {

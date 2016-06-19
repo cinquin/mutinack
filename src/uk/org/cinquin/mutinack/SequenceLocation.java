@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,7 +28,6 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import contrib.net.sf.samtools.SAMRecord;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 
 public final class SequenceLocation implements Comparable<SequenceLocation>, Serializable {
@@ -87,7 +87,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		this.hash = computeHash();
 	}
 	
-	public SequenceLocation(int contigIndex, Map<Integer, String> nameMap, int position, boolean plusHalf) {
+	public SequenceLocation(int contigIndex, List<String> nameMap, int position, boolean plusHalf) {
 		this(contigIndex, nameMap.get(contigIndex), position, plusHalf);
 	}
 	
@@ -95,7 +95,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		this(contigIndex, contigName, position, false);
 	}
 
-	public SequenceLocation(int contigIndex, Map<Integer, String> nameMap, int position) {
+	public SequenceLocation(int contigIndex, List<String> nameMap, int position) {
 		this(contigIndex, nameMap.get(contigIndex), position, false);
 	}
 	
@@ -121,9 +121,10 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		return new SequenceLocation(contigIndex, contigName, position + offset, plusHalf);
 	}
 	
+	/*
 	public SequenceLocation(SAMRecord rec) {
 		this(rec.getReferenceIndex() , rec.getReferenceName(), rec.getAlignmentStart());
-	}
+	}*/
 
 	@Override
 	public String toString() {

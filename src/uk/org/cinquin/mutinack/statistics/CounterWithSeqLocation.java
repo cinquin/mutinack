@@ -39,7 +39,7 @@ public class CounterWithSeqLocation<T> extends Counter<T> implements Serializabl
 		super(sortByValue, groupSettings);
 		List<SerializableFunction<Object, Object>> contigNames0 = new ArrayList<>();
 		contigNames0.add(0, null);
-		contigNames0.add(groupSettings.getIndexContigNameMap()::get);
+		contigNames0.add((Object i) -> groupSettings.getContigNames().get((Integer) i));
 		contigNames0.add(i -> ((Integer) i) * groupSettings.BIN_SIZE);
 		setKeyNamePrintingProcessor(contigNames0);
 	}

@@ -21,7 +21,6 @@ import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
 import static uk.org.cinquin.mutinack.MutationType.DELETION;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
-import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.Quality.GOOD;
 import static uk.org.cinquin.mutinack.Quality.POOR;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
@@ -63,11 +62,12 @@ import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.IntMinMax;
+import uk.org.cinquin.mutinack.misc_util.ObjMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.Histogram;
-import uk.org.cinquin.parfor.ParFor;
 
 public class SubAnalyzerPhaser extends Phaser {
 	
@@ -151,21 +151,14 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 		
 		try {
-			final ParFor pf0 = new ParFor("Load " + contigName + " " + lastProcessedPosition.get() +
-					"-" + pauseAt.get(), 0, nSubAnalyzers - 1 , null, true);
-			for (int worker = 0; worker < nSubAnalyzers; worker++) {
-				pf0.addLoopWorker((loopIndex, j) -> {
-					SubAnalyzer sub = analysisChunk.subAnalyzers.get(loopIndex);
+			for (int i = 0; i < nSubAnalyzers; i++) {
+				SubAnalyzer sub = analysisChunk.subAnalyzers.get(i);
 					if (NONTRIVIAL_ASSERTIONS && nIterations > 1 && sub.candidateSequences.containsKey(
 							new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get()))) {
 						throw new AssertionFailedException();
 					}
 					sub.load();
-					return null;
-				}
-				);
 			}
-			pf0.run(true);
 
 			final int saveLastProcessedPosition = lastProcessedPosition.get();
 			for (int position = saveLastProcessedPosition + 1; position <= pauseAt.get() &&
@@ -187,7 +180,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				for (GenomeFeatureTester tester: excludeBEDs) {
 					if (tester.test(location)) {
-						analysisChunk.subAnalyzers.parallelStream().
+						analysisChunk.subAnalyzers/*.parallelStream()*/.
 							forEach(sa -> {sa.candidateSequences.remove(location);
 									sa.stats.nPosExcluded.add(location, 1);});
 						lastProcessedPosition.set(position);
@@ -196,20 +189,20 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 
 				if (!argValues.rnaSeq) {
-					ParFor pf = new ParFor("Examination ", 0, nSubAnalyzers -1 , null, true);
-					for (int worker = 0; worker < analyzers.size(); worker++) {
-						pf.addLoopWorker((loopIndex,j) -> {
+					for (int loopIndex = 0; loopIndex < nSubAnalyzers; loopIndex++) {
 							analyzerCandidateLists.set(loopIndex, analysisChunk.subAnalyzers.get(loopIndex)
 									.examineLocation(location));
-							return null;});
 					}
-					pf.run(true);
 
-					final int dubiousOrGoodInAllInputsAtPos = analyzerCandidateLists.stream().
-							mapToInt(ler -> ler.nGoodOrDubiousDuplexes).min().getAsInt();
+					final int dubiousOrGoodInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
+						acceptMin(analyzerCandidateLists,
+							ler -> ((LocationExaminationResults) ler).nGoodOrDubiousDuplexes).
+						getMin();
 
-					final int goodDuplexCovInAllInputsAtPos = analyzerCandidateLists.stream()
-							.mapToInt(ler -> ler.nGoodDuplexes).min().getAsInt();
+					final int goodDuplexCovInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
+						acceptMin(analyzerCandidateLists,
+							ler -> ((LocationExaminationResults) ler).nGoodDuplexes).
+						getMin();
 
 					dubiousOrGoodDuplexCovInAllInputs.insert(dubiousOrGoodInAllInputsAtPos);
 					goodDuplexCovInAllInputs.insert(goodDuplexCovInAllInputsAtPos);
@@ -217,7 +210,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					final Handle<Boolean> tooHighCoverage = new Handle<>(false);
 					final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
 
-					analyzers.parallelStream().forEach(a -> {
+					analyzers./*parallelStream().*/forEach(a -> {
 						if (groupSettings.mutationsToAnnotate.containsKey(new Pair<>(location, a.name))) {
 							mutationToAnnotate.set(true);
 						}
@@ -416,8 +409,10 @@ public class SubAnalyzerPhaser extends Phaser {
 							}).
 							collect(Collectors.toList());
 
-					final Quality maxCandMutQuality = mutantCandidates.stream().
-							map(c -> c.getQuality().getMin()).max(Quality::compareTo).orElse(ATROCIOUS);
+					final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
+						(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
+						acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getMin()).
+						getMax());
 
 					final boolean forceReporting = forceOutputAtLocations.get(location) != null ||
 						mutationToAnnotate.get();
@@ -428,7 +423,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					//Only report details when at least one mutant candidate is of Q2 quality
 					if (forceReporting || (maxCandMutQuality.compareTo(GOOD) >= 0)) {
 						if (NONTRIVIAL_ASSERTIONS) for (GenomeFeatureTester t: excludeBEDs) {
-							Assert.isFalse(t.test(location), "%s excluded by %s", location, t);
+							Assert.isFalse(t.test(location), "%s excluded by %s"/*, location, t*/);
 						}
 
 						//Refilter also allowing Q1 candidates to compare output of different
@@ -676,7 +671,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				lastProcessedPosition.set(position);
 				
 				if (readsToWrite != null) {
-					analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
+					analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 
 						Mutinack analyzer = subAnalyzer.getAnalyzer();
 
@@ -758,7 +753,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				logger.trace("Going from " + saveLastProcessedPosition + " to " + lastProcessedPosition.get() + " for chunk " + analysisChunk);
 			}
 
-			analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
+			analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 				Mutinack analyzer = subAnalyzer.getAnalyzer();
 
 				for (int position = saveLastProcessedPosition + 1; position <= lastProcessedPosition.get();
@@ -803,15 +798,15 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			if (nIterations < 2) {
 				nIterations++;
-				analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
+				analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 					Iterator<Entry<SequenceLocation, THashSet<CandidateSequence>>> it =
 							subAnalyzer.candidateSequences.entrySet().iterator();
 					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get());
 					while (it.hasNext()) {
 						Entry<SequenceLocation, THashSet<CandidateSequence>> v = it.next();
-						Assert.isFalse(v.getKey().contigIndex != contigIndex,
-								"Problem with contig indices, " +
-									"possibly because contigs not alphabetically sorted in reference genome .fa file");
+						Assert.isTrue(v.getKey().contigIndex == contigIndex,
+								"Problem with contig indices, " + v.getKey() + " " + v.getKey().contigIndex +
+								" " + contigIndex);
 						if (v.getKey().compareTo(lowerBound) < 0) {
 							it.remove();
 						}
@@ -821,19 +816,20 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			Assert.noException(() -> {
 				//Check no sequences have been left behind
-				analysisChunk.subAnalyzers.parallelStream().forEach(subAnalyzer -> {
+				analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get());
-					subAnalyzer.candidateSequences.keySet().parallelStream().forEach(
+					subAnalyzer.candidateSequences.keySet()/*.parallelStream()*/.forEach(
 							e -> {
 								Assert.isFalse(e.contigIndex != contigIndex);
-								Assert.isFalse(e.compareTo(lowerBound) < 0,
+								Assert.isFalse(e.compareTo(lowerBound) < 0/*,
 										"pauseAt: %s; lastProcessedPosition: %s but found: %s for chunk %s",
-											pauseAt.get(), lastProcessedPosition, e, analysisChunk);});
+											pauseAt.get(), lastProcessedPosition, e, analysisChunk*/);});
 				});
 			});
 
-			final int maxLastProcessable = analysisChunk.subAnalyzers.stream().mapToInt(a -> a.lastProcessablePosition.get()).
-					max().getAsInt();
+			final int maxLastProcessable = new IntMinMax<SubAnalyzer>().
+				acceptMax(analysisChunk.subAnalyzers,
+					sa -> ((SubAnalyzer) sa).lastProcessablePosition.get()).getMax();
 
 			if (maxLastProcessable == previousLastProcessable.get()) {
 				logger.debug("Phaser " + this + " will terminate");

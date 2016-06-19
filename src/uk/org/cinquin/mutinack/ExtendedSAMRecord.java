@@ -60,6 +60,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private byte @Nullable[] mateVariableBarcode;
 	public final byte @NonNull[] variableBarcode;
 	public final byte @Nullable[] constantBarcode;
+	public final @NonNull SequenceLocation location;
 	final int medianPhred;
 	/**
 	 * Length of read ignoring trailing Ns.
@@ -149,6 +150,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.extSAMCache = extSAMCache;
 		this.name = fullName;
 		this.record = rec;
+		this.location = location;
 		hashCode = fullName.hashCode();
 		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1"))/*.intern()*/;
 		
@@ -219,34 +221,42 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		
 		final @NonNull String fullBarcodeString;
 		String bcAttr = (String) record.getAttribute("BC");
-		if (bcAttr == null) {
-			final int firstIndex = name.indexOf("BC:Z:");
-			if (firstIndex == -1) {
-				throw new ParseRTException("Missing first barcode for read " + name + 
+		if (groupSettings.getVariableBarcodeEnd() > 0) {
+			if (bcAttr == null) {
+				final int firstIndex = name.indexOf("BC:Z:");
+				if (firstIndex == -1) {
+					throw new ParseRTException("Missing first barcode for read " + name +
 						" " + record.toString() + " from analyzer " + analyzer);
-			}
-			final int index;
-			if (record.getFirstOfPairFlag()) {
-				index = firstIndex;
-			} else {
-				index = name.indexOf("BC:Z:", firstIndex + 1);
-				if (index == -1) {
-					throw new ParseRTException("Missing second barcode for read " + name + 
-							" " + record.toString() + " from analyzer " + analyzer);
 				}
+				final int index;
+				if (record.getFirstOfPairFlag()) {
+					index = firstIndex;
+				} else {
+					index = name.indexOf("BC:Z:", firstIndex + 1);
+					if (index == -1) {
+						throw new ParseRTException("Missing second barcode for read " + name +
+							" " + record.toString() + " from analyzer " + analyzer);
+					}
+				}
+				fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf("_", index)));
+			} else {
+				fullBarcodeString = bcAttr;
 			}
-			fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf("_", index)));
-		} else {
-			fullBarcodeString = bcAttr;
-		}
-		variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(
+			variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(
 				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes()));
-		constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(
+			constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(
 				groupSettings.getConstantBarcodeStart(), groupSettings.getConstantBarcodeEnd() + 1).getBytes()));
+		} else {
+			variableBarcode = EMPTY_BARCODE;
+			constantBarcode = DUMMY_BARCODE;//EMPTY_BARCODE
+		}
 
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
 	}
 	
+	private static final byte @NonNull[] EMPTY_BARCODE = new byte [0];
+	private static final byte @NonNull[] DUMMY_BARCODE = new byte [] {'N', 'N', 'N'};
+
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull MutinackGroup groupSettings,
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
 			@NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
@@ -498,10 +508,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return record.getMappingQuality();
 	}
 
-	public boolean overlapsWith(SequenceLocation location) {
-		if (getRefAlignmentStart() > location.position ||
-			getRefAlignmentEnd() < location.position ||
-			location.contigIndex != record.getReferenceIndex()) {
+	public boolean overlapsWith(SequenceLocation otherLocation) {
+		if (getRefAlignmentStart() > otherLocation.position ||
+			getRefAlignmentEnd() < otherLocation.position ||
+			otherLocation.contigIndex != getReferenceIndex()) {
 			return false;
 		}
 		return true;
@@ -511,5 +521,21 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return formsWrongPair() ?
 				getAlignmentStart() <= getMateAlignmentStart()
 				: getReadPositiveStrand();
+	}
+
+	public @NonNull SequenceLocation getLocation() {
+		return location;
+	}
+
+	/**
+	 * Not necessarily the same as that of SAMRecord
+	 * @return
+	 */
+	public int getReferenceIndex() {
+		return location.contigIndex;
+	}
+
+	public String getReferenceName() {
+		return location.getContigName();
 	}
 }
