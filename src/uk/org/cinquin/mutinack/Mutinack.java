@@ -835,7 +835,7 @@ public class Mutinack implements Actualizable {
 						argValues.ignoreTandemRFPairs,
 						intersectFiles,
 						argValues.requireMatchInAlignmentEnd,
-						argValues.logReadIssuesInOutputBam,
+						argValues.logReadIssuesInOutputBam && argValues.outputAlignmentFile != null,
 						argValues.maxAverageBasesClipped,
 						argValues.maxAverageClippingOfAllCoveringDuplexes,
 						argValues.minMedianPhredQualityAtPosition,

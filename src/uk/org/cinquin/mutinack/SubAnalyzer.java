@@ -606,7 +606,11 @@ public final class SubAnalyzer {
 			result.analyzedCandidateSequences = Collections.emptyList();
 			return result;
 		}
-		final Set<CandidateSequence> candidateSet = Collections.unmodifiableSet(candidateSet0);
+		final Set<CandidateSequence> candidateSet =
+			DebugLogControl.COSTLY_ASSERTIONS ?
+				Collections.unmodifiableSet(candidateSet0)
+			:
+				candidateSet0;
 
 		//Retrieve relevant duplex reads
 		//It is necessary not to duplicate the duplex reads, hence the use of a set

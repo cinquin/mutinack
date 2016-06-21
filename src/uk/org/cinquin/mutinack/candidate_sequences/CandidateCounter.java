@@ -63,8 +63,9 @@ public final class CandidateCounter {
 		}
 		sumPhreds = 0;
 		nPhreds = 0;
-		for (CandidateSequence candidate: candidates) {
-			for (ExtendedSAMRecord r: records) {
+		candidates.forEach(candidate -> {
+			for (int i = records.size() - 1; i >= 0; --i) {
+				ExtendedSAMRecord r = records.get(i);
 				if (candidate.getNonMutableConcurringReads().containsKey(r)) {
 					Byte phredScore = r.basePhredScores.get(location);
 					if (phredScore != null) {
@@ -82,6 +83,7 @@ public final class CandidateCounter {
 				}
 			}//End loop over records
 		}//End loop over candidates
+		);
 	}
 	
 	public void setRecords(@NonNull List<@NonNull ExtendedSAMRecord> records) {
