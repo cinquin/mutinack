@@ -402,13 +402,8 @@ public class ReadLoader {
 				analyzer.readerPool.returnObj(bamReader);
 			}
 		} catch (Throwable t) {
-			Util.printUserMustSeeMessage("Exception " + t.getMessage() + " " +
-					(t.getCause() != null ? (t.getCause() + " ") : "") +
-					"on thread " + Thread.currentThread());
-			/*if (argValues.terminateImmediatelyUponError) {
-				t.printStackTrace();
-				System.exit(1);
-			}*/
+			Util.printUserMustSeeMessage("Exception " + t +
+					" on thread " + Thread.currentThread());
 			analyzer.groupSettings.errorOccurred();
 			phaser.forceTermination();
 			throw new RuntimeException("Exception while processing contig " + lastContigName +
