@@ -470,8 +470,16 @@ public class Mutinack implements Actualizable {
 				PrintStream outPS = new PrintStream(outStream);
 				ByteArrayOutputStream errStream = new ByteArrayOutputStream();
 				PrintStream errPS = new PrintStream(errStream);
+				RuntimeException die = null;
 				try {
+					int parameterHashCode = job.parameters.hashCode();
 					realMain1(job.parameters, outPS, errPS);
+					if (parameterHashCode != job.parameters.hashCode()) {
+						die = new AssertionFailedException("Parameters modified by worker");
+						//Send the result back to the server so that one could figure out
+						//from the server what happened, and then stop the worker
+						throw die;
+					}
 				} catch (Throwable t) {
 					if (!Util.isSerializable(t)) {
 						t = new RuntimeException("Unserializable exception " +
@@ -482,6 +490,9 @@ public class Mutinack implements Actualizable {
 				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
 				server.submitWork("worker", job);
+				if (die != null) {
+					throw die;
+				}
 				pingThread.interrupt();
 				Signals.clearSignalProcessors();//Should be unnecessary
 			}
