@@ -1,4 +1,4 @@
 #!/bin/bash
 #-Djava.security.debug=access
-(nohup java -Djava.security.manager -Djava.security.policy==java.policy -jar mutinack.jar -recordRunsTo recordedFunctionalTestRuns.bin -startServer localhost &> run_server_out) &
+(nohup java -Djava.security.manager -Djava.security.policy==java.policy -jar mutinack.jar -recordRunsTo recordedFunctionalTestRuns.bin -startServer localhost/mutinackTesting &> run_server_out) &
 echo $!

@@ -41,9 +41,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.Timer;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.nustaq.serialization.FSTConfiguration;
 
 import uk.org.cinquin.mutinack.Parameters;
+import uk.org.cinquin.mutinack.features.ParseRTException;
 import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
@@ -93,8 +96,16 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		System.err.println("Dumped " + recordedRuns.size() + " runs to file " + recordRunsTo);
 	}
 
-	public static void createRegistry(String suggestedHostName) {
-		String hostName = getHostName(suggestedHostName);
+	public static void createRegistry(String suggestedHostName0) {
+		String suggestedHostName = suggestedHostName0 == null ?
+				""
+			:
+				suggestedHostName0.split("/")[0];
+
+		String hostName = "".equals(suggestedHostName) ?
+				getDefaultHostName()
+			:
+				suggestedHostName;
 		System.setProperty("java.rmi.server.hostname", hostName);
 
 		if (System.getSecurityManager() == null) {
@@ -102,39 +113,37 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			//System.setSecurityManager(new SecurityManager());
 			//System.out.println("Security manager installed.");
 		} else {
-			System.out.println("Security manager already exists.");
+			System.err.println("Security manager already exists.");
 		}
 
 		try {
 			registry = LocateRegistry.createRegistry(1099);
-			System.out.println("Java RMI registry created; hostname is " + hostName);
+			System.err.println("Java RMI registry created; hostname is " + hostName);
 		} catch (RemoteException e) {
 			// do nothing, error means registry already exists
-			System.out.println("Java RMI registry already exists");
+			System.err.println("Java RMI registry already exists");
 		}
 
 	}
 
-	public static String getHostName(String suggestedName) {
+	public static String getDefaultHostName() {
 		String result;
-		if ("".equals(suggestedName)) {
-			try {
-				result = InetAddress.getLocalHost().getCanonicalHostName();
-				System.out.println("Choosing default host name " + result);
-			} catch (UnknownHostException e) {
-				System.out.println("Unable to determine localhost address; reverting to localhost");
-				result = "localhost";
-			}
-		} else {
-			result = suggestedName;
+		try {
+			result = InetAddress.getLocalHost().getCanonicalHostName();
+			System.err.println("Choosing default host name " + result);
+		} catch (UnknownHostException e) {
+			System.err.println("Unable to determine localhost address; reverting to localhost");
+			result = "localhost";
 		}
 		return result;
 	}
 
 	private Timer rebindTimer;
 
-	public Server(int port, String hostName0, String recordRunsTo) throws RemoteException {
+	public Server(int port, @Nullable String fullPath0, String recordRunsTo)
+			throws RemoteException {
 		super(port);
+		final String fullPath = fillInDefaultRMIPath(fullPath0);
 		this.recordRunsTo = recordRunsTo;
 		if (recordRunsTo != null) {
 			recordedRuns = new HashMap<>();
@@ -143,16 +152,13 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		}
 		final AtomicBoolean firstRun = new AtomicBoolean(true);
 
-		String hostName1 = getHostName(hostName0);
-
 		ActionListener rebindRunnable = event -> {
 			if (!rebindTimer.isRunning())
 				return;
 			try {
 				if (firstRun.get()) {
-					Naming.rebind("//" + hostName1 + "/mutinack", Server.this);
-					System.out.println("Server " + "//" + hostName1 + "/mutinack"
-						+ " bound in registry");
+					Naming.rebind(fullPath, Server.this);
+					System.err.println("Server " + fullPath + " bound in registry");
 				}
 			} catch (Exception e) {
 				System.err.println("RMI server rebinding exception:" + e);
@@ -236,13 +242,29 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		return null;
 	}
 
-	public static RemoteMethods getServer(String hostName) throws MalformedURLException, RemoteException {
+	public static @NonNull String fillInDefaultRMIPath(@Nullable String hostNameOrFullPath) {
+		if (hostNameOrFullPath == null || hostNameOrFullPath.equals("")) {
+			return getDefaultHostName() + "/mutinack";
+		}
+		String[] split = hostNameOrFullPath.split("/");
+		if (split.length > 1) {
+			if (split.length != 2) {
+				throw new ParseRTException("Incorrect formatting of " + hostNameOrFullPath);
+			}
+			return hostNameOrFullPath;
+		} else {
+			return hostNameOrFullPath + "/mutinack";
+		}
+	}
+
+	public static RemoteMethods getServer(String fullPath)
+			throws MalformedURLException, RemoteException {
 		//if (System.getSecurityManager() == null) {
 		//	System.setSecurityManager(new SecurityManager());
 		//}
 		RemoteMethods server;
 		try {
-			server = (RemoteMethods) Naming.lookup("//" + hostName + "/mutinack");
+			server = (RemoteMethods) Naming.lookup(fillInDefaultRMIPath(fullPath));
 		} catch (NotBoundException e) {
 			throw new RuntimeException(e);
 		}

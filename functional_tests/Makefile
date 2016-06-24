@@ -6,7 +6,7 @@ JVM_BUG_WORKAROUND =
 #https://bugs.openjdk.java.net/browse/JDK-8132870
 JACOCO := $(shell echo -javaagent:jacoco.jar=destfile=`pwd`/../target/jacoco.exec)
 JVM_OPTIONS = -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3
-SUBMIT_TO_SERVER = -submitToServer localhost
+SUBMIT_TO_SERVER = -submitToServer localhost/mutinackTesting
 PATH_TO_NG = $(shell echo `pwd`/ng)
 BASEDIR = $(shell echo `pwd`)
 
