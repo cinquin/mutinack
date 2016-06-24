@@ -94,6 +94,7 @@ import contrib.nf.fr.eraasoft.pool.impl.PoolController;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
+import sun.misc.Signal;
 import uk.org.cinquin.mutinack.distributed.EvaluationResult;
 import uk.org.cinquin.mutinack.distributed.Job;
 import uk.org.cinquin.mutinack.distributed.RemoteMethods;
@@ -107,6 +108,7 @@ import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
@@ -445,15 +447,27 @@ public class Mutinack implements Actualizable {
 			//handled through NGServer
 			return;
 		} else if (argValues.startWorker != null) {
+			Handle<Boolean> terminate = new Handle<>(false);
+			Handle<Job> job = new Handle<>();
+			Signal.handle(new Signal("HUP"), p -> {
+				terminate.set(true);
+				if (job.get() == null) {
+					//There does not seem to be a clean way of canceling
+					//getMoreWork call blocked in socketRead, so just exit
+					System.exit(0);
+				}
+				System.err.println("Will terminate when current job has completed");
+			});
 			RemoteMethods server = Server.getServer(argValues.startWorker);
-			while (true) {
-				Job job = server.getMoreWork("worker");
+			while (!terminate.get()) {
+				job.set(null);
+				job.set(server.getMoreWork("worker"));
 				Thread pingThread = new Thread(() -> {
 					try {
 						while(true) {
 							Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000);
 							try {
-								server.notifyStillAlive("worker", job);
+								server.notifyStillAlive("worker", job.get());
 							} catch (IOException e) {
 								throw new RuntimeException(e);
 							}
@@ -465,16 +479,16 @@ public class Mutinack implements Actualizable {
 				pingThread.setDaemon(true);
 				pingThread.setName("Ping thread of worker");
 				pingThread.start();
-				job.result = new EvaluationResult();
+				job.get().result = new EvaluationResult();
 				ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 				PrintStream outPS = new PrintStream(outStream);
 				ByteArrayOutputStream errStream = new ByteArrayOutputStream();
 				PrintStream errPS = new PrintStream(errStream);
 				RuntimeException die = null;
 				try {
-					int parameterHashCode = job.parameters.hashCode();
-					realMain1(job.parameters, outPS, errPS);
-					if (parameterHashCode != job.parameters.hashCode()) {
+					int parameterHashCode = job.get().parameters.hashCode();
+					realMain1(job.get().parameters, outPS, errPS);
+					if (parameterHashCode != job.get().parameters.hashCode()) {
 						die = new AssertionFailedException("Parameters modified by worker");
 						//Send the result back to the server so that one could figure out
 						//from the server what happened, and then stop the worker
@@ -485,19 +499,19 @@ public class Mutinack implements Actualizable {
 						t = new RuntimeException("Unserializable exception " +
 								t.toString());
 					}
-					job.result.executionThrowable = t;
+					job.get().result.executionThrowable = t;
 				}
-				job.result.output = outStream.toString("UTF8") + "\n---------\n" +
+				job.get().result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
-				server.submitWork("worker", job);
+				server.submitWork("worker", job.get());
 				if (die != null) {
 					throw die;
 				}
 				pingThread.interrupt();
 				Signals.clearSignalProcessors();//Should be unnecessary
 			}
-			//Worker never leaves this loop; it just gets killed when its services
-			//are no longer required
+			//Worker never leaves this loop unless interrupted or killed
+			return;
 		}
 		
 		if (argValues.version) {
