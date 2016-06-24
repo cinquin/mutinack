@@ -119,6 +119,22 @@ public final class SubAnalyzer {
 		byteMap.put((byte) 'n', "N");
 	}
 		
+	static final @NonNull TByteObjectMap<byte @NonNull[]> byteArrayMap;
+	static {
+		byteArrayMap = new TByteObjectHashMap<>();
+		byteArrayMap.put((byte) 'A', new byte[] {'A'});
+		byteArrayMap.put((byte) 'a', new byte[] {'a'});
+		byteArrayMap.put((byte) 'T', new byte[] {'T'});
+		byteArrayMap.put((byte) 't', new byte[] {'t'});
+		byteArrayMap.put((byte) 'G', new byte[] {'G'});
+		byteArrayMap.put((byte) 'g', new byte[] {'g'});
+		byteArrayMap.put((byte) 'C', new byte[] {'C'});
+		byteArrayMap.put((byte) 'c', new byte[] {'c'});
+		byteArrayMap.put((byte) 'N', new byte[] {'N'});
+		byteArrayMap.put((byte) 'n', new byte[] {'n'});
+	}
+
+
 	SubAnalyzer(@NonNull Mutinack analyzer, PrintStream out) {
 		this.analyzer = analyzer;
 		useHashMap = analyzer.alignmentPositionMismatchAllowed == 0;
@@ -1210,11 +1226,15 @@ public final class SubAnalyzer {
 							distance = Math.max(distance0, distance1);
 							distance = -distance + 1;
 
-							final CandidateSequence candidate = new CandidateSequence(analyzer.idx, INSERTION, location,
-								extendedRec, distance);
-
 							final byte [] insertedSequence = Arrays.copyOfRange(readBases,
 								readEndOfPreviousAlignment + 1, readPosition);
+
+							final CandidateSequence candidate = new CandidateSequence(
+								analyzer.idx, INSERTION,
+								insertedSequence,
+								location,
+								extendedRec, distance);
+
 
 							if (!extendedRec.formsWrongPair()) {
 								candidate.acceptLigSiteDistance(distance);
@@ -1230,7 +1250,6 @@ public final class SubAnalyzer {
 							candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
 							candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
 							candidate.insertSizeNoBarcodeAccounting = false;
-							candidate.setSequence(insertedSequence);
 
 							if (analyzer.computeRawDisagreements) {
 								final byte wildType = readBases[readEndOfPreviousAlignment];
@@ -1302,8 +1321,9 @@ public final class SubAnalyzer {
 								extendedRec.getLocation().getContigName(), location.position + deletionLength);
 
 							final byte @Nullable[] deletedSequence = notRnaSeq ?
-								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition)
-								: null;
+									Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition)
+								:
+									null;
 
 							//Add hidden mutations to all locations covered by deletion
 							//So disagreements between deletions that have only overlapping
@@ -1311,7 +1331,8 @@ public final class SubAnalyzer {
 							for (int i = 1; i < deletionLength; i++) {
 								SequenceLocation location2 = new SequenceLocation(extendedRec.getLocation().contigIndex,
 									extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
-								CandidateSequence hiddenCandidate = new CandidateDeletion(analyzer.idx, location2, extendedRec, Integer.MAX_VALUE,
+								CandidateSequence hiddenCandidate = new CandidateDeletion(
+									analyzer.idx, deletedSequence, location2, extendedRec, Integer.MAX_VALUE,
 									location, deletionEnd);
 								hiddenCandidate.setHidden(true);
 								hiddenCandidate.insertSize = insertSize;
@@ -1324,11 +1345,11 @@ public final class SubAnalyzer {
 								hiddenCandidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
 								hiddenCandidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
 								hiddenCandidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-								hiddenCandidate.setSequence(deletedSequence);
 								readLocalCandidates.add(hiddenCandidate, location2);
 							}
 
-							final CandidateSequence candidate = new CandidateDeletion(analyzer.idx, location, extendedRec, distance,
+							final CandidateSequence candidate = new CandidateDeletion(analyzer.idx,
+								deletedSequence, location, extendedRec, distance,
 								location, new SequenceLocation(extendedRec.getLocation().contigIndex,
 									extendedRec.getLocation().getContigName(), refPosition));
 
@@ -1346,7 +1367,6 @@ public final class SubAnalyzer {
 							candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
 							candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
 							candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-							candidate.setSequence(deletedSequence);
 							readLocalCandidates.add(candidate, location);
 							extendedRec.nReferenceDisagreements++;
 
@@ -1461,8 +1481,10 @@ public final class SubAnalyzer {
 
 						distance = -extendedRec.tooCloseToBarcode(readPosition, 0);
 
-						final CandidateSequence candidate = new CandidateSequence(analyzer.idx, SUBSTITUTION, location,
-							extendedRec, distance);
+						final byte[] mutSequence = byteArrayMap.get(readBases[readPosition]);
+
+						final CandidateSequence candidate = new CandidateSequence(analyzer.idx,
+							SUBSTITUTION, mutSequence, location, extendedRec, distance);
 
 						if (!extendedRec.formsWrongPair()) {
 							candidate.acceptLigSiteDistance(distance);
@@ -1477,20 +1499,17 @@ public final class SubAnalyzer {
 						candidate.readAlignmentEnd = extendedRec.getRefAlignmentEnd();
 						candidate.mateReadAlignmentEnd = extendedRec.getMateRefAlignmentEnd();
 						candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
-						final byte[] mutSequence = {readBases[readPosition]};
-						candidate.setSequence(mutSequence);
 						candidate.setWildtypeSequence(wildType);
 						if (insertCandidateAtRegularPosition) {
 							readLocalCandidates.add(candidate, location);
 						}
 						if (locationPH != null) {
 							final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
-								WILDTYPE, locationPH, extendedRec, distance);
+								WILDTYPE, null, locationPH, extendedRec, distance);
 							if (!extendedRec.formsWrongPair()) {
 								candidate2.acceptLigSiteDistance(distance);
 							}
 							candidate2.setWildtypeSequence(wildType);
-							candidate2.setSequence(null);
 							readLocalCandidates.add(candidate2, locationPH);
 						}
 						candidate.addBasePhredQualityScore(baseQualities[readPosition]);
@@ -1552,7 +1571,7 @@ public final class SubAnalyzer {
 						}
 					}
 					final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
-						WILDTYPE, location, extendedRec, -distance);
+						WILDTYPE, null, location, extendedRec, -distance);
 					if (!extendedRec.formsWrongPair()) {
 						candidate.acceptLigSiteDistance(-distance);
 					}
@@ -1562,12 +1581,11 @@ public final class SubAnalyzer {
 					}
 					if (locationPH != null) {
 						final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
-							WILDTYPE, locationPH, extendedRec, -distance);
+							WILDTYPE, null, locationPH, extendedRec, -distance);
 						if (!extendedRec.formsWrongPair()) {
 							candidate2.acceptLigSiteDistance(-distance);
 						}
 						candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-						candidate2.setSequence(null);
 						readLocalCandidates.add(candidate2, locationPH);
 					}
 					candidate.addBasePhredQualityScore(baseQualities[readPosition]);

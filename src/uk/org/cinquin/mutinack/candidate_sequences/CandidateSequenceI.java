@@ -66,8 +66,7 @@ public interface CandidateSequenceI extends Serializable {
 	DetailedQualities getQuality();
 	byte getWildtypeSequence();
 	void setWildtypeSequence(byte wildtypeSequence);
-	byte[] getSequence();
-	void setSequence(byte[] sequence);
+	byte @Nullable[] getSequence();
 	MutationType getMutationType();
 	String getKind();
 	String getChange();

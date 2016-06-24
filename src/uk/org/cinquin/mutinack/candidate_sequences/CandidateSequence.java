@@ -55,7 +55,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
 	private final @NonNull MutationType mutationType;
-	private byte @Nullable[] sequence;
+	private final byte @Nullable[] sequence;
+	private int hashCode;
 	private byte wildtypeSequence;
 	private DetailedQualities quality;
 	private @Nullable Quality supplQuality;
@@ -135,10 +136,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	public CandidateSequence(int analyzerID, @NonNull MutationType mutationType,
+			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location, @Nullable ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {
 		owningAnalyzer = analyzerID;
 		this.mutationType = mutationType;
+		this.sequence = sequence;
 		this.location = location;
 		this.initialConcurringRead = initialConcurringRead;
 		this.initialLigationSiteD = initialLigationSiteD;
@@ -166,11 +169,18 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public int hashCode() {
+		if (hashCode == 0) {
+			computeHashCode();
+		}
+		return hashCode;
+	}
+
+	private void computeHashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + getMutationType().hashCode();
 		result = prime * result + Arrays.hashCode(getSequence());
-		return result;
+		hashCode = result;
 	}
 	
 	@Override
@@ -435,11 +445,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public byte @Nullable[] getSequence() {
 		return sequence;
-	}
-
-	@Override
-	public void setSequence(byte @Nullable[] sequence) {
-		this.sequence = sequence;
 	}
 
 	@Override
