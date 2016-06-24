@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -28,11 +30,11 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
-public class HistogramSerializer extends JsonSerializer<Histogram> {
+public class HistogramSerializer extends JsonSerializer<@NonNull Histogram> {
 
 	@Override
-	public void serialize(Histogram value, JsonGenerator gen, SerializerProvider serializers) throws IOException,
-			JsonProcessingException {
+	public void serialize(@NonNull Histogram value, JsonGenerator gen,
+			SerializerProvider serializers) throws IOException, JsonProcessingException {
         gen.writeStartObject();
         gen.writeStringField("nEntries", value.nEntries);
         gen.writeStringField("average", value.average);

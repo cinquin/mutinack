@@ -305,7 +305,7 @@ public class Util {
 		final @NonNull List<String> lines = new ArrayList<>(4);
 	}
 
-	public static String getRecordNameWithPairSuffix(SAMRecord record) {
+	public static @NonNull String getRecordNameWithPairSuffix(SAMRecord record) {
 		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1"))/*.intern()*/;
 	}
 

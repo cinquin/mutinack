@@ -41,8 +41,9 @@ public class Handle<T> implements Serializable {
 
 	@Override
 	public String toString() {
-		if (t == null)
+		T local = t;
+		if (local == null)
 			return "null";
-		return t.toString();
+		return local.toString();
 	}
 }

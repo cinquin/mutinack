@@ -71,7 +71,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	}
 	
 	@SuppressWarnings("resource")
-	public static BedReader getCachedBedFileReader(String path0, String cacheExtension,
+	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
 			List<@NonNull String> contigNames, String readerName, boolean parseScore) {
 		return FileCache.getCached(path0, cacheExtension, path -> {
 			try {

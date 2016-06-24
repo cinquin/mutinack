@@ -17,6 +17,9 @@
 package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.Serializable;
+import java.util.Objects;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 //Adapted from http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
 public class ComparablePair<A extends Comparable<A>, B extends Comparable<B> > extends Pair<A,B>
@@ -24,14 +27,14 @@ public class ComparablePair<A extends Comparable<A>, B extends Comparable<B> > e
 
 	private static final long serialVersionUID = -2800696832250328844L;
 
-	public ComparablePair(A first, B second) {
+	public ComparablePair(@NonNull A first, B second) {
     	super(first, second);
     }
 
 	@Override
 	public int compareTo(ComparablePair<A, B> o) {
 		if (this.fst.equals(o.fst)) {
-			return this.snd.compareTo(o.snd);
+			return Objects.requireNonNull(this.snd).compareTo(o.snd);
 		} else {
 			return this.fst.compareTo(o.fst);
 		}

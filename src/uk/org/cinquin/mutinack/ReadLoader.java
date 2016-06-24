@@ -179,9 +179,9 @@ public class ReadLoader {
 									esit.remove();
 								}
 							}
-							final Set<Entry<Pair<String, Integer>, SettableInteger>> readAheadStashEntries =
+							final Set<Entry<Pair<String, @NonNull Integer>, SettableInteger>> readAheadStashEntries =
 									new HashSet<>(readAheadStash.entrySet());
-							for (Entry<Pair<String, Integer>, SettableInteger> e: readAheadStashEntries) {
+							for (Entry<Pair<String, @NonNull Integer>, SettableInteger> e: readAheadStashEntries) {
 								if (e.getKey().getSnd() < current5p - 6) {
 									analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 									readAheadStash.removeAll(e.getKey());

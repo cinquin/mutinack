@@ -153,7 +153,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 	}
 	
-	@SuppressWarnings("null")
 	/**
 	 * 
 	 * @param allReadsSameBarcode

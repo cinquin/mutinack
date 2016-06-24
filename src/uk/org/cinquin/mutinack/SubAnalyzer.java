@@ -1234,7 +1234,6 @@ public final class SubAnalyzer {
 
 							if (analyzer.computeRawDisagreements) {
 								final byte wildType = readBases[readEndOfPreviousAlignment];
-								@SuppressWarnings("null")
 								final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
 									new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
 										new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())

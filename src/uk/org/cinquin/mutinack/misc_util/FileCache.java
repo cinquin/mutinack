@@ -69,7 +69,7 @@ public class FileCache<T extends Serializable> {
 		} catch (IOException e1) {
 			throw new RuntimeException("Error getting canonical path for cache for " + path);
 		}
-		@SuppressWarnings("null")
+
 		T result = null;
 		boolean recreate = true;
 		if (cachedInfo.exists() && 

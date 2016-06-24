@@ -951,7 +951,8 @@ public class Mutinack implements Actualizable {
 						}
 						final File f = new File(fileName);
 						final String filterName = f.getName();
-						final GenomeFeatureTester filter = BedReader.getCachedBedFileReader(fileName, ".cached",
+						final @NonNull GenomeFeatureTester filter =
+							BedReader.getCachedBedFileReader(fileName, ".cached",
 								groupSettings.getContigNames(), filterName, false);
 						final BedComplement notFilter = new BedComplement(filter);
 						final String notFilterName = "NOT " + f.getName();

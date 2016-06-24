@@ -201,7 +201,7 @@ public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Cl
 	}
 
 	@Override
-	public Collection<V> values() {
+	public @NonNull Collection<V> values() {
 		@NonNull Collection<V> values = new ArrayList<>();
 		for (Map<K, V> map: maps) {
 			values.addAll(map.values());

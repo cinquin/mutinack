@@ -1,5 +1,7 @@
 package uk.org.cinquin.mutinack;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 
 public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
@@ -8,7 +10,8 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 
 	public final boolean hasAWtStrand;
 	
-	public DuplexDisagreement(Mutation first, Mutation second, boolean hasAWtStrand) {
+	public DuplexDisagreement(@NonNull Mutation first, @NonNull Mutation second,
+			boolean hasAWtStrand) {
 		super(first, second);
 		this.hasAWtStrand = hasAWtStrand;
 	}

@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gnu.trove.TIntCollection;
 import gnu.trove.function.TIntFunction;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -31,10 +33,10 @@ import gnu.trove.procedure.TObjectProcedure;
 
 public final class SingletonObjectIntMap<T> implements TObjectIntMap<T> {
 
-	final T obj;
+	final @NonNull T obj;
 	final int value;
 	
-	public SingletonObjectIntMap(T initialConcurringRead,
+	public SingletonObjectIntMap(@NonNull T initialConcurringRead,
 			int initialLigationSiteD) {
 		obj = initialConcurringRead;
 		value = initialLigationSiteD;

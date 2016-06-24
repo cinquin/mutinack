@@ -45,9 +45,9 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	protected boolean on = true;
 	
 	@JsonIgnore
-	private final @Nullable SerializableSupplier<ICounter<T>> factory1;
+	private final @Nullable SerializableSupplier<@NonNull ICounter<T>> factory1;
 	@JsonIgnore
-	private final @Nullable SerializableSupplier<ICounterSeqLoc> factory2;
+	private final @Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2;
 	private final Map<String, Pair<SerializablePredicate<SequenceLocation>, ICounter<T>>>
 		counters = new THashMap<>();
 	private final Map<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>>
@@ -56,7 +56,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	private final DoubleAdderFormatter adderForTotal = new DoubleAdderFormatter();
 
 	@JsonIgnore
-	private static final SerializablePredicate<SequenceLocation> yes = l -> true;
+	private static final @NonNull SerializablePredicate<SequenceLocation> yes = l -> true;
 		
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static final Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
@@ -78,13 +78,13 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	private final transient Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>> 
 		printingSorter;
 	
-	public MultiCounter(SerializableSupplier<ICounter<T>> factory1,
-			SerializableSupplier<ICounterSeqLoc> factory2) {
+	public MultiCounter(@Nullable SerializableSupplier<@NonNull ICounter<T>> factory1,
+			@Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2) {
 		this(factory1, factory2, false);
 	}
 	
-	public MultiCounter(SerializableSupplier<ICounter<T>> factory1,
-			SerializableSupplier<ICounterSeqLoc> factory2, boolean sortByValue) {
+	public MultiCounter(@Nullable SerializableSupplier<@NonNull ICounter<T>> factory1,
+			@Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2, boolean sortByValue) {
 		if (sortByValue) {
 			printingSorter = byValueSorter;
 		} else {
@@ -99,7 +99,8 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		return seqLocCounters;
 	}
 
-	public void addPredicate(String name, SerializablePredicate<SequenceLocation> predicate) {
+	public void addPredicate(String name, @NonNull
+			SerializablePredicate<SequenceLocation> predicate) {
 		if (factory1 != null) {
 			counters.put(name, new Pair<>(predicate, factory1.get()));
 		}
@@ -108,7 +109,9 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		}
 	}
 	
-	public void addPredicate(String name, SerializablePredicate<SequenceLocation> predicate, ICounterSeqLoc counter) {
+	public void addPredicate(String name,
+			@NonNull SerializablePredicate<SequenceLocation> predicate,
+			ICounterSeqLoc counter) {
 		seqLocCounters.put(name, new Pair<>(predicate, counter));
 	}
 

@@ -20,6 +20,9 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Collection;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
@@ -27,12 +30,10 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 public class Pair<A,B> implements Serializable {
 
 	private static final long serialVersionUID = -1873509799696495621L;
-	@JsonIgnore
-	public A fst;
-	@JsonUnwrapped
-	public B snd;
+	@JsonIgnore public A fst;
+	@JsonUnwrapped public B snd;
 
-	public Pair(A first, B second) {
+	public Pair(@NonNull A first, @Nullable B second) {
 		super();
 		this.fst = first;
 		this.snd = second;
@@ -72,7 +73,7 @@ public class Pair<A,B> implements Serializable {
 		return fst;
 	}
 
-	public void setFst(A first) {
+	public void setFst(@NonNull A first) {
 		this.fst = first;
 	}
 

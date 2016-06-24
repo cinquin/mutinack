@@ -3,6 +3,8 @@
 
 package uk.org.cinquin.mutinack.features;
 
+import java.util.Objects;
+
 import org.eclipse.jdt.annotation.NonNull;
 
 public final class PosByPosNumbersPB {
@@ -621,7 +623,7 @@ public final class PosByPosNumbersPB {
 			return ((bitField0_ & 0x00000001) == 0x00000001);
 		}
 		@Override
-		public String getSampleName() {
+		public @NonNull String getSampleName() {
 			java.lang.Object ref = sampleName_;
 			if (ref instanceof String) {
 				return (String) ref;
@@ -632,7 +634,7 @@ public final class PosByPosNumbersPB {
 				if (com.google.protobuf.Internal.isValidUtf8(bs)) {
 					sampleName_ = s;
 				}
-				return s;
+				return Objects.requireNonNull(s);
 			}
 		}
 		public void setSampleName(String sampleName) {

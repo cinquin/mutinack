@@ -578,7 +578,7 @@ public final class Parameters implements Serializable {
 	 */
 	public static void getUnsortedUsage(JCommander jc, Class<?> paramClass, StringBuilder out)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		List<Field> fields = Arrays.asList(paramClass.getDeclaredFields());
+		List<@NonNull Field> fields = Arrays.asList(paramClass.getDeclaredFields());
 		// Special treatment of main parameter.
 		ParameterDescription mainParam = jc.getMainParameter();
 		if (mainParam != null) {
@@ -586,6 +586,7 @@ public final class Parameters implements Serializable {
 			out.append("     ").append(mainParam.getDescription()).append('\n');
 		}
 
+		@SuppressWarnings("null")
 		String requiredParams = fields.stream().map(f -> f.getAnnotation(Parameter.class)).
 				filter(a -> a != null).
 				filter(a -> (!a.hidden()) && a.required()).map(a -> a.names()[0]).

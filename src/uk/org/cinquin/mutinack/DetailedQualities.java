@@ -32,7 +32,6 @@ public class DetailedQualities implements Serializable {
 	private @Nullable Map<Assay, @NonNull Quality> unmodifiableMap;
 	
 	private static final long serialVersionUID = -5423960175598403757L;
-	@SuppressWarnings("null")
 	private final @NonNull Map<Assay, @NonNull Quality> qualities = new EnumMap<>(Assay.class);
 	private Quality min = null;
 	
@@ -41,7 +40,6 @@ public class DetailedQualities implements Serializable {
 		return qualities.toString();
 	}
 	
-	@SuppressWarnings("null")
 	public Map<Assay, Quality> getQualities() {
 		if (unmodifiableMap == null) {
 			//Not thread safe but that doesn't matter
