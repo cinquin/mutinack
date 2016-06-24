@@ -30,80 +30,80 @@ public class Pair<A,B> implements Serializable {
 	@JsonIgnore
 	public A fst;
 	@JsonUnwrapped
-    public B snd;
+	public B snd;
 
-    public Pair(A first, B second) {
-    	super();
-    	this.fst = first;
-    	this.snd = second;
-    }
+	public Pair(A first, B second) {
+		super();
+		this.fst = first;
+		this.snd = second;
+	}
 
-    @Override
+	@Override
 	public final int hashCode() {
-    	int hashFirst = fst != null ? fst.hashCode() : 0;
-    	int hashSecond = snd != null ? snd.hashCode() : 0;
+		int hashFirst = fst != null ? fst.hashCode() : 0;
+		int hashSecond = snd != null ? snd.hashCode() : 0;
 
-    	return (hashFirst + hashSecond) * hashSecond + hashFirst;
-    }
+		return (hashFirst + hashSecond) * hashSecond + hashFirst;
+	}
 
-    @Override
+	@Override
 	public final boolean equals(Object other) {
-    	if (other instanceof Pair) {
-    		Pair<?, ?> otherPair = (Pair<?, ?>) other;
-    		return 
-    		((  this.fst == otherPair.fst ||
-    			( this.fst != null && otherPair.fst != null &&
-    			  this.fst.equals(otherPair.fst))) &&
-    		 (	this.snd == otherPair.snd ||
-    			( this.snd != null && otherPair.snd != null &&
-    			  this.snd.equals(otherPair.snd))) );
-    	}
+		if (other instanceof Pair) {
+			Pair<?, ?> otherPair = (Pair<?, ?>) other;
+			return
+				((  this.fst == otherPair.fst ||
+				( this.fst != null && otherPair.fst != null &&
+				this.fst.equals(otherPair.fst))) &&
+					(	this.snd == otherPair.snd ||
+					( this.snd != null && otherPair.snd != null &&
+					this.snd.equals(otherPair.snd))) );
+		}
 
-    	return false;
-    }
+		return false;
+	}
 
-    @Override
+	@Override
 	public String toString()
-    { 
-           return "(" + fst + ", " + snd + ")"; 
-    }
+	{
+		return "(" + fst + ", " + snd + ")";
+	}
 
-    public A getFst() {
-    	return fst;
-    }
+	public A getFst() {
+		return fst;
+	}
 
-    public void setFst(A first) {
-    	this.fst = first;
-    }
+	public void setFst(A first) {
+		this.fst = first;
+	}
 
-    public B getSnd() {
-    	return snd;
-    }
+	public B getSnd() {
+		return snd;
+	}
 
-    public void setSnd(B second) {
-    	this.snd = second;
-    }
+	public void setSnd(B second) {
+		this.snd = second;
+	}
     
-    public A[] firstAsArray(Collection<Pair<A,B>> col, Class<?> clazz){
-    	@SuppressWarnings("unchecked")
+	public A[] firstAsArray(Collection<Pair<A,B>> col, Class<?> clazz){
+		@SuppressWarnings("unchecked")
 		A[] result=(A[]) Array.newInstance(clazz,col.size());
-    	int index=0;
-    	for (Pair<A,B> pair: col){
-    		result[index]=pair.getFst();
-    		index++;
-    	}
-    	return result;
-    }
-    
-    public B[] secondAsArray(Collection<Pair<A,B>> col, Class<?> clazz){
-    	@SuppressWarnings("unchecked")
+		int index=0;
+		for (Pair<A,B> pair: col){
+			result[index]=pair.getFst();
+			index++;
+		}
+		return result;
+	}
+
+	public B[] secondAsArray(Collection<Pair<A,B>> col, Class<?> clazz){
+		@SuppressWarnings("unchecked")
 		B[] result=(B[]) Array.newInstance(clazz,col.size());
-    	int index=0;
-    	for (Pair<A,B> pair: col){
-    		result[index]=pair.getSnd();
-    		index++;
-    	}
-    	return result;
-    }
+		int index=0;
+		for (Pair<A,B> pair: col){
+			result[index]=pair.getSnd();
+			index++;
+		}
+		return result;
+	}
 
 }
