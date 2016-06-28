@@ -64,7 +64,12 @@ public class CounterWithSeqLocOnly extends Counter implements ICounterSeqLoc, Se
 
 	@Override
 	public void accept(@NonNull SequenceLocation loc, double d) {
-		if (on)
-			super.acceptVarArgs(d, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
+		if (on) {
+			//super.acceptVarArgs(d, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
+			List<Object> l = new ArrayList<>(2);
+			l.add(loc.contigIndex);
+			l.add(loc.position / groupSettings.BIN_SIZE);
+			super.accept(l, d);
+		}
 	}
 }

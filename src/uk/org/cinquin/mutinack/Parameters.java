@@ -120,6 +120,9 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-dropReadProbability", description = "Reads will be randomly ignored with a probability given by this number")
 	public float dropReadProbability = 0;
 
+	@Parameter(names = "-randomizeMates", description = "Randomize first/second of pair; WARNING: this will lead to incorrect top/bottom strand grouping")
+	public boolean randomizeMates = false;
+
 	@FilePathList
 	@Parameter(names = "-intersectAlignment", description = "List of BAM files with which alignments in inputReads must agree; each file must be sorted", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> intersectAlignment = new ArrayList<>();
@@ -212,6 +215,9 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-computeRawDisagreements", description = "Compute disagreements between raw reads and reference sequence", required = false)
 	public boolean computeRawDisagreements = true;
+
+	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value divided by 10 are reported and marked with a % sign", required = false)
+	public int topAlleleFreqReport = 3;
 
 	@Parameter(names = "-minBasePhredScoreQ1", description = "Bases whose Phred quality score is below this threshold"
 			+ " are discarded (keeping this relatively low helps identify problematic reads)", required = false)
@@ -425,6 +431,9 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-startWorker", help = true, description = "RMI server address", required = false, hidden = hideInProgressParameters)
 	public String startWorker = null;
+
+	@Parameter(names = "-timeoutSeconds", help = true, description = "If this many seconds elapse without ping from worker, worker is considered dead", required = false, hidden = hideInProgressParameters)
+	public int timeoutSeconds = 0;
 
 	@FilePath
 	@Parameter(names = "-workingDirectory", help = true, description = "Evaluate parameter file paths using specified directory as workind directory", required = false, hidden = hideAdvancedParameters)

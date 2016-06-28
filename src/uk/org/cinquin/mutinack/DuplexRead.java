@@ -56,7 +56,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -65,7 +64,9 @@ import contrib.edu.stanford.nlp.util.HasInterval;
 import contrib.edu.stanford.nlp.util.Interval;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -127,7 +128,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	
 	void assertAllBarcodesEqual() {
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
-			final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords =
+			final Collection<ExtendedSAMRecord> allDuplexRecords =
 					new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 			allDuplexRecords.addAll(topStrandRecords);
 			allDuplexRecords.addAll(bottomStrandRecords);
@@ -160,7 +161,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	 * @return True if the barcodes have changed
 	 */
 	boolean computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
-		final Collection</*@NonNull*/ ExtendedSAMRecord> allDuplexRecords = 
+		final Collection<ExtendedSAMRecord> allDuplexRecords =
 				new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 		allDuplexRecords.addAll(topStrandRecords);
 		allDuplexRecords.addAll(bottomStrandRecords);
@@ -381,8 +382,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 		
 		Handle<DuplexKeeper> result = new Handle<>(factory.get());
 		
-		StreamSupport.stream(duplexes.getIterable().spliterator(), false).
-				sorted(duplexCountQualComparator).forEach(duplex1 -> {
+		List<DuplexRead> sorted = new ArrayList<>(duplexes.size());
+		for (DuplexRead d: duplexes.getIterable()) {
+			sorted.add(d);
+		}
+		sorted.sort(duplexCountQualComparator);
+
+		sorted.forEach(duplex1 -> {
 			
 			preliminaryOp.accept(duplex1);
 			
@@ -482,7 +488,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@SuppressWarnings("null")
 	public void examineAtLoc(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull Set<@NonNull CandidateSequence> candidateSet,
+			@NonNull THashSet<@NonNull CandidateSequence> candidateSet,
 			@NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality,
 			boolean hasHiddenCandidate,
 			@NonNull CandidateCounter topCounter,
@@ -497,7 +503,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		final @NonNull List<@NonNull DuplexDisagreement> duplexDisagreements = 
 				new ArrayList<>();
 		stats.nPosDuplex.accept(location);
-		final Entry<CandidateSequence, Integer> bottom, top;
+		final @Nullable Entry<CandidateSequence, Integer> bottom, top;
 		boolean disagreement = false;
 
 		//Find if there is a clear candidate with which duplexRead is
@@ -518,13 +524,19 @@ public final class DuplexRead implements HasInterval<Integer> {
 			final CandidateSequence bottom0, top0;
 
 			IntMinMax<CandidateSequence> ir1 = new IntMinMax<>();
-			bottomCounter.candidateCounts.forEach((c, si) -> ir1.acceptMax(si.get(), c));
+			bottomCounter.candidateCounts.forEachEntry((c, si) -> {
+				ir1.acceptMax(si, c);
+				return true;
+			});
 			bottom0 = ir1.getKeyMax();
 			bottom = bottom0 == null ? null :
 				new AbstractMap.SimpleImmutableEntry<>(bottom0, ir1.getMax());
 
 			IntMinMax<CandidateSequence> ir2 = new IntMinMax<>();
-			topCounter.candidateCounts.forEach((c, si) -> ir2.acceptMax(si.get(), c));
+			topCounter.candidateCounts.forEachEntry((c, si) -> {
+				ir2.acceptMax(si, c);
+				return true;
+			});
 			top0 = ir2.getKeyMax();
 			top = top0 == null ? null :
 				new AbstractMap.SimpleImmutableEntry<>(top0, ir2.getMax());
@@ -576,13 +588,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 			}
 		}
 						
-		final SettableInteger counter = new SettableInteger(0);
-		allRecords.forEach(r -> {
-			if (r.formsWrongPair()) {
-				counter.getAndIncrement();
+		int counter = 0;
+		for (int i = allRecords.size() - 1; i >= 0; i--) {
+			if (allRecords.get(i).formsWrongPair()) {
+				counter++;
 			}
-		});
-		nReadsWrongPair = counter.get();
+		}
+		nReadsWrongPair = counter;
 		
 		if (nReadsWrongPair > 0) {
 			dq.addUnique(N_READS_WRONG_PAIR, DUBIOUS);
@@ -663,25 +675,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 		
 		Assert.isFalse(invalid);
 		
-		Handle<Boolean> seenFirstOfPair = new Handle<>();
-		Handle<Boolean> seenSecondOfPair = new Handle<>();
-		for (CandidateSequence candidate: candidateSet) {
-			seenFirstOfPair.set(false);
-			seenSecondOfPair.set(false);
-			candidate.getNonMutableConcurringReads().forEachEntry((r, dist) -> {
-				if (r.duplexRead == this) {
-					acceptDistanceToLigSite(dist);
-					if (r.record.getFirstOfPairFlag()) {
-						seenFirstOfPair.set(true);
-					} else {
-						seenSecondOfPair.set(true);
-					}
-					if (seenFirstOfPair.get() && seenSecondOfPair.get()) {
-						return false;
-					}
-				}
-				return true;
-			});
+		if (top != null) {
+			registerDistanceToLigSite(top.getKey().getNonMutableConcurringReads());
+		}
+		if (bottom != null) {
+			registerDistanceToLigSite(bottom.getKey().getNonMutableConcurringReads());
 		}
 		
 		int distanceToLigSite = getDistanceToLigSite();
@@ -862,9 +860,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 					
 					final SettableInteger minDist = new SettableInteger(99999);
 					final Handle<ExtendedSAMRecord> minDistanceRead = new Handle<>();
-					for (CandidateSequence candidate: candidateSet) {
+					candidateSet.forEach(candidate -> {
 						if (!candidate.getMutationType().equals(actualMutant.mutationType)) {
-							continue;
+							return true;
 						}
 						candidate.getNonMutableConcurringReads().forEachEntry(
 							(read, dist) -> {
@@ -881,8 +879,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 								return true;
 							}
 						);
-						break;
-					}
+						return false;
+					});
 						
 					if (minDist.get() == 99999) {
 						//This means that no reads are left that support the mutation candidate
@@ -912,36 +910,39 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		localQuality = dq;
 		
-		int nRemoved = 0;
+		SettableInteger nRemoved = new SettableInteger(0);
+		final boolean disagreement1 = disagreement;
 
 		//Now remove support given to non-consensus candidate mutations by this duplex
-		for (CandidateSequence candidate: candidateSet) {
+		candidateSet.forEach(candidate -> {
 			Assert.isFalse(top == null && bottom == null);
-			if (!disagreement && (bottom == null || candidate.equals(bottom.getKey())) &&
+			if (!disagreement1 && (bottom == null || candidate.equals(bottom.getKey())) &&
 					(top == null || candidate.equals(top.getKey()))) {
-				continue;
+				return true;
 			}
 			
 			@NonNull TObjectIntHashMap<ExtendedSAMRecord> reads = candidate.getMutableConcurringReads();
 			
 			final int noEntryValue = reads.getNoEntryValue();
 			
-			for (ExtendedSAMRecord r: bottomStrandRecords) {
+			for (int i = bottomStrandRecords.size() - 1; i >= 0; --i) {
+				ExtendedSAMRecord r = bottomStrandRecords.get(i);
 				if (reads.remove(r) != noEntryValue) {
-					nRemoved++;
+					nRemoved.incrementAndGet();
 				}
 				Assert.isFalse(reads.contains(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
 			}
-			for (ExtendedSAMRecord r: topStrandRecords) {
+			for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
+				ExtendedSAMRecord r = topStrandRecords.get(i);
 				if (reads.remove(r) != noEntryValue) {
-					nRemoved++;
+					nRemoved.incrementAndGet();
 				}
 				Assert.isFalse(reads.contains(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
 			}
 
-			if (disagreement && nRemoved > 0) {
+			if (disagreement1 && nRemoved.get() > 0) {
 				//Mark presence of at least one duplex with disagreement with DISAGREEMENT Assay,
 				//but only set corresponding quality to "DUBIOUS" if the disagreement is of sufficiently high
 				//quality, so that a single low-quality duplex cannot force downgrading of mutation
@@ -951,7 +952,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 					candidate.getQuality().add(N_STRANDS_DISAGREEMENT, GOOD);
 				}
 			}
-		}
+			return true;
+		});
 				
 		if (dq.getMinIgnoring(ignorePhred).compareTo(GOOD) >= 0) {
 			long totalNPhreds = topCounter.nPhreds + bottomCounter.nPhreds;
@@ -975,5 +977,25 @@ public final class DuplexRead implements HasInterval<Integer> {
 		if (!duplexDisagreements.isEmpty()) {
 			result.disagreements.addAll(duplexDisagreements);
 		}
+	}
+
+	private void registerDistanceToLigSite(@NonNull TObjectIntMap<ExtendedSAMRecord> concurringReads) {
+		Handle<Boolean> seenFirstOfPair = new Handle<>(false);
+		Handle<Boolean> seenSecondOfPair = new Handle<>(false);
+
+		concurringReads.forEachEntry((r, dist) -> {
+			if (r.duplexRead == this) {
+				acceptDistanceToLigSite(dist);
+				if (r.record.getFirstOfPairFlag()) {
+					seenFirstOfPair.set(true);
+				} else {
+					seenSecondOfPair.set(true);
+				}
+				if (seenFirstOfPair.get() && seenSecondOfPair.get()) {
+					return false;
+				}
+			}
+			return true;
+		});
 	}
 }

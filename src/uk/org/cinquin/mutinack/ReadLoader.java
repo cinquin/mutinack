@@ -19,7 +19,6 @@ package uk.org.cinquin.mutinack;
 
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
-import static uk.org.cinquin.mutinack.misc_util.Util.getRecordNameWithPairSuffix;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -48,6 +47,7 @@ import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
@@ -86,8 +86,11 @@ public class ReadLoader {
 			final String contigName = contigs.get(contigIndex);
 			final int truncateAtPosition = analysisChunk.terminateAtPosition;
 
-			final Set<String> droppedReads = analyzer.dropReadProbability > 0 ? new HashSet<>(1_000_000) : null;
-			final Set<String> keptReads = analyzer.dropReadProbability > 0 ?  new HashSet<>(1_000_000) : null;
+			final Set<String> droppedReads = analyzer.dropReadProbability > 0 ? new THashSet<>(1_000_000) : null;
+			final Set<String> keptReads = analyzer.dropReadProbability > 0 ?  new THashSet<>(1_000_000) : null;
+
+			final Set<String> switchedMatePairs = analyzer.randomizeMates ? new THashSet<>(1_000_000) : null;
+			final Set<String> unswitchedMatePairs = analyzer.randomizeMates ? new THashSet<>(1_000_000) : null;
 
 			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigName, 0);
 
@@ -167,6 +170,40 @@ public class ReadLoader {
 						final SequenceLocation location = new SequenceLocation(contigIndex, contigName,
 							samRecord.getAlignmentStart());
 
+						if (!samRecord.getReadPairedFlag()) {
+							if (!analyzer.notifiedUnpairedReads) {
+								Util.printUserMustSeeMessage("Ignoring unpaired reads");
+								analyzer.notifiedUnpairedReads = true;
+							}
+							analyzer.stats.forEach(s -> s.ignoredUnpairedReads.increment(location));
+							continue;
+						}
+
+						if (analyzer.randomizeMates) {
+							Objects.requireNonNull(switchedMatePairs);
+							Objects.requireNonNull(unswitchedMatePairs);
+							if (!samRecord.getMateUnmappedFlag() &&
+								samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex())) {
+								String readName = samRecord.getReadName();
+								if (unswitchedMatePairs.remove(readName)) {
+									//Nothing to do
+								} else if (switchedMatePairs.remove(readName)) {
+									switchPair(samRecord);
+								} else {
+									if (Math.random() < 0.5) {
+										switchedMatePairs.add(readName);
+										switchPair(samRecord);
+									} else {
+										unswitchedMatePairs.add(readName);
+									}
+								}
+							} else {
+								if (Math.random() < 0.5) {
+									switchPair(samRecord);
+								}
+							}
+						}
+
 						final int current5p = samRecord.getAlignmentStart();
 						if (current5p < previous5p) {
 							throw new IllegalArgumentException("Unsorted input");
@@ -203,7 +240,7 @@ public class ReadLoader {
 										continue;
 									}
 									int ir5p = ir.getAlignmentStart();
-									final Pair<String, Integer> pair = new Pair<>(getRecordNameWithPairSuffix(ir), ir5p);
+									final Pair<String, Integer> pair = new Pair<>(ExtendedSAMRecord.getReadFullName(ir), ir5p);
 									if (ir5p < current5p - 6) {
 										analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 									} else if (ir5p <= current5p + 6) {
@@ -219,7 +256,7 @@ public class ReadLoader {
 						previous5p = current5p;
 
 						if (nIntersect > 0 &&
-								intersectReads.get(new Pair<>(getRecordNameWithPairSuffix(samRecord),
+								intersectReads.get(new Pair<>(ExtendedSAMRecord.getReadFullName(samRecord),
 										current5p)) < nIntersect) {
 							analyzer.stats.forEach(s -> s.nRecordsNotInIntersection2.accept(location));
 							continue;
@@ -228,7 +265,7 @@ public class ReadLoader {
 						if (analyzer.dropReadProbability > 0) {
 							Objects.requireNonNull(droppedReads);
 							Objects.requireNonNull(keptReads);
-							String readName = ExtendedSAMRecord.getReadFullName(samRecord);
+							String readName = samRecord.getReadName();
 							boolean mateAlreadyDropped = droppedReads.contains(readName);
 							if (mateAlreadyDropped) {
 								droppedReads.remove(readName);
@@ -253,15 +290,6 @@ public class ReadLoader {
 						}
 
 						analyzer.stats.forEach(s -> s.nRecordsProcessed.increment(location));
-
-						if (!samRecord.getReadPairedFlag()) {
-							if (!analyzer.notifiedUnpairedReads) {
-								Util.printUserMustSeeMessage("Ignoring unpaired reads");
-								analyzer.notifiedUnpairedReads = true;
-							}
-							analyzer.stats.forEach(s -> s.ignoredUnpairedReads.increment(location));
-							continue;
-						}
 
 						if (contigs.size() < 100 && !argValues.rnaSeq) {
 							//Summing below is a bottleneck when there are a large
@@ -433,6 +461,11 @@ public class ReadLoader {
 		//TODO Clear subAnalyzers list, but *only after* all analyzers have completed
 		//that chunk
 		//analysisChunk.subAnalyzers.clear();
+	}
+
+	static void switchPair(SAMRecord r) {
+		r.setFirstOfPairFlag(!r.getFirstOfPairFlag());
+		r.setSecondOfPairFlag(!r.getSecondOfPairFlag());
 	}
 
 	static final boolean shouldLog(Level level) {

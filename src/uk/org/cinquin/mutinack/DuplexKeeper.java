@@ -26,4 +26,5 @@ public interface DuplexKeeper {
 	DuplexRead getAndRemove(DuplexRead d);
 	boolean supportsMutableDuplexes();
 	boolean contains(DuplexRead duplexRead);
+	int size();
 }

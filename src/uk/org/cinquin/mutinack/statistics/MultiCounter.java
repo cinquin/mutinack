@@ -48,9 +48,9 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	private final @Nullable SerializableSupplier<@NonNull ICounter<T>> factory1;
 	@JsonIgnore
 	private final @Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2;
-	private final Map<String, Pair<SerializablePredicate<SequenceLocation>, ICounter<T>>>
+	private final THashMap<String, Pair<SerializablePredicate<SequenceLocation>, ICounter<T>>>
 		counters = new THashMap<>();
-	private final Map<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>>
+	private final THashMap<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>>
 		seqLocCounters = new THashMap<>();
 	@JsonIgnore
 	private final DoubleAdderFormatter adderForTotal = new DoubleAdderFormatter();
@@ -127,11 +127,12 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			return;
 		}
 		adderForTotal.add(d);
-		for (Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc> c: seqLocCounters.values()) {
+		seqLocCounters.forEachValue(c -> {
 			if (c.fst.test(loc)) {
 				c.snd.accept(loc, d);
 			}
-		}
+			return true;
+		});
 	}
 	
 	public void accept(@NonNull SequenceLocation loc, @NonNull T t, double d) {
@@ -140,17 +141,19 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		}
 		adderForTotal.add(d);
 		
-		for (Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc> c: seqLocCounters.values()) {
+		seqLocCounters.forEachValue(c -> {
 			if (c.fst.test(loc)) {
 				c.snd.accept(loc, d);
 			}
-		}
+			return true;
+		});
 		
-		for (Pair<SerializablePredicate<SequenceLocation>, ICounter<T>> c: counters.values()) {
+		counters.forEachValue(c -> {
 			if (c.fst.test(loc)) {
 				c.snd.accept(t, d);
 			}
-		}
+			return true;
+		});
 	}
 	
 	public void accept(@NonNull SequenceLocation loc, @NonNull T t) {
@@ -194,7 +197,6 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			accept(loc, (double) l);
 	}
 	
-	@SuppressWarnings("null")
 	public double getSum(String predicateName) {
 		if (counters.containsKey(predicateName)) {
 			return counters.get(predicateName).getSnd().sum();

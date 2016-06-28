@@ -73,6 +73,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	
 	private static final Logger logger = LoggerFactory.getLogger("SubAnalyzerPhaser");
 	private static final boolean[] falseTrue = {false, true};
+	private static final byte[] QUESTION_MARK = {'?'};
 
 	private final AnalysisChunk analysisChunk;
 	private final MutinackGroup groupSettings;
@@ -240,6 +241,10 @@ public class SubAnalyzerPhaser extends Phaser {
 							}
 						}
 
+						if (examResults.alleleFrequencies != null) {
+							stats.alleleFrequencies.accept(location, examResults.alleleFrequencies);
+						}
+
 						for (CandidateSequence c: examResults.analyzedCandidateSequences) {
 							if (c.getQuality().getMin().compareTo(GOOD) >= 0) {
 								if (c.getMutationType().isWildtype()) {
@@ -306,11 +311,11 @@ public class SubAnalyzerPhaser extends Phaser {
 								
 								byte[] fstSeq = d.getFst().getSequence();
 								if (fstSeq == null) {
-									fstSeq = new byte[] {'?'};
+									fstSeq = QUESTION_MARK;
 								}
 								byte[] sndSeq = d.getSnd().getSequence();
 								if (sndSeq == null) {
-									sndSeq = new byte[] {'?'};
+									sndSeq = QUESTION_MARK;
 								}
 
                                                                 final Mutation mutant = d.getSnd();
@@ -324,10 +329,13 @@ public class SubAnalyzerPhaser extends Phaser {
 												(location.position + 1) + "\t" + (location.position + 1) + "\t" +
 												(mutant.mutationType == SUBSTITUTION ?
 														(new String(fstSeq) + "" + new String(sndSeq)) 
-														:
+													:
 														new String (sndSeq)) + "\t" +
-												mutant.mutationType + 
-												(d.hasAWtStrand ? "" : ("\t" + d.getFst().mutationType)) + "\n");
+												mutant.mutationType + "\t" +
+												(d.hasAWtStrand ? "" : (d.getFst().mutationType)) + "\t" +
+												examResults.alleleFrequencies.get(0) + "\t" +
+												examResults.alleleFrequencies.get(1) + "\t" +
+												"\n");
 									}
 								} catch (IOException e) {
 									throw new RuntimeException(e);
@@ -414,8 +422,21 @@ public class SubAnalyzerPhaser extends Phaser {
 						acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getMin()).
 						getMax());
 
+					final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
+						acceptMin(analyzerCandidateLists, cl -> {
+							List<@NonNull Integer> freq =
+								((LocationExaminationResults) cl).alleleFrequencies;
+							if (freq != null) {
+								return ((LocationExaminationResults) cl).alleleFrequencies.get(1);
+							} else {
+								return 99;
+							}
+						}).getMin();
+
+					final boolean lowTopAlleleFreq = minTopAlleleFreq < argValues.topAlleleFreqReport;
+
 					final boolean forceReporting = forceOutputAtLocations.get(location) != null ||
-						mutationToAnnotate.get();
+						mutationToAnnotate.get() || lowTopAlleleFreq;
 					@SuppressWarnings("null")
 					final boolean randomlySelected = forceOutputAtLocations.get(location) != null &&
 						forceOutputAtLocations.get(location);
@@ -462,6 +483,10 @@ public class SubAnalyzerPhaser extends Phaser {
 
 							if (randomlySelected) {
 								baseOutput0 += "+";
+							}
+
+							if (lowTopAlleleFreq) {
+								baseOutput0 += "%";
 							}
 
 							candidate.nDuplexesSisterArm = allQ1Q2Candidates.stream().filter(
@@ -608,10 +633,12 @@ public class SubAnalyzerPhaser extends Phaser {
 										c.readAlignmentEnd + "\t" +
 										c.mateReadAlignmentEnd + "\t" +
 										c.refPositionOfMateLigationSite + "\t" +
-										(argValues.outputDuplexDetails ? c.getIssues() : qualityKDString) + "\t" +
+										(argValues.outputDuplexDetails ? qualityKDString : "" /*c.getIssues()*/) + "\t" +
 										c.getMedianPhredAtPosition() + "\t" +
 										(c.getMinInsertSize() == -1 ? "?" : c.getMinInsertSize()) + "\t" +
 										(c.getMaxInsertSize() == -1 ? "?" : c.getMaxInsertSize()) + "\t" +
+										analyzerCandidateLists.get(analyzer.idx).alleleFrequencies.get(0) + "\t" +
+										analyzerCandidateLists.get(analyzer.idx).alleleFrequencies.get(1) + "\t" +
 										(c.getSupplementalMessage() != null ? c.getSupplementalMessage() : "") + "\t";
 
 									boolean needComma = false;

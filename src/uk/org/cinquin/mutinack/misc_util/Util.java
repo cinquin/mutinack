@@ -305,10 +305,6 @@ public class Util {
 		final @NonNull List<String> lines = new ArrayList<>(4);
 	}
 
-	public static @NonNull String getRecordNameWithPairSuffix(SAMRecord record) {
-		return (record.getReadName() + "--" + (record.getSecondOfPairFlag() ? "2" : "1"))/*.intern()*/;
-	}
-
 	//Keep separate maps for variable and constant barcodes so we can have stats for each
 	public static final Map<ByteArray, ByteArray> internedVariableBarcodes = new ConcurrentHashMap<>(200);
 	public static final Map<ByteArray, ByteArray> internedConstantBarcodes = new ConcurrentHashMap<>(200);

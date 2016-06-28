@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -162,10 +163,14 @@ public class Mutinack implements Actualizable {
 	
 	private static final List<String> outputHeader = Collections.unmodifiableList(Arrays.asList(
 			"Notes", "Location", "Mutation type", "Mutation detail", "Sample", "nQ2Duplexes",
-			"nQ1Q2Duplexes", "nDuplexes", "nConcurringReads", "fractionConcurringQ2Duplexes", "fractionConcurringQ1Q2Duplexes", 
-			"fractionConcurringDuplexes", "fractionConcurringReads", "averageMappingQuality", "nDuplexesSisterArm", "insertSize", "minDistanceLigSite", "maxDistanceLigSite",
-			"positionInRead", "readEffectiveLength", "nameOfOneRead", "readAlignmentStart", "mateAlignmentStart",
-			"readAlignmentEnd", "mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtPosition", "minInsertSize", "maxInsertSize", "supplementalMessage"
+			"nQ1Q2Duplexes", "nDuplexes", "nConcurringReads", "fractionConcurringQ2Duplexes",
+			"fractionConcurringQ1Q2Duplexes", "fractionConcurringDuplexes", "fractionConcurringReads",
+			"averageMappingQuality", "nDuplexesSisterArm", "insertSize", "minDistanceLigSite",
+			"maxDistanceLigSite", "positionInRead", "readEffectiveLength", "nameOfOneRead",
+			"readAlignmentStart", "mateAlignmentStart", "readAlignmentEnd", "mateAlignmentEnd",
+			"refPositionOfLigSite", "issuesList", "medianPhredAtPosition", "minInsertSize",
+			"maxInsertSize", "secondHighestAlleleFrequency*10",  "highestAlleleFrequency*10",
+			"supplementalMessage"
 	));
 	
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
@@ -189,6 +194,7 @@ public class Mutinack implements Actualizable {
 	final float disagreementConsensusThreshold;
 	final boolean acceptNInBarCode;
 	final float dropReadProbability;
+	final boolean randomizeMates;
 	final int nConstantBarcodeMismatchesAllowed;
 	final int nVariableBarcodeMismatchesAllowed;
 	final int alignmentPositionMismatchAllowed;
@@ -276,6 +282,7 @@ public class Mutinack implements Actualizable {
 			boolean acceptNInBarCode,
 			int minInsertSize, int maxInsertSize,
 			float dropReadProbability, 
+			boolean randomizeMates,
 			int nConstantBarcodeMismatchesAllowed, int nVariableBarcodeMismatchesAllowed, 
 			int alignmentPositionMismatchAllowed,
 			int promoteNPoorDuplexes,
@@ -324,6 +331,7 @@ public class Mutinack implements Actualizable {
 		this.minInsertSize = minInsertSize;
 		this.maxInsertSize = maxInsertSize;
 		this.dropReadProbability = dropReadProbability;
+		this.randomizeMates = randomizeMates;
 		this.nConstantBarcodeMismatchesAllowed = nConstantBarcodeMismatchesAllowed;
 		this.nVariableBarcodeMismatchesAllowed = nVariableBarcodeMismatchesAllowed;
 		this.alignmentPositionMismatchAllowed = alignmentPositionMismatchAllowed;
@@ -403,6 +411,10 @@ public class Mutinack implements Actualizable {
 		commander.addObject(argValues);
 		commander.parse(args);
 
+		if (argValues.timeoutSeconds != 0) {
+			Server.PING_INTERVAL_SECONDS = 1 + argValues.timeoutSeconds / 3;
+		}
+
 		if (argValues.help) {
 			//commander.setProgramName("java -jar mutinack.jar");
 			System.out.println("Usage: java -jar mutinack.jar ...");
@@ -465,7 +477,7 @@ public class Mutinack implements Actualizable {
 				Thread pingThread = new Thread(() -> {
 					try {
 						while(true) {
-							Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000);
+							Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000L);
 							try {
 								server.notifyStillAlive("worker", job.get());
 							} catch (IOException e) {
@@ -501,9 +513,18 @@ public class Mutinack implements Actualizable {
 					}
 					job.get().result.executionThrowable = t;
 				}
-				job.get().result.output = outStream.toString("UTF8") + "\n---------\n" +
+				try {
+					job.get().result.output = outStream.toString("UTF8") + "\n---------\n" +
 						errStream.toString("UTF8");
-				server.submitWork("worker", job.get());
+					server.submitWork("worker", job.get());
+				} catch (Throwable t) {
+					MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
+					gatherer.add(job.get().result.executionThrowable);
+					gatherer.add(t);
+					gatherer.add(die);
+					Util.printUserMustSeeMessage(gatherer.toString());
+					gatherer.throwIfPresent();
+				}
 				if (die != null) {
 					throw die;
 				}
@@ -538,7 +559,6 @@ public class Mutinack implements Actualizable {
 		
 		if (!versionChecked && !argValues.noStatusMessages) {
 			Util.printUserMustSeeMessage(GitCommitInfo.getGitCommit());
-			Util.printUserMustSeeMessage("Launch time: " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 		}
 		
 		if (!argValues.saveFilteredReadsTo.isEmpty()) {
@@ -546,7 +566,9 @@ public class Mutinack implements Actualizable {
 		}
 		
 		if (!argValues.noStatusMessages) {
-			Util.printUserMustSeeMessage("Host: " + StaticStuffToAvoidMutating.hostName);
+			Util.printUserMustSeeMessage("Analysis started on host " +
+				StaticStuffToAvoidMutating.hostName +
+				" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 		}
 		
 		out.println(argValues.toString());
@@ -835,6 +857,7 @@ public class Mutinack implements Actualizable {
 						argValues.minInsertSize,
 						argValues.maxInsertSize, 
 						argValues.dropReadProbability,
+						argValues.randomizeMates,
 						argValues.nConstantBarcodeMismatchesAllowed,
 						argValues.nVariableBarcodeMismatchesAllowed,
 						argValues.alignmentPositionMismatchAllowed,
@@ -1155,6 +1178,9 @@ public class Mutinack implements Actualizable {
 				printStream.println(blueF(signal != null) +
 						"Minimal Q2 duplex coverage across all inputs: " +
 						reset(signal != null) + goodDuplexCovInAllInputs);
+				printStream.println(ManagementFactory.getMemoryPoolMXBeans().stream().map(m -> {
+					return m.getName() + ": " + m.getUsage().toString();
+				}).collect(Collectors.joining(",")));
 				
 				outputJSON(argValues, analyzers);
 			};
@@ -1301,7 +1327,15 @@ public class Mutinack implements Actualizable {
 						+ " at " + ((int) a.processingThroughput()) + " records / s").
 						collect(Collectors.joining(", ")) + " completed on host " + 
 						StaticStuffToAvoidMutating.hostName +
-						" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
+						" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()) +
+						" (elapsed time " +
+						(System.nanoTime() - analyzers.get(0).timeStartProcessing) / 1_000_000_000d +
+						" s)");
+				ManagementFactory.getGarbageCollectorMXBeans().forEach(gc -> {
+					Util.printUserMustSeeMessage(gc.getName() + " (" +
+						Arrays.toString(gc.getMemoryPoolNames()) + "): " + gc.getCollectionCount() +
+						" " + gc.getCollectionTime());
+				});
 			}
 			
 			if (argValues.readContigsFromFile) {//Probably reference transcriptome; TODO need to

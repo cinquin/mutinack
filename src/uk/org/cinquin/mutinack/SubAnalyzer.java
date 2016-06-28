@@ -53,6 +53,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -616,16 +617,16 @@ public final class SubAnalyzer {
 	private LocationExaminationResults examineLocation0(final @NonNull SequenceLocation location) {
 		final LocationExaminationResults result = new LocationExaminationResults();
 
-		final Set<CandidateSequence> candidateSet0 = candidateSequences.get(location);
+		final THashSet<CandidateSequence> candidateSet0 = candidateSequences.get(location);
 		if (candidateSet0 == null) {
 			stats.nPosUncovered.increment(location);
 			result.analyzedCandidateSequences = Collections.emptyList();
 			return result;
 		}
-		final Set<CandidateSequence> candidateSet =
-			DebugLogControl.COSTLY_ASSERTIONS ?
-				Collections.unmodifiableSet(candidateSet0)
-			:
+		final THashSet<CandidateSequence> candidateSet =
+//			DebugLogControl.COSTLY_ASSERTIONS ?
+//				Collections.unmodifiableSet(candidateSet0)
+//			:
 				candidateSet0;
 
 		//Retrieve relevant duplex reads
@@ -634,7 +635,7 @@ public final class SubAnalyzer {
 		//objects we use in this method should be equal according to the equals() method
 		//(although when grouping duplexes we don't check equality for the inner ends of
 		//the reads since they depend on read length)
-		final Set<DuplexRead> duplexReads = 
+		final TCustomHashSet<DuplexRead> duplexReads =
 			new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 
 		boolean hasHiddenCandidate = false;
@@ -683,16 +684,9 @@ public final class SubAnalyzer {
 		}
 
 		Assert.noException(() -> {
-			for (DuplexRead duplexRead: duplexReads) {
-				for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
-					if (r.duplexRead != duplexRead) {
-						throw new AssertionFailedException();
-					}
-					if (duplexRead.topStrandRecords.contains(r)) {
-						throw new AssertionFailedException();							
-					}
-				}
-				for (ExtendedSAMRecord r: duplexRead.topStrandRecords) {
+			duplexReads.forEach(duplexRead -> {
+				for (int i = duplexRead.topStrandRecords.size() - 1; i >= 0; --i) {
+					ExtendedSAMRecord r = duplexRead.topStrandRecords.get(i);
 					if (r.duplexRead != duplexRead) {
 						throw new AssertionFailedException();
 					}
@@ -700,7 +694,18 @@ public final class SubAnalyzer {
 						throw new AssertionFailedException();							
 					}
 				}
-			}
+
+				for (int i = duplexRead.bottomStrandRecords.size() - 1; i >= 0; --i) {
+					ExtendedSAMRecord r = duplexRead.bottomStrandRecords.get(i);
+					if (r.duplexRead != duplexRead) {
+						throw new AssertionFailedException();
+					}
+					if (duplexRead.topStrandRecords.contains(r)) {
+						throw new AssertionFailedException();							
+					}
+				}
+				return true;
+			});
 		});
 
 		Quality maxQuality = MINIMUM;
@@ -989,9 +994,21 @@ public final class SubAnalyzer {
 			throw new AssertionFailedException();
 		}
 		result.analyzedCandidateSequences = candidateSet;
+		result.alleleFrequencies = streamTopTwoCandidates(candidateSet).
+			mapToObj(i -> Integer.valueOf((int) (i * 10f / result.nGoodOrDubiousDuplexes))).
+			collect(Collectors.toCollection(() -> new ArrayList<>(2)));
+		while(result.alleleFrequencies.size() < 2) {
+			result.alleleFrequencies.add(0, 99);
+		}
 		return result;
 	}//End examineLocation
 	
+	private static IntStream streamTopTwoCandidates(Collection<CandidateSequence>
+			analyzedCandidateSequences) {
+		return analyzedCandidateSequences.stream().mapToInt(c -> c.getnGoodOrDubiousDuplexes()).
+			sorted().skip(Math.max(0, analyzedCandidateSequences.size() - 2));
+	}
+
 	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
 			Set<CandidateSequence> candidateSet) {
 		for (DuplexRead duplexRead: duplexReads) {

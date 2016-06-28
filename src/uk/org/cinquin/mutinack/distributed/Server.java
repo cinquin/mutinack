@@ -55,7 +55,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	private static final long serialVersionUID = 7331182254489507945L;
 	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
 
-	public final static int PING_INTERVAL_SECONDS = 20;
+	public static int PING_INTERVAL_SECONDS = 20;
 
 	private final Map<Job, Job> jobs = new ConcurrentHashMap<>();
 	private final String recordRunsTo;
@@ -216,7 +216,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 		synchronized(job) {
 			while (!job.completed) {
-				job.wait(PING_INTERVAL_SECONDS * 1_000);
+				job.wait(PING_INTERVAL_SECONDS * 1_000L);
 				if (!job.completed && job.timeGivenToWorker > 0 &&
 					(System.currentTimeMillis() - job.timeLastWorkerPing > 3 * PING_INTERVAL_SECONDS * 1_000)) {
 					throw new RuntimeException("Worker " + job.workerID + " unresponsive while " +

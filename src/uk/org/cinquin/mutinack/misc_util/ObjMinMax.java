@@ -42,6 +42,14 @@ public class ObjMinMax<T> {
 		return this;
 	}
 
+	public ObjMinMax<T> acceptMin(final @Nullable Iterable<?> col, Function<Object, T> f) {
+		if (col == null) {
+			return this;
+		}
+		col.forEach(o -> acceptMin(f.apply(o)));
+		return this;
+	}
+
 	public ObjMinMax<T> acceptMin(final T t) {
 		if (min != null) {
 			if (comparator.compare(t, min) < 0) {

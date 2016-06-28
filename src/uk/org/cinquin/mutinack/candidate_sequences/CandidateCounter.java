@@ -17,36 +17,34 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
-import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
-	private final @NonNull Set<CandidateSequence> candidates;
+	private final @NonNull THashSet<CandidateSequence> candidates;
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
-	public final @NonNull Map<@NonNull CandidateSequence,
-		@NonNull SettableInteger> candidateCounts;			
+	public final @NonNull TObjectIntHashMap<@NonNull CandidateSequence>
+		candidateCounts;
 	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
 	
 	public long nPhreds, sumPhreds;
 
-	public CandidateCounter(@NonNull Set<CandidateSequence> candidates,
+	public CandidateCounter(@NonNull THashSet<CandidateSequence> candidates,
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
 		keptRecords = new THashSet<>();
-		candidateCounts = new THashMap<>(5);
+		candidateCounts = new TObjectIntHashMap<>(5);
 	}
 
 	public void reset() {
@@ -78,10 +76,10 @@ public final class CandidateCounter {
 						}
 					}
 					keptRecords.add(r);
-					candidateCounts.computeIfAbsent(candidate,
-							k -> new SettableInteger(0)).incrementAndGet();
+					candidateCounts.adjustOrPutValue(candidate, 1, 1);
 				}
 			}//End loop over records
+			return true;
 		}//End loop over candidates
 		);
 	}

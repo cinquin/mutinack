@@ -17,8 +17,12 @@
 
 package uk.org.cinquin.mutinack.misc_util;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 public class MultipleExceptionGatherer {
 	List<Throwable> exceptions = new ArrayList<>();
@@ -31,11 +35,30 @@ public class MultipleExceptionGatherer {
 		}
 	}
 	
+	public void add(@Nullable Throwable t) {
+		if (t != null) {
+			exceptions.add(t);
+		}
+	}
+
 	public void throwIfPresent() {
 		if (exceptions.size() > 1) {
 			throw new MultipleExceptions(exceptions);
 		} else if (exceptions.size() > 0) {
 			throw new RuntimeException(exceptions.get(0));
 		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder();
+		StringWriter stringWriter = new StringWriter();
+		PrintWriter printWriter = new PrintWriter(stringWriter);
+		exceptions.forEach(t -> {
+			printWriter.append(t.toString()).append("\n");
+			t.printStackTrace(printWriter);
+			printWriter.append("-----\n");
+		});
+		return result.toString();
 	}
 }

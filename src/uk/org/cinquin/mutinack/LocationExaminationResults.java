@@ -18,6 +18,7 @@ package uk.org.cinquin.mutinack;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -31,6 +32,7 @@ final class LocationExaminationResults {
 	int nGoodDuplexes = 0;
 	int strandCoverageImbalance;
 	int nMissingStrands;
+	List<@NonNull Integer> alleleFrequencies;
 	final @NonNull 
 		Collection<@NonNull DuplexDisagreement> disagreements = new ArrayList<>();
 	final @NonNull 

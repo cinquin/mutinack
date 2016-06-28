@@ -68,7 +68,7 @@ public class StaticStuffToAvoidMutating {
 		setExecutorService(new ThreadPoolExecutor(0, nMaxThreads,
                 300, TimeUnit.SECONDS, new SynchronousQueue<>(),
                 new NamedPoolThreadFactory("Mutinack executor pool - "),
-                new ThreadPoolExecutor.CallerRunsPolicy()));
+                new ThreadPoolExecutor.AbortPolicy()));
 		
 		if (ParFor.threadPool == null) {
 			ParFor.threadPool = new ThreadPoolExecutor(0, nMaxThreads,
