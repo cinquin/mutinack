@@ -18,6 +18,9 @@ package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +46,9 @@ public class Signals {
 			}
 			List<SignalProcessor> list = processors.get(name);
 			if (list == null) {
+				if (!handledSignals.contains(name)) {
+					throw new IllegalArgumentException("Unknown signal " + name);
+				}
 				list = new ArrayList<>();
 				processors.put(name, list);
 			}
@@ -90,12 +96,17 @@ public class Signals {
 		};
 	}
 
+	private final static Collection<String> handledSignals = Collections.unmodifiableList(
+		Arrays.asList("TERM", "INFO"));
+
 	private static void initialize () {
-		try {
-			Signal.handle(new Signal("INFO"), new Handler("INFO").sigHandler);
-		} catch (IllegalArgumentException e) { 
-			if (!System.getProperty("os.name", "Linux default").contains("Linux")) {
-				System.err.println(e.toString());
+		for (String signalName: handledSignals) {
+			try {
+				Signal.handle(new Signal(signalName), new Handler(signalName).sigHandler);
+			} catch (IllegalArgumentException e) {
+				if (!System.getProperty("os.name", "Linux default").contains("Linux")) {
+					System.err.println(e.toString());
+				}
 			}
 		}
 	}

@@ -50,6 +50,7 @@ import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class BedReader implements GenomeFeatureTester, Serializable {
 

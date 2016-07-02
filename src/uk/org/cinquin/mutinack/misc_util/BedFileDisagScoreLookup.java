@@ -35,7 +35,7 @@ import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
-import uk.org.cinquin.mutinack.features.ParseRTException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class BedFileDisagScoreLookup {
 

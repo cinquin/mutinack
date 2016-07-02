@@ -41,7 +41,7 @@ import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.features.ParseRTException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 @RunWith(JMockit.class)
 @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
@@ -53,7 +53,6 @@ public class ExtendedSAMRecordTest {
 	public void testNClippingRight(
 			@NonNull @Injectable SAMRecord sr1, 
 			@NonNull @Injectable SAMRecord sr2, 
-			@Injectable AnalysisStats stats,
 			@Mocked MutinackGroup settings,
 			@Mocked Mutinack analyzer) {
 		
@@ -261,11 +260,16 @@ public class ExtendedSAMRecordTest {
 	public void testNClippingLeft(
 			@NonNull @Injectable SAMRecord sr1, 
 			@NonNull @Injectable SAMRecord sr2, 
-			@Injectable AnalysisStats stats,
 			@Mocked MutinackGroup settings,
 			@Mocked Mutinack analyzer) {
 		
 		settings.BIN_SIZE = 10_000_000;
+		settings.setContigNames(Arrays.asList("contig1"));
+		settings.setContigSizes(new HashMap<@NonNull String, @NonNull Integer>() {
+			private static final long serialVersionUID = -7506734058327588018L;
+			{
+				put("contig1", 10_000_000);
+			}});
 		AnalysisStats s = new AnalysisStats("test_stats", settings);
 		analyzer.stats = Arrays.asList(s);
 		

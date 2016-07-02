@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -38,9 +38,11 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.rmi.RemoteException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -62,6 +64,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -76,6 +80,9 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.healthmarketscience.rmiio.RemoteOutputStreamClient;
+import com.healthmarketscience.rmiio.RemoteOutputStreamServer;
+import com.healthmarketscience.rmiio.SimpleRemoteOutputStream;
 //import com.google.monitoring.runtime.instrumentation.AllocationRecorder;
 //import com.google.monitoring.runtime.instrumentation.Sampler;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
@@ -91,11 +98,9 @@ import contrib.net.sf.samtools.util.RuntimeIOException;
 import contrib.nf.fr.eraasoft.pool.ObjectPool;
 import contrib.nf.fr.eraasoft.pool.PoolSettings;
 import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
-import contrib.nf.fr.eraasoft.pool.impl.PoolController;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
-import sun.misc.Signal;
 import uk.org.cinquin.mutinack.distributed.EvaluationResult;
 import uk.org.cinquin.mutinack.distributed.Job;
 import uk.org.cinquin.mutinack.distributed.RemoteMethods;
@@ -122,6 +127,7 @@ import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -131,10 +137,11 @@ import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 import uk.org.cinquin.mutinack.statistics.json.JsonRoot;
 import uk.org.cinquin.mutinack.statistics.json.ParedDownMutinack;
+import uk.org.cinquin.parfor.ILoopWorker;
 import uk.org.cinquin.parfor.ParFor;
 
 public class Mutinack implements Actualizable {
-	
+
 	static ConcurrentHashMap<String, SettableLong> objectAllocations =
 		new ConcurrentHashMap<>(1000);
 
@@ -157,10 +164,10 @@ public class Mutinack implements Actualizable {
 			}
 		});*/
 	}
-	
+
 	public static final Logger logger = LoggerFactory.getLogger("Mutinack");
 	private static final Logger statusLogger = LoggerFactory.getLogger("MutinackStatus");
-	
+
 	private static final List<String> outputHeader = Collections.unmodifiableList(Arrays.asList(
 			"Notes", "Location", "Mutation type", "Mutation detail", "Sample", "nQ2Duplexes",
 			"nQ1Q2Duplexes", "nDuplexes", "nConcurringReads", "fractionConcurringQ2Duplexes",
@@ -172,9 +179,9 @@ public class Mutinack implements Actualizable {
 			"maxInsertSize", "secondHighestAlleleFrequency*10",  "highestAlleleFrequency*10",
 			"supplementalMessage"
 	));
-	
+
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
-	
+
 	final MutinackGroup groupSettings;
 	final int ignoreFirstNBasesQ1, ignoreFirstNBasesQ2;
 	final int ignoreLastNBases;
@@ -247,7 +254,7 @@ public class Mutinack implements Actualizable {
 				public void activate(SAMFileReader t) {
 					//Nothing to be done to reset
 				}
-				
+
 				@Override
 				public void destroy(SAMFileReader t) {
 					t.close();
@@ -270,7 +277,7 @@ public class Mutinack implements Actualizable {
 			@NonNull String name,
 			int idx,
 			@NonNull File inputBam,
-			int ignoreFirstNBasesQ1, int ignoreFirstNBasesQ2, 
+			int ignoreFirstNBasesQ1, int ignoreFirstNBasesQ2,
 			int ignoreLastNBases,
 			int minMappingQualityQ1, int minMappingQualityQ2,
 			int minReadsPerStrandQ1, int minReadsPerStrandQ2,
@@ -281,9 +288,9 @@ public class Mutinack implements Actualizable {
 			float disagreementConsensusThreshold,
 			boolean acceptNInBarCode,
 			int minInsertSize, int maxInsertSize,
-			float dropReadProbability, 
+			float dropReadProbability,
 			boolean randomizeMates,
-			int nConstantBarcodeMismatchesAllowed, int nVariableBarcodeMismatchesAllowed, 
+			int nConstantBarcodeMismatchesAllowed, int nVariableBarcodeMismatchesAllowed,
 			int alignmentPositionMismatchAllowed,
 			int promoteNPoorDuplexes,
 			int promoteNSingleStrands,
@@ -342,7 +349,7 @@ public class Mutinack implements Actualizable {
 		this.variableBarcodeLength = variableBarcodeLength;
 		this.constantBarcode = constantBarcode;
 		this.unclippedBarcodeLength = 0;
-		
+
 		this.ignoreZeroInsertSizeReads = ignoreZeroInsertSizeReads;
 		this.ignoreSizeOutOfRangeInserts = ignoreSizeOutOfRangeInserts;
 		this.ignoreTandemRFPairs = ignoreTandemRFPairs;
@@ -354,15 +361,15 @@ public class Mutinack implements Actualizable {
 		this.minMedianPhredQualityAtPosition = minMedianPhredQualityAtPosition;
 		this.maxFractionWrongPairsAtPosition = maxFractionWrongPairsAtPosition;
 		this.maxNDuplexes = maxNDuplex;
-		
+
 		this.computeSupplQuality = promoteNQ1Duplexes != Integer.MAX_VALUE ||
 				promoteNSingleStrands != Integer.MAX_VALUE ||
 				promoteFractionReads != Float.MAX_VALUE;
-		
+
 		this.rnaSeq = rnaSeq;
 		this.excludeBEDs = excludeBEDs;
 		this.computeRawDisagreements = computeRawDisagreements;
-		
+
 		for (String statsName: Arrays.asList("main_stats", "ins_stats")) {
 			@SuppressWarnings("null")
 			AnalysisStats stat = new AnalysisStats(statsName, groupSettings);
@@ -381,10 +388,15 @@ public class Mutinack implements Actualizable {
 			stats.add(stat);
 		}
 	}
-	
+
 	public static void main(String args[]) throws InterruptedException, ExecutionException, FileNotFoundException {
 		try {
-			realMain0(args);
+			try {
+				realMain0(args);
+			} catch (RejectedExecutionException rejected) {
+				throw new RuntimeException("Not enough threads; please adjust maxThreadsPerPool",
+					rejected);
+			}
 		} catch (ParameterException e) {
 			if (System.console() == null) {
 				System.err.println(e.getMessage());
@@ -401,9 +413,9 @@ public class Mutinack implements Actualizable {
 			System.exit(1);
 		}
 	}
-		
+
 	private static void realMain0(String args[]) throws InterruptedException, IOException {
-		
+
 		final Parameters argValues = new Parameters();
 		JCommander commander = new JCommander();
 		commander.setAcceptUnknownOptions(false);
@@ -413,6 +425,12 @@ public class Mutinack implements Actualizable {
 
 		if (argValues.timeoutSeconds != 0) {
 			Server.PING_INTERVAL_SECONDS = 1 + argValues.timeoutSeconds / 3;
+		}
+
+		if (argValues.parallelizationFactor != 1 &&
+				argValues.contigByContigParallelization.size() > 0) {
+			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
+				+ "contigByContigParallelization at the same time");
 		}
 
 		if (argValues.help) {
@@ -426,154 +444,268 @@ public class Mutinack implements Actualizable {
 			}
 			//commander.usage();
 			System.out.println(b);
-			StaticStuffToAvoidMutating.shutdown();
-			return;
+		} else if (argValues.version) {
+			System.out.println(GitCommitInfo.getGitCommit());
 		} else if (argValues.startServer != null) {
 			Server.createRegistry(argValues.startServer);
 			@SuppressWarnings("unused")
-			Server unusedVariable = 
+			Server unusedVariable =
 					new Server(0, argValues.startServer, argValues.recordRunsTo);
-			return;
 		} else if (argValues.submitToServer != null) {
-			RemoteMethods server = Server.getServer(argValues.submitToServer);
-			Job job = new Job();
-			argValues.submitToServer = null;
-			if (argValues.workingDirectory != null) {
-				synchronized(Runtime.getRuntime()) {
-					String saveUserDir = System.getProperty("user.dir");
-					System.setProperty("user.dir", argValues.workingDirectory);
-					argValues.canonifyFilePaths();
-					System.setProperty("user.dir", saveUserDir);
-				}
-			} else {
-				argValues.canonifyFilePaths();
-			}
-			job.parameters = argValues;
-			EvaluationResult result = server.submitJob("client", job);
-			if (result.executionThrowable != null) {
-				throw new RuntimeException(result.executionThrowable);
-			} else {
-				System.out.println("RESULT: \n" + result.output);
-			}
-			//Do not perform shutdown as a submission to the server is likely
-			//handled through NGServer
-			return;
+			submitToServer(argValues);
 		} else if (argValues.startWorker != null) {
-			Handle<Boolean> terminate = new Handle<>(false);
-			Handle<Job> job = new Handle<>();
-			Signal.handle(new Signal("HUP"), p -> {
-				terminate.set(true);
-				if (job.get() == null) {
-					//There does not seem to be a clean way of canceling
-					//getMoreWork call blocked in socketRead, so just exit
-					System.exit(0);
-				}
-				System.err.println("Will terminate when current job has completed");
-			});
-			RemoteMethods server = Server.getServer(argValues.startWorker);
-			while (!terminate.get()) {
-				job.set(null);
-				job.set(server.getMoreWork("worker"));
-				Thread pingThread = new Thread(() -> {
+			runWorker(argValues);
+		} else {
+			realMain1(argValues, System.out, System.err);
+		}
+	}
+
+	private static void submitToServer(Parameters argValues)
+			throws RemoteException, InterruptedException, MalformedURLException {
+		RemoteMethods server = Server.getServer(argValues.submitToServer);
+		Job job = new Job();
+		argValues.submitToServer = null;
+		if (argValues.workingDirectory != null) {
+			synchronized(Runtime.getRuntime()) {
+				String saveUserDir = System.getProperty("user.dir");
+				System.setProperty("user.dir", argValues.workingDirectory);
+				argValues.canonifyFilePaths();
+				System.setProperty("user.dir", saveUserDir);
+			}
+		} else {
+			argValues.canonifyFilePaths();
+		}
+		job.parameters = argValues;
+		ByteArrayOutputStream bostdout = new ByteArrayOutputStream();
+		@SuppressWarnings("resource")
+		RemoteOutputStreamServer osstdout = new SimpleRemoteOutputStream(bostdout);
+		ByteArrayOutputStream bosstderr = new ByteArrayOutputStream();
+		@SuppressWarnings("resource")
+		RemoteOutputStreamServer osstderr = new SimpleRemoteOutputStream(bosstderr);
+		job.stdoutStream = osstdout.export();
+		job.stderrStream = osstderr.export();
+		Runnable r = () -> {
+			try {
+				boolean done = false;
+				while (!done) {
 					try {
-						while(true) {
-							Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000L);
-							try {
-								server.notifyStillAlive("worker", job.get());
-							} catch (IOException e) {
-								throw new RuntimeException(e);
-							}
-						}
+						Thread.sleep(60_000);
 					} catch (InterruptedException e) {
-						//Nothing to do; just exit and die
+						done = true;
 					}
-				});
-				pingThread.setDaemon(true);
-				pingThread.setName("Ping thread of worker");
-				pingThread.start();
-				job.get().result = new EvaluationResult();
-				ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-				PrintStream outPS = new PrintStream(outStream);
-				ByteArrayOutputStream errStream = new ByteArrayOutputStream();
-				PrintStream errPS = new PrintStream(errStream);
-				RuntimeException die = null;
+					synchronized(bostdout) {
+						System.out.print(new String(bostdout.toByteArray()));
+						bostdout.reset();
+					}
+					synchronized(bosstderr) {
+						System.err.print(new String(bosstderr.toByteArray()));
+						bosstderr.reset();
+					}
+				}
+			} finally {
+				osstdout.close();
+				osstderr.close();
+			}
+		};
+		Thread t = new Thread(r);
+		t.setName("Stream output thread");
+
+		final EvaluationResult result;
+
+		try {
+			t.start();
+			result = server.submitJob("client", job);
+		} finally {
+			t.interrupt();
+		}
+
+		if (result.executionThrowable != null) {
+			throw new RuntimeException(result.executionThrowable);
+		} else {
+			t.join();
+		}
+	}
+
+	private static void runWorker(Parameters argValues) throws InterruptedException {
+		final int nWorkers;
+		final String cleanedUpName;
+		final int columnIndex = argValues.startWorker.indexOf(":");
+		if (columnIndex < 0) {
+			nWorkers = 1;
+			cleanedUpName = argValues.startWorker;
+		} else {
+			try {
+				nWorkers =
+					Integer.parseInt(argValues.startWorker.substring(columnIndex + 1));
+				cleanedUpName = argValues.startWorker.substring(0, columnIndex);
+			} catch (NumberFormatException e) {
+				throw new ParseRTException("Problem parsing " + argValues.startWorker, e);
+			}
+		}
+		final ParFor pf;
+		final Handle<Boolean> terminate = new Handle<>(false);
+		final AtomicInteger pendingJobs = new AtomicInteger(0);
+
+		final SignalProcessor termSignalProcessor = s -> {
+			terminate.set(true);
+			synchronized(pendingJobs) {
+				while (pendingJobs.get() > 0) {//Small race conditions
+					System.err.println("Will terminate when current " + pendingJobs.get() +
+						" jobs have completed");
+					try {
+						pendingJobs.wait();
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+			//There does not seem to be a clean way of canceling
+			//getMoreWork call blocked in socketRead, so just exit
+			System.exit(0);
+		};
+
+		Signals.registerSignalProcessor("TERM", termSignalProcessor);
+
+		pf = new ParFor("Main worker loop", 0, nWorkers - 1, null, true);
+		ILoopWorker worker = (loopIndex, threadIndex) -> {
+			Job job;
+			RemoteMethods server;
+			try {
+				server = Server.getServer(cleanedUpName);
+			} catch (MalformedURLException | RemoteException e2) {
+				throw new RuntimeException(e2);
+			}
+			while (!terminate.get()) {
+				job = null;
 				try {
-					int parameterHashCode = job.get().parameters.hashCode();
-					realMain1(job.get().parameters, outPS, errPS);
-					if (parameterHashCode != job.get().parameters.hashCode()) {
-						die = new AssertionFailedException("Parameters modified by worker");
-						//Send the result back to the server so that one could figure out
-						//from the server what happened, and then stop the worker
+					job = server.getMoreWork("worker");
+				} catch (RemoteException e2) {
+					throw new RuntimeException(e2);
+				}
+				pendingJobs.incrementAndGet();
+				Job job1 = job;
+				try {
+					if (terminate.get()) {
+						try {
+							server.declineJob("worker", job);
+						} catch (RemoteException e) {
+							throw new RuntimeException(e);
+						}
+						break;
+					}
+					Thread pingThread = new Thread(() -> {
+						try {
+							while(true) {
+								Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000L);
+								try {
+									server.notifyStillAlive("worker", job1);
+								} catch (IOException e) {
+									throw new RuntimeException(e);
+								}
+							}
+						} catch (InterruptedException e) {
+							//Nothing to do; just exit and die
+						}
+					});
+					pingThread.setDaemon(true);
+					pingThread.setName("Ping thread of worker");
+					pingThread.start();
+					job.result = new EvaluationResult();
+					@SuppressWarnings("resource")
+					PrintStream outPS, errPS;
+					try {
+						outPS = new PrintStream(
+							RemoteOutputStreamClient.wrap(job.stdoutStream));
+						errPS = new PrintStream(
+							RemoteOutputStreamClient.wrap(job.stderrStream));
+					} catch (IOException e1) {
+						throw new RuntimeException(e1);
+					}
+					RuntimeException die = null;
+					try {
+						int parameterHashCode = job.parameters.hashCode();
+						realMain1(job.parameters, outPS, errPS);
+						if (parameterHashCode != job.parameters.hashCode()) {
+							die = new AssertionFailedException("Parameters modified by worker");
+							//Send the result back to the server so that one could figure out
+							//from the server what happened, and then stop the worker
+							throw die;
+						}
+					} catch (OutOfMemoryError e) {
+						Thread.sleep(Long.MAX_VALUE);
+					} catch (Throwable t) {
+						if (!Util.isSerializable(t)) {
+							t = new RuntimeException("Unserializable exception " +
+								t.toString());
+						}
+						job.result.executionThrowable = t;
+					}
+					try {
+						outPS.close();
+						errPS.close();
+						server.submitWork("worker", job);
+					} catch (Throwable t) {
+						MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
+						gatherer.add(job.result.executionThrowable);
+						gatherer.add(t);
+						gatherer.add(die);
+						Util.printUserMustSeeMessage(gatherer.toString());
+						gatherer.throwIfPresent();
+					}
+					pingThread.interrupt();
+					if (die != null) {
 						throw die;
 					}
-				} catch (Throwable t) {
-					if (!Util.isSerializable(t)) {
-						t = new RuntimeException("Unserializable exception " +
-								t.toString());
+				} finally {
+					pendingJobs.decrementAndGet();
+					synchronized(pendingJobs) {
+						pendingJobs.notifyAll();
 					}
-					job.get().result.executionThrowable = t;
 				}
-				try {
-					job.get().result.output = outStream.toString("UTF8") + "\n---------\n" +
-						errStream.toString("UTF8");
-					server.submitWork("worker", job.get());
-				} catch (Throwable t) {
-					MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
-					gatherer.add(job.get().result.executionThrowable);
-					gatherer.add(t);
-					gatherer.add(die);
-					Util.printUserMustSeeMessage(gatherer.toString());
-					gatherer.throwIfPresent();
-				}
-				if (die != null) {
-					throw die;
-				}
-				pingThread.interrupt();
-				Signals.clearSignalProcessors();//Should be unnecessary
+			}//Worker never leaves this loop unless interrupted or killed
+			return null;
+		};
+		try {
+			for (int i = 0; i < nWorkers; i++) {
+				pf.addLoopWorker(worker);
 			}
-			//Worker never leaves this loop unless interrupted or killed
-			return;
+			pf.run(true);
+		} finally {
+			Signals.removeSignalProcessor("TERM", termSignalProcessor);
 		}
-		
-		if (argValues.version) {
-			System.out.println(GitCommitInfo.getGitCommit());
-			StaticStuffToAvoidMutating.shutdown();
-			return;
-		}
-		realMain1(argValues, System.out, System.err);
 	}
-	
+
 	private static boolean versionChecked = false;
-	
+
 	@SuppressWarnings("resource")
 	public static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
-		
+
 		DebugLogControl.COSTLY_ASSERTIONS = argValues.enableCostlyAssertions;
-		
+
 		StaticStuffToAvoidMutating.instantiateThreadPools(argValues.maxThreadsPerPool);
 
 		if (!versionChecked && !argValues.noStatusMessages && !argValues.skipVersionCheck) {
 			versionChecked = true;
 			StaticStuffToAvoidMutating.getExecutorService().submit(Util::versionCheck);
 		}
-		
+
 		if (!versionChecked && !argValues.noStatusMessages) {
 			Util.printUserMustSeeMessage(GitCommitInfo.getGitCommit());
 		}
-		
+
 		if (!argValues.saveFilteredReadsTo.isEmpty()) {
 			throw new RuntimeException("Not implemented");
 		}
-		
+
 		if (!argValues.noStatusMessages) {
 			Util.printUserMustSeeMessage("Analysis started on host " +
 				StaticStuffToAvoidMutating.hostName +
 				" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 		}
-		
+
 		out.println(argValues.toString());
 		out.println("Non-trivial assertions " +
-				(DebugLogControl.NONTRIVIAL_ASSERTIONS ? 
+				(DebugLogControl.NONTRIVIAL_ASSERTIONS ?
 				"on" : "off"));
 
 		final List<Mutinack> analyzers = new ArrayList<>();
@@ -583,7 +715,7 @@ public class Mutinack implements Actualizable {
 		}
 
 		for (String inputBamPath: argValues.inputReads) {
-			final File inputBam = new File(inputBamPath); 
+			final File inputBam = new File(inputBamPath);
 			try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
 				out.println(inputBamPath + ":\n" + tempReader.getFileHeader().getTextHeader());
 			}
@@ -601,13 +733,13 @@ public class Mutinack implements Actualizable {
 				SAMFileWriterFactory factory = new SAMFileWriterFactory();
 				SAMFileHeader header = new SAMFileHeader();
 				factory.setCreateIndex(true);
-				header.setSortOrder(argValues.sortOutputAlignmentFile ? 
+				header.setSortOrder(argValues.sortOutputAlignmentFile ?
 						contrib.net.sf.samtools.SAMFileHeader.SortOrder.coordinate
 						: contrib.net.sf.samtools.SAMFileHeader.SortOrder.unsorted);
 				if (argValues.sortOutputAlignmentFile) {
 					factory.setMaxRecordsInRam(10_000);
 				}
-				final File inputBam = new File(argValues.inputReads.get(0)); 
+				final File inputBam = new File(argValues.inputReads.get(0));
 
 				try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
 					final SAMFileHeader inputHeader = tempReader.getFileHeader();
@@ -637,7 +769,7 @@ public class Mutinack implements Actualizable {
 			}
 
 			final @NonNull List<@NonNull String> contigNames;
-			final @NonNull Map<@NonNull String, Integer> contigSizes;
+			final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes;
 			final @NonNull List<@NonNull String> contigNamesToProcess;
 
 			if (argValues.readContigsFromFile) {
@@ -678,7 +810,8 @@ public class Mutinack implements Actualizable {
 				groupSettings.indexContigNameReverseMap.put(contigNames.get(i), i);
 			}
 			groupSettings.setContigNames(contigNames);
-			
+			groupSettings.setContigSizes(contigSizes);
+
 			StaticStuffToAvoidMutating.loadContigs(argValues.referenceGenome,
 				contigNames);
 
@@ -708,7 +841,7 @@ public class Mutinack implements Actualizable {
 					});
 				}
 			}
-			
+
 			if (argValues.randomOutputRate != 0) {
 				if (!argValues.readContigsFromFile) {
 					throw new IllegalArgumentException("Option randomOutputRate "
@@ -730,9 +863,9 @@ public class Mutinack implements Actualizable {
 			}
 			@SuppressWarnings("null")
 			@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
-			out.println("Forcing output at locations " + 
+			out.println("Forcing output at locations " +
 					Util.truncateString(forceOutputString));
-			
+
 			out.println(String.join("\t", outputHeader));
 
 			//Used to ensure that different analyzers do not use same output files
@@ -743,13 +876,13 @@ public class Mutinack implements Actualizable {
 					"Lists given in minMappingQIntersect and intersectAlignment must have same length");
 			}
 
-			Pair<List<String>, List<Integer>> parsedPositions = 
-					Util.parseListPositions(argValues.startAtPositions, true, "startAtPosition");	
+			Pair<List<String>, List<Integer>> parsedPositions =
+					Util.parseListPositions(argValues.startAtPositions, true, "startAtPosition");
 			final List<String> startAtContigs = parsedPositions.fst;
 			final List<Integer> startAtPositions = parsedPositions.snd;
 
 			Pair<List<String>, List<Integer>> parsedPositions2 =
-					Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPosition");	
+					Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPosition");
 			final List<String> truncateAtContigs = parsedPositions2.fst;
 			final List<Integer> truncateAtPositions = parsedPositions2.snd;
 
@@ -779,7 +912,7 @@ public class Mutinack implements Actualizable {
 
 			IntStream.range(0, argValues.inputReads.size()).parallel().forEach(i -> {
 				final String inputReads = argValues.inputReads.get(i);
-				final File inputBam = new File(inputReads); 
+				final File inputBam = new File(inputReads);
 
 				final @NonNull String name;
 
@@ -825,9 +958,9 @@ public class Mutinack implements Actualizable {
 				groupSettings.PROCESSING_CHUNK = argValues.processingChunk;
 				groupSettings.INTERVAL_SLOP = argValues.alignmentPositionMismatchAllowed;
 				groupSettings.BIN_SIZE = argValues.contigStatsBinLength;
-				groupSettings.terminateImmediatelyUponError = 
+				groupSettings.terminateImmediatelyUponError =
 						argValues.terminateImmediatelyUponError;
-				
+
 				groupSettings.setBarcodePositions(0, argValues.variableBarcodeLength - 1,
 						3, 5);
 
@@ -847,15 +980,15 @@ public class Mutinack implements Actualizable {
 						argValues.minReadsPerStrandQ1,
 						argValues.minReadsPerStrandQ2,
 						argValues.minReadsPerStrandForDisagreement,
-						argValues.minBasePhredScoreQ1, 
-						argValues.minBasePhredScoreQ2, 
+						argValues.minBasePhredScoreQ1,
+						argValues.minBasePhredScoreQ2,
 						argValues.minReadMedianPhredScore,
-						argValues.minConsensusThresholdQ1, 
+						argValues.minConsensusThresholdQ1,
 						argValues.minConsensusThresholdQ2,
 						argValues.disagreementConsensusThreshold,
 						argValues.acceptNInBarCode,
 						argValues.minInsertSize,
-						argValues.maxInsertSize, 
+						argValues.maxInsertSize,
 						argValues.dropReadProbability,
 						argValues.randomizeMates,
 						argValues.nConstantBarcodeMismatchesAllowed,
@@ -914,7 +1047,7 @@ public class Mutinack implements Actualizable {
 					final String path = mutName + s.getName() + ".bed";
 					try {
 						s.mutationBEDWriter = new FileWriter(path);
-						analyzer.itemsToClose.add(s.mutationBEDWriter);				
+						analyzer.itemsToClose.add(s.mutationBEDWriter);
 					} catch (IOException e) {
 						handleOutputException(path, e, argValues);
 					}
@@ -941,7 +1074,7 @@ public class Mutinack implements Actualizable {
 					final String coverageName = analyzer.finalOutputBaseName + "_coverage_";
 					analyzer.stats.forEach(s -> {
 						final String path = coverageName + s.getName() + ".bed";
-						try {	
+						try {
 							s.coverageBEDWriter = new FileWriter(path);
 							analyzer.itemsToClose.add(s.coverageBEDWriter);
 						} catch (IOException e) {
@@ -952,7 +1085,7 @@ public class Mutinack implements Actualizable {
 
 				for (int contigIndex = 0; contigIndex < contigNamesToProcess.size(); contigIndex++) {
 					final int finalContigIndex = contigIndex;
-					final SerializablePredicate<SequenceLocation> p = 
+					final SerializablePredicate<SequenceLocation> p =
 							l -> l.contigIndex == finalContigIndex;
 					final String contigName = contigNamesToProcess.get(contigIndex);
 					analyzer.stats.forEach(s -> {
@@ -974,7 +1107,7 @@ public class Mutinack implements Actualizable {
 						analyzer.codingStrandTester = BedReader.getCachedBedFileReader(argValues.bedDisagreementOrienter, ".cached",
 								groupSettings.getContigNames(), "", false);
 					} catch (Exception e) {
-						throw new RuntimeException("Problem with BED file " + 
+						throw new RuntimeException("Problem with BED file " +
 								argValues.bedDisagreementOrienter, e);
 					}
 				}
@@ -1121,7 +1254,7 @@ public class Mutinack implements Actualizable {
 					}
 				}
 			});//End parallel loop over analyzers
-			
+
 			groupSettings.mutationsToAnnotate.clear();
 			if (argValues.annotateMutationsInFile != null) {
 				Set<String> unknownSampleNames = new TreeSet<>();
@@ -1133,7 +1266,7 @@ public class Mutinack implements Actualizable {
 							unknownSampleNames);
 				}
 			}
-			
+
 			for (String s: argValues.traceFields) {
 				try {
 					String[] split = s.split(":");
@@ -1181,14 +1314,14 @@ public class Mutinack implements Actualizable {
 				printStream.println(ManagementFactory.getMemoryPoolMXBeans().stream().map(m -> {
 					return m.getName() + ": " + m.getUsage().toString();
 				}).collect(Collectors.joining(",")));
-				
+
 				outputJSON(argValues, analyzers);
 			};
 			Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
 			statusLogger.info("Starting sequence analysis");
 
-			final List<AnalysisChunk> analysisChunks = new ArrayList<>();
+			final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
 
 			for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
 				final int contigIndex = contigIndex0;
@@ -1201,39 +1334,32 @@ public class Mutinack implements Actualizable {
 					if (idx > -1) {
 						terminateContigAtPosition = truncateAtPositions.get(idx);
 					} else {
-						idx = Parameters.defaultTruncateContigNames.indexOf(contigName);
-						if (idx == -1) {
-							//TODO Make this less ad-hoc
-							terminateContigAtPosition = 
-									Objects.requireNonNull(contigSizes.get(contigName)) - 1;
-						} else {
-							terminateContigAtPosition = Parameters.defaultTruncateContigPositions.get(idx) - 1;
-						}
+							terminateContigAtPosition =
+								Objects.requireNonNull(contigSizes.get(contigName)) - 1;
 					}
 					idx = startAtContigs.indexOf(contigNames.get(contigIndex));
 					if (idx > -1) {
 						startContigAtPosition = startAtPositions.get(idx);
 					} else {
-						idx = Parameters.defaultTruncateContigNames.indexOf(contigName);
-						if (idx == -1) {
-							//TODO Make this less ad-hoc
 							startContigAtPosition = 0;
-						} else {
-							startContigAtPosition = Parameters.defaultStartContigPositions.get(idx);
-						}
 					}
 				}
 
-				final int subAnalyzerSpan = (terminateContigAtPosition - startContigAtPosition + 1) / 
-						argValues.parallelizationFactor;
-				for (int p = 0; p < argValues.parallelizationFactor; p++) {
+				final int contigParallelizationFactor = getContigParallelizationFactor(
+					contigIndex, argValues);
+				List<AnalysisChunk> contigAnalysisChunks = new ArrayList<>();
+				analysisChunks.add(contigAnalysisChunks);
+
+				final int subAnalyzerSpan = (terminateContigAtPosition - startContigAtPosition + 1) /
+					contigParallelizationFactor;
+				for (int p = 0; p < contigParallelizationFactor; p++) {
 					final AnalysisChunk analysisChunk = new AnalysisChunk();
 					analysisChunk.out = out;
-					analysisChunks.add(analysisChunk);
+					contigAnalysisChunks.add(analysisChunk);
 
 					final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
-					final int terminateAtPosition = (p == argValues.parallelizationFactor - 1) ?
-							terminateContigAtPosition 
+					final int terminateAtPosition = (p == contigParallelizationFactor - 1) ?
+							terminateContigAtPosition
 							: startSubAt + subAnalyzerSpan - 1;
 
 					analysisChunk.contig = contigIndex;
@@ -1270,8 +1396,11 @@ public class Mutinack implements Actualizable {
 			final int endIndex = contigNames.size() - 1;
 			final ParFor parFor = new ParFor("contig loop", 0, endIndex, null, true);
 
-			for (int worker = 0; worker < parFor.getNThreads(); worker++) 
+			for (int worker = 0; worker < parFor.getNThreads(); worker++)
 				parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
+
+					final int contigParallelizationFactor = getContigParallelizationFactor(
+						contigIndex, argValues);
 
 					final List<Future<?>> futures = new ArrayList<>();
 					int analyzerIndex = -1;
@@ -1279,20 +1408,21 @@ public class Mutinack implements Actualizable {
 					for (Mutinack analyzer: analyzers) {
 						analyzerIndex++;
 
-						for (int p = 0; p < argValues.parallelizationFactor; p++) {
-							final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex * argValues.parallelizationFactor + p);				
+						for (int p = 0; p < contigParallelizationFactor; p++) {
+							final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex).
+								get(p);
 							final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
 
 							Runnable r = () -> ReadLoader.load(analyzer, subAnalyzer, analysisChunk,
-                                    argValues, analysisChunks,
-                                    groupSettings.PROCESSING_CHUNK, contigNames, contigIndex,
-                                    alignmentWriter0, StaticStuffToAvoidMutating::getContigSequence);
+                                    argValues, groupSettings.PROCESSING_CHUNK, contigNames,
+                                    contigIndex, alignmentWriter0,
+                                    StaticStuffToAvoidMutating::getContigSequence);
 							futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
 						}//End loop over parallelization factor
 					}//End loop over analyzers
 
 					MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
-					
+
 					//Catch all the exceptions because the exceptions thrown by
 					//some threads may be secondary to the primary exception
 					//but may still be examined before the primary exception
@@ -1308,12 +1438,23 @@ public class Mutinack implements Actualizable {
 
 					gatherer.throwIfPresent();
 
-					for (int p = 0 ; p < argValues.parallelizationFactor; p++) {
-						for (Mutinack analyzer: analyzers) {
-							int subAnalyzerIndex = contigIndex * argValues.parallelizationFactor + p;
-							Assert.noException(() -> analyzer.subAnalyzers.get(subAnalyzerIndex).checkAllDone());
-							analyzer.subAnalyzers.set(subAnalyzerIndex, null);
-						}
+					for (int p = 0; p < contigParallelizationFactor; p++) {
+						final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex).
+							get(p);
+						Assert.noException(
+							() -> analysisChunk.subAnalyzers.forEach(sa -> {
+								sa.checkAllDone();
+								analyzers.forEach(a -> {
+									boolean found = false;
+									for (int i = 0; i < a.subAnalyzers.size(); i++) {
+										if (a.subAnalyzers.get(i) == sa) {
+											Assert.isFalse(found);
+											a.subAnalyzers.set(i, null);
+											found = true;
+										}
+									}
+								});
+							}));
 					}
 
 					return null;
@@ -1325,7 +1466,7 @@ public class Mutinack implements Actualizable {
 			if (!argValues.noStatusMessages) {
 				Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name
 						+ " at " + ((int) a.processingThroughput()) + " records / s").
-						collect(Collectors.joining(", ")) + " completed on host " + 
+						collect(Collectors.joining(", ")) + " completed on host " +
 						StaticStuffToAvoidMutating.hostName +
 						" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()) +
 						" (elapsed time " +
@@ -1337,11 +1478,11 @@ public class Mutinack implements Actualizable {
 						" " + gc.getCollectionTime());
 				});
 			}
-			
+
 			if (argValues.readContigsFromFile) {//Probably reference transcriptome; TODO need to
 				//devise a better way of figuring this out
 				for (Mutinack analyzer: analyzers) {
-					final ICounterSeqLoc counter = 
+					final ICounterSeqLoc counter =
 							Objects.requireNonNull(
 									analyzer.stats.get(0).nPosDuplex.getSeqLocCounters().get("All")).snd;
 					final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
@@ -1353,7 +1494,7 @@ public class Mutinack implements Actualizable {
 								groupSettings.indexContigNameReverseMap.get(e.getKey())));
 						final double d;
 						if (c == null) {
-							d = 0;	
+							d = 0;
 						} else {
 							Object o = c.getCounts().get(0);
 							if (o == null) {
@@ -1361,7 +1502,7 @@ public class Mutinack implements Actualizable {
 							} else {
 								d = ((DoubleAdder) o).sum();
 							}
-						}					
+						}
 						allCoverage.put(e.getKey(), d / e.getValue());
 					}
 
@@ -1373,7 +1514,7 @@ public class Mutinack implements Actualizable {
 
 					try (Writer writer = new BufferedWriter(new OutputStreamWriter(
 							new FileOutputStream(analyzer.finalOutputBaseName + "_coverage.txt"), "utf-8"))) {
-						List<Entry<String, Double>> sortedEntries = 
+						List<Entry<String, Double>> sortedEntries =
 								allCoverage.entrySet().stream().map(entry ->
 								new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue())).
 								collect(Collectors.toList());
@@ -1388,10 +1529,10 @@ public class Mutinack implements Actualizable {
 						}
 					} catch (IOException e) {
 						throw new RuntimeException(e);
-					}  
+					}
 				}
 			}
-			
+
 			if (mutationAnnotationWriter != null) {//Unnecessary test, performed to suppress null warning
 				for (@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
 						groupSettings.mutationsToAnnotate.values()) {
@@ -1405,7 +1546,18 @@ public class Mutinack implements Actualizable {
 			close(alignmentWriter, mutationAnnotationWriter, analyzers, infoSignalHandler, groupSettings);
 		}
 	}
-		
+
+	private static int getContigParallelizationFactor(int contigIndex, Parameters argValues) {
+		List<Integer> factorList = argValues.contigByContigParallelization;
+		final int result;
+		if (factorList.size() > 0) {
+			result = factorList.get(Math.min(factorList.size() - 1, contigIndex));
+		} else {
+			result = argValues.parallelizationFactor;
+		}
+		return result;
+	}
+
 	private static void outputJSON(Parameters argValues, Collection<Mutinack> analyzers) {
 		if (!argValues.outputJSONTo.isEmpty()) {
 			analyzers.forEach(Actualizable::actualize);
@@ -1439,7 +1591,7 @@ public class Mutinack implements Actualizable {
 			SignalProcessor infoSignalHandler,
 			MutinackGroup groupSettings) {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
-		
+
 		if (alignmentWriter != null) {
 			gatherer.tryAdd(alignmentWriter::close);
 		}
@@ -1465,16 +1617,16 @@ public class Mutinack implements Actualizable {
 				});
 			}
 		}
-		
-		gatherer.tryAdd(PoolController::shutdown);
-		
+
+		//gatherer.tryAdd(PoolController::shutdown);
+
 		if (infoSignalHandler != null) {
-			gatherer.tryAdd(() -> 
+			gatherer.tryAdd(() ->
 				Signals.removeSignalProcessor("INFO", infoSignalHandler));
 		}
-		
+
 		gatherer.tryAdd(groupSettings::close);
-		
+
 		gatherer.throwIfPresent();
 	}
 
@@ -1526,7 +1678,7 @@ public class Mutinack implements Actualizable {
 	}
 
 	private double processingThroughput() {
-		return (stats.get(0).nRecordsProcessed.sum()) / 
+		return (stats.get(0).nRecordsProcessed.sum()) /
 				((System.nanoTime() - timeStartProcessing) / 1_000_000_000d);
 	}
 
@@ -1536,9 +1688,8 @@ public class Mutinack implements Actualizable {
 			stream.println(greenB(colorize) + "Statistics " + s.getName() + " for " + inputBam.getAbsolutePath() + reset(colorize));
 
 			s.print(stream, colorize);
-			
 
-			stream.println(blueF(colorize) + "Average Phred quality: " + reset(colorize) +
+			stream.println(blueF(colorize) + "Average Phred score: " + reset(colorize) +
 					DoubleAdderFormatter.formatDouble(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
 
 			if (s.outputLevel.compareTo(OutputLevel.VERBOSE) >= 0) {
@@ -1547,7 +1698,7 @@ public class Mutinack implements Actualizable {
 						limit(100).map(ByteArray::toString).collect(Collectors.toList()));
 			}
 
-			stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) + 
+			stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) +
 					((int) processingThroughput()) + " records / s");
 
 			if (!objectAllocations.isEmpty()) {
@@ -1556,7 +1707,7 @@ public class Mutinack implements Actualizable {
 			}
 
 			for (String counter: s.nPosCandidatesForUniqueMutation.getCounterNames()) {
-				final double mutationRate = s.nPosCandidatesForUniqueMutation.getSum(counter) / 
+				final double mutationRate = s.nPosCandidatesForUniqueMutation.getSum(counter) /
 						s.nPosDuplexQualityQ2OthersQ1Q2.getSum(counter);
 				final String mutationRateString;
 				if (mutationRate > 1E-3 || mutationRate == 0) {
@@ -1568,7 +1719,7 @@ public class Mutinack implements Actualizable {
 				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) +
 						mutationRateString);
 			}
-		});
+		});//End forEach stats
 	}
 
 	public static final ThreadLocal<NumberFormat> mutationRateFormatter
@@ -1580,7 +1731,7 @@ public class Mutinack implements Actualizable {
 				return f;
 			}
 		};
-	
+
 	@Override
 	public String toString() {
 		return name + " (" + inputBam.getAbsolutePath() + ")";

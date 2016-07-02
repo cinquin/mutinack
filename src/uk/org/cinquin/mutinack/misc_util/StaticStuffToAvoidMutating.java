@@ -99,13 +99,6 @@ public class StaticStuffToAvoidMutating {
 		StaticStuffToAvoidMutating.executorService = executorService;
 	}
 
-	public static void shutdown() {
-		if (getExecutorService() != null) {
-			getExecutorService().shutdown();
-		}
-		ParFor.shutdownExecutor();
-	}
-
 	public static void loadContigs(String referenceGenome, List<@NonNull String> contigNames) {
 		if (refFile == null) {
 			try {

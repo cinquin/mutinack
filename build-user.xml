@@ -63,7 +63,8 @@
     </manifest>
     <jar jarfile="mutinack.jar" manifest="MANIFEST.MF">
       <fileset dir="bin" includes="**/*" excludes="**/.DS_Store"/>
-      <fileset dir="lib_unjarred"> <exclude name="**/.DS_Store"/> <exclude name="**/*.RSA"/> <exclude name="**/*.DSA"/> <exclude name="**/*.SF"/> <include name="**/*.class"/> </fileset>
+      <fileset dir="lib_unjarred"> <exclude name="**/.DS_Store"/> <exclude name="**/*.RSA"/> <exclude name="**/*.DSA"/> <exclude name="**/*.SF"/> <include name="**/*.class"/> <include name="log4j.properties"/></fileset>
+      <fileset dir="." includes="log4j.properties"/>
     </jar>
   </target>
   <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpath="findbugs-3.0.1/lib/findbugs-ant.jar"/>

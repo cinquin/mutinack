@@ -36,6 +36,7 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -136,14 +137,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 		
 		{	//Force output of fields annotated with AddChromosomeBins to be broken down by
 			//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
-			//TODO Base this on the actual contigs the program is run on, not the default contigs
-			List<String> contigNames = Parameters.defaultTruncateContigNames;
+			List<String> contigNames = groupSettings.getContigNames();
 			for (Field field : AnalysisStats.class.getDeclaredFields()) {
 				AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
 				if (annotation != null) {
 					for (int contig = 0; contig < contigNames.size(); contig++) {
 						int contigCopy = contig;
-						for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / groupSettings.BIN_SIZE; c++) {
+						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
+								contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
 							int cCopy = c;
 							try {
 								MultiCounter <?> counter = ((MultiCounter<?>) field.get(this));
@@ -178,9 +179,10 @@ public class AnalysisStats implements Serializable, Actualizable {
 					Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
 					Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
 
-					List<String> contigNames = Parameters.defaultTruncateContigNames;
+					List<String> contigNames = groupSettings.getContigNames();
 					for (int contig = 0; contig < contigNames.size(); contig++) {
-						for (int c = 0; c < Parameters.defaultTruncateContigPositions.get(contig) / groupSettings.BIN_SIZE; c++) {
+						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
+								contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
 							SequenceLocation location = new SequenceLocation(contig, contigNames.get(contig), c * groupSettings.BIN_SIZE);
 							topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true), 0);
 							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);

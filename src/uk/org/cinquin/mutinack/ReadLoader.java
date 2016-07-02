@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Phaser;
 import java.util.function.BiConsumer;
@@ -64,10 +65,16 @@ public class ReadLoader {
 	private static final Logger statusLogger = LoggerFactory.getLogger("ReadLoaderStatus");
 
 	@SuppressWarnings("resource")
-	public static void load(Mutinack analyzer, SubAnalyzer subAnalyzer, AnalysisChunk analysisChunk,
-			Parameters argValues, List<AnalysisChunk> analysisChunks,
-			final int PROCESSING_CHUNK, @NonNull List<@NonNull String> contigs, final int contigIndex,
-			SAMFileWriter alignmentWriter, Function<String, ReferenceSequence> contigSequences) {
+	public static void load(
+			Mutinack analyzer,
+			SubAnalyzer subAnalyzer,
+			AnalysisChunk analysisChunk,
+			Parameters argValues,
+			final int PROCESSING_CHUNK,
+			@NonNull List<@NonNull String> contigs,
+			final int contigIndex,
+			SAMFileWriter alignmentWriter,
+			Function<String, ReferenceSequence> contigSequences) {
 
 		final SettableInteger lastProcessable = subAnalyzer.lastProcessablePosition;
 		final int startAt = analysisChunk.startAtPosition;
@@ -78,6 +85,12 @@ public class ReadLoader {
 		lastProcessedPosition.set(startAt - 1);
 		pauseAt.set(lastProcessable.get() + PROCESSING_CHUNK);
 
+		final boolean needRandom = analyzer.dropReadProbability > 0 ||
+			analyzer.randomizeMates;
+		final Random random = needRandom ?
+				new Random(argValues.randomSeed)
+			:
+				null;
 
 		final Phaser phaser = analysisChunk.phaser;
 		String lastContigName = null;
@@ -167,8 +180,8 @@ public class ReadLoader {
 							//if reading from an already-annotated BAM file
 						}
 
-						final SequenceLocation location = new SequenceLocation(contigIndex, contigName,
-							samRecord.getAlignmentStart());
+						final @NonNull SequenceLocation location =
+							new SequenceLocation(contigIndex, contigName, samRecord.getAlignmentStart());
 
 						if (!samRecord.getReadPairedFlag()) {
 							if (!analyzer.notifiedUnpairedReads) {
@@ -182,6 +195,7 @@ public class ReadLoader {
 						if (analyzer.randomizeMates) {
 							Objects.requireNonNull(switchedMatePairs);
 							Objects.requireNonNull(unswitchedMatePairs);
+							Objects.requireNonNull(random);
 							if (!samRecord.getMateUnmappedFlag() &&
 								samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex())) {
 								String readName = samRecord.getReadName();
@@ -190,7 +204,7 @@ public class ReadLoader {
 								} else if (switchedMatePairs.remove(readName)) {
 									switchPair(samRecord);
 								} else {
-									if (Math.random() < 0.5) {
+									if (random.nextFloat() < 0.5) {
 										switchedMatePairs.add(readName);
 										switchPair(samRecord);
 									} else {
@@ -198,7 +212,7 @@ public class ReadLoader {
 									}
 								}
 							} else {
-								if (Math.random() < 0.5) {
+								if (random.nextFloat() < 0.5) {
 									switchPair(samRecord);
 								}
 							}
@@ -265,6 +279,7 @@ public class ReadLoader {
 						if (analyzer.dropReadProbability > 0) {
 							Objects.requireNonNull(droppedReads);
 							Objects.requireNonNull(keptReads);
+							Objects.requireNonNull(random);
 							String readName = samRecord.getReadName();
 							boolean mateAlreadyDropped = droppedReads.contains(readName);
 							if (mateAlreadyDropped) {
@@ -273,7 +288,7 @@ public class ReadLoader {
 							}
 							if (keptReads.contains(readName)) {
 								keptReads.remove(readName);
-							} else if (Math.random() < analyzer.dropReadProbability) {
+							} else if (random.nextFloat() < analyzer.dropReadProbability) {
 								//If mate is in a different contig, do not store a reference
 								//to the read name in droppedReads since this thread will never
 								//encounter the mate

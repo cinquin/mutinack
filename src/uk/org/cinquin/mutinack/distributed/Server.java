@@ -46,9 +46,9 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.nustaq.serialization.FSTConfiguration;
 
 import uk.org.cinquin.mutinack.Parameters;
-import uk.org.cinquin.mutinack.features.ParseRTException;
 import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class Server extends UnicastRemoteObject implements RemoteMethods {
 
@@ -206,28 +206,47 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			throw new IllegalArgumentException("Job " + job + " from client " + clientID +
 				" already marked as completed");
 		}
-		jobs.put(job, job);
-		queue.put(job);
+		boolean cancelled = false;
+		do {
+			job.cancelled = false;
+			jobs.put(job, job);
+			queue.put(job);
 
-		if (recordedRuns != null) {
-			recordedRuns.put(job.parameters.runName, job.parameters);
-			System.err.println("Recorded job " + job.parameters.runName);
-		}
+			if (recordedRuns != null) {
+				recordedRuns.put(job.parameters.runName, job.parameters);
+				System.err.println("Recorded job " + job.parameters.runName);
+			}
 
-		synchronized(job) {
-			while (!job.completed) {
-				job.wait(PING_INTERVAL_SECONDS * 1_000L);
-				if (!job.completed && job.timeGivenToWorker > 0 &&
-					(System.currentTimeMillis() - job.timeLastWorkerPing > 3 * PING_INTERVAL_SECONDS * 1_000)) {
-					throw new RuntimeException("Worker " + job.workerID + " unresponsive while " +
-						"processing " + job);
+			synchronized(job) {
+				while (!job.completed) {
+					job.wait(PING_INTERVAL_SECONDS * 1_000L);
+					if (!job.completed && job.timeGivenToWorker > 0 &&
+							(System.currentTimeMillis() - job.timeLastWorkerPing > 3 * PING_INTERVAL_SECONDS * 1_000)) {
+						throw new RuntimeException("Worker " + job.workerID + " unresponsive while " +
+							"processing " + job);
+					}
 				}
 			}
-		}
-		jobs.remove(job);
+			jobs.remove(job);
+			cancelled = job.cancelled;
+		} while (cancelled);
+
 		job.timeReturnedToSubmitter = System.nanoTime();
 		//System.err.println("RETURNING " + job.result.output);
 		return job.result;
+	}
+
+	@Override
+	public void declineJob(String workerID, Job job) throws RemoteException {
+		Job localJobObj = jobs.get(job);
+		if (localJobObj == null) {
+			throw new IllegalStateException("Unknown job " + job + " from client " + workerID);
+		}
+		localJobObj.cancelled = true;
+		localJobObj.completed = true;
+		synchronized(localJobObj) {
+			localJobObj.notifyAll();
+		}
 	}
 
 	@Override

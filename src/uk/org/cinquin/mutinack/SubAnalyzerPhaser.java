@@ -384,10 +384,12 @@ public class SubAnalyzerPhaser extends Phaser {
 							>= a.minNumberDuplexesSisterArm
 							) {
 
-							examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).flatMap(c -> c.getDuplexes().stream()).
-							filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).map(DuplexRead::getDistanceToLigSite).
-							forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
-								stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
+							examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
+								flatMap(c -> c.getDuplexes().stream()).
+								filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).
+								map(DuplexRead::getDistanceToLigSite).
+								forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
+									stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
 							stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
 							stats.nPosQualityQ2OthersQ1Q2.increment(location);
@@ -422,6 +424,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getMin()).
 						getMax());
 
+					@SuppressWarnings("null")//Incorrect Eclipse auto-unboxing warning
 					final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
 						acceptMin(analyzerCandidateLists, cl -> {
 							List<@NonNull Integer> freq =

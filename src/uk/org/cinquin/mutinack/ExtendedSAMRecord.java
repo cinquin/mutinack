@@ -37,9 +37,9 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.features.ParseRTException;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 /**
  * Hashcode and equality based on read name + first or second of pair.

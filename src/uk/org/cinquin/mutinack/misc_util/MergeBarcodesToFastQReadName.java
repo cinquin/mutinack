@@ -26,8 +26,8 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import uk.org.cinquin.mutinack.features.ParseRTException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 /**
  * Utility class to load paired reads from fastq files, and merge barcode and barcode

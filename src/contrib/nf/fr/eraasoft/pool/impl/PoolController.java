@@ -26,6 +26,7 @@ public class PoolController extends Thread {
 		}
 		if (!instance.alive) {
 			instance.alive = true;
+			instance.setDaemon(true);
 			instance.start();
 		}
 	}

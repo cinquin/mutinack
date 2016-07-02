@@ -145,8 +145,8 @@ public final class ParFor {
 			clientWillGetExceptions = block || (nToCompleteBeforeReturn!=-1);
 			printedMissingExceptionWarning = false;
 
-			partialResults =new ArrayList<?> [workers.length];
-			for (int i=0; i < partialResults.length; i++){
+			partialResults = new ArrayList<?> [workers.length];
+			for (int i = 0; i < partialResults.length; i++) {
 				partialResults[i] = new ArrayList<>();
 			}
 			Runnable[] runnables = new Runnable[workers.length];

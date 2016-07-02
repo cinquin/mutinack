@@ -20,11 +20,11 @@ package uk.org.cinquin.mutinack.distributed;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-
 public interface RemoteMethods extends Remote {
 	//For workers
 	Job getMoreWork(String workerID) throws RemoteException, InterruptedException;
 	void submitWork(String workerID, Job job) throws RemoteException;
+	void declineJob(String workerID, Job job) throws RemoteException;
 	void notifyStillAlive(String workerID, Job job) throws RemoteException;
 
 	//For clients

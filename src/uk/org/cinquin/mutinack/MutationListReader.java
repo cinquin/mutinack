@@ -35,8 +35,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import uk.org.cinquin.mutinack.features.ParseRTException;
 import uk.org.cinquin.mutinack.misc_util.Pair;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class MutationListReader {
 

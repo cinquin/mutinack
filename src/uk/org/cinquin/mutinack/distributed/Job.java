@@ -19,6 +19,8 @@ package uk.org.cinquin.mutinack.distributed;
 
 import java.io.Serializable;
 
+import com.healthmarketscience.rmiio.RemoteOutputStream;
+
 import uk.org.cinquin.mutinack.Parameters;
 
 public final class Job implements Serializable {
@@ -58,6 +60,7 @@ public final class Job implements Serializable {
 	public Parameters parameters;
 	public String pathToWorkDir;
 	public volatile boolean completed;
+	public volatile boolean cancelled;
 	public EvaluationResult result;
 	public long timeSubmitted;
 	public long timeGivenToWorker;
@@ -65,4 +68,6 @@ public final class Job implements Serializable {
 	public long timeReturnedToSubmitter;
 	public long timeLastWorkerPing;
 	public String workerID;
+	public RemoteOutputStream stdoutStream;
+	public RemoteOutputStream stderrStream;
 }

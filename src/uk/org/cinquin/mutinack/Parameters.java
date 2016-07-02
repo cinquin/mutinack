@@ -23,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -83,6 +84,9 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-parallelizationFactor", description = "Number of chunks into which to split each contig for parallel processing; setting this value too high can be highly counter-productive", required = false)
 	public int parallelizationFactor = 1;
+
+	@Parameter(names = "-contigByContigParallelization", description = "Contig-by-contig list of number of chunks into which to split contig for parallel processing; setting this value too high can be highly counter-productive; last value in the list applies to all contigs whose index falls outside of the list", required = false)
+	public List<Integer> contigByContigParallelization = new ArrayList<>();
 
 	@Parameter(names = "-maxThreadsPerPool", description = "Maximum number of threads per pool; "
 			+ "for now, to avoid deadlocks this number should be kept higher than number of inputs *"
@@ -161,8 +165,10 @@ public final class Parameters implements Serializable {
 	public static final List<@NonNull Integer> defaultTruncateContigPositions = Arrays.asList(
 			15_072_423, 15_279_345, 13_783_700, 17_493_793, 13_794, 20_924_149, 17_718_866);
 
+	/*
 	static final List<@NonNull Integer> defaultStartContigPositions =
 			Arrays.asList(1, 1, 1, 1, 1, 1, 1);
+	*/
 
 	@Parameter(names = "-traceField", description = "Output each position at which "
 			+ "specified statistic is incremented; formatted as sampleName:statisticName", required = false)
@@ -452,6 +458,9 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-enableCostlyAssertions", description = "Enable internal sanity checks that significantly slow down execution", required = false, hidden = hideAdvancedParameters, arity = 1)
 	public boolean enableCostlyAssertions = true;
+
+	@Parameter(names = "-randomSeed", description = "TODO", required = false, hidden = hideAdvancedParameters)
+	public long randomSeed = new SecureRandom().nextLong();
 
 	@Retention(RetentionPolicy.RUNTIME)
 	/**
