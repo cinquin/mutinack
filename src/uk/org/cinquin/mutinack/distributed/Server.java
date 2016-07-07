@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.swing.Timer;
 
@@ -172,17 +173,61 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		rebindTimer.start();
 
 		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
+		Signals.registerSignalProcessor("INFO", s -> {
+			System.err.println(
+				jobs.values().stream().map(j -> j.toString()).collect(Collectors.joining("; "))
+			);
+		});
 		Thread shutdownHook = new Thread(this::dumpRecordedRuns);
 		Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+		Signals.registerSignalProcessor("TERM", s -> {
+			disconnectWaitingWorkers();
+			synchronized(jobs) {
+				while(!jobs.isEmpty()) {
+					try {
+						jobs.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						break;
+					}
+				}
+			}
+			//Give a chance for RMI results to be sent back; it would be
+			//nice if there was a cleaner way than waiting for a set amount
+			//of time
+			try {
+				Thread.sleep(2_000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			System.exit(0);//JVM won't exit by itself upon receiving the TERM signal
+		});
+
 	}
+
+	private final static Job END_OF_WORK_MARKER = new Job();
 
 	@Override
 	public Job getMoreWork(String workerID) throws RemoteException, InterruptedException {
 		Job job = queue.poll(Integer.MAX_VALUE, TimeUnit.DAYS);
+		if (job == END_OF_WORK_MARKER) {
+			queue.offer(END_OF_WORK_MARKER, 0, TimeUnit.SECONDS);
+			return null;
+		}
 		job.workerID = workerID;
 		job.timeLastWorkerPing = System.currentTimeMillis();
 		job.timeGivenToWorker = System.nanoTime();
 		return job;
+	}
+
+	public void disconnectWaitingWorkers() {
+		try {
+			System.err.println("Disconnecting waiting workers");
+			queue.offer(END_OF_WORK_MARKER, 0, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -228,6 +273,9 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 				}
 			}
 			jobs.remove(job);
+			synchronized(jobs) {
+				jobs.notifyAll();
+			}
 			cancelled = job.cancelled;
 		} while (cancelled);
 

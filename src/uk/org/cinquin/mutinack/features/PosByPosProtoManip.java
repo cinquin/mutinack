@@ -179,8 +179,8 @@ public class PosByPosProtoManip {
 			break;
 			default: throw new IllegalArgumentException("Unknown command " + args[0]);
 		}
-		if (ParFor.threadPool != null) {
-			ParFor.threadPool.shutdown();
+		if (ParFor.defaultThreadPool != null) {
+			ParFor.defaultThreadPool.shutdown();
 		}
 	}
 	

@@ -46,7 +46,8 @@ public final class ParFor {
 	private final Object doneSemaphore = new Object();
 	private volatile boolean done = false;
 	
-	public static ExecutorService threadPool;
+	public static ExecutorService defaultThreadPool;
+	private final ExecutorService threadPool;
 	@SuppressWarnings("unused")
 	private static final int nProc = Runtime.getRuntime().availableProcessors();
 
@@ -72,14 +73,19 @@ public final class ParFor {
 	}
 
 	private ParFor(int startIndex, int endIndex, ProgressReporter progressBar,
-			ExecutorService threadPool, boolean stopAllUponException, int maxNThreads) {
-		if (threadPool == null) {
-			synchronized(ParFor.class) {
-				if (ParFor.threadPool == null) {
-					StaticStuffToAvoidMutating.instantiateThreadPools(128);
+			ExecutorService providedThreadPool, boolean stopAllUponException, int maxNThreads) {
+		if (providedThreadPool == null) {
+			if (defaultThreadPool == null) {
+				synchronized(ParFor.class) {
+					if (ParFor.defaultThreadPool == null) {
+						System.err.println("Instantiating ParFor thread pool with default number of threads");
+						StaticStuffToAvoidMutating.instantiateThreadPools(128);
+					}
 				}
 			}
-			threadPool = ParFor.threadPool;
+			threadPool = ParFor.defaultThreadPool;
+		} else {
+			threadPool = providedThreadPool;
 		}
 		this.startIndex = startIndex;
 		this.endIndex = endIndex;
@@ -98,7 +104,7 @@ public final class ParFor {
 	}
 
 	public ParFor(String name, int startIndex, int endIndex, ProgressReporter progressBar, boolean stopAllUponException) {
-		this(startIndex, endIndex, progressBar, threadPool, stopAllUponException);
+		this(startIndex, endIndex, progressBar, defaultThreadPool, stopAllUponException);
 		if (name != null)
 			setName(name);
 	}
@@ -370,8 +376,8 @@ public final class ParFor {
 	}
 
 	public static void shutdownExecutor() {
-		if (threadPool != null) {
-			threadPool.shutdown();
+		if (defaultThreadPool != null) {
+			defaultThreadPool.shutdown();
 		}
 	}
 

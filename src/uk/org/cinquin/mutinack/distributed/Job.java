@@ -18,6 +18,8 @@
 package uk.org.cinquin.mutinack.distributed;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Optional;
 
 import com.healthmarketscience.rmiio.RemoteOutputStream;
 
@@ -57,6 +59,7 @@ public final class Job implements Serializable {
 			return false;
 		return true;
 	}
+
 	public Parameters parameters;
 	public String pathToWorkDir;
 	public volatile boolean completed;
@@ -70,4 +73,13 @@ public final class Job implements Serializable {
 	public String workerID;
 	public RemoteOutputStream stdoutStream;
 	public RemoteOutputStream stderrStream;
+
+	@Override
+	public String toString() {
+		return "Inputs " +
+			Optional.ofNullable(parameters).
+				flatMap(p -> Optional.ofNullable(p.inputReads)).
+				orElse(Collections.emptyList()) +
+			", worker " + workerID;
+	}
 }

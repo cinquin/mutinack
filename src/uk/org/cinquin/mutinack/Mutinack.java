@@ -433,6 +433,8 @@ public class Mutinack implements Actualizable {
 				+ "contigByContigParallelization at the same time");
 		}
 
+		StaticStuffToAvoidMutating.instantiateThreadPools(argValues.maxThreadsPerPool);
+
 		if (argValues.help) {
 			//commander.setProgramName("java -jar mutinack.jar");
 			System.out.println("Usage: java -jar mutinack.jar ...");
@@ -568,6 +570,8 @@ public class Mutinack implements Actualizable {
 
 		pf = new ParFor("Main worker loop", 0, nWorkers - 1, null, true);
 		ILoopWorker worker = (loopIndex, threadIndex) -> {
+			final String workerID = ManagementFactory.getRuntimeMXBean().getName() +
+				"_" + loopIndex;
 			Job job;
 			RemoteMethods server;
 			try {
@@ -578,7 +582,11 @@ public class Mutinack implements Actualizable {
 			while (!terminate.get()) {
 				job = null;
 				try {
-					job = server.getMoreWork("worker");
+					job = server.getMoreWork(workerID);
+					if (job == null) {
+						terminate.set(true);
+						break;
+					}
 				} catch (RemoteException e2) {
 					throw new RuntimeException(e2);
 				}
@@ -587,7 +595,7 @@ public class Mutinack implements Actualizable {
 				try {
 					if (terminate.get()) {
 						try {
-							server.declineJob("worker", job);
+							server.declineJob(workerID, job);
 						} catch (RemoteException e) {
 							throw new RuntimeException(e);
 						}
@@ -598,7 +606,7 @@ public class Mutinack implements Actualizable {
 							while(true) {
 								Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000L);
 								try {
-									server.notifyStillAlive("worker", job1);
+									server.notifyStillAlive(workerID, job1);
 								} catch (IOException e) {
 									throw new RuntimeException(e);
 								}
@@ -643,7 +651,7 @@ public class Mutinack implements Actualizable {
 					try {
 						outPS.close();
 						errPS.close();
-						server.submitWork("worker", job);
+						server.submitWork(workerID, job);
 					} catch (Throwable t) {
 						MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 						gatherer.add(job.result.executionThrowable);
@@ -681,8 +689,6 @@ public class Mutinack implements Actualizable {
 	public static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
 
 		DebugLogControl.COSTLY_ASSERTIONS = argValues.enableCostlyAssertions;
-
-		StaticStuffToAvoidMutating.instantiateThreadPools(argValues.maxThreadsPerPool);
 
 		if (!versionChecked && !argValues.noStatusMessages && !argValues.skipVersionCheck) {
 			versionChecked = true;
@@ -1294,6 +1300,7 @@ public class Mutinack implements Actualizable {
 				for (Mutinack analyzer: analyzers) {
 					analyzer.printStatus(printStream, signal != null);
 				}
+				printStream.flush();
 
 				if (signal != null) {
 					synchronized(groupSettings.statusUpdateTasks) {

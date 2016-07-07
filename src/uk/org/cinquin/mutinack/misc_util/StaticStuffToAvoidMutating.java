@@ -52,7 +52,7 @@ public class StaticStuffToAvoidMutating {
 	
 	private static ExecutorService executorService;
 	
-	private static final int HARD_MAX_THREADS_PER_POOL = 250;
+	private static final int HARD_MAX_THREADS_PER_POOL = 600;
 
 	public static void instantiateThreadPools(int nMaxThreads) {
 		if (getExecutorService() != null) {
@@ -70,8 +70,8 @@ public class StaticStuffToAvoidMutating {
                 new NamedPoolThreadFactory("Mutinack executor pool - "),
                 new ThreadPoolExecutor.AbortPolicy()));
 		
-		if (ParFor.threadPool == null) {
-			ParFor.threadPool = new ThreadPoolExecutor(0, nMaxThreads,
+		if (ParFor.defaultThreadPool == null) {
+			ParFor.defaultThreadPool = new ThreadPoolExecutor(0, nMaxThreads,
 					300, TimeUnit.SECONDS, new SynchronousQueue<>(),
 					new NamedPoolThreadFactory("Mutinack ParFor pool - "),
 					new ThreadPoolExecutor.AbortPolicy());
