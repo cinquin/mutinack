@@ -169,11 +169,6 @@ public final class Parameters implements Serializable {
 	public static final List<@NonNull Integer> defaultTruncateContigPositions = Arrays.asList(
 			15_072_423, 15_279_345, 13_783_700, 17_493_793, 13_794, 20_924_149, 17_718_866);
 
-	/*
-	static final List<@NonNull Integer> defaultStartContigPositions =
-			Arrays.asList(1, 1, 1, 1, 1, 1, 1);
-	*/
-
 	@Parameter(names = "-traceField", description = "Output each position at which "
 			+ "specified statistic is incremented; formatted as sampleName:statisticName", required = false)
 	public List<String> traceFields = new ArrayList<>();
@@ -493,7 +488,7 @@ public final class Parameters implements Serializable {
 					} else {
 						return canonical;
 					}
-				} 	catch (IOException e) {
+				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
 			});
@@ -569,7 +564,7 @@ public final class Parameters implements Serializable {
 				Object fieldDefaultValue = field.get(defaultValues);
 				String stringValue;
 				if (fieldValue == null)
-					stringValue = field.getName()+ " = null";
+					stringValue = field.getName() + " = null";
 				else
 					stringValue = field.getName() + " = " + fieldValue.getClass().getMethod("toString").invoke
 						(fieldValue);
@@ -688,6 +683,8 @@ public final class Parameters implements Serializable {
 		int result = 1;
 		result = prime * result + (acceptNInBarCode ? 1231 : 1237);
 		result = prime * result + alignmentPositionMismatchAllowed;
+		result = prime * result + ((annotateMutationsInFile == null) ? 0 : annotateMutationsInFile.hashCode());
+		result = prime * result + ((annotateMutationsOutputFile == null) ? 0 : annotateMutationsOutputFile.hashCode());
 		result = prime * result + ((auxOutputFileBaseName == null) ? 0 : auxOutputFileBaseName.hashCode());
 		result = prime * result + ((bamReadsWithBarcodeField == null) ? 0 : bamReadsWithBarcodeField.hashCode());
 		result = prime * result + ((bedDisagreementOrienter == null) ? 0 : bedDisagreementOrienter.hashCode());
@@ -695,11 +692,13 @@ public final class Parameters implements Serializable {
 		result = prime * result + (collapseFilteredReads ? 1231 : 1237);
 		result = prime * result + (computeRawDisagreements ? 1231 : 1237);
 		result = prime * result + constantBarcode.hashCode();
+		result = prime * result + ((contigByContigParallelization == null) ? 0 : contigByContigParallelization.hashCode());
 		result = prime * result + contigNamesToProcess.hashCode();
 		result = prime * result + contigStatsBinLength;
 		result = prime * result + Float.floatToIntBits(disagreementConsensusThreshold);
 		result = prime * result + ((discardedReadFile == null) ? 0 : discardedReadFile.hashCode());
 		result = prime * result + Float.floatToIntBits(dropReadProbability);
+		result = prime * result + (enableCostlyAssertions ? 1231 : 1237);
 		result = prime * result + ((excludeRegionsInBED == null) ? 0 : excludeRegionsInBED.hashCode());
 		result = prime * result + ((forceOutputAtPositionsFile == null) ? 0 : forceOutputAtPositionsFile.hashCode());
 		result = prime * result + (help ? 1231 : 1237);
@@ -708,8 +707,10 @@ public final class Parameters implements Serializable {
 		result = prime * result + ignoreLastNBases;
 		result = prime * result + (ignoreSizeOutOfRangeInserts ? 1231 : 1237);
 		result = prime * result + (ignoreTandemRFPairs ? 1231 : 1237);
+		result = prime * result + (ignoreZeroInsertSizeReads ? 1231 : 1237);
 		result = prime * result + ((inputReads == null) ? 0 : inputReads.hashCode());
 		result = prime * result + ((intersectAlignment == null) ? 0 : intersectAlignment.hashCode());
+		result = prime * result + ((keysFile == null) ? 0 : keysFile.hashCode());
 		result = prime * result + (lenientSamValidation ? 1231 : 1237);
 		result = prime * result + (logReadIssuesInOutputBam ? 1231 : 1237);
 		result = prime * result + maxAverageBasesClipped;
@@ -744,21 +745,28 @@ public final class Parameters implements Serializable {
 		result = prime * result + (outputCoverageBed ? 1231 : 1237);
 		result = prime * result + (outputCoverageProto ? 1231 : 1237);
 		result = prime * result + (outputDuplexDetails ? 1231 : 1237);
+		result = prime * result + ((outputJSONTo == null) ? 0 : outputJSONTo.hashCode());
 		result = prime * result + (outputTopBottomDisagreementBED ? 1231 : 1237);
 		result = prime * result + parallelizationFactor;
 		result = prime * result + processingChunk;
 		result = prime * result + Float.floatToIntBits(promoteFractionReads);
 		result = prime * result + promoteNQ1Duplexes;
 		result = prime * result + promoteNSingleStrands;
+		result = prime * result + Float.floatToIntBits(randomOutputRate);
+		result = prime * result + (int) (randomSeed ^ (randomSeed >>> 32));
+		result = prime * result + (randomizeMates ? 1231 : 1237);
 		result = prime * result + (readContigsFromFile ? 1231 : 1237);
+		result = prime * result + ((recordRunsTo == null) ? 0 : recordRunsTo.hashCode());
 		result = prime * result + ((refSeqToOfficialGeneName == null) ? 0 : refSeqToOfficialGeneName.hashCode());
 		result = prime * result + ((referenceGenome == null) ? 0 : referenceGenome.hashCode());
+		result = prime * result + ((referenceOutput == null) ? 0 : referenceOutput.hashCode());
 		result = prime * result + ((repetiveRegionBED == null) ? 0 : repetiveRegionBED.hashCode());
 		result = prime * result + ((reportBreakdownForBED == null) ? 0 : reportBreakdownForBED.hashCode());
 		result = prime * result + ((reportStatsForBED == null) ? 0 : reportStatsForBED.hashCode());
 		result = prime * result + ((reportStatsForNotBED == null) ? 0 : reportStatsForNotBED.hashCode());
 		result = prime * result + (requireMatchInAlignmentEnd ? 1231 : 1237);
 		result = prime * result + (rnaSeq ? 1231 : 1237);
+		result = prime * result + ((runName == null) ? 0 : runName.hashCode());
 		result = prime * result + ((sampleNames == null) ? 0 : sampleNames.hashCode());
 		result = prime * result + ((saveBEDBreakdownTo == null) ? 0 : saveBEDBreakdownTo.hashCode());
 		result = prime * result + ((saveFilteredReadsTo == null) ? 0 : saveFilteredReadsTo.hashCode());
@@ -773,9 +781,13 @@ public final class Parameters implements Serializable {
 		result = prime * result + ((submitToServer == null) ? 0 : submitToServer.hashCode());
 		result = prime * result + (terminateImmediatelyUponError ? 1231 : 1237);
 		result = prime * result + (terminateUponOutputFileError ? 1231 : 1237);
+		result = prime * result + timeoutSeconds;
+		result = prime * result + topAlleleFreqReport;
+		result = prime * result + ((traceFields == null) ? 0 : traceFields.hashCode());
 		result = prime * result + variableBarcodeLength;
 		result = prime * result + verbosity;
 		result = prime * result + (version ? 1231 : 1237);
+		result = prime * result + ((workingDirectory == null) ? 0 : workingDirectory.hashCode());
 		return result;
 	}
 
@@ -791,6 +803,16 @@ public final class Parameters implements Serializable {
 		if (acceptNInBarCode != other.acceptNInBarCode)
 			return false;
 		if (alignmentPositionMismatchAllowed != other.alignmentPositionMismatchAllowed)
+			return false;
+		if (annotateMutationsInFile == null) {
+			if (other.annotateMutationsInFile != null)
+				return false;
+		} else if (!annotateMutationsInFile.equals(other.annotateMutationsInFile))
+			return false;
+		if (annotateMutationsOutputFile == null) {
+			if (other.annotateMutationsOutputFile != null)
+				return false;
+		} else if (!annotateMutationsOutputFile.equals(other.annotateMutationsOutputFile))
 			return false;
 		if (auxOutputFileBaseName == null) {
 			if (other.auxOutputFileBaseName != null)
@@ -818,12 +840,17 @@ public final class Parameters implements Serializable {
 			return false;
 		if (!constantBarcode.equals(other.constantBarcode))
 			return false;
+		if (contigByContigParallelization == null) {
+			if (other.contigByContigParallelization != null)
+				return false;
+		} else if (!contigByContigParallelization.equals(other.contigByContigParallelization))
+			return false;
 		if (!contigNamesToProcess.equals(other.contigNamesToProcess))
 			return false;
 		if (contigStatsBinLength != other.contigStatsBinLength)
 			return false;
 		if (Float.floatToIntBits(disagreementConsensusThreshold) != Float.floatToIntBits(
-				other.disagreementConsensusThreshold))
+			other.disagreementConsensusThreshold))
 			return false;
 		if (discardedReadFile == null) {
 			if (other.discardedReadFile != null)
@@ -831,6 +858,8 @@ public final class Parameters implements Serializable {
 		} else if (!discardedReadFile.equals(other.discardedReadFile))
 			return false;
 		if (Float.floatToIntBits(dropReadProbability) != Float.floatToIntBits(other.dropReadProbability))
+			return false;
+		if (enableCostlyAssertions != other.enableCostlyAssertions)
 			return false;
 		if (excludeRegionsInBED == null) {
 			if (other.excludeRegionsInBED != null)
@@ -854,6 +883,8 @@ public final class Parameters implements Serializable {
 			return false;
 		if (ignoreTandemRFPairs != other.ignoreTandemRFPairs)
 			return false;
+		if (ignoreZeroInsertSizeReads != other.ignoreZeroInsertSizeReads)
+			return false;
 		if (inputReads == null) {
 			if (other.inputReads != null)
 				return false;
@@ -864,6 +895,11 @@ public final class Parameters implements Serializable {
 				return false;
 		} else if (!intersectAlignment.equals(other.intersectAlignment))
 			return false;
+		if (keysFile == null) {
+			if (other.keysFile != null)
+				return false;
+		} else if (!keysFile.equals(other.keysFile))
+			return false;
 		if (lenientSamValidation != other.lenientSamValidation)
 			return false;
 		if (logReadIssuesInOutputBam != other.logReadIssuesInOutputBam)
@@ -873,7 +909,7 @@ public final class Parameters implements Serializable {
 		if (maxAverageClippingOfAllCoveringDuplexes != other.maxAverageClippingOfAllCoveringDuplexes)
 			return false;
 		if (Float.floatToIntBits(maxFractionWrongPairsAtPosition) != Float.floatToIntBits(
-				other.maxFractionWrongPairsAtPosition))
+			other.maxFractionWrongPairsAtPosition))
 			return false;
 		if (maxInsertSize != other.maxInsertSize)
 			return false;
@@ -948,6 +984,11 @@ public final class Parameters implements Serializable {
 			return false;
 		if (outputDuplexDetails != other.outputDuplexDetails)
 			return false;
+		if (outputJSONTo == null) {
+			if (other.outputJSONTo != null)
+				return false;
+		} else if (!outputJSONTo.equals(other.outputJSONTo))
+			return false;
 		if (outputTopBottomDisagreementBED != other.outputTopBottomDisagreementBED)
 			return false;
 		if (parallelizationFactor != other.parallelizationFactor)
@@ -960,7 +1001,18 @@ public final class Parameters implements Serializable {
 			return false;
 		if (promoteNSingleStrands != other.promoteNSingleStrands)
 			return false;
+		if (Float.floatToIntBits(randomOutputRate) != Float.floatToIntBits(other.randomOutputRate))
+			return false;
+		if (randomSeed != other.randomSeed)
+			return false;
+		if (randomizeMates != other.randomizeMates)
+			return false;
 		if (readContigsFromFile != other.readContigsFromFile)
+			return false;
+		if (recordRunsTo == null) {
+			if (other.recordRunsTo != null)
+				return false;
+		} else if (!recordRunsTo.equals(other.recordRunsTo))
 			return false;
 		if (refSeqToOfficialGeneName == null) {
 			if (other.refSeqToOfficialGeneName != null)
@@ -971,6 +1023,11 @@ public final class Parameters implements Serializable {
 			if (other.referenceGenome != null)
 				return false;
 		} else if (!referenceGenome.equals(other.referenceGenome))
+			return false;
+		if (referenceOutput == null) {
+			if (other.referenceOutput != null)
+				return false;
+		} else if (!referenceOutput.equals(other.referenceOutput))
 			return false;
 		if (repetiveRegionBED == null) {
 			if (other.repetiveRegionBED != null)
@@ -995,6 +1052,11 @@ public final class Parameters implements Serializable {
 		if (requireMatchInAlignmentEnd != other.requireMatchInAlignmentEnd)
 			return false;
 		if (rnaSeq != other.rnaSeq)
+			return false;
+		if (runName == null) {
+			if (other.runName != null)
+				return false;
+		} else if (!runName.equals(other.runName))
 			return false;
 		if (sampleNames == null) {
 			if (other.sampleNames != null)
@@ -1048,11 +1110,25 @@ public final class Parameters implements Serializable {
 			return false;
 		if (terminateUponOutputFileError != other.terminateUponOutputFileError)
 			return false;
+		if (timeoutSeconds != other.timeoutSeconds)
+			return false;
+		if (topAlleleFreqReport != other.topAlleleFreqReport)
+			return false;
+		if (traceFields == null) {
+			if (other.traceFields != null)
+				return false;
+		} else if (!traceFields.equals(other.traceFields))
+			return false;
 		if (variableBarcodeLength != other.variableBarcodeLength)
 			return false;
 		if (verbosity != other.verbosity)
 			return false;
 		if (version != other.version)
+			return false;
+		if (workingDirectory == null) {
+			if (other.workingDirectory != null)
+				return false;
+		} else if (!workingDirectory.equals(other.workingDirectory))
 			return false;
 		return true;
 	}
