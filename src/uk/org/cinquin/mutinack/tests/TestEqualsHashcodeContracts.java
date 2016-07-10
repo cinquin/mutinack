@@ -30,6 +30,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.Mutation;
+import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.distributed.Job;
@@ -44,9 +45,8 @@ import uk.org.cinquin.mutinack.misc_util.collections.MapBalancer;
 public class TestEqualsHashcodeContracts {
 	
 	private static final List<Class<?>> classes =
-			Arrays.asList(Mutation.class, Job.class,
-					Pair.class, ByteArray.class, MapBalancer.class,
-					GenomeInterval.class, Parameters.class);
+			Arrays.asList(Mutation.class, Pair.class, ByteArray.class,
+				MapBalancer.class, GenomeInterval.class);
 	
 	@org.junit.runners.Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data() {
@@ -76,5 +76,16 @@ public class TestEqualsHashcodeContracts {
 		EqualsVerifier.forClass(DuplexRead.class).withPrefabValues(
 				Thread.class, new Thread(), new Thread()).
 				suppress(Warning.NONFINAL_FIELDS).verify();
+	}
+
+	@SuppressWarnings({ "static-method", "resource" })
+	@Test
+	public void parametersJobEquals() {
+		EqualsVerifier.forClass(Parameters.class).withPrefabValues(
+				MutinackGroup.class, new MutinackGroup(), new MutinackGroup()).
+				suppress(Warning.NONFINAL_FIELDS).verify();
+		EqualsVerifier.forClass(Job.class).withPrefabValues(
+			MutinackGroup.class, new MutinackGroup(), new MutinackGroup()).
+			suppress(Warning.NONFINAL_FIELDS).verify();
 	}
 }

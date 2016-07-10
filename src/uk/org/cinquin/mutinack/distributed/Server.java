@@ -30,11 +30,15 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,18 +58,16 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	private static final long serialVersionUID = 7331182254489507945L;
-	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
-
+	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 	public static int PING_INTERVAL_SECONDS = 20;
-
-	private final Map<Job, Job> jobs = new ConcurrentHashMap<>();
-	private final String recordRunsTo;
-	private final Map<String, Parameters> recordedRuns;
-
 	@SuppressWarnings("unused")
 	private static Registry registry;
 
-	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
+	private final String uuid = UUID.randomUUID().toString();
+	private final Map<Job, Job> runningJobs = new ConcurrentHashMap<>();
+	private final String recordRunsTo;
+	private final Map<String, Parameters> recordedRuns;
+	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
 
 	private void dumpRecordedRuns() {
 		if (recordedRuns == null) {
@@ -141,10 +143,32 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	private Timer rebindTimer;
 
-	public Server(int port, @Nullable String fullPath0, String recordRunsTo)
+	private static final RMIClientSocketFactory clientSocketFactory =
+		new RMISSLClientSocketFactory();
+
+	public Server(int port, @Nullable String fullPath0, String recordRunsTo,
+			String keysFile)
 			throws RemoteException {
-		super(port);
+		super(0, clientSocketFactory, new RMISSLServerSocketFactory(keysFile));
 		final String fullPath = fillInDefaultRMIPath(fullPath0);
+
+		boolean notFound = false;
+		try {
+			RemoteMethods previousServer =
+				(RemoteMethods) Naming.lookup(fillInDefaultRMIPath(fullPath));
+			previousServer.getServerUUID();
+		} catch (NotBoundException e) {
+			notFound = true;
+		} catch (RemoteException e) {
+			notFound = true;
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
+		}
+
+		if (!notFound) {
+			throw new RuntimeException("A server is already bound to " + fullPath);
+		}
+
 		this.recordRunsTo = recordRunsTo;
 		if (recordRunsTo != null) {
 			recordedRuns = new HashMap<>();
@@ -175,18 +199,23 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
 		Signals.registerSignalProcessor("INFO", s -> {
 			System.err.println(
-				jobs.values().stream().map(j -> j.toString()).collect(Collectors.joining("; "))
+				runningJobs.size() == 0 ?
+					"No jobs running"
+				:
+					runningJobs.values().stream().map(j -> j.toString()).
+						collect(Collectors.joining("; "))
 			);
+			System.err.println("Waiting workers: " + waitingThreads.keySet());
 		});
 		Thread shutdownHook = new Thread(this::dumpRecordedRuns);
 		Runtime.getRuntime().addShutdownHook(shutdownHook);
 
 		Signals.registerSignalProcessor("TERM", s -> {
 			disconnectWaitingWorkers();
-			synchronized(jobs) {
-				while(!jobs.isEmpty()) {
+			synchronized(runningJobs) {
+				while(!runningJobs.isEmpty()) {
 					try {
-						jobs.wait();
+						runningJobs.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 						break;
@@ -208,17 +237,44 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	private final static Job END_OF_WORK_MARKER = new Job();
 
+	private final transient ConcurrentMap<String, Thread> waitingThreads
+		= new ConcurrentHashMap<>();
+
 	@Override
-	public Job getMoreWork(String workerID) throws RemoteException, InterruptedException {
-		Job job = queue.poll(Integer.MAX_VALUE, TimeUnit.DAYS);
+	public Job getMoreWork(String workerID) throws RemoteException {
+		Job job;
+		if (waitingThreads.put(workerID, Thread.currentThread()) != null) {
+			throw new AssertionFailedException("Worker " + workerID +
+				" already associated with a waiting thread");
+		}
+		try {
+			job = queue.poll(Integer.MAX_VALUE, TimeUnit.DAYS);
+		} catch (InterruptedException e) {
+			return null;
+		} finally {
+			waitingThreads.remove(workerID);
+		}
 		if (job == END_OF_WORK_MARKER) {
-			queue.offer(END_OF_WORK_MARKER, 0, TimeUnit.SECONDS);
+			try {
+				queue.offer(END_OF_WORK_MARKER, 0, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				System.err.println(e);
+			}
 			return null;
 		}
 		job.workerID = workerID;
 		job.timeLastWorkerPing = System.currentTimeMillis();
 		job.timeGivenToWorker = System.nanoTime();
 		return job;
+	}
+
+	@Override
+	public void releaseWorkers(String workerIDBase) {
+		for (Entry<String, Thread> e: waitingThreads.entrySet()) {
+			if (e.getKey().startsWith(workerIDBase)) {
+				e.getValue().interrupt();
+			}
+		}
 	}
 
 	public void disconnectWaitingWorkers() {
@@ -233,7 +289,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	@Override
 	public void submitWork(String workerID, Job job) throws RemoteException {
 		//System.err.println("Job result " + job.result.output);
-		Job localJobObj = jobs.get(job);
+		Job localJobObj = runningJobs.get(job);
 		if (localJobObj == null) {
 			throw new IllegalStateException("Unknown job " + job + " from client " + workerID);
 		}
@@ -254,7 +310,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		boolean cancelled = false;
 		do {
 			job.cancelled = false;
-			jobs.put(job, job);
+			runningJobs.put(job, job);
 			queue.put(job);
 
 			if (recordedRuns != null) {
@@ -272,9 +328,9 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 					}
 				}
 			}
-			jobs.remove(job);
-			synchronized(jobs) {
-				jobs.notifyAll();
+			runningJobs.remove(job);
+			synchronized(runningJobs) {
+				runningJobs.notifyAll();
 			}
 			cancelled = job.cancelled;
 		} while (cancelled);
@@ -286,7 +342,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	@Override
 	public void declineJob(String workerID, Job job) throws RemoteException {
-		Job localJobObj = jobs.get(job);
+		Job localJobObj = runningJobs.get(job);
 		if (localJobObj == null) {
 			throw new IllegalStateException("Unknown job " + job + " from client " + workerID);
 		}
@@ -305,8 +361,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	@Override
 	public String getServerUUID() throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		return uuid;
 	}
 
 	public static @NonNull String fillInDefaultRMIPath(@Nullable String hostNameOrFullPath) {
@@ -340,12 +395,11 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	@Override
 	public void notifyStillAlive(String workerID, Job job) throws RemoteException {
-		Job localJobObj = jobs.get(job);
+		Job localJobObj = runningJobs.get(job);
 		if (localJobObj == null) {
 			System.err.println("Ping for unknown job " + job + " from worker " + workerID);
 			return;
 		}
 		localJobObj.timeLastWorkerPing = System.currentTimeMillis();
 	}
-
 }

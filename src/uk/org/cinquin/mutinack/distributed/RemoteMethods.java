@@ -26,6 +26,7 @@ public interface RemoteMethods extends Remote {
 	void submitWork(String workerID, Job job) throws RemoteException;
 	void declineJob(String workerID, Job job) throws RemoteException;
 	void notifyStillAlive(String workerID, Job job) throws RemoteException;
+	void releaseWorkers(String workerIDBase) throws RemoteException;
 
 	//For clients
 	EvaluationResult submitJob(String clientID, Job job) throws RemoteException, InterruptedException;

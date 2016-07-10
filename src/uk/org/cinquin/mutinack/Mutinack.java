@@ -26,7 +26,6 @@ import static uk.org.cinquin.mutinack.misc_util.Util.reset;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,11 +37,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.rmi.RemoteException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -65,7 +62,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -80,9 +76,6 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.healthmarketscience.rmiio.RemoteOutputStreamClient;
-import com.healthmarketscience.rmiio.RemoteOutputStreamServer;
-import com.healthmarketscience.rmiio.SimpleRemoteOutputStream;
 //import com.google.monitoring.runtime.instrumentation.AllocationRecorder;
 //import com.google.monitoring.runtime.instrumentation.Sampler;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
@@ -101,10 +94,9 @@ import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.distributed.EvaluationResult;
-import uk.org.cinquin.mutinack.distributed.Job;
-import uk.org.cinquin.mutinack.distributed.RemoteMethods;
 import uk.org.cinquin.mutinack.distributed.Server;
+import uk.org.cinquin.mutinack.distributed.Submitter;
+import uk.org.cinquin.mutinack.distributed.Worker;
 import uk.org.cinquin.mutinack.features.BedComplement;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
@@ -114,7 +106,6 @@ import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
-import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
@@ -127,7 +118,6 @@ import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -137,7 +127,6 @@ import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 import uk.org.cinquin.mutinack.statistics.json.JsonRoot;
 import uk.org.cinquin.mutinack.statistics.json.ParedDownMutinack;
-import uk.org.cinquin.parfor.ILoopWorker;
 import uk.org.cinquin.parfor.ParFor;
 
 public class Mutinack implements Actualizable {
@@ -452,241 +441,21 @@ public class Mutinack implements Actualizable {
 			Server.createRegistry(argValues.startServer);
 			@SuppressWarnings("unused")
 			Server unusedVariable =
-					new Server(0, argValues.startServer, argValues.recordRunsTo);
+					new Server(0, argValues.startServer, argValues.recordRunsTo, argValues.keysFile);
 		} else if (argValues.submitToServer != null) {
-			submitToServer(argValues);
+			Submitter.submitToServer(argValues);
 		} else if (argValues.startWorker != null) {
-			runWorker(argValues);
+			Worker.runWorker(argValues);
 		} else {
 			realMain1(argValues, System.out, System.err);
-		}
-	}
-
-	private static void submitToServer(Parameters argValues)
-			throws RemoteException, InterruptedException, MalformedURLException {
-		RemoteMethods server = Server.getServer(argValues.submitToServer);
-		Job job = new Job();
-		argValues.submitToServer = null;
-		if (argValues.workingDirectory != null) {
-			synchronized(Runtime.getRuntime()) {
-				String saveUserDir = System.getProperty("user.dir");
-				System.setProperty("user.dir", argValues.workingDirectory);
-				argValues.canonifyFilePaths();
-				System.setProperty("user.dir", saveUserDir);
-			}
-		} else {
-			argValues.canonifyFilePaths();
-		}
-		job.parameters = argValues;
-		ByteArrayOutputStream bostdout = new ByteArrayOutputStream();
-		@SuppressWarnings("resource")
-		RemoteOutputStreamServer osstdout = new SimpleRemoteOutputStream(bostdout);
-		ByteArrayOutputStream bosstderr = new ByteArrayOutputStream();
-		@SuppressWarnings("resource")
-		RemoteOutputStreamServer osstderr = new SimpleRemoteOutputStream(bosstderr);
-		job.stdoutStream = osstdout.export();
-		job.stderrStream = osstderr.export();
-		Runnable r = () -> {
-			try {
-				boolean done = false;
-				while (!done) {
-					try {
-						Thread.sleep(60_000);
-					} catch (InterruptedException e) {
-						done = true;
-					}
-					synchronized(bostdout) {
-						System.out.print(new String(bostdout.toByteArray()));
-						bostdout.reset();
-					}
-					synchronized(bosstderr) {
-						System.err.print(new String(bosstderr.toByteArray()));
-						bosstderr.reset();
-					}
-				}
-			} finally {
-				osstdout.close();
-				osstderr.close();
-			}
-		};
-		Thread t = new Thread(r);
-		t.setName("Stream output thread");
-
-		final EvaluationResult result;
-
-		try {
-			t.start();
-			result = server.submitJob("client", job);
-		} finally {
-			t.interrupt();
-		}
-
-		if (result.executionThrowable != null) {
-			throw new RuntimeException(result.executionThrowable);
-		} else {
-			t.join();
-		}
-	}
-
-	private static void runWorker(Parameters argValues) throws InterruptedException {
-		final int nWorkers;
-		final String cleanedUpName;
-		final int columnIndex = argValues.startWorker.indexOf(":");
-		if (columnIndex < 0) {
-			nWorkers = 1;
-			cleanedUpName = argValues.startWorker;
-		} else {
-			try {
-				nWorkers =
-					Integer.parseInt(argValues.startWorker.substring(columnIndex + 1));
-				cleanedUpName = argValues.startWorker.substring(0, columnIndex);
-			} catch (NumberFormatException e) {
-				throw new ParseRTException("Problem parsing " + argValues.startWorker, e);
-			}
-		}
-		final ParFor pf;
-		final Handle<Boolean> terminate = new Handle<>(false);
-		final AtomicInteger pendingJobs = new AtomicInteger(0);
-
-		final SignalProcessor termSignalProcessor = s -> {
-			terminate.set(true);
-			synchronized(pendingJobs) {
-				while (pendingJobs.get() > 0) {//Small race conditions
-					System.err.println("Will terminate when current " + pendingJobs.get() +
-						" jobs have completed");
-					try {
-						pendingJobs.wait();
-					} catch (InterruptedException e) {
-						throw new RuntimeException(e);
-					}
-				}
-			}
-			//There does not seem to be a clean way of canceling
-			//getMoreWork call blocked in socketRead, so just exit
-			System.exit(0);
-		};
-
-		Signals.registerSignalProcessor("TERM", termSignalProcessor);
-
-		pf = new ParFor("Main worker loop", 0, nWorkers - 1, null, true);
-		ILoopWorker worker = (loopIndex, threadIndex) -> {
-			final String workerID = ManagementFactory.getRuntimeMXBean().getName() +
-				"_" + loopIndex;
-			Job job;
-			RemoteMethods server;
-			try {
-				server = Server.getServer(cleanedUpName);
-			} catch (MalformedURLException | RemoteException e2) {
-				throw new RuntimeException(e2);
-			}
-			while (!terminate.get()) {
-				job = null;
-				try {
-					job = server.getMoreWork(workerID);
-					if (job == null) {
-						terminate.set(true);
-						break;
-					}
-				} catch (RemoteException e2) {
-					throw new RuntimeException(e2);
-				}
-				pendingJobs.incrementAndGet();
-				Job job1 = job;
-				try {
-					if (terminate.get()) {
-						try {
-							server.declineJob(workerID, job);
-						} catch (RemoteException e) {
-							throw new RuntimeException(e);
-						}
-						break;
-					}
-					Thread pingThread = new Thread(() -> {
-						try {
-							while(true) {
-								Thread.sleep(Server.PING_INTERVAL_SECONDS * 1_000L);
-								try {
-									server.notifyStillAlive(workerID, job1);
-								} catch (IOException e) {
-									throw new RuntimeException(e);
-								}
-							}
-						} catch (InterruptedException e) {
-							//Nothing to do; just exit and die
-						}
-					});
-					pingThread.setDaemon(true);
-					pingThread.setName("Ping thread of worker");
-					pingThread.start();
-					job.result = new EvaluationResult();
-					@SuppressWarnings("resource")
-					PrintStream outPS, errPS;
-					try {
-						outPS = new PrintStream(
-							RemoteOutputStreamClient.wrap(job.stdoutStream));
-						errPS = new PrintStream(
-							RemoteOutputStreamClient.wrap(job.stderrStream));
-					} catch (IOException e1) {
-						throw new RuntimeException(e1);
-					}
-					RuntimeException die = null;
-					try {
-						int parameterHashCode = job.parameters.hashCode();
-						realMain1(job.parameters, outPS, errPS);
-						if (parameterHashCode != job.parameters.hashCode()) {
-							die = new AssertionFailedException("Parameters modified by worker");
-							//Send the result back to the server so that one could figure out
-							//from the server what happened, and then stop the worker
-							throw die;
-						}
-					} catch (OutOfMemoryError e) {
-						Thread.sleep(Long.MAX_VALUE);
-					} catch (Throwable t) {
-						if (!Util.isSerializable(t)) {
-							t = new RuntimeException("Unserializable exception " +
-								t.toString());
-						}
-						job.result.executionThrowable = t;
-					}
-					try {
-						outPS.close();
-						errPS.close();
-						server.submitWork(workerID, job);
-					} catch (Throwable t) {
-						MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
-						gatherer.add(job.result.executionThrowable);
-						gatherer.add(t);
-						gatherer.add(die);
-						Util.printUserMustSeeMessage(gatherer.toString());
-						gatherer.throwIfPresent();
-					}
-					pingThread.interrupt();
-					if (die != null) {
-						throw die;
-					}
-				} finally {
-					pendingJobs.decrementAndGet();
-					synchronized(pendingJobs) {
-						pendingJobs.notifyAll();
-					}
-				}
-			}//Worker never leaves this loop unless interrupted or killed
-			return null;
-		};
-		try {
-			for (int i = 0; i < nWorkers; i++) {
-				pf.addLoopWorker(worker);
-			}
-			pf.run(true);
-		} finally {
-			Signals.removeSignalProcessor("TERM", termSignalProcessor);
 		}
 	}
 
 	private static boolean versionChecked = false;
 
 	@SuppressWarnings("resource")
-	public static void realMain1(Parameters argValues, PrintStream out, PrintStream err) throws InterruptedException, IOException {
+	public static void realMain1(Parameters argValues, PrintStream out, PrintStream err)
+			throws InterruptedException, IOException {
 
 		DebugLogControl.COSTLY_ASSERTIONS = argValues.enableCostlyAssertions;
 
@@ -732,6 +501,7 @@ public class Mutinack implements Actualizable {
 		SignalProcessor infoSignalHandler = null;
 		final MutinackGroup groupSettings = new MutinackGroup();
 		groupSettings.registerInterruptSignalProcessor();
+		argValues.group = groupSettings;
 
 		try {
 			final SAMFileWriter alignmentWriter0;
@@ -1468,6 +1238,10 @@ public class Mutinack implements Actualizable {
 				});//End Parfor loop over contigs
 
 			parFor.run(true);
+
+			if (groupSettings.terminateAnalysis) {
+				analyzers.forEach(a -> a.stats.forEach(s -> s.analysisTruncated = true));
+			}
 
 			infoSignalHandler.handle(null);
 			if (!argValues.noStatusMessages) {

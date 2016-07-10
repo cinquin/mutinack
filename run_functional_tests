@@ -13,6 +13,7 @@ else
        TIME=""
 fi
 
+./regenerate_SSL_files
 
 #This script assumes the presence of a Makefile in directory functional_tests,
 #with targets all_failed (to re-run failed that were marked in a previous run

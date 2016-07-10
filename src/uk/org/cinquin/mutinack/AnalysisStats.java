@@ -680,6 +680,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = TERSE)
 	final StatsCollector nProcessedBases = new StatsCollector();
 	
+	@PrintInStatus(outputLevel = TERSE)
+	boolean analysisTruncated;
+
 	@PrintInStatus(outputLevel = VERBOSE)
 	final Histogram nReadsInPrefetchQueue;
 

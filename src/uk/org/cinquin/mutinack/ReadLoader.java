@@ -459,7 +459,9 @@ public class ReadLoader {
 					};
 				}
 			}
-			//phaser.arriveAndDeregister();
+			if (analyzer.groupSettings.terminateAnalysis) {
+				phaser.forceTermination();
+			}
 		}
 		//Ensure that there is no memory leak (references are kept to subAnalyzers,
 		//at least through the status update handlers; XXX not clear if the maps

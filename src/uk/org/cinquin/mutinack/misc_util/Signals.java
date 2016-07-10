@@ -17,13 +17,13 @@
 package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -49,7 +49,7 @@ public class Signals {
 				if (!handledSignals.contains(name)) {
 					throw new IllegalArgumentException("Unknown signal " + name);
 				}
-				list = new ArrayList<>();
+				list = new CopyOnWriteArrayList<>();
 				processors.put(name, list);
 			}
 			list.add(p);

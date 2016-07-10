@@ -1,0 +1,9 @@
+#!/bin/sh
+rm -f mutinack_public_selfsigned_new.jks mutinack_public_new.cer mutinack_public_trustStore_new
+keytool -genkey -noprompt -dname "CN=Mutinack, OU=Dev & Cell, O=UC Irvine, L=Irvine, ST=CA, C=US" -keyalg RSA -alias mutinack_public -keystore mutinack_public_selfsigned_new.jks -validity 6000 -keysize 2048 -storepass passphrase -keypass passphrase
+keytool -exportcert -alias mutinack_public -file mutinack_public_new.cer -keystore mutinack_public_selfsigned_new.jks -storepass passphrase
+keytool -import -noprompt -alias mutinack_public -file mutinack_public_new.cer -keystore mutinack_public_trustStore_new -storepass changeit
+mv mutinack_public_selfsigned_new.jks mutinack_public_selfsigned.jks
+mv mutinack_public_new.cer mutinack_public.cer
+mv mutinack_public_trustStore_new mutinack_public_trustStore
+chmod go-r mutinack_public_selfsigned.jks

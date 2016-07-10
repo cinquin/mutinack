@@ -46,6 +46,10 @@ import uk.org.cinquin.mutinack.misc_util.Handle;
 
 public final class Parameters implements Serializable {
 
+	@HideInToString
+	@JsonIgnore
+	public transient MutinackGroup group;
+
 	public static final long serialVersionUID = 1L;
 	@JsonIgnore
 	private static final boolean hideInProgressParameters = true;
@@ -461,6 +465,9 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-randomSeed", description = "TODO", required = false, hidden = hideAdvancedParameters)
 	public long randomSeed = new SecureRandom().nextLong();
+
+	@Parameter(names = "-keysFile", description = "Location of .jks file for RMI SSL encryption", required = false, hidden = hideAdvancedParameters)
+	public String keysFile = "mutinack_public_selfsigned.jks";
 
 	@Retention(RetentionPolicy.RUNTIME)
 	/**

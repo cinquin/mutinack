@@ -147,6 +147,19 @@ by editing the code.
 Under FreeBSD or Mac OS X, press control-T (or `kill -INFO` the process)
 to see a progress update on the standard error stream.
 
+**Distributed computing**
+
+Mutinack can use Java's Remote Method Invocation to run server and
+worker processes distributed over multiple JVM instances and multiple
+hosts, in a fault-tolerant fashion. See `-submitToServer`,
+`-startWorker` and `-startServer` options. Connections between different
+processes are secured and two-way authenticated using SSL. To ensure
+that the authentication cannot be trivially bypassed by would-be
+attackers (which may allow any user to access all files readable by the
+server process), be sure to run the included `regenerate_SSL_files`
+script after cloning the repository, or set up your own certificates and
+keys in the trust store and key store.
+
 **Contributing**
 
 Any contributions under the form of suggestions, bug reports, bug fixes,
@@ -229,6 +242,11 @@ used by Findbugs and JaCoCo; modified to work around [OpenJDK bug
 - [Logback](http://logback.qos.ch), the [SLF4J](http://www.slf4j.org)
 API and the Lidalia extension for logging (LGLP, MIT, and MIT X11
 licenses, respectively): used for logging
+
+- [RMIIO](https://github.com/jahlborn/rmiio) (Apache License Version
+2.0): used to stream data over RMI.
+[Modified](https://github.com/cinquin/rmiio) to create a shaded jar
+artifact.
 
 - A jar file containing Eclipse Null/Nullable annotations is included
 for convenience (Eclipse Public License)
