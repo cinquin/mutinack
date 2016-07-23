@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -57,6 +59,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	private static final long serialVersionUID = 7826378727266972258L;
 	private static final Pattern underscorePattern = Pattern.compile("_");
 	private static final Pattern quotePattern = Pattern.compile("\"");
+	private static final boolean IGNORE_MISSING_CONTIGS = true;
+	private static final Set<@NonNull String> missingContigNames = new HashSet<>();
 
 	@JsonIgnore
 	public final MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
@@ -115,6 +119,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		
 		int entryCount = 0;
 		final AtomicInteger lineCount = new AtomicInteger(0);
+		final AtomicInteger skipped = new AtomicInteger(0);
 
 		for (int i = 0; i < contigNames.size(); i++) {
 			lineCount.incrementAndGet();
@@ -188,7 +193,13 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 					Integer contigIndex = reverseIndex.get(components[0]);
 					if (contigIndex == null) {
-						throw new IllegalArgumentException("Could not find contig " + components[0]);
+						if (IGNORE_MISSING_CONTIGS) {
+							warnMissingContigOnce(components[0], readerName);
+							skipped.incrementAndGet();
+							return;
+						} else {
+							throw new IllegalArgumentException("Could not find contig " + components[0]);
+						}
 					}
 					GenomeInterval interval = new GenomeInterval(name, contigIndex, 
 							/*contig*/ components[0], start, end, length, strandPolarity, score);
@@ -216,7 +227,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
 		
-		Assert.isFalse(entryCount != lineCount.get(),
+		Assert.isFalse(entryCount != lineCount.get() - skipped.get(),
 				"Incorrect number of entries after BED file reading: %s vs %s", entryCount, lineCount.get());
 		
 		if (suppInfoReader == null) {
@@ -226,6 +237,14 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		}
 	}
 	
+	private synchronized static void warnMissingContigOnce(@NonNull String name,
+			@NonNull String readerName) {
+		if (missingContigNames.add(name)) {
+			Util.printUserMustSeeMessage("Ignoring all entries in missing contig " + name +
+				" present in at least bed file " + readerName);
+		}
+	}
+
 	public @Nullable String getSuppInfo(String feature) {
 		return suppInfo.get(feature);
 	}
