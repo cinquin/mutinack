@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
@@ -41,7 +40,7 @@ public class BedFileDisagScoreLookup {
 
 	/**
 	 * First argument: path to file with list of disagreements and their locations,
-	 * 	formatted as the "outputTopBottomDisagreementBED" Mutinack output files.
+	 * formatted as the "outputTopBottomDisagreementBED" Mutinack output files.
 	 * Second argument: path to BED file containing scores
 	 * Third and fourth arguments: min and max length of the disagreement (inclusive)
 	 * 
@@ -56,8 +55,7 @@ public class BedFileDisagScoreLookup {
 		final float minLength = Float.parseFloat(args[2]);
 		final float maxLength = Float.parseFloat(args[3]);
 		
-		final List<@NonNull String> contigNames =
-			new ArrayList<>(Parameters.defaultTruncateContigNames);
+		final List<@NonNull String> contigNames = BedReader.getContigNames(locationsFile);
 		
 		final BedReader scores;
 		try (BufferedReader br = new BufferedReader(new FileReader(
@@ -109,4 +107,5 @@ public class BedFileDisagScoreLookup {
 				inRange.get() + " in range");
 		}
 	}
+
 }

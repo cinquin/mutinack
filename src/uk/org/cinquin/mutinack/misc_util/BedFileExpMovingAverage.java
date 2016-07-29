@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -47,8 +46,7 @@ public class BedFileExpMovingAverage {
 		System.err.println("parseExpressionLevel: " + parseExpressionLevel);
 		System.err.println("truncateAt: " + truncate);
 		
-		final List<@NonNull String> contigNames =
-			new ArrayList<>(Parameters.defaultTruncateContigNames);
+		final List<@NonNull String> contigNames = BedReader.getContigNames(refFile);
 
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
 

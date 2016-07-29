@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,6 +62,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	private static final Pattern underscorePattern = Pattern.compile("_");
 	private static final Pattern quotePattern = Pattern.compile("\"");
 	private static final boolean IGNORE_MISSING_CONTIGS = true;
+	private final static @NonNull Optional<Boolean> TRUE_OPTIONAL = Optional.of(true);
+	private final static @NonNull Optional<Boolean> FALSE_OPTIONAL = Optional.of(false);
 	private static final Set<@NonNull String> missingContigNames = new HashSet<>();
 
 	@JsonIgnore
@@ -322,7 +326,17 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		}
 	}
 
-	private final static @NonNull Optional<Boolean> TRUE_OPTIONAL = Optional.of(true);
-	private final static @NonNull Optional<Boolean> FALSE_OPTIONAL = Optional.of(false);
+	public static List<@NonNull String> getContigNames(String locationsFilePath)
+			throws IOException {
+		Set<@NonNull String> set = new HashSet<>();
+		Files.lines(Paths.get(locationsFilePath)).forEach(line -> {
+			final @NonNull String[] split = line.split("\t");
+			set.add(split[0]);
+		});
+		List<@NonNull String> result = new ArrayList<>();
+		result.addAll(set);
+		result.sort(null);
+		return result;
+	}
 
 }

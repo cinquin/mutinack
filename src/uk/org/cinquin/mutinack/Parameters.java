@@ -163,9 +163,6 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-readContigsFromFile", description = "Read contig names from reference genome file")
 	public boolean readContigsFromFile = false;
 
-	public static final List<@NonNull String> defaultTruncateContigNames = Arrays.asList(
-			"chrI", "chrII", "chrIII", "chrIV", "chrM", "chrV", "chrX");
-
 	public static final List<@NonNull Integer> defaultTruncateContigPositions = Arrays.asList(
 			15_072_423, 15_279_345, 13_783_700, 17_493_793, 13_794, 20_924_149, 17_718_866);
 
