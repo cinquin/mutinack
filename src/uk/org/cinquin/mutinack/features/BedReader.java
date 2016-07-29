@@ -136,7 +136,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 				try {
 					final int line = lineCount.incrementAndGet();
 					@NonNull String[] components = l.split("\t");
-					if (components.length < 3) {
+					if (components.length < (parseScore ? 4 : 3)) {
 						throw new ParseRTException("Missing fields");
 					}
 					final boolean autogenerateName = components.length == 3;
@@ -189,7 +189,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 							score = Float.parseFloat(components[4]);
 						} catch (NumberFormatException e) {
 							throw new ParseRTException("Could not parse score " +
-								components[4]);
+								components[4], e);
 						}
 					} else {
 						score = 0f;
