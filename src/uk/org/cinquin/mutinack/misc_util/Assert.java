@@ -72,6 +72,35 @@ public class Assert {
 		isTrue(!condition, message);
 	}
 
+	/**
+	 * Use this form instead of varags form above to avoid varargs array creation.
+	 * @param condition
+	 * @param arg1
+	 * @param arg2
+	 * @param arg3
+	 * @param arg4
+	 * @param format
+	 */
+	public static void isFalse(boolean condition,
+			Supplier<Object> arg1,
+			Supplier<Object> arg2,
+			Supplier<Object> arg3,
+			Supplier<Object> arg4,
+			String format) {
+		if (condition) {
+			isTrue(false, format, arg1.get(), arg2.get(), arg3.get(), arg4.get());
+		}
+	}
+
+	public static void isTrue(boolean condition,
+			Supplier<Object> arg1,
+			Supplier<Object> arg2,
+			String format) {
+		if (!condition) {
+			isTrue(false, format, arg1.get(), arg2.get());
+		}
+	}
+
 	public static void isTrueVarArg(Supplier<Boolean> s, String format, Object... args) {
 		isTrue(s.get(), format, args);
 	}

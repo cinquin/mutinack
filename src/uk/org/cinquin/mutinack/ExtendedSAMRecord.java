@@ -398,7 +398,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	
 	public int getRefAlignmentEnd() {
 		int referenceEnd = getAlignmentEnd();
-		Assert.isFalse(referenceEnd < 0);
+		Assert.isFalse(referenceEnd < 0, () -> "Negative alignment end in read " + this);
 		return referenceEnd;
 	}
 
