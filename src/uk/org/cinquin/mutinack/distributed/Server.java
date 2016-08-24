@@ -310,7 +310,9 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		boolean cancelled = false;
 		do {
 			job.cancelled = false;
-			runningJobs.put(job, job);
+			if (runningJobs.put(job, job) != null) {
+				throw new IllegalStateException("Job " + job + " is already running");
+			}
 			queue.put(job);
 
 			if (recordedRuns != null) {
