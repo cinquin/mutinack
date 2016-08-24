@@ -168,7 +168,16 @@ public class ReadLoader {
 				subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
 
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
-						e -> {e.eagerDecode(); e.getUnclippedEnd(); e.getUnclippedStart();},
+						e -> {
+							//Work around BWA output problem with reads that hang off the reference end
+							//See e.g. https://www.biostars.org/p/65338/
+							if (e.getReadUnmappedFlag() && e.getAlignmentStart() > 0) {
+								e.setReadUnmappedFlag(false);
+							}
+							e.eagerDecode();
+							e.getUnclippedEnd();
+							e.getUnclippedStart();
+						},
 						subAnalyzer.stats.nReadsInPrefetchQueue)) {
 					while (iterator.hasNext() && !phaser.isTerminated() && !analyzer.
 							groupSettings.terminateAnalysis) {
