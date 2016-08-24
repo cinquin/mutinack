@@ -21,6 +21,7 @@ import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -146,6 +147,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName,
 			@NonNull MutinackGroup groupSettings, @NonNull Mutinack analyzer,
 			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+
 		this.groupSettings = groupSettings;
 		this.extSAMCache = extSAMCache;
 		this.name = fullName;
@@ -216,8 +218,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		medianPhred = qualities.get(qualities.size() / 2);
 		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 		
-		Assert.isTrue(rec.getUnclippedEnd() >= getAlignmentEnd());
-		Assert.isTrue(rec.getAlignmentStart() >= getUnclippedStart());
+               Assert.isTrue(rec.getUnclippedEnd() - 1 >= getAlignmentEnd(),
+                       (Supplier<Object>) () -> "" + (rec.getUnclippedEnd() - 1),
+                       (Supplier<Object>) this::toString,
+                       "Unclipped end is %s for read %s");
+               Assert.isTrue(rec.getAlignmentStart() - 1 >= getUnclippedStart());
 		
 		final @NonNull String fullBarcodeString;
 		String bcAttr = (String) record.getAttribute("BC");
