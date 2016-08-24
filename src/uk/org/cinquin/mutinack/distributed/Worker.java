@@ -208,9 +208,12 @@ public class Worker {
 						job.result.executionThrowable = t;
 					}
 					try {
-						outPS.close();
-						errPS.close();
-						server.submitWork(workerID, job);
+						try {
+							outPS.close();
+							errPS.close();
+						} finally {
+							server.submitWork(workerID, job);
+						}
 					} catch (Throwable t) {
 						MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 						gatherer.add(job.result.executionThrowable);
