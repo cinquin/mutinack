@@ -121,6 +121,7 @@ public class GenomeIntervalTest {
 	}
 
 	@Test
+	@SuppressWarnings("ReferenceEquality")
 	public void testIdentityOfEmptyQueryResults() {
 		//Check that IntervalTree is not creating a new empty set every time
 		//a query has no result, but instead returns the same (immutable)

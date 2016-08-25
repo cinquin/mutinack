@@ -469,6 +469,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return result.get();
 	}
 	
+	@SuppressWarnings("ReferenceEquality")
 	static Pair<DuplexRead, DuplexRead> checkNoEqualDuplexes(Iterable<DuplexRead> it) {
 		for (DuplexRead r: it) {
 			for (DuplexRead r2: it) {
@@ -485,7 +486,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private static final Set<Assay> ignorePhred = 
 			Collections.singleton(N_STRAND_READS_ABOVE_MIN_PHRED);
 	
-	@SuppressWarnings("null")
+	@SuppressWarnings({"null", "ReferenceEquality"})
 	public void examineAtLoc(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
 			@NonNull THashSet<@NonNull CandidateSequence> candidateSet,
@@ -979,6 +980,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 	}
 
+	@SuppressWarnings("ReferenceEquality")
 	private void registerDistanceToLigSite(@NonNull TObjectIntMap<ExtendedSAMRecord> concurringReads) {
 		Handle<Boolean> seenFirstOfPair = new Handle<>(false);
 		Handle<Boolean> seenSecondOfPair = new Handle<>(false);

@@ -15,6 +15,7 @@ public class HashingStrategies {
 		}
 
 		@Override
+		@SuppressWarnings("ReferenceEquality")
 		public boolean equals(DuplexRead arg0, DuplexRead arg1) {
 			return arg0 == arg1;
 		}

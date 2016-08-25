@@ -241,6 +241,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		= new ConcurrentHashMap<>();
 
 	@Override
+	@SuppressWarnings("ReferenceEquality")
 	public Job getMoreWork(String workerID) throws RemoteException {
 		Job job;
 		if (waitingThreads.put(workerID, Thread.currentThread()) != null) {

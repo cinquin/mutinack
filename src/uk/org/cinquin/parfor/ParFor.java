@@ -46,7 +46,7 @@ public final class ParFor {
 	private final Object doneSemaphore = new Object();
 	private volatile boolean done = false;
 	
-	public static ExecutorService defaultThreadPool;
+	public static volatile ExecutorService defaultThreadPool;
 	private final ExecutorService threadPool;
 	@SuppressWarnings("unused")
 	private static final int nProc = Runtime.getRuntime().availableProcessors();

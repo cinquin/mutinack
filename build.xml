@@ -95,6 +95,7 @@
         <javac compiler="com.google.errorprone.ErrorProneAntCompilerAdapter" encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
            <compilerarg value="-XDignore.symbol.file"/>
            <compilerarg value="-Xep:Finally:OFF"/>
+           <compilerarg value="-Xep:DefaultCharset:OFF"/>
            <src path="src"/>
            <classpath refid="SequenceAnalysis.classpath"/>
            <compilerclasspath refid="errorprone"/>

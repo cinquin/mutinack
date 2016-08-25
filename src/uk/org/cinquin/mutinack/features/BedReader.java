@@ -307,7 +307,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						positiveStrand.set(b);
 						return true;
 					} else {
-						if (ps != b) {
+						if (!ps.equals(b)) {
 							//Overlapping features with opposite orientations
 							//Since we do not know which should be used, return null
 							positiveStrand.set(null);

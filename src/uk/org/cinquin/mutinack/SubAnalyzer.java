@@ -609,7 +609,7 @@ public final class SubAnalyzer {
 		}
 	}
 	
-	@SuppressWarnings({ "null"})
+	@SuppressWarnings({"null", "ReferenceEquality"})
 	/**
 	 * This method is *NOT* thread-safe (it modifies DuplexReads associated with location retrieved
 	 * from field candidateSequences)
@@ -1012,6 +1012,7 @@ public final class SubAnalyzer {
 			sorted().skip(Math.max(0, analyzedCandidateSequences.size() - 2));
 	}
 
+	@SuppressWarnings("ReferenceEquality")
 	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
 			Set<CandidateSequence> candidateSet) {
 		for (DuplexRead duplexRead: duplexReads) {
