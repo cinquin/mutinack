@@ -636,7 +636,10 @@ public class SubAnalyzerPhaser extends Phaser {
 										c.readAlignmentEnd + "\t" +
 										c.mateReadAlignmentEnd + "\t" +
 										c.refPositionOfMateLigationSite + "\t" +
-										(argValues.outputDuplexDetails ? qualityKDString : "" /*c.getIssues()*/) + "\t" +
+										((argValues.outputDuplexDetails || argValues.annotateMutationsInFile != null) ?
+												qualityKDString
+											:
+												"" /*c.getIssues()*/) + "\t" +
 										c.getMedianPhredAtPosition() + "\t" +
 										(c.getMinInsertSize() == -1 ? "?" : c.getMinInsertSize()) + "\t" +
 										(c.getMaxInsertSize() == -1 ? "?" : c.getMaxInsertSize()) + "\t" +
