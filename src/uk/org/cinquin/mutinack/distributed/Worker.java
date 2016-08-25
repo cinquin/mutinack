@@ -59,6 +59,7 @@ public class Worker {
 		}
 		final ParFor pf;
 		final Handle<Boolean> terminate = new Handle<>(false);
+		final Handle<Boolean> terminateImmediately = new Handle<>(false);
 		KeySetView<Job, Boolean> pendingJobs = ConcurrentHashMap.newKeySet();
 		final Handle<Long> timeLastTermSignal = new Handle<>(0L);
 
@@ -75,13 +76,14 @@ public class Worker {
 			final boolean alreadyTerminating = terminate.get();
 			if (alreadyTerminating) {
 				if (System.currentTimeMillis() - timeLastTermSignal.get() < 2_000) {
+					terminateImmediately.set(true);
 					for (Job j: pendingJobs) {
 						if (j.parameters.group != null) {
 							j.parameters.group.terminateAnalysis = true;
 						}
 					}
 					System.err.println("Will terminate as soon as results are written out");
-				} else {
+				} else if (!terminateImmediately.get()){
 					System.err.println("Worker will terminate when current " + pendingJobs.size() +
 						" jobs have completed; one more in next 2 seconds to force immediate termination");
 				}
