@@ -52,10 +52,13 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 	
 	final @NonNull Thread fetchingThread;
 		
+	private @Nullable Closeable closeWhenDone;
+
 	public IteratorPrefetcher(final Iterator<T> it, final int nReadAhead, 
 			final @Nullable Closeable closeWhenDone,
 			final Consumer<T> preProcessor,
 			final @Nullable Histogram nReadsInPrefetchQueue) {
+		this.closeWhenDone = closeWhenDone;
 		minQueueSize = nReadAhead;
 		Runnable r = new Runnable() {
 			@SuppressWarnings("unchecked")
@@ -100,13 +103,7 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 						exception = new RuntimeException("Problem in iterator prefetcher", t);
 					}
 				} finally {
-					if (closeWhenDone != null) {
-						try {
-							closeWhenDone.close();
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-					}
+					closeCloseable();
 				}
 			}
 		};
@@ -160,7 +157,22 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 
 	@Override
 	public void close() throws IOException {
+		closeCloseable();//AbstractBamIterator can misbehave if closed
+		//after its parent has started another iteration; so close it
+		//explicitly here rather than relying on fetchingThread doing
+		//it at some unknown and uncontrollable point in the future
 		fetchingThread.interrupt();
+	}
+
+	private void closeCloseable() {
+		if (closeWhenDone != null) {
+			try {
+				closeWhenDone.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			closeWhenDone = null;
+		}
 	}
 
 }
