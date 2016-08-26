@@ -165,13 +165,14 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 	}
 
 	private void closeCloseable() {
-		if (closeWhenDone != null) {
+		Closeable toClose = closeWhenDone;
+		if (toClose != null) {
+			closeWhenDone = null;
 			try {
-				closeWhenDone.close();
+				toClose.close();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-			closeWhenDone = null;
 		}
 	}
 
