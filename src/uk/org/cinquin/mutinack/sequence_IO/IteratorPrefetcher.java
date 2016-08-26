@@ -52,7 +52,7 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 	
 	final @NonNull Thread fetchingThread;
 		
-	private @Nullable Closeable closeWhenDone;
+	private volatile @Nullable Closeable closeWhenDone;
 
 	public IteratorPrefetcher(final Iterator<T> it, final int nReadAhead, 
 			final @Nullable Closeable closeWhenDone,
