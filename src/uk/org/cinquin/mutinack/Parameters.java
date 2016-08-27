@@ -131,6 +131,10 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-randomizeMates", description = "Randomize first/second of pair; WARNING: this will lead to incorrect top/bottom strand grouping")
 	public boolean randomizeMates = false;
 
+	@Parameter(names = "-randomizeStrand", description = "Randomize read mapping to top or bottom strand, preserving for each duplex"
+		+ " the number in the top strand and the number in the bottom strand; WARNING: this will lead to incorrect mutation and disagreement detection")
+	public boolean randomizeStrand = false;
+
 	@FilePathList
 	@Parameter(names = "-intersectAlignment", description = "List of BAM files with which alignments in inputReads must agree; each file must be sorted", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> intersectAlignment = new ArrayList<>();

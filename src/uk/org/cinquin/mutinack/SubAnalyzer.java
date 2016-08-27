@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -101,6 +102,7 @@ public final class SubAnalyzer {
 	final @NonNull Map<String, @NonNull ExtendedSAMRecord> extSAMCache = 
 			new THashMap<>(50_000, 0.1f);
 	private final AtomicInteger threadCount = new AtomicInteger();
+	private final Random random = new Random();//TODO seed with argValues.randomSeed
 
 	@SuppressWarnings("null")
 	private static final @NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality 
@@ -473,6 +475,27 @@ public final class SubAnalyzer {
 			}//End new duplex creation
 		}//End loop over reads
 		
+		if (analyzer.randomizeStrand) {
+			for (DuplexRead dr: duplexKeeper.getIterable()) {
+				if (dr.topStrandRecords.isEmpty() || dr.bottomStrandRecords.isEmpty()) {
+					continue;
+				}
+				List<@NonNull ExtendedSAMRecord> shuffled = new ArrayList<>();
+				shuffled.addAll(dr.topStrandRecords);
+				shuffled.addAll(dr.bottomStrandRecords);
+				Collections.shuffle(shuffled, random);
+				int nTop = dr.topStrandRecords.size();
+				dr.topStrandRecords.clear();
+				dr.bottomStrandRecords.clear();
+				for (int i = 0; i < nTop; i++) {
+					dr.topStrandRecords.add(shuffled.get(i));
+				}
+				for (int i = shuffled.size() - 1; i >= nTop; i--) {
+					dr.bottomStrandRecords.add(shuffled.get(i));
+				}
+			}
+		}
+
 		Pair<DuplexRead, DuplexRead> pair;
 		if (DebugLogControl.COSTLY_ASSERTIONS && 
 				(pair = 

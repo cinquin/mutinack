@@ -191,6 +191,7 @@ public class Mutinack implements Actualizable {
 	final boolean acceptNInBarCode;
 	final float dropReadProbability;
 	final boolean randomizeMates;
+	final boolean randomizeStrand;
 	final int nConstantBarcodeMismatchesAllowed;
 	final int nVariableBarcodeMismatchesAllowed;
 	final int alignmentPositionMismatchAllowed;
@@ -279,6 +280,7 @@ public class Mutinack implements Actualizable {
 			int minInsertSize, int maxInsertSize,
 			float dropReadProbability,
 			boolean randomizeMates,
+			boolean randomizeStrand,
 			int nConstantBarcodeMismatchesAllowed, int nVariableBarcodeMismatchesAllowed,
 			int alignmentPositionMismatchAllowed,
 			int promoteNPoorDuplexes,
@@ -328,6 +330,7 @@ public class Mutinack implements Actualizable {
 		this.maxInsertSize = maxInsertSize;
 		this.dropReadProbability = dropReadProbability;
 		this.randomizeMates = randomizeMates;
+		this.randomizeStrand = randomizeStrand;
 		this.nConstantBarcodeMismatchesAllowed = nConstantBarcodeMismatchesAllowed;
 		this.nVariableBarcodeMismatchesAllowed = nVariableBarcodeMismatchesAllowed;
 		this.alignmentPositionMismatchAllowed = alignmentPositionMismatchAllowed;
@@ -767,6 +770,7 @@ public class Mutinack implements Actualizable {
 						argValues.maxInsertSize,
 						argValues.dropReadProbability,
 						argValues.randomizeMates,
+						argValues.randomizeStrand,
 						argValues.nConstantBarcodeMismatchesAllowed,
 						argValues.nVariableBarcodeMismatchesAllowed,
 						argValues.alignmentPositionMismatchAllowed,
