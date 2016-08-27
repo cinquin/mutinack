@@ -121,7 +121,6 @@ public class Worker {
 		Signals.registerSignalProcessor("TERM", termSignalProcessor);
 
 		pf = new ParFor("Main worker loop", 0, nWorkers - 1, null, true);
-		@SuppressWarnings("resource")
 		ILoopWorker worker = (loopIndex, threadIndex) -> {
 			final String workerID = workerIDBase + loopIndex;
 			Job job;
