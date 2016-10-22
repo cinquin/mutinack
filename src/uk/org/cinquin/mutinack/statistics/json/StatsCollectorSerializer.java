@@ -24,21 +24,21 @@ import java.util.List;
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
+import uk.org.cinquin.mutinack.statistics.LongAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.StatsCollector;
 
 public class StatsCollectorSerializer extends JsonSerializer<@NonNull StatsCollector> {
 
 	@Override
 	public void serialize(@NonNull StatsCollector value, JsonGenerator gen,
-			SerializerProvider serializers) throws IOException, JsonProcessingException {
+			SerializerProvider serializers) throws IOException {
         gen.writeStartObject();
         gen.writeStringField("total", value.total);
         List<Long> values = new ArrayList<>();
-        value.values.stream().map(laf -> laf.sum()).forEachOrdered(s -> values.add(s));
+        value.values.stream().map(LongAdderFormatter::sum).forEachOrdered(values::add);
         gen.writeObjectField("values", values);
         gen.writeEndObject();
 	}

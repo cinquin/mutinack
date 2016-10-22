@@ -17,12 +17,14 @@
 package uk.org.cinquin.mutinack;
 
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
+import static uk.org.cinquin.mutinack.Assay.AVERAGE_N_CLIPPED;
 import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
 import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
 import static uk.org.cinquin.mutinack.Assay.MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES;
 import static uk.org.cinquin.mutinack.Assay.MAX_DPLX_Q_IGNORING_DISAG;
 import static uk.org.cinquin.mutinack.Assay.MAX_Q_FOR_ALL_DUPLEXES;
 import static uk.org.cinquin.mutinack.Assay.NO_DUPLEXES;
+import static uk.org.cinquin.mutinack.Assay.N_READS_WRONG_PAIR;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
 import static uk.org.cinquin.mutinack.MutationType.WILDTYPE;
@@ -71,8 +73,10 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TByteObjectMap;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.TCustomHashSet;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
@@ -343,14 +347,14 @@ public final class SubAnalyzer {
 				//During first pass, do not allow any barcode mismatches
 				if (matchToLeft) {
 					barcodeMatch = basesEqual(duplexRead.leftBarcode, barcode, 
-							analyzer.acceptNInBarCode, 0) &&
+							analyzer.acceptNInBarCode) &&
 							basesEqual(duplexRead.rightBarcode, mateBarcode, 
-									analyzer.acceptNInBarCode, 0);
+									analyzer.acceptNInBarCode);
 				} else {
 					barcodeMatch = basesEqual(duplexRead.leftBarcode, mateBarcode, 
-							analyzer.acceptNInBarCode, 0) &&
+							analyzer.acceptNInBarCode) &&
 							basesEqual(duplexRead.rightBarcode, barcode, 
-									analyzer.acceptNInBarCode, 0);
+									analyzer.acceptNInBarCode);
 				}
 
 				if (barcodeMatch) {
@@ -425,7 +429,7 @@ public final class SubAnalyzer {
 					duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
 						new SequenceLocation(rExtended.getReferenceIndex(),
 							rExtended.getReferenceName(), rExtended.getUnclippedStart()));
-					duplexRead.rightAlignmentEnd =  sequenceLocationCache.intern(
+					duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
 						new SequenceLocation(rExtended.getReferenceIndex(),
 							rExtended.getReferenceName(), rExtended.getUnclippedEnd()));
 					duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
@@ -496,6 +500,10 @@ public final class SubAnalyzer {
 			}
 		}
 
+		for (DuplexRead dr: duplexKeeper.getIterable()) {
+			dr.computeGlobalProperties();
+		}
+
 		Pair<DuplexRead, DuplexRead> pair;
 		if (DebugLogControl.COSTLY_ASSERTIONS && 
 				(pair = 
@@ -516,13 +524,51 @@ public final class SubAnalyzer {
 		//and left/right consensus that differ by at most
 		//analyzer.nVariableBarcodeMismatchesAllowed
 
-		final DuplexKeeper cleanedUpDuplexes = DuplexRead.groupDuplexes(
-			duplexKeeper,
-			duplex -> duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength),
-			() -> getDuplexKeeper(fallBackOnIntervalTree),
-			analyzer,
-			stats,
-			0);
+		final DuplexKeeper cleanedUpDuplexes =
+			analyzer.nVariableBarcodeMismatchesAllowed > 0 ?
+				DuplexRead.groupDuplexes(
+					duplexKeeper,
+					duplex -> duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength),
+					() -> getDuplexKeeper(fallBackOnIntervalTree),
+					analyzer,
+					stats,
+					0)
+			:
+				duplexKeeper;
+
+		if (analyzer.nVariableBarcodeMismatchesAllowed == 0) {
+			cleanedUpDuplexes.getIterable().forEach(d -> d.computeConsensus(allReadsSameBarcode,
+				analyzer.variableBarcodeLength));
+		}
+
+		//Group duplexes by alignment start (or equivalent)
+		TIntObjectMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
+			(1_000, 0.5f, -999);
+		cleanedUpDuplexes.getIterable().forEach(dr -> {
+			//TODO Would be nice to add a computeIfAbsentMethod
+			List<DuplexRead> list = duplexPositions.get(dr.position0);
+			if (list == null) {
+				list = new ArrayList<>();
+				List<DuplexRead> previous = duplexPositions.put(dr.position0, list);
+				Assert.isNull(previous);
+			}
+			list.add(dr);
+		});
+
+		if (analyzer.variableBarcodeLength == 0) {
+			final double @NonNull[] insertSizeProb =
+				Objects.requireNonNull(analyzer.insertSizeProb);
+			duplexPositions.forEachValue(list -> {
+				for (DuplexRead dr: list) {
+					double sizeP = insertSizeProb[
+					  Math.min(insertSizeProb.length - 1, dr.maxInsertSize)];
+					Assert.isTrue(Double.isNaN(sizeP) || sizeP >= 0,
+						() -> "Insert size problem: " + Arrays.toString(insertSizeProb));
+					dr.probAtLeastOneCollision = 1 - Math.pow(1 - sizeP, list.size());
+				}
+				return true;
+			});
+		}
 
 		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
 			Assert.isFalse(duplexRead.invalid);
@@ -531,11 +577,6 @@ public final class SubAnalyzer {
 			roughLocation = duplexRead.roughLocation;
 			
 			stats.duplexTotalRecords.insert(duplexRead.totalNRecords);
-
-			if (Arrays.equals(duplexRead.leftBarcode, duplexRead.rightBarcode)) {
-				duplexRead.issues.add("BREQ");
-				stats.nPosDuplexRescuedFromLeftRightBarcodeEquality.increment(roughLocation);
-			}
 
 			Collection<ExtendedSAMRecord> allDuplexRecords = 
 					new ArrayList<>(duplexRead.topStrandRecords.size() +
@@ -554,13 +595,23 @@ public final class SubAnalyzer {
 			int i = 0;
 			double sumDisagreementRates = 0d;
 			int sumNClipped = 0;
+			int nReadsWrongPair = 0;
+
 			for (ExtendedSAMRecord r: allDuplexRecords) {
+				if (r.formsWrongPair()) {
+					nReadsWrongPair++;
+				}
+
 				Assert.isFalse(r.getnClipped() < 0);
 				sumNClipped += r.getnClipped();
 				i++;
 				sumDisagreementRates += (r.nReferenceDisagreements / ((float) (r.effectiveLength)));
 			}
 			
+			if (nReadsWrongPair > 0) {
+				duplexRead.globalQuality.addUnique(N_READS_WRONG_PAIR, DUBIOUS);
+			}
+
 			if (i == 0) {
 				stats.nDuplexesNoStats.add(1);
 			} else {
@@ -572,10 +623,11 @@ public final class SubAnalyzer {
 			}
 			
 			if (duplexRead.averageNClipped > analyzer.maxAverageBasesClipped) {
-				duplexRead.issues.add("TMCLP" + duplexRead.averageNClipped);
+				duplexRead.globalQuality.addUnique(AVERAGE_N_CLIPPED, DUBIOUS);
 				stats.nDuplexesTooMuchClipping.accept(roughLocation);
 			}
 			
+
 			final int inferredSize = Math.abs(allDuplexRecords.iterator().next().getInsertSize());
 			if (inferredSize < 130) {
 				stats.duplexInsert100_130AverageNClipped.insert(duplexRead.averageNClipped);
@@ -664,11 +716,7 @@ public final class SubAnalyzer {
 		final TCustomHashSet<DuplexRead> duplexReads =
 			new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 
-		boolean hasHiddenCandidate = false;
 		for (CandidateSequence candidate: candidateSet) {
-			if (candidate.isHidden()) {
-				hasHiddenCandidate = true;
-			}
 			candidate.getQuality().reset();
 			final Set<DuplexRead> candidateDuplexReads = 
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
@@ -685,26 +733,62 @@ public final class SubAnalyzer {
 			duplexReads.addAll(candidateDuplexReads);
 		}
 		
-		float averageClippingOfCoveringDuplexes = 0;
-		//Allocate here to avoid repeated allocation in following loop
+		//Allocate here to avoid repeated allocation in DuplexRead::examineAtLoc
 		final CandidateCounter topCounter = new CandidateCounter(candidateSet, location);
 		final CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
 
+		int[] insertSizes = new int [duplexReads.size()];
+		float averageClippingOfCoveringDuplexes = 0;
+		double averageCollisionProb = 0;
+		int index = 0;
 		for (DuplexRead duplexRead: duplexReads) {
+			Assert.isFalse(duplexRead.invalid);
+			Assert.isTrue(duplexRead.averageNClipped >= 0);
+			Assert.isTrue(analyzer.variableBarcodeLength > 0 ||
+				Double.isNaN(duplexRead.probAtLeastOneCollision) ||
+				duplexRead.probAtLeastOneCollision >= 0);
+			duplexRead.examineAtLoc(
+				location,
+				result,
+				candidateSet,
+				assaysToIgnoreForDisagreementQuality,
+				topCounter,
+				bottomCounter,
+				analyzer,
+				stats);
+			if (index < insertSizes.length) {
+				//Check in case array size was capped (for future use; it is
+				//never capped currently)
+				insertSizes[index] = duplexRead.maxInsertSize;
+				index++;
+			}
 			averageClippingOfCoveringDuplexes += duplexRead.averageNClipped;
-			duplexRead.examineAtLoc(location, result, candidateSet,
-				assaysToIgnoreForDisagreementQuality, hasHiddenCandidate,
-				topCounter, bottomCounter, analyzer, stats);
+			averageCollisionProb += duplexRead.probAtLeastOneCollision;
+			if (analyzer.variableBarcodeLength == 0 && !duplexRead.missingStrand) {
+				stats.duplexCollisionProbabilityWhen2Strands.insert((int)
+					(1_000f * duplexRead.probAtLeastOneCollision));
+			}
 		}
 		if (DebugLogControl.COSTLY_ASSERTIONS) {
 			Assert.noException(() -> checkDuplexAndCandidates(duplexReads, candidateSet));
 		}
 
+		if (index > 0) {
+			Arrays.parallelSort(insertSizes, 0, index);
+			result.duplexInsertSize10thP = insertSizes[(int) (index * 0.1f)];
+			result.duplexInsertSize90thP = insertSizes[(int) (index * 0.9f)];
+		}
+
 		averageClippingOfCoveringDuplexes /= duplexReads.size();
+		averageCollisionProb /= duplexReads.size();
+		if (analyzer.variableBarcodeLength == 0) {
+			stats.duplexCollisionProbability.insert((int) (1_000d * averageCollisionProb));
+		}
+		result.probAtLeastOneCollision = averageCollisionProb;
 
 		if (averageClippingOfCoveringDuplexes > analyzer.maxAverageClippingOfAllCoveringDuplexes) {
 			for (DuplexRead duplexRead: duplexReads) {
-				duplexRead.localQuality.addUnique(
+				duplexRead.localAndGlobalQuality.addUnique(
 					MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES, DUBIOUS);
 			}
 		}
@@ -773,9 +857,10 @@ public final class SubAnalyzer {
 			stats.nFractionWrongPairsAtPositionTooHigh.increment(location);
 		}
 
-		if (maxQForAllDuplexes.compareTo(GOOD) < 0) {
+		if (maxQForAllDuplexes.lowerThan(GOOD)) {
 			result.disagreements.clear();
 		} else {
+			stats.nPosDuplexCandidatesForDisagreementQ2.accept(location, result.disagQ2Coverage);
 			candidateSet.stream().flatMap(c -> c.getRawMismatchesQ2().stream()).
 				forEach(result.rawMismatchesQ2::add);
 			candidateSet.stream().flatMap(c -> c.getRawInsertionsQ2().stream()).
@@ -786,6 +871,10 @@ public final class SubAnalyzer {
 
 		for (CandidateSequence candidate: candidateSet) {
 			candidate.setMedianPhredAtPosition(positionMedianPhred);
+			//TODO Should report min rather than average collision probability?
+			candidate.setProbCollision((float) result.probAtLeastOneCollision);
+			candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
+			candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
 
 			candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
 				map(r -> r.duplexRead).filter(d -> {
@@ -806,33 +895,33 @@ public final class SubAnalyzer {
 				//continue;
 			}
 
-			candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localQuality) != null) {
+			candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localAndGlobalQuality) != null) {
 				throw new AssertionFailedException();
 			}});
 
 			final Quality maxQ = maxQForAllDuplexes;
 			final Quality maxDuplexQ = candidate.getDuplexes().stream().
 				map(dr -> {
-					dr.localQuality.addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxQ);
-					return dr.localQuality.getMin();
+					dr.localAndGlobalQuality.addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxQ);
+					return dr.localAndGlobalQuality.getMin();
 				}).
 				max(Quality::compareTo).orElse(ATROCIOUS);
 			candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
 			candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, candidate.getDuplexes().stream().
-				map(dr -> dr.localQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
+				map(dr -> dr.localAndGlobalQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
 				max(Quality::compareTo).orElse(ATROCIOUS));
 
-			if (maxDuplexQ.compareTo(GOOD) >= 0) {
+			if (maxDuplexQ.atLeast(GOOD)) {
 				candidate.resetLigSiteDistances();
-				candidate.getDuplexes().stream().filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).
-				forEach(d -> candidate.acceptLigSiteDistance(d.getDistanceToLigSite()));
+				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(GOOD)).
+				forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
 			}
 
 			if (analyzer.computeSupplQuality && candidate.getQuality().getMin() == DUBIOUS &&
 				averageClippingOfCoveringDuplexes <= analyzer.maxAverageClippingOfAllCoveringDuplexes) {
 				//See if we should promote to Q2, but only if there is not too much clipping
 				final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().map(c -> c.duplexRead).
-					filter(d -> d != null && d.localQuality.getMin().compareTo(DUBIOUS) >= 0).
+					filter(d -> d != null && d.localAndGlobalQuality.getMin().atLeast(DUBIOUS)).
 					collect(uniqueValueCollector()).
 					size();
 				final Stream<ExtendedSAMRecord> highMapQReads = candidate.getNonMutableConcurringReads().keySet().stream().
@@ -845,7 +934,7 @@ public final class SubAnalyzer {
 					stats.nQ2PromotionsBasedOnFractionReads.add(location, 1);
 				} else {
 					final int maxNStrands = candidate.getNonMutableConcurringReads().keySet().stream().map(c -> c.duplexRead).
-						filter(d -> d != null && d.localQuality.getMin().compareTo(POOR) >= 0).
+						filter(d -> d != null && d.localAndGlobalQuality.getMin().atLeast(POOR)).
 						mapToInt(d -> d.topStrandRecords.size() + d.bottomStrandRecords.size()).max().
 						orElse(0);
 					if (maxNStrands >= analyzer.promoteNSingleStrands) {
@@ -856,7 +945,7 @@ public final class SubAnalyzer {
 
 			SettableInteger count = new SettableInteger(0);
 			candidate.getDuplexes().forEach(dr -> {
-				if (dr.localQuality.getMin().compareTo(GOOD) >= 0) {
+				if (dr.localAndGlobalQuality.getMin().atLeast(GOOD)) {
 					count.incrementAndGet();
 				}
 			});
@@ -885,13 +974,13 @@ public final class SubAnalyzer {
 			}
 
 			candidate.setnGoodDuplexesIgnoringDisag(candidate.getDuplexes().stream().
-				filter(dr -> dr.localQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality).compareTo(GOOD) >= 0).
+				filter(dr -> dr.localAndGlobalQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD)).
 				collect(uniqueValueCollector()).size());
 
 			totalGoodDuplexes += candidate.getnGoodDuplexes();
 
 			candidate.setnGoodOrDubiousDuplexes(candidate.getDuplexes().stream().
-				filter(dr -> dr.localQuality.getMin().compareTo(DUBIOUS) >= 0).
+				filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(DUBIOUS)).
 				collect(uniqueValueCollector()).size());
 
 			totalGoodOrDubiousDuplexes += candidate.getnGoodOrDubiousDuplexes();
@@ -900,7 +989,7 @@ public final class SubAnalyzer {
 			if (candidate.getMutationType().isWildtype()) {
 				candidate.setSupplementalMessage(null);
 				wildtypeBase = candidate.getWildtypeSequence();
-			} else if (candidate.getQuality().getMin().compareTo(POOR) > 0) {
+			} else if (candidate.getQuality().getMin().greaterThan(POOR)) {
 
 				final StringBuilder supplementalMessage = new StringBuilder();
 				final Map<String, Integer> stringCounts = new HashMap<>(100);
@@ -1000,7 +1089,7 @@ public final class SubAnalyzer {
 			stats.strandCoverageImbalanceWhenNoUsableDuplex.insert(result.strandCoverageImbalance);
 		}
 
-		if (maxQuality.compareTo(POOR) <= 0) {
+		if (maxQuality.atMost(POOR)) {
 			stats.nPosQualityPoor.increment(location);
 			switch (wildtypeBase) {
 				case 'A' : stats.nPosQualityPoorA.increment(location); break;
@@ -1020,8 +1109,8 @@ public final class SubAnalyzer {
 			throw new AssertionFailedException();
 		}
 		result.analyzedCandidateSequences = candidateSet;
-		result.alleleFrequencies = streamTopTwoCandidates(candidateSet).
-			mapToObj(i -> Integer.valueOf((int) (i * 10f / result.nGoodOrDubiousDuplexes))).
+		result.alleleFrequencies = streamTopTwoCandidatesnGDP(candidateSet).
+			mapToObj(i -> (int) (i * 10f / result.nGoodOrDubiousDuplexes)).
 			collect(Collectors.toCollection(() -> new ArrayList<>(2)));
 		while(result.alleleFrequencies.size() < 2) {
 			result.alleleFrequencies.add(0, 99);
@@ -1029,9 +1118,9 @@ public final class SubAnalyzer {
 		return result;
 	}//End examineLocation
 	
-	private static IntStream streamTopTwoCandidates(Collection<CandidateSequence>
+	private static IntStream streamTopTwoCandidatesnGDP(Collection<CandidateSequence>
 			analyzedCandidateSequences) {
-		return analyzedCandidateSequences.stream().mapToInt(c -> c.getnGoodOrDubiousDuplexes()).
+		return analyzedCandidateSequences.stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).
 			sorted().skip(Math.max(0, analyzedCandidateSequences.size() - 2));
 	}
 
@@ -1088,6 +1177,9 @@ public final class SubAnalyzer {
 	}
 
 	private boolean checkConstantBarcode(byte[] bases, boolean allowN, int nAllowableMismatches) {
+		if (nAllowableMismatches == 0 && !allowN) {
+			return bases == analyzer.constantBarcode;//OK because of interning
+		}
 		int nMismatches = 0;
 		for (int i = 0; i < analyzer.constantBarcode.length; i++) {
 			if (!basesEqual(analyzer.constantBarcode[i], bases[i], allowN)) {

@@ -193,7 +193,7 @@ public class PosByPosProtoManip {
 	
 	private static void iterateGenomeNumbers(Params argValues, GenomeNumbers gn1,
 			BiConsumer<SequenceLocation, Integer> processor) {
-		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(cn -> cn.getContigName()).
+		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(ContigNumbers::getContigName).
 				collect(Collectors.toList());
 		contigNames0.sort(null);
 		Map<String, Integer> contigIndices = new HashMap<>();
@@ -260,7 +260,7 @@ public class PosByPosProtoManip {
 		
 		GenomeNumbers gn1 = getFromFile(argValues.inputs.get(0));
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().
-				map(cn -> cn.getContigName()).collect(Collectors.toList());
+				map(ContigNumbers::getContigName).collect(Collectors.toList());
 		contigNames0.sort(null);
 		GenomeFeatureTester reader;
 		try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
@@ -344,7 +344,7 @@ public class PosByPosProtoManip {
 	private static void histogram(Params argValues) throws IOException {
 		checkArgumentLength(1, argValues.inputs, "Exactly 1 input expected for histogram command");
 		GenomeNumbers gn1 = getFromFile(argValues.inputs.get(0));
-		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(cn -> cn.getContigName()).
+		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(ContigNumbers::getContigName).
 				collect(Collectors.toList());
 		contigNames0.sort(null);
 		Map<String, Integer> contigIndices = new HashMap<>();
@@ -493,10 +493,10 @@ public class PosByPosProtoManip {
 			}
 		}
 		
-		Set<String> contigNames0 = inputs.get(0).getContigNumbersList().stream().map(cn -> cn.getContigName()).
+		Set<String> contigNames0 = inputs.get(0).getContigNumbersList().stream().map((contigNumbers) -> contigNumbers.getContigName()).
 			collect(Collectors.toSet());
 		for (int i = 1; i < inputs.size(); i++) {
-			Set<String> contigNames1 = inputs.get(i).getContigNumbersList().stream().map(cn -> cn.getContigName()).
+			Set<String> contigNames1 = inputs.get(i).getContigNumbersList().stream().map(ContigNumbers::getContigName).
 					collect(Collectors.toSet());
 			if (!contigNames0.equals(contigNames1)) {
 				throw new IllegalArgumentException("Contig name sets not equal: " +

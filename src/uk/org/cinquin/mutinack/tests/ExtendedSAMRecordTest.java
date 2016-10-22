@@ -57,7 +57,7 @@ public class ExtendedSAMRecordTest {
 			@Mocked Mutinack analyzer) {
 		
 		settings.BIN_SIZE = 10_000_000;
-		AnalysisStats s = new AnalysisStats("test_stats", settings);
+		AnalysisStats s = new AnalysisStats("test_stats", settings, false);
 		analyzer.stats = Arrays.asList(s);
 		
 		IntegerDelegate alignmentStart1 = new IntegerDelegate();
@@ -270,7 +270,7 @@ public class ExtendedSAMRecordTest {
 			{
 				put("contig1", 10_000_000);
 			}});
-		AnalysisStats s = new AnalysisStats("test_stats", settings);
+		AnalysisStats s = new AnalysisStats("test_stats", settings, false);
 		analyzer.stats = Arrays.asList(s);
 		
 		IntegerDelegate alignmentStart2 = new IntegerDelegate();
@@ -476,7 +476,7 @@ public class ExtendedSAMRecordTest {
 			String readName, boolean firstOfPair, AnalysisStats stats, MutinackGroup settings, Mutinack analyzer) {
 		
 		settings.BIN_SIZE = 10_000_000;
-		AnalysisStats s = new AnalysisStats("test_stats", settings);
+		AnalysisStats s = new AnalysisStats("test_stats", settings, false);
 		analyzer.stats = Arrays.asList(s);
 
 		new NonStrictExpectations() {{

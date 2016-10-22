@@ -21,11 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Phaser;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 
 public class AnalysisChunk {
 	int contig;
-	String contigName;
+	@NonNull final String contigName;
 	int startAtPosition;
 	int terminateAtPosition;
 	SettableInteger pauseAtPosition;
@@ -34,6 +36,10 @@ public class AnalysisChunk {
 	final List<SubAnalyzer> subAnalyzers = new ArrayList<>();
 	public PrintStream out;
 	public MutinackGroup groupSettings;
+
+	public AnalysisChunk(@NonNull String contigName) {
+		this.contigName = contigName;
+	}
 
 	@Override
 	public String toString() {

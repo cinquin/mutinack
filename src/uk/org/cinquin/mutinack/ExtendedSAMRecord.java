@@ -247,10 +247,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			} else {
 				fullBarcodeString = bcAttr;
 			}
-			variableBarcode = Util.getInternedVB(nonNullify(fullBarcodeString.substring(
-				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes()));
-			constantBarcode = Util.getInternedCB(nonNullify(fullBarcodeString.substring(
-				groupSettings.getConstantBarcodeStart(), groupSettings.getConstantBarcodeEnd() + 1).getBytes()));
+			variableBarcode = Util.getInternedVB(fullBarcodeString.substring(
+				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes());
+			constantBarcode = Util.getInternedCB(fullBarcodeString.substring(
+				groupSettings.getConstantBarcodeStart(), groupSettings.getConstantBarcodeEnd() + 1).getBytes());
 		} else {
 			variableBarcode = EMPTY_BARCODE;
 			constantBarcode = DUMMY_BARCODE;//EMPTY_BARCODE
@@ -540,7 +540,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return location.contigIndex;
 	}
 
-	public String getReferenceName() {
+	public @NonNull String getReferenceName() {
 		return location.getContigName();
 	}
 }

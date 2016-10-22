@@ -59,6 +59,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
@@ -87,6 +89,7 @@ import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMFileWriterFactory;
 import contrib.net.sf.samtools.SAMProgramRecord;
+import contrib.net.sf.samtools.SAMSequenceRecord;
 import contrib.net.sf.samtools.util.RuntimeIOException;
 import contrib.nf.fr.eraasoft.pool.ObjectPool;
 import contrib.nf.fr.eraasoft.pool.PoolSettings;
@@ -105,8 +108,10 @@ import uk.org.cinquin.mutinack.features.PosByPosNumbersPB;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.GetReadStats;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
 import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
+import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
@@ -161,13 +166,15 @@ public class Mutinack implements Actualizable {
 			"Notes", "Location", "Mutation type", "Mutation detail", "Sample", "nQ2Duplexes",
 			"nQ1Q2Duplexes", "nDuplexes", "nConcurringReads", "fractionConcurringQ2Duplexes",
 			"fractionConcurringQ1Q2Duplexes", "fractionConcurringDuplexes", "fractionConcurringReads",
-			"averageMappingQuality", "nDuplexesSisterArm", "insertSize", "minDistanceLigSite",
-			"maxDistanceLigSite", "positionInRead", "readEffectiveLength", "nameOfOneRead",
-			"readAlignmentStart", "mateAlignmentStart", "readAlignmentEnd", "mateAlignmentEnd",
-			"refPositionOfLigSite", "issuesList", "medianPhredAtPosition", "minInsertSize",
-			"maxInsertSize", "secondHighestAlleleFrequency*10",  "highestAlleleFrequency*10",
-			"supplementalMessage"
+			"averageMappingQuality", "nDuplexesSisterArm", "insertSize", "insertSizeAtPos10thP",
+			"insertSizeAtPos90thP", "minDistanceLigSite", "maxDistanceLigSite",
+			"meanDistanceLigSite", "probCollision", "positionInRead", "readEffectiveLength",
+			"nameOfOneRead", "readAlignmentStart", "mateAlignmentStart", "readAlignmentEnd",
+			"mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtPosition",
+			"minInsertSize", "maxInsertSize", "secondHighestAlleleFrequencyX10",
+			"highestAlleleFrequencyX10", "supplementalMessage"
 	));
+	private volatile static ExecutorService contigThreadPool;
 
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
 
@@ -181,6 +188,7 @@ public class Mutinack implements Actualizable {
 	final int minReadsPerStrandQ1;
 	final int minReadsPerStrandQ2;
 	final int minReadsPerStrandForDisagreement;
+	final boolean Q2DisagCapsMatchingMutationQuality;
 	final int minBasePhredScoreQ1;
 	final int minBasePhredScoreQ2;
 	final int minReadMedianPhredScore;
@@ -251,6 +259,7 @@ public class Mutinack implements Actualizable {
 				}
 			}).min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
+	final double @Nullable[] insertSizeProb;
 	final @NonNull Collection<File> intersectAlignmentFiles;
 	final @NonNull Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
 	@Nullable GenomeFeatureTester codingStrandTester;
@@ -267,11 +276,13 @@ public class Mutinack implements Actualizable {
 			@NonNull String name,
 			int idx,
 			@NonNull File inputBam,
+			@Nullable Histogram approximateReadInsertSize,
 			int ignoreFirstNBasesQ1, int ignoreFirstNBasesQ2,
 			int ignoreLastNBases,
 			int minMappingQualityQ1, int minMappingQualityQ2,
 			int minReadsPerStrandQ1, int minReadsPerStrandQ2,
 			int minReadsPerStrandForDisagreement,
+			boolean Q2DisagCapsMatchingMutationQuality,
 			int minBasePhredScoreQ1, int minBasePhredScoreQ2,
 			int minReadMedianPhredScore,
 			float minConsensusThresholdQ1, float minConsensusThresholdQ2,
@@ -303,10 +314,15 @@ public class Mutinack implements Actualizable {
 			@NonNull OutputLevel outputLevel,
 			boolean rnaSeq,
 			List<GenomeFeatureTester> excludeBEDs,
-			boolean computeRawDisagreements) {
+			boolean computeRawDisagreements,
+			boolean reportCoverageAtAllPositions) {
 		this.groupSettings = groupSettings;
 		this.name = name;
 		this.inputBam = inputBam;
+		this.insertSizeProb = approximateReadInsertSize != null ?
+				approximateReadInsertSize.toProbabilityArray()
+			:
+				null;
 		this.idx = idx;
 		this.ignoreFirstNBasesQ1 = ignoreFirstNBasesQ1;
 		this.ignoreFirstNBasesQ2 = ignoreFirstNBasesQ2;
@@ -319,6 +335,7 @@ public class Mutinack implements Actualizable {
 		this.minReadsPerStrandQ1 = minReadsPerStrandQ1;
 		this.minReadsPerStrandQ2 = minReadsPerStrandQ2;
 		this.minReadsPerStrandForDisagreement = minReadsPerStrandForDisagreement;
+		this.Q2DisagCapsMatchingMutationQuality = Q2DisagCapsMatchingMutationQuality;
 		this.minBasePhredScoreQ1 = minBasePhredScoreQ1;
 		this.minBasePhredScoreQ2 = minBasePhredScoreQ2;
 		this.minReadMedianPhredScore = minReadMedianPhredScore;
@@ -339,7 +356,9 @@ public class Mutinack implements Actualizable {
 		this.promoteFractionReads = promoteFractionReads;
 		this.minNumberDuplexesSisterArm = minNumberDuplexesSisterArm;
 		this.variableBarcodeLength = variableBarcodeLength;
-		this.constantBarcode = constantBarcode;
+		//Make sure reference tests can be substituted for equality tests;
+		//the analyzer's constant barcode needs to come from the interning map
+		this.constantBarcode = Util.getInternedCB(constantBarcode);
 		this.unclippedBarcodeLength = 0;
 
 		this.ignoreZeroInsertSizeReads = ignoreZeroInsertSizeReads;
@@ -364,7 +383,7 @@ public class Mutinack implements Actualizable {
 
 		for (String statsName: Arrays.asList("main_stats", "ins_stats")) {
 			@SuppressWarnings("null")
-			AnalysisStats stat = new AnalysisStats(statsName, groupSettings);
+			AnalysisStats stat = new AnalysisStats(statsName, groupSettings, reportCoverageAtAllPositions);
 			stat.setOutputLevel(outputLevel);
 			for (String s: argValues.traceFields) {
 				try {
@@ -377,6 +396,7 @@ public class Mutinack implements Actualizable {
 					throw new RuntimeException("Problem setting up traceField " + s, e);
 				}
 			}
+			stat.approximateReadInsertSize = approximateReadInsertSize;
 			stats.add(stat);
 		}
 	}
@@ -560,7 +580,7 @@ public class Mutinack implements Actualizable {
 						new File(argValues.inputReads.get(0)))) {
 					final List<String> sequenceNames = tempReader.getFileHeader().
 						getSequenceDictionary().getSequences().stream().
-						map(s -> s.getSequenceName()).collect(Collectors.toList());
+						map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList());
 
 					contigSizes0.entrySet().removeIf(e -> {
 						if (!sequenceNames.contains(e.getKey())) {
@@ -595,6 +615,15 @@ public class Mutinack implements Actualizable {
 				contigNames);
 
 			groupSettings.forceOutputAtLocations.clear();
+
+			Util.parseListLocations(argValues.forceOutputAtPositions,
+				groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
+					if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
+						Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
+							" in list of forced output positions"));
+					}
+				});
+
 			for (String forceOutputFilePath: argValues.forceOutputAtPositionsFile) {
 				try(Stream<String> lines = Files.lines(Paths.get(forceOutputFilePath))) {
 					lines.forEach(l -> {
@@ -604,17 +633,21 @@ public class Mutinack implements Actualizable {
 									continue;
 								}
 								int columnPosition = loc.indexOf(":");
-								final String contig = loc.substring(0, columnPosition);
+								final @NonNull String contig = loc.substring(0, columnPosition);
 								final String pos = loc.substring(columnPosition + 1);
 								double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
-								final SequenceLocation parsedLocation = new SequenceLocation(contigNames.indexOf(contig), contig,
+								final int contigIndex = contigNames.indexOf(contig);
+								if (contigIndex < 0) {
+									throw new IllegalArgumentException("Unknown contig " + contig);
+								}
+								final SequenceLocation parsedLocation = new SequenceLocation(contigIndex, contig,
 										(int) Math.floor(position), position - Math.floor(position) > 0);
 								if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 									Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 											" in list of forced output positions"));
 								}
 							} catch (Exception e) {
-								throw new RuntimeException("Error parsing " + loc, e);
+								throw new RuntimeException("Error parsing " + loc + " in file " + forceOutputFilePath, e);
 							}
 						}
 					});
@@ -751,6 +784,10 @@ public class Mutinack implements Actualizable {
 						name,
 						i,
 						inputBam,
+						argValues.variableBarcodeLength == 0 ?
+								GetReadStats.getApproximateReadInsertSize(inputBam, argValues.maxInsertSize)
+							:
+								null,
 						argValues.ignoreFirstNBasesQ1,
 						argValues.ignoreFirstNBasesQ2,
 						argValues.ignoreLastNBases,
@@ -759,6 +796,7 @@ public class Mutinack implements Actualizable {
 						argValues.minReadsPerStrandQ1,
 						argValues.minReadsPerStrandQ2,
 						argValues.minReadsPerStrandForDisagreement,
+						argValues.Q2DisagCapsMatchingMutationQuality,
 						argValues.minBasePhredScoreQ1,
 						argValues.minBasePhredScoreQ2,
 						argValues.minReadMedianPhredScore,
@@ -794,7 +832,8 @@ public class Mutinack implements Actualizable {
 						outputLevel,
 						argValues.rnaSeq,
 						excludeBEDs,
-						argValues.computeRawDisagreements);
+						argValues.computeRawDisagreements,
+						argValues.reportCoverageAtAllPositions);
 				analyzers.set(i,analyzer);
 
 				analyzer.finalOutputBaseName = (argValues.auxOutputFileBaseName != null ?
@@ -1134,7 +1173,8 @@ public class Mutinack implements Actualizable {
 				final int subAnalyzerSpan = (terminateContigAtPosition - startContigAtPosition + 1) /
 					contigParallelizationFactor;
 				for (int p = 0; p < contigParallelizationFactor; p++) {
-					final AnalysisChunk analysisChunk = new AnalysisChunk();
+					final AnalysisChunk analysisChunk = new AnalysisChunk(
+						Objects.requireNonNull(contigNames.get(contigIndex)));
 					analysisChunk.out = out;
 					contigAnalysisChunks.add(analysisChunk);
 
@@ -1144,7 +1184,6 @@ public class Mutinack implements Actualizable {
 							: startSubAt + subAnalyzerSpan - 1;
 
 					analysisChunk.contig = contigIndex;
-					analysisChunk.contigName = contigNames.get(contigIndex);
 					analysisChunk.startAtPosition = startSubAt;
 					analysisChunk.terminateAtPosition = terminateAtPosition;
 					analysisChunk.pauseAtPosition = new SettableInteger();
@@ -1175,7 +1214,16 @@ public class Mutinack implements Actualizable {
 			}//End loop over contig index
 
 			final int endIndex = contigNames.size() - 1;
-			final ParFor parFor = new ParFor("contig loop", 0, endIndex, null, true);
+			if (contigThreadPool == null) {
+				synchronized(Mutinack.class) {
+					if (contigThreadPool == null) {
+						contigThreadPool = Executors.newFixedThreadPool(argValues.maxParallelContigs,
+							new NamedPoolThreadFactory("main_contig_thread_"));
+					}
+				}
+			}
+			final ParFor parFor = new ParFor(0, endIndex, null, contigThreadPool, true);
+			parFor.setName("contig loop");
 
 			for (int worker = 0; worker < parFor.getNThreads(); worker++)
 				parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
@@ -1316,7 +1364,7 @@ public class Mutinack implements Actualizable {
 						throw new RuntimeException(e);
 					}
 				}
-			}
+			}//End if readContigsFromFile
 
 			if (mutationAnnotationWriter != null) {//Unnecessary test, performed to suppress null warning
 				for (@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
@@ -1415,7 +1463,7 @@ public class Mutinack implements Actualizable {
 		gatherer.throwIfPresent();
 	}
 
-	private void closeOutputs() throws IOException {
+	private void closeOutputs() {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		for (Closeable c: itemsToClose) {
 			gatherer.tryAdd(() ->

@@ -26,7 +26,7 @@ public class TroveSetCollector {
 	public static<T> Collector<T, Set<T>, Set<T>> uniqueValueCollector() {
 	    return Collector.of(
 	            THashSet<T>::new,
-	            (set, e) -> set.add(e),
+				Set::add,
 	            (set1, set2) -> {
 	            	set1.addAll(set2);
 	            	return set1;

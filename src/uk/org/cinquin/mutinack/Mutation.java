@@ -63,6 +63,15 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		}
 	}
 	
+	public static @NonNull String reverseComplement(@NonNull String s) {
+		byte [] bytes = s.getBytes();
+		byte [] rcBytes = new byte[bytes.length];
+		for (int i = 0, r = bytes.length - 1; i < bytes.length; i++, r--) {
+			rcBytes[i] = complement(bytes[r]);
+		}
+		return new String(rcBytes);
+	}
+
 	public Mutation reverseComplement() {
 		final byte[] cMutSeq;
 		if (mutationSequence != null) {
@@ -71,7 +80,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			}
 			cMutSeq = new byte[mutationSequence.length];
 			try {
-				for (int i = 0, r = mutationSequence.length -1; r >= 0; i++, r--) {
+				for (int i = 0, r = mutationSequence.length - 1; r >= 0; i++, r--) {
 					cMutSeq[i] = complement(mutationSequence[r]);
 				}
 			} catch (Exception e) {

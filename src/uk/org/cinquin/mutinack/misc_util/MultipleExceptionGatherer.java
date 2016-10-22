@@ -51,7 +51,6 @@ public class MultipleExceptionGatherer {
 
 	@Override
 	public String toString() {
-		StringBuilder result = new StringBuilder();
 		StringWriter stringWriter = new StringWriter();
 		PrintWriter printWriter = new PrintWriter(stringWriter);
 		exceptions.forEach(t -> {
@@ -59,6 +58,6 @@ public class MultipleExceptionGatherer {
 			t.printStackTrace(printWriter);
 			printWriter.append("-----\n");
 		});
-		return result.toString();
+		return stringWriter.toString();
 	}
 }

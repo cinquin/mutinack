@@ -10,6 +10,9 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 
 	public final boolean hasAWtStrand;
 	
+	//Not taken into account for equality
+	public double probCollision;
+
 	public DuplexDisagreement(@NonNull Mutation first, @NonNull Mutation second,
 			boolean hasAWtStrand) {
 		super(first, second);

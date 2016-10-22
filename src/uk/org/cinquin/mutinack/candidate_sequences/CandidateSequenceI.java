@@ -84,4 +84,9 @@ public interface CandidateSequenceI extends Serializable {
 	Collection<ComparablePair<String, String>> getRawInsertionsQ2();
 	Collection<ComparablePair<String, String>> getMutableRawInsertionsQ2();
 	boolean isNegativeStrand();
+	float getMeanDistanceToLigSite();
+	int getInsertSizeAtPos10thP();
+	void setInsertSizeAtPos10thP(int insertSizeAtPos10thP);
+	int getInsertSizeAtPos90thP();
+	void setInsertSizeAtPos90thP(int insertSizeAtPos90thP);
 }

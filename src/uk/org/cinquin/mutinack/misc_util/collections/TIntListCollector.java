@@ -27,7 +27,7 @@ public class TIntListCollector {
 	public static<T> Collector<Integer, TIntList, TIntList> tIntListCollector() {
 		return Collector.of(
 				TIntArrayList::new,
-				(list, e) -> list.add(e),
+				TIntList::add,
 				(list1, list2) -> { 
 					list1.addAll(list2);
 					return list1;

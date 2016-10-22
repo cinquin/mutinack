@@ -89,7 +89,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final List<Mutinack> analyzers;
 	private final List<@NonNull LocationExaminationResults> analyzerCandidateLists;
 	private final int contigIndex;
-	private final String contigName;
+	private final @NonNull String contigName;
 	private final int PROCESSING_CHUNK;
 	
 	private final ConcurrentHashMap<String, SAMRecord> readsToWrite;
@@ -109,7 +109,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							 Map<SequenceLocation, Boolean> forceOutputAtLocations,
 							 Histogram dubiousOrGoodDuplexCovInAllInputs,
 							 Histogram goodDuplexCovInAllInputs,
-							 String contigName,
+							 @NonNull String contigName,
 							 int contigIndex,
 							 List<GenomeFeatureTester> excludeBEDs,
 							 List<BedReader> repetitiveBEDs,
@@ -124,8 +124,9 @@ public class SubAnalyzerPhaser extends Phaser {
 		previousLastProcessable = new SettableInteger(-1);
 		
 		readsToWrite = alignmentWriter == null ?
-			null
-			: new ConcurrentHashMap<>(100_000);
+				null
+			:
+				new ConcurrentHashMap<>(100_000);
 		outputAlignment = alignmentWriter;
 		this.mutationAnnotationWriter = mutationAnnotationWriter;
 		this.dubiousOrGoodDuplexCovInAllInputs = dubiousOrGoodDuplexCovInAllInputs;
@@ -246,7 +247,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						}
 
 						for (CandidateSequence c: examResults.analyzedCandidateSequences) {
-							if (c.getQuality().getMin().compareTo(GOOD) >= 0) {
+							if (c.getQuality().getMin().atLeast(GOOD)) {
 								if (c.getMutationType().isWildtype()) {
 									stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
 									if (!repetitiveBEDs.isEmpty()) {
@@ -307,7 +308,17 @@ public class SubAnalyzerPhaser extends Phaser {
 								stats.rawInsertionLengthQ2.insert(var.snd.length());
 							}
 
-							for (DuplexDisagreement d: examResults.disagreements) {
+							for (Entry<DuplexDisagreement, List<DuplexRead>> entry: examResults.disagreements) {
+
+								DuplexDisagreement d = entry.getKey();
+
+								if (argValues.variableBarcodeLength == 0) {
+									stats.duplexCollisionProbabilityLocalAvAtDisag.insert(
+										(int) (examResults.probAtLeastOneCollision * 1_000d));
+
+									stats.duplexCollisionProbabilityAtDisag.insert(
+										(int) (d.probCollision * 1_000d));
+								}
 								
 								byte[] fstSeq = d.getFst().getSequence();
 								if (fstSeq == null) {
@@ -333,8 +344,19 @@ public class SubAnalyzerPhaser extends Phaser {
 														new String (sndSeq)) + "\t" +
 												mutant.mutationType + "\t" +
 												(d.hasAWtStrand ? "" : (d.getFst().mutationType)) + "\t" +
+												examResults.duplexInsertSize10thP + "\t" +
+												examResults.duplexInsertSize90thP + "\t" +
 												examResults.alleleFrequencies.get(0) + "\t" +
 												examResults.alleleFrequencies.get(1) + "\t" +
+												mediumLengthFloatFormatter.get().format(d.probCollision) + "\t" +
+												mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + "\t" +
+												entry.getValue().size() + "\t" +
+												((argValues.verbosity < 2) ? "" :
+												entry.getValue().stream().limit(20).map(dp ->
+													Stream.concat(dp.topStrandRecords.stream(),
+														dp.bottomStrandRecords.stream())/*.findFirst()*/.
+														map(ExtendedSAMRecord::getFullName).collect(Collectors.joining(", ", "{ ", " }"))
+												).collect(Collectors.joining(", ", "[ ",         " ]"))) +
 												"\n");
 									}
 								} catch (IOException e) {
@@ -371,7 +393,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							}
 						} else {
 							stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
-							for (@NonNull DuplexDisagreement d: examResults.disagreements) {
+							for (@NonNull DuplexDisagreement d: examResults.disagreements.keys()) {
 								stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
 							}
 						}
@@ -386,8 +408,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 							examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
 								flatMap(c -> c.getDuplexes().stream()).
-								filter(dr -> dr.localQuality.getMin().compareTo(GOOD) >= 0).
-								map(DuplexRead::getDistanceToLigSite).
+								filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(GOOD)).
+								map(DuplexRead::getMaxDistanceToLigSite).
 								forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 									stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
@@ -407,6 +429,10 @@ public class SubAnalyzerPhaser extends Phaser {
 							stats.nQ1Q2AtPosQualityQ2OthersQ1Q2.insert(
 									examResults.analyzedCandidateSequences.
 									stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
+
+							if (argValues.variableBarcodeLength == 0) {
+								stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));
+							}
 						}
 					});//End parallel loop over analyzers to deal with coverage
 
@@ -445,7 +471,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						forceOutputAtLocations.get(location);
 
 					//Only report details when at least one mutant candidate is of Q2 quality
-					if (forceReporting || (maxCandMutQuality.compareTo(GOOD) >= 0)) {
+					if (forceReporting || (maxCandMutQuality.atLeast(GOOD))) {
 						if (NONTRIVIAL_ASSERTIONS) for (GenomeFeatureTester t: excludeBEDs) {
 							Assert.isFalse(t.test(location), "%s excluded by %s"/*, location, t*/);
 						}
@@ -457,7 +483,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							flatMap(Collection::stream).
 							filter(c -> {
 								Assert.isFalse(c.getLocation().distanceOnSameContig(location) > 0);
-								return c.getQuality().getMin().compareTo(POOR) > 0;}).
+								return c.getQuality().getMin().greaterThan(POOR);}).
 							filter(c -> !c.isHidden()).
 							sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 							collect(Collectors.toList());
@@ -466,7 +492,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							map(l -> l.analyzedCandidateSequences).
 							flatMap(Collection::stream).
 							filter(c -> c.getLocation().equals(location) &&
-								(c.getQuality().getMin().compareTo(POOR) > 0 || c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT))).
+								(c.getQuality().getMin().greaterThan(POOR) || c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT))).
 							sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 							collect(Collectors.toList());
 
@@ -501,11 +527,11 @@ public class SubAnalyzerPhaser extends Phaser {
 							
 							if (!candidate.getMutationType().isWildtype() &&
 								allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
-										(c.getQuality().getMin().compareTo(GOOD) >= 0 || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).compareTo(GOOD) >= 0))).count() >= 2) {
+										(c.getQuality().getMin().atLeast(GOOD) || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).atLeast(GOOD)))).count() >= 2) {
 								baseOutput0 += "!";
 							} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 									!candidate.getMutationType().isWildtype() &&
-									candidate.getQuality().getMin().compareTo(GOOD) >= 0 &&
+									candidate.getQuality().getMin().atLeast(GOOD) &&
 									(candidate.getnGoodDuplexes() >= argValues.minQ2DuplexesToCallMutation) &&
 									candidate.getnGoodOrDubiousDuplexes() >= argValues.minQ1Q2DuplexesToCallMutation &&
 									(!tooHighCoverage.get()) &&
@@ -583,13 +609,13 @@ public class SubAnalyzerPhaser extends Phaser {
 									continue;
 								} else {//1 candidate
 									c = l.get(0);
-									if (c.getQuality().getMin().compareTo(GOOD) < 0) {
+									if (c.getQuality().getMin().lowerThan(GOOD)) {
 										line = line.replace("*", "x");
 									}
 									NumberFormat formatter = mediumLengthFloatFormatter.get();
 									Stream<String> qualityKD = c.getIssues().values().stream().map(
 											issues -> issues.getQualities().entrySet().
-											stream().filter(entry -> entry.getValue().compareTo(GOOD) < 0).
+											stream().filter(entry -> entry.getValue().lowerThan(GOOD)).
 											map(Object::toString).
 											collect(Collectors.joining(",", "{", "}")));
 									if (c.nDuplexesSisterArm < argValues.minNumberDuplexesSisterArm) {
@@ -626,8 +652,12 @@ public class SubAnalyzerPhaser extends Phaser {
 										(c.getAverageMappingQuality() == -1 ? "?" : c.getAverageMappingQuality()) + "\t" +
 										c.nDuplexesSisterArm + "\t" +
 										c.insertSize + "\t" +
+										c.getInsertSizeAtPos10thP() + "\t" +
+										c.getInsertSizeAtPos90thP() + "\t" +
 										c.minDistanceToLigSite + "\t" +
 										c.maxDistanceToLigSite + "\t" +
+										formatter.format(c.getMeanDistanceToLigSite()) + "\t" +
+										formatter.format(c.getProbCollision()) + "\t" +
 										c.positionInRead + "\t" +
 										c.readEL + "\t" +
 										c.readName + "\t" +
@@ -721,8 +751,8 @@ public class SubAnalyzerPhaser extends Phaser {
 							final int randomIndexForDuplexName = dn.incrementAndGet();
 
 							final int nReads = duplexRead.bottomStrandRecords.size() + duplexRead.topStrandRecords.size();
-							final Quality minDuplexQualityCopy = duplexRead.minQuality;
-							final Quality maxDuplexQualityCopy = duplexRead.maxQuality;
+							final Quality minDuplexQuality = duplexRead.minQuality;
+							final Quality maxDuplexQuality = duplexRead.maxQuality;
 							Handle<String> topOrBottom = new Handle<>();
 							Consumer<ExtendedSAMRecord> queueWrite = (ExtendedSAMRecord e) -> {
 								final SAMRecord samRecord = e.record;
@@ -736,8 +766,12 @@ public class SubAnalyzerPhaser extends Phaser {
 									samRecord.setAttribute("DS", nReads);
 									samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
 									samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
+									samRecord.setAttribute("DQ", minDuplexQuality.toInt());
+									samRecord.setAttribute("DR", maxDuplexQuality.toInt());
 									String info = topOrBottom.get() + " Q" +
-											minDuplexQualityCopy.toShortString() + "->" + maxDuplexQualityCopy.toShortString() + " P" + duplexRead.getMinMedianPhred() +
+											minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
+											" global Qs: " + duplexRead.globalQuality +
+											" P" + duplexRead.getMinMedianPhred() +
 											" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
 									samRecord.setAttribute("DI", info);
 									samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
@@ -755,21 +789,13 @@ public class SubAnalyzerPhaser extends Phaser {
 								}
 							};
 							if (argValues.collapseFilteredReads) {
-								final ExtendedSAMRecord r;
-								topOrBottom.set("U");
 								if (!duplexRead.topStrandRecords.isEmpty()) {
-									r = duplexRead.topStrandRecords.get(0);
-								} else if (!duplexRead.bottomStrandRecords.isEmpty()) {
-									r = duplexRead.bottomStrandRecords.get(0);
-								} else {
-									//TODO Should that be an error?
-									r = null;
+									topOrBottom.set("T");
+									queueWrite.accept(duplexRead.topStrandRecords.get(0));
 								}
-								if (r != null) {
-									queueWrite.accept(r);
-									if (r.getMate() != null) {
-										queueWrite.accept(r.getMate());
-									}
+								if (!duplexRead.bottomStrandRecords.isEmpty()) {
+									topOrBottom.set("B");
+									queueWrite.accept(duplexRead.bottomStrandRecords.get(0));
 								}
 							} else {
 								topOrBottom.set("T");

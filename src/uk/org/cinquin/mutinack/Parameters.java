@@ -97,6 +97,9 @@ public final class Parameters implements Serializable {
 			+ " number of contigs * parallelization factor", required = false)
 	public int maxThreadsPerPool = 64;
 
+	@Parameter(names = "-maxParallelContigs", description = "JVM-wide maximum number of concurrently analyzed contigs; first call sets final value", required = false)
+	public int maxParallelContigs = 30;
+
 	@Parameter(names = "-terminateImmediatelyUponError", description = "If true, any error causes immediate termination of the run", required = false)
 	public boolean terminateImmediatelyUponError = true;
 
@@ -178,12 +181,15 @@ public final class Parameters implements Serializable {
 			+ " are broken down more finely than contig by contig", required = false)
 	public int contigStatsBinLength = 2_000_000;
 
+	@Parameter(names = "-reportCoverageAtAllPositions", description = "Report key coverage statistics at every position analyzed; do not use when analyzing large regions!", arity = 1)
+	public boolean reportCoverageAtAllPositions = false;
+
 	@Parameter(names = "-minMappingQualityQ1", description = "Reads whose mapping quality is below this"
 			+ " threshold are discarded (best to keep this relatively low to allow non-unique mutation candidates to be identified in all samples)", required = false)
 	public int minMappingQualityQ1 = 20;
 
 	@Parameter(names = "-minMappingQualityQ2", description = "Reads whose mapping quality is below this"
-			+ " threshold are not used to propose mutation candidates", required = false)
+			+ " threshold are not used to propose Q2 mutation candidates", required = false)
 	public int minMappingQualityQ2 = 50;
 
 	@Parameter(names = "-minReadsPerStrandQ1", description = "Duplexes that have fewer reads for the "
@@ -211,15 +217,18 @@ public final class Parameters implements Serializable {
 			+ " original strand that define a consensus (must be > 0.5)", required = false)
 	public float minConsensusThresholdQ2 = 0.95f;
 
-	@Parameter(names = "-disagreementConsensusThreshold", description = "Disagreements are only reported if for each strand"
-			+ " consensus is above this threshold, in addition to being above minConsensusThresholdQ2", required = false)
+	@Parameter(names = "-disagreementConsensusThreshold", description = "NOT YET IMPLEMENTED; Disagreements are only reported if for each strand"
+			+ " consensus is above this threshold, in addition to being above minConsensusThresholdQ2", required = false, hidden = true)
 	public float disagreementConsensusThreshold = 0.0f;
 
 	@Parameter(names = "-minReadsPerStrandForDisagreement", description = "Minimal number of reads "
 			+ "for original top and bottom strands to examine duplex for disagreement between these strands", required = false)
 	public int minReadsPerStrandForDisagreement = 0;
 
-	@Parameter(names = "-computeRawDisagreements", description = "Compute disagreements between raw reads and reference sequence", required = false)
+	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
+	public boolean Q2DisagCapsMatchingMutationQuality = true;
+
+	@Parameter(names = "-computeRawDisagreements", description = "Compute disagreements between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawDisagreements = true;
 
 	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value divided by 10 are reported and marked with a % sign", required = false)
@@ -229,14 +238,14 @@ public final class Parameters implements Serializable {
 			+ " are discarded (keeping this relatively low helps identify problematic reads)", required = false)
 	public int minBasePhredScoreQ1 = 20;
 
-	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose mutation candidates"
+	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose Q2 mutation candidates"
 			, required = false)
 	public int minBasePhredScoreQ2 = 30;
 
 	@Parameter(names = "-ignoreFirstNBasesQ1", description = "Bases that occur within this many bases of read start are discarded", required = false)
 	public int ignoreFirstNBasesQ1 = 4;
 
-	@Parameter(names = "-ignoreFirstNBasesQ2", description = "Bases that occur within this many bases of read start are not used to propose mutation candidates", required = false)
+	@Parameter(names = "-ignoreFirstNBasesQ2", description = "Bases that occur within this many bases of read start are not used to propose Q2 mutation candidates", required = false)
 	public int ignoreFirstNBasesQ2 = 35;
 
 	@Parameter(names = "-ignoreLastNBases", description = "Potential mutations that occur within this many bases of read end are ignored", required = false)
@@ -246,19 +255,19 @@ public final class Parameters implements Serializable {
 			, required = false)
 	public int minReadMedianPhredScore = 0;
 
-	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose mutation candidates"
+	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose Q2 mutation candidates"
 			, required = false)
 	public int minMedianPhredQualityAtPosition = 0;
 
-	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold"
+	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose Q2 mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold"
 			, required = false)
 	public float maxFractionWrongPairsAtPosition = 1.0f;
 
-	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose mutation candidates"
+	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose Q2 mutation candidates"
 			, required = false)
 	public int maxAverageBasesClipped = 15;
 
-	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose mutation candidates"
+	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose Q2 mutation candidates"
 			, required = false)
 	public int maxAverageClippingOfAllCoveringDuplexes = 999;
 
@@ -269,7 +278,7 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-maxInsertSize", description = "Inserts above this size are not used to propose Q2 mutation candidates, and will most of the time be ignored when identifying Q1 candidates", required = false)
 	public int maxInsertSize = 1_000;
 
-	@Parameter(names = "-minInsertSize", description = "Inserts below this size are not used to propose mutation candidates", required = false)
+	@Parameter(names = "-minInsertSize", description = "Inserts below this size are not used to propose Q2 mutation candidates", required = false)
 	public int minInsertSize = 0;
 
 	@Parameter(names = "-ignoreZeroInsertSizeReads", description = "Reads 0 or undefined insert size are thrown out at the onset (and thus cannot contribute to exclusion of mutation candidates found in multiple samples)", required = false)
@@ -316,11 +325,11 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> saveFilteredReadsTo = new ArrayList<>();
 
-	@Parameter(names = "-collapseFilteredReads", description = "Only write one (randomly-chosen) read per duplex", required = false, hidden = false)
+	@Parameter(names = "-collapseFilteredReads", description = "Only write one (randomly-chosen) read per duplex strand", required = false, hidden = false)
 	public boolean collapseFilteredReads = false;
 
 	@FilePathList
-	@Parameter(names = "-bamReadsWithBarcodeField", description = "BAM/SAM file saved from previous run with barcodes stored as attributes", required = false, hidden = hideInProgressParameters)
+	@Parameter(names = "-bamReadsWithBarcodeField", description = "Unimplemented; BAM/SAM file saved from previous run with barcodes stored as attributes", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> bamReadsWithBarcodeField = new ArrayList<>();
 
 	@Parameter(names = "-saveRawReadsDB", description = "Not functional at present", required = false, arity = 1, hidden = hideInProgressParameters)
@@ -342,11 +351,15 @@ public final class Parameters implements Serializable {
 	 */
 
 	@Parameter(names = "-sampleName", description = "Used to name samples in output file; can be repeated as many times as there are inputReads", required = false)
-	List<@NonNull String> sampleNames = new ArrayList <> ();
+	List<@NonNull String> sampleNames = new ArrayList<>();
 
 	@FilePathList
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
 	public List<@NonNull String> forceOutputAtPositionsFile = new ArrayList<>();
+
+	@Parameter(names = "-forceOutputAtPositions", description = "Detailed information is reported for positions given as ranges", required = false,
+		converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
+	public List<@NonNull String> forceOutputAtPositions = new ArrayList<>();
 
 	@FilePath
 	@Parameter(names = "-annotateMutationsInFile", description = "TODO", required = false)
@@ -456,7 +469,7 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-runName", description = "Name of run to be used in conjunction with -recordRunsTo", required = false, hidden = hideAdvancedParameters)
 	public String runName = null;
 
-	@Parameter(names = "-enableCostlyAssertions", description = "Enable internal sanity checks that significantly slow down execution", required = false, hidden = hideAdvancedParameters, arity = 1)
+	@Parameter(names = "-enableCostlyAssertions", description = "Enable internal sanity checks that significantly slow down execution", required = false, arity = 1)
 	public boolean enableCostlyAssertions = true;
 
 	@Parameter(names = "-randomSeed", description = "TODO", required = false, hidden = hideAdvancedParameters)
@@ -682,6 +695,7 @@ public final class Parameters implements Serializable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + (Q2DisagCapsMatchingMutationQuality ? 1231 : 1237);
 		result = prime * result + (acceptNInBarCode ? 1231 : 1237);
 		result = prime * result + alignmentPositionMismatchAllowed;
 		result = prime * result + ((annotateMutationsInFile == null) ? 0 : annotateMutationsInFile.hashCode());
@@ -701,6 +715,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + Float.floatToIntBits(dropReadProbability);
 		result = prime * result + (enableCostlyAssertions ? 1231 : 1237);
 		result = prime * result + ((excludeRegionsInBED == null) ? 0 : excludeRegionsInBED.hashCode());
+		result = prime * result + ((forceOutputAtPositions == null) ? 0 : forceOutputAtPositions.hashCode());
 		result = prime * result + ((forceOutputAtPositionsFile == null) ? 0 : forceOutputAtPositionsFile.hashCode());
 		result = prime * result + (help ? 1231 : 1237);
 		result = prime * result + ignoreFirstNBasesQ1;
@@ -719,6 +734,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + Float.floatToIntBits(maxFractionWrongPairsAtPosition);
 		result = prime * result + maxInsertSize;
 		result = prime * result + ((maxNDuplexes == null) ? 0 : maxNDuplexes.hashCode());
+		result = prime * result + maxParallelContigs;
 		result = prime * result + maxThreadsPerPool;
 		result = prime * result + minBasePhredScoreQ1;
 		result = prime * result + minBasePhredScoreQ2;
@@ -756,6 +772,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + Float.floatToIntBits(randomOutputRate);
 		result = prime * result + (int) (randomSeed ^ (randomSeed >>> 32));
 		result = prime * result + (randomizeMates ? 1231 : 1237);
+		result = prime * result + (randomizeStrand ? 1231 : 1237);
 		result = prime * result + (readContigsFromFile ? 1231 : 1237);
 		result = prime * result + ((recordRunsTo == null) ? 0 : recordRunsTo.hashCode());
 		result = prime * result + ((refSeqToOfficialGeneName == null) ? 0 : refSeqToOfficialGeneName.hashCode());
@@ -763,6 +780,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + ((referenceOutput == null) ? 0 : referenceOutput.hashCode());
 		result = prime * result + ((repetiveRegionBED == null) ? 0 : repetiveRegionBED.hashCode());
 		result = prime * result + ((reportBreakdownForBED == null) ? 0 : reportBreakdownForBED.hashCode());
+		result = prime * result + (reportCoverageAtAllPositions ? 1231 : 1237);
 		result = prime * result + ((reportStatsForBED == null) ? 0 : reportStatsForBED.hashCode());
 		result = prime * result + ((reportStatsForNotBED == null) ? 0 : reportStatsForNotBED.hashCode());
 		result = prime * result + (requireMatchInAlignmentEnd ? 1231 : 1237);
@@ -801,6 +819,8 @@ public final class Parameters implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Parameters other = (Parameters) obj;
+		if (Q2DisagCapsMatchingMutationQuality != other.Q2DisagCapsMatchingMutationQuality)
+			return false;
 		if (acceptNInBarCode != other.acceptNInBarCode)
 			return false;
 		if (alignmentPositionMismatchAllowed != other.alignmentPositionMismatchAllowed)
@@ -867,6 +887,11 @@ public final class Parameters implements Serializable {
 				return false;
 		} else if (!excludeRegionsInBED.equals(other.excludeRegionsInBED))
 			return false;
+		if (forceOutputAtPositions == null) {
+			if (other.forceOutputAtPositions != null)
+				return false;
+		} else if (!forceOutputAtPositions.equals(other.forceOutputAtPositions))
+			return false;
 		if (forceOutputAtPositionsFile == null) {
 			if (other.forceOutputAtPositionsFile != null)
 				return false;
@@ -918,6 +943,8 @@ public final class Parameters implements Serializable {
 			if (other.maxNDuplexes != null)
 				return false;
 		} else if (!maxNDuplexes.equals(other.maxNDuplexes))
+			return false;
+		if (maxParallelContigs != other.maxParallelContigs)
 			return false;
 		if (maxThreadsPerPool != other.maxThreadsPerPool)
 			return false;
@@ -1008,6 +1035,8 @@ public final class Parameters implements Serializable {
 			return false;
 		if (randomizeMates != other.randomizeMates)
 			return false;
+		if (randomizeStrand != other.randomizeStrand)
+			return false;
 		if (readContigsFromFile != other.readContigsFromFile)
 			return false;
 		if (recordRunsTo == null) {
@@ -1039,6 +1068,8 @@ public final class Parameters implements Serializable {
 			if (other.reportBreakdownForBED != null)
 				return false;
 		} else if (!reportBreakdownForBED.equals(other.reportBreakdownForBED))
+			return false;
+		if (reportCoverageAtAllPositions != other.reportCoverageAtAllPositions)
 			return false;
 		if (reportStatsForBED == null) {
 			if (other.reportStatsForBED != null)

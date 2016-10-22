@@ -82,18 +82,20 @@ public final class SingletonObjectIntMap<T> implements TObjectIntMap<T> {
 		return arg0.execute(value);
 	}
 
+	public final static int NO_ENTRY_VALUE = -1234567;
+
 	@Override
 	public int get(Object arg0) {
 		if (arg0.equals(obj)) {
 			return value;
 		} else {
-			return 0;
+			return NO_ENTRY_VALUE;
 		}
 	}
 
 	@Override
 	public int getNoEntryValue() {
-		throw new RuntimeException("Unimplemented");
+		return NO_ENTRY_VALUE;
 	}
 
 	@Override

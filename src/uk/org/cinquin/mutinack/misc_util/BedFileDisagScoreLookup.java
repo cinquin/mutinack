@@ -92,7 +92,7 @@ public class BedFileDisagScoreLookup {
 					result = -1;
 				} else {
 					result = (float) 
-						intervals.stream().mapToDouble(i -> i.getScore()).sum();
+						intervals.stream().mapToDouble(GenomeInterval::getScore).sum();
 					intervals.forEach(i -> addToEnd.add(i.toString()));
 				}
 				

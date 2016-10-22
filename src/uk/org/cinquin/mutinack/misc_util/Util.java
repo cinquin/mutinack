@@ -31,10 +31,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,8 +53,10 @@ import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
 import contrib.net.sf.samtools.util.StringUtil;
+import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 import uk.org.cinquin.mutinack.sequence_IO.FastQRead;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
@@ -89,6 +93,40 @@ public class Util {
 			}
 		}
 		return result;
+	}
+
+	public static List<SequenceLocation> parseListLocations(List<String> l,
+			Map<String, Integer> indexContigNameReverseMap) {
+		return l.stream().flatMap
+			(s -> {
+				final List<SequenceLocation> result = new ArrayList<>();
+				final String[] startStop = s.split("-");
+				if (startStop.length > 2) {
+					throw new ParseRTException("Expected at most one - in " + s);
+				}
+				final SequenceLocation start, stop;
+				try {
+					start = SequenceLocation.parse(startStop[0],
+					indexContigNameReverseMap);
+					stop = startStop.length == 1 ? start :
+					SequenceLocation.parse(startStop[1],
+						indexContigNameReverseMap);
+				} catch (RuntimeException e) {
+					throw new ParseRTException("Error parsing start/stop positions in " +
+						s, e);
+				}
+
+				if (start.contigIndex != stop.contigIndex) {
+					throw new ParseRTException("Non-matching contigs in range " + s);
+				}
+
+				for (int i = start.position; i <= stop.position; i++) {
+					result.add(new SequenceLocation(start.contigName, indexContigNameReverseMap,
+						i));
+				}
+
+				return result.stream();
+			}).collect(Collectors.toList());
 	}
 
 	public static Pair<List<String>, List<Integer>> parseListPositions(List<String> l,
@@ -152,10 +190,37 @@ public class Util {
 		return a == b;
 	}
 
-	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN, int nMismatchesAllowed) {
-		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
+	private static void checkLengthsEqual(byte @NonNull[] a, byte @NonNull[] b) {
+		if (a.length != b.length) {
 			throw new IllegalArgumentException();
 		}
+	}
+
+	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
+		checkLengthsEqual(a, b);
+		if (!allowN) {
+			return a == b;//OK because of interning
+		}
+		if (a == b) {
+			return true;
+		}
+		try {
+			for (int i = 0; i < a.length; i++) {
+				if (!basesEqual(a[i], b[i], allowN)) {
+					return false;
+				}
+			}
+		} catch (ArrayIndexOutOfBoundsException e) {
+			throw new RuntimeException("Index out of bounds while comparing " + new String(a) + " to " + new String(b), e);
+		}
+		return true;
+	}
+
+	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN, int nMismatchesAllowed) {
+		if (a == b) {
+			return true;
+		}
+		checkLengthsEqual(a, b);
 		try {
 			int nMismatches = 0;
 			for (int i = 0; i < a.length; i++) {
@@ -172,18 +237,15 @@ public class Util {
 	}
 
 	public static int nMismatches(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
-		if (DebugLogControl.NONTRIVIAL_ASSERTIONS && a.length != b.length) {
-			throw new IllegalArgumentException();
+		if (a == b) {
+			return 0;
 		}
+		checkLengthsEqual(a, b);
 		int nMismatches = 0;
-		try {
-			for (int i = 0; i < a.length; i++) {
-				if (!basesEqual(a[i], b[i], allowN)) {
-					++nMismatches;
-				}
+		for (int i = 0; i < a.length; i++) {
+			if (!basesEqual(a[i], b[i], allowN)) {
+				++nMismatches;
 			}
-		} catch (ArrayIndexOutOfBoundsException e) {
-			throw new RuntimeException("Index out of bounds while comparing " + new String(a) + " to " + new String(b), e);
 		}
 		return nMismatches;
 	}
@@ -214,10 +276,10 @@ public class Util {
 				} catch (InterruptedException e) {
 					break;
 				}
-				String line1 = localFourLines.lines.get(0);
-				String line2 = localFourLines.lines.get(1);
+				@NonNull String line1 = Objects.requireNonNull(localFourLines.lines.get(0));
+				@NonNull String line2 = Objects.requireNonNull(localFourLines.lines.get(1));
 				//String line3 = localFourLines.lines.get(2);
-				String line4 = localFourLines.lines.get(3);
+				@NonNull String line4 = Objects.requireNonNull(localFourLines.lines.get(3));
 
 				String name = line1.substring(1, line1.indexOf(" ")) + "--";
 				if (pairID != 0) {
@@ -301,23 +363,27 @@ public class Util {
 		}
 	}
 
-	private static final class FourLines {
-		final @NonNull List<String> lines = new ArrayList<>(4);
+	public static final class FourLines {
+		final @NonNull
+		public List<@Nullable String> lines = new ArrayList<>(4);
+
+		@SuppressWarnings("null")
+		@Override
+		public String toString() {
+			return lines.stream().collect(Collectors.joining("\n", "", "\n"));
+		}
 	}
 
 	//Keep separate maps for variable and constant barcodes so we can have stats for each
-	public static final Map<ByteArray, ByteArray> internedVariableBarcodes = new ConcurrentHashMap<>(200);
-	public static final Map<ByteArray, ByteArray> internedConstantBarcodes = new ConcurrentHashMap<>(200);
+	public static final ConcurrentMap<ByteArray, ByteArray> internedVariableBarcodes =
+		new ConcurrentHashMap<>(200);
+	public static final ConcurrentMap<ByteArray, ByteArray> internedConstantBarcodes =
+		new ConcurrentHashMap<>(200);
 
-	//NB: Interning might not be fully effective in the early stages when the map is being
-	//filled in a multi-threaded way, but that does not matter for our purposes
-	private static byte @NonNull[] getInternedArray(byte @NonNull[] array, Map<ByteArray, ByteArray> map) {
+	private static byte @NonNull[] getInternedArray(byte @NonNull[] array,
+			ConcurrentMap<ByteArray, ByteArray> map) {
 		ByteArray key = new ByteArray(array);
-		ByteArray intern = map.get(key);
-		if (intern == null) {
-			map.put(key, key);
-			intern = key;
-		}
+		ByteArray intern = map.computeIfAbsent(key, key0 -> key);
 		intern.nHits.increment();
 		return intern.array;
 	}

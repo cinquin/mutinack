@@ -78,6 +78,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int averageMappingQuality = -1;
 	private int minInsertSize = -1;
 	private int maxInsertSize = -1;
+	private int insertSizeAtPos10thP = -1;
+	private int insertSizeAtPos90thP = -1;
 	private int nWrongPairs;
 	private boolean hidden = false;
 	
@@ -101,6 +103,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	
 	public int minDistanceToLigSite = Integer.MAX_VALUE;
 	public int maxDistanceToLigSite = Integer.MIN_VALUE;
+	public float meanDistanceToLigSite = Float.NaN;
+	public int nDistancesToLigSite = 0;
+
+	public float probCollision = Float.NaN;
 	
 	private boolean negativeStrand;
 	public int nDuplexesSisterArm = -1;
@@ -108,6 +114,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public void resetLigSiteDistances() {
 		minDistanceToLigSite = Integer.MAX_VALUE;
 		maxDistanceToLigSite = Integer.MIN_VALUE;
+		meanDistanceToLigSite = Float.NaN;
+		nDistancesToLigSite = 0;
 	}
 	
 	public void acceptLigSiteDistance(int distance) {
@@ -117,6 +125,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (distance > maxDistanceToLigSite) {
 			maxDistanceToLigSite = distance;
 		}
+		if (nDistancesToLigSite == 0) {
+			meanDistanceToLigSite = distance;
+		} else {
+			meanDistanceToLigSite = (meanDistanceToLigSite * nDistancesToLigSite + distance) /
+				(nDistancesToLigSite + 1);
+		}
+		nDistancesToLigSite++;
 	}
 	
 	public boolean isHidden() {
@@ -133,6 +148,14 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public void setMedianPhredAtPosition(byte medianPhredAtPosition) {
 		this.medianPhredAtPosition = medianPhredAtPosition;
+	}
+
+	public void setProbCollision(float probCollision) {
+		this.probCollision = probCollision;
+	}
+
+	public float getProbCollision() {
+		return probCollision;
 	}
 
 	public CandidateSequence(int analyzerID, @NonNull MutationType mutationType,
@@ -357,11 +380,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.duplexes = duplexes;
 	}
 
+	private static final int NO_ENTRY_VALUE = SingletonObjectIntMap.NO_ENTRY_VALUE;
+
 	@SuppressWarnings("null")
 	@Override
 	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads() {
 		if (concurringReads == null) {
-			concurringReads = new TObjectIntHashMap<>(300, 0.5f, 1_000_000);
+			concurringReads = new TObjectIntHashMap<>(300, 0.5f, NO_ENTRY_VALUE);
 			if (initialConcurringRead != null) {
 				concurringReads.put(initialConcurringRead, initialLigationSiteD);
 			}
@@ -370,7 +395,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 	
 	private static final TObjectIntMap<ExtendedSAMRecord>
-		EMPTY_OBJECTINT_HASHMAP = new TObjectIntHashMap<>(0);
+		EMPTY_OBJECTINT_HASHMAP = new TObjectIntHashMap<>(0, 0.5f, NO_ENTRY_VALUE);
 
        private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
 	
@@ -430,6 +455,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public int getMinDistanceToLigSite() {
 		return minDistanceToLigSite;
+	}
+
+	@Override
+	public float getMeanDistanceToLigSite() {
+		return meanDistanceToLigSite;
 	}
 
 	@Override
@@ -626,6 +656,26 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			return Collections.emptyList();
 		}
 		return rawInsertionsQ2;
+	}
+
+	@Override
+	public int getInsertSizeAtPos10thP() {
+		return insertSizeAtPos10thP;
+	}
+
+	@Override
+	public void setInsertSizeAtPos10thP(int insertSizeAtPos10thP) {
+		this.insertSizeAtPos10thP = insertSizeAtPos10thP;
+	}
+
+	@Override
+	public int getInsertSizeAtPos90thP() {
+		return insertSizeAtPos90thP;
+	}
+
+	@Override
+	public void setInsertSizeAtPos90thP(int insertSizeAtPos90thP) {
+		this.insertSizeAtPos90thP = insertSizeAtPos90thP;
 	}
 
 }

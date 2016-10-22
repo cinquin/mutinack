@@ -24,17 +24,17 @@ import java.util.List;
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import uk.org.cinquin.mutinack.statistics.Histogram;
+import uk.org.cinquin.mutinack.statistics.LongAdderFormatter;
 
 public class HistogramSerializer extends JsonSerializer<@NonNull Histogram> {
 
 	@Override
 	public void serialize(@NonNull Histogram value, JsonGenerator gen,
-			SerializerProvider serializers) throws IOException, JsonProcessingException {
+			SerializerProvider serializers) throws IOException {
         gen.writeStartObject();
         gen.writeStringField("nEntries", value.nEntries);
         gen.writeStringField("average", value.average);
@@ -43,7 +43,7 @@ public class HistogramSerializer extends JsonSerializer<@NonNull Histogram> {
         	gen.writeStringField("nEntries", value.nEntries);
         }
         List<Long> values = new ArrayList<>();
-        value.stream().map(laf -> laf.sum()).forEachOrdered(s -> values.add(s));
+        value.stream().map(LongAdderFormatter::sum).forEachOrdered(values::add);
         gen.writeObjectField("values", values);
         gen.writeEndObject();
 	}

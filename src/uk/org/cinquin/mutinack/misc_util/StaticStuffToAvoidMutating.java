@@ -52,7 +52,7 @@ public class StaticStuffToAvoidMutating {
 	
 	private static ExecutorService executorService;
 	
-	private static final int HARD_MAX_THREADS_PER_POOL = 600;
+	private static final int HARD_MAX_THREADS_PER_POOL = 1500;
 
 	public static void instantiateThreadPools(int nMaxThreads) {
 		if (getExecutorService() != null) {

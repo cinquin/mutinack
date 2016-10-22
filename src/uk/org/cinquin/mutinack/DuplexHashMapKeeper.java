@@ -29,6 +29,11 @@ public class DuplexHashMapKeeper extends TIntObjectListHashMap<DuplexRead> imple
 	}
 
 	@Override
+	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
+		return getList(position);
+	}
+
+	@Override
 	public boolean add(DuplexRead d) {
 		return add(d.position0, d);
 	}

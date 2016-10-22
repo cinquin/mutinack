@@ -19,11 +19,13 @@ package uk.org.cinquin.mutinack;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 
 final class LocationExaminationResults {
 	Collection<CandidateSequence> analyzedCandidateSequences;
@@ -33,9 +35,19 @@ final class LocationExaminationResults {
 	int strandCoverageImbalance;
 	int nMissingStrands;
 	List<@NonNull Integer> alleleFrequencies;
-	final @NonNull 
-		Collection<@NonNull DuplexDisagreement> disagreements = new ArrayList<>();
-	final @NonNull 
-	Collection<@NonNull ComparablePair<String, String>> rawMismatchesQ2 = new ArrayList<>(),
-		rawDeletionsQ2 = new ArrayList<>(), rawInsertionsQ2 = new ArrayList<>();
+	final @NonNull MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
+		disagreements = new MapOfLists<>();
+	int disagQ2Coverage = 0;
+	final @NonNull Collection<@NonNull ComparablePair<String, String>>
+		rawMismatchesQ2 = new ArrayList<>(),
+		rawDeletionsQ2 = new ArrayList<>(),
+		rawInsertionsQ2 = new ArrayList<>();
+
+	public int duplexInsertSize10thP = -1;
+	public int duplexInsertSize90thP = -1;
+	public double probAtLeastOneCollision = -1;
+
+	//To assert that an instance is not concurrently modified by
+	//multiple threads
+	public final AtomicInteger threadCount = new AtomicInteger();
 }

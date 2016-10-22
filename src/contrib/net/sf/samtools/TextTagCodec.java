@@ -24,15 +24,14 @@
 package contrib.net.sf.samtools;
 
 import java.lang.reflect.Array;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Date;
 import java.util.Map;
 
 import contrib.net.sf.samtools.util.DateParser;
 import contrib.net.sf.samtools.util.Iso8601Date;
 import contrib.net.sf.samtools.util.StringUtil;
-
-import java.util.Date;
-import java.text.DateFormat;
-import java.text.ParseException;
 
 /**
  * Converter between SAM text representation of a tag, and in-memory Object representation.
@@ -187,7 +186,7 @@ public class TextTagCodec {
             return stringVal.charAt(0);
         } else if (type.equals("i")) {
             try {
-                return new Integer(stringVal);
+                return Integer.valueOf(stringVal);
             } catch (NumberFormatException e) {
                 throw new SAMFormatException("Tag of type i should have signed decimal value");
             }

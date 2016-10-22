@@ -85,7 +85,7 @@ public class Submitter {
 		final EvaluationResult result;
 
 		SignalProcessor infoSignalHandler = signal -> {
-			System.err.println("Submitted job " + job + " to server" +
+			System.err.println("Submitted job " + job + " to server " +
 				argValues.submitToServer);
 		};
 

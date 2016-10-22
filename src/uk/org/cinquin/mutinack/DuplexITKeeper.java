@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import contrib.edu.stanford.nlp.util.Interval;
 import contrib.edu.stanford.nlp.util.IntervalTree;
 import contrib.net.sf.picard.util.IterableAdapter;
 
@@ -36,8 +37,7 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		return new IterableAdapter<>(iterator());
 	}
 	
-	final List<DuplexRead> overlappingDuplexes = new ArrayList<>(10_000);
-	
+	private final List<DuplexRead> overlappingDuplexes = new ArrayList<>(10_000);
 	@Override
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
@@ -48,6 +48,27 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		getOverlapping(d.getInterval(), overlappingDuplexes);
 		return new IterableAdapter<>(overlappingDuplexes.iterator());
 	}
+
+	private final List<DuplexRead> duplexesAtPosition0 = new ArrayList<>(10_000);
+	private final List<DuplexRead> duplexesAtPosition1 = new ArrayList<>(10_000);
+
+	@Override
+	/**
+	 * NOT thread-safe because of overlappingDuplexes reuse (the code
+	 * is set up this way to minimize object turnover).
+	 */
+	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
+		duplexesAtPosition0.clear();
+		duplexesAtPosition1.clear();
+		getOverlapping(Interval.toInterval(position, position), duplexesAtPosition0);
+		for (DuplexRead dr: duplexesAtPosition0) {
+			if (dr.position0 == position) {
+				duplexesAtPosition1.add(dr);
+			}
+		}
+		return new IterableAdapter<>(duplexesAtPosition1.iterator());
+	}
+
 
 	@Override
 	public boolean supportsMutableDuplexes() {

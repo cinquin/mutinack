@@ -21,10 +21,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import contrib.net.sf.picard.util.IterableAdapter;
 
 /**
  * NB: Unlike most other classes in this project, this class is not thread safe.
@@ -33,7 +36,7 @@ import java.util.Set;
  * @param <K>
  * @param <V>
  */
-public class MapOfLists<K, V> implements Serializable {
+public class MapOfLists<K, V> implements Serializable, Iterable<Entry<K, List<V>>> {
 
 	private static final long serialVersionUID = -7056033474949626637L;
 	private final Map<K, List<V>> map = new HashMap<>();
@@ -42,6 +45,10 @@ public class MapOfLists<K, V> implements Serializable {
 		map.computeIfAbsent(k, key -> new ArrayList<>()).add(v);
 	}
 	
+	public void addAt(K k, List<V> list) {
+		map.computeIfAbsent(k, key -> new ArrayList<>()).addAll(list);
+	}
+
 	public List<V> get(K k) {
 		List<V> l = map.get(k);
 		if (l == null) {
@@ -60,6 +67,28 @@ public class MapOfLists<K, V> implements Serializable {
 
 	public Collection<List<V>> values() {
 		return map.values();
+	}
+
+	//Return value is an approximation
+	public boolean isEmpty() {
+		return map.isEmpty();
+	}
+
+	public void addAll(MapOfLists<K, V> other) {
+		other.map.forEach(this::addAt);
+	}
+
+	public void clear() {
+		map.clear();
+	}
+
+	@Override
+	public Iterator<Entry<K, List<V>>> iterator() {
+		return map.entrySet().iterator();
+	}
+
+	public Iterable<K> keys() {
+		return new IterableAdapter<>(map.keySet().iterator());
 	}
 
 }

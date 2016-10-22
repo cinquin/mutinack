@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
@@ -33,7 +32,7 @@ public class LongAdderFormatterSerializer
 
 	@Override
 	public void serialize(@NonNull LongAdderFormatter laf, JsonGenerator jgen,
-			SerializerProvider arg2) throws IOException, JsonProcessingException {
+			SerializerProvider arg2) throws IOException {
 		jgen.writeStartObject();
 		jgen.writeStringField("sum", laf.sum);
 		jgen.writeEndObject();

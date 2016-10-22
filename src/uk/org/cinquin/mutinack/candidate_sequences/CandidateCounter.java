@@ -21,7 +21,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
@@ -33,7 +33,7 @@ public final class CandidateCounter {
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
-	public final @NonNull TObjectIntHashMap<@NonNull CandidateSequence>
+	public final @NonNull THashMap<@NonNull CandidateSequence, @NonNull CandidateDuplexEval>
 		candidateCounts;
 	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
 	
@@ -44,7 +44,7 @@ public final class CandidateCounter {
 		this.candidates = candidates;
 		this.location = location;
 		keptRecords = new THashSet<>();
-		candidateCounts = new TObjectIntHashMap<>(5);
+		candidateCounts = new THashMap<>(5);
 	}
 
 	public void reset() {
@@ -63,8 +63,9 @@ public final class CandidateCounter {
 		nPhreds = 0;
 		candidates.forEach(candidate -> {
 			for (int i = records.size() - 1; i >= 0; --i) {
-				ExtendedSAMRecord r = records.get(i);
-				if (candidate.getNonMutableConcurringReads().containsKey(r)) {
+				final ExtendedSAMRecord r = records.get(i);
+				final int ligSiteDistance = candidate.getNonMutableConcurringReads().get(r);
+				if (ligSiteDistance != candidate.getNonMutableConcurringReads().getNoEntryValue()) {
 					Byte phredScore = r.basePhredScores.get(location);
 					if (phredScore != null) {
 						sumPhreds += phredScore;
@@ -76,7 +77,13 @@ public final class CandidateCounter {
 						}
 					}
 					keptRecords.add(r);
-					candidateCounts.adjustOrPutValue(candidate, 1, 1);
+					final CandidateDuplexEval eval = candidateCounts.computeIfAbsent(candidate, c -> {
+						return new CandidateDuplexEval(candidate);
+					});
+					eval.count++;
+					if (ligSiteDistance > eval.maxDistanceToLigSite) {
+						eval.maxDistanceToLigSite = ligSiteDistance;
+					}
 				}
 			}//End loop over records
 			return true;

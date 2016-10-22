@@ -43,4 +43,30 @@ public enum Quality {
 			default: throw new AssertionFailedException();
 		}
 	}
+
+	public int toInt() {
+		switch (this) {
+			case ATROCIOUS: return -1;
+			case POOR: return 0;
+			case DUBIOUS: return 1;
+			case GOOD: return 2;
+			default: throw new AssertionFailedException();
+		}
+	}
+
+	public boolean atLeast(@NonNull Quality q) {
+		return this.compareTo(q) >= 0;
+	}
+
+	public boolean greaterThan(@NonNull Quality q) {
+		return this.compareTo(q) > 0;
+	}
+
+	public boolean atMost(@NonNull Quality q) {
+		return this.compareTo(q) <= 0;
+	}
+
+	public boolean lowerThan(@NonNull Quality q) {
+		return this.compareTo(q) < 0;
+	}
 }

@@ -29,11 +29,12 @@ import org.eclipse.jdt.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public final class SequenceLocation implements Comparable<SequenceLocation>, Serializable {
 	
 	public final int contigIndex;
-	public final String contigName;
+	public final @NonNull String contigName;
 	public final int position;
 	public final boolean plusHalf;
 
@@ -77,7 +78,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		return true;
 	}
 	
-	public SequenceLocation(int contigIndex, String contigName, int position, boolean plusHalf) {
+	public SequenceLocation(int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
 		Assert.isFalse(contigIndex < 0);
 		this.contigName = contigName;
 		this.contigIndex = contigIndex;
@@ -88,15 +89,15 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	}
 	
 	public SequenceLocation(int contigIndex, List<String> nameMap, int position, boolean plusHalf) {
-		this(contigIndex, nameMap.get(contigIndex), position, plusHalf);
+		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, plusHalf);
 	}
 	
-	public SequenceLocation(int contigIndex, String contigName, int position) {
+	public SequenceLocation(int contigIndex, @NonNull String contigName, int position) {
 		this(contigIndex, contigName, position, false);
 	}
 
 	public SequenceLocation(int contigIndex, List<String> nameMap, int position) {
-		this(contigIndex, nameMap.get(contigIndex), position, false);
+		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, false);
 	}
 	
 	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
@@ -133,7 +134,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 				(plusHalf ? ".5" : "");//Internal indexing starts at 0
 	}
 	
-	public String getContigName() {
+	public @NonNull String getContigName() {
 		return contigName;
 	}
 	
@@ -174,5 +175,20 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		} else {
 			return this.position - location.position;
 		}
+	}
+
+	public static SequenceLocation parse(String location,
+			Map<String, Integer> indexContigNameReverseMap) {
+		@NonNull String [] split = location.split(":");
+		if (split.length != 2) {
+			throw new ParseRTException("Need one occurence of : in location " + location);
+		}
+		int position;
+		try {
+			position = Integer.parseInt(split[1]);
+		} catch (Exception e) {
+			throw new ParseRTException("Could not parse number in location " + location, e);
+		}
+		return new SequenceLocation(split[0], indexContigNameReverseMap, position);
 	}
 }

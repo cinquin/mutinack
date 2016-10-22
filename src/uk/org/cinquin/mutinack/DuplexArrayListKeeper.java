@@ -18,8 +18,11 @@
 package uk.org.cinquin.mutinack;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
+
+import contrib.net.sf.picard.util.IterableAdapter;
 
 public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements DuplexKeeper {
 
@@ -32,6 +35,22 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 	@Override
 	public @NonNull Iterable<DuplexRead> getOverlapping(DuplexRead d) {
 		return getIterable();
+	}
+
+	private final transient List<DuplexRead> duplexesAtPosition = new ArrayList<>(10_000);
+	@Override
+	/**
+	 * NOT thread-safe because of overlappingDuplexes reuse (the code
+	 * is set up this way to minimize object turnover).
+	 */
+	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
+		duplexesAtPosition.clear();
+		for (DuplexRead dr: this) {
+			if (dr.position0 == position) {
+				duplexesAtPosition.add(dr);
+			}
+		}
+		return new IterableAdapter<>(duplexesAtPosition.iterator());
 	}
 
 	@Override

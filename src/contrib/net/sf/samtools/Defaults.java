@@ -71,7 +71,7 @@ public class Defaults {
 
     /** Gets an int system property, prefixed with "samjdk." using the default if the property does not exist.*/
     private static int getIntProperty(final String name, final int def) {
-        final String value = getStringProperty(name, new Integer(def).toString());
+        final String value = getStringProperty(name, Integer.toString(def));
         return Integer.parseInt(value);
     }
 

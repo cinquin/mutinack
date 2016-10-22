@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -97,6 +98,10 @@ public class DetailedQualities implements Serializable {
 		} else {
 			return q;
 		}
+	}
+
+	public void forEach(BiConsumer<Assay, Quality> consumer) {
+		qualities.forEach(consumer::accept);
 	}
 
 	public void reset() {

@@ -19,6 +19,8 @@ package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -32,12 +34,20 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	private static final long serialVersionUID = -1557536590861199764L;
 	
 	@JsonIgnore
-	private final int maxSize;
+	public final int maxSize;
+
+	public String nEntries;
+	public String average;
+	public String median;
+	public String notes;
 	
 	private final LongAdderFormatter sum = new LongAdderFormatter();
 	
 	public Histogram(int maxSize) {
 		super(maxSize);
+		if (maxSize < 1) {
+			throw new IllegalArgumentException("Histogram max size must be at least 1");
+		}
 		this.maxSize = maxSize;
 	}
 
@@ -63,6 +73,20 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 			"; average = " + DoubleAdderFormatter.formatDouble(sum.sum() / nEntriesAsD) +
 			"; median = " + DoubleAdderFormatter.formatDouble(medianAsF) +
 				(index == size - 1 ? " (UNDERESTIMATE)" : "");
+	}
+
+	public double @NonNull[] toProbabilityArray() {
+		final double @NonNull[] result = new double[maxSize - 1];
+		long nEntries0 = 0;
+		for (int i = size() - 1; i >= 0; i--) {
+			nEntries0 += get(i).sum();
+		}
+
+		final double nEntriesInverse = 1d / nEntries0;
+		for (int i = 0; i < result.length; i++) {
+			result[i] = (size() <= i ? 0 : get(i).sum()) * nEntriesInverse;
+		}
+		return result;
 	}
 
 	public void insert (int value) {
@@ -103,11 +127,6 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 		return on;
 	}
 	
-	public String nEntries;
-	public String average;
-	public String median;
-	public String notes;
-
 	@Override
 	public void actualize() {
 		double nEntries0 = 0;

@@ -157,9 +157,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			RemoteMethods previousServer =
 				(RemoteMethods) Naming.lookup(fillInDefaultRMIPath(fullPath));
 			previousServer.getServerUUID();
-		} catch (NotBoundException e) {
-			notFound = true;
-		} catch (RemoteException e) {
+		} catch (NotBoundException | RemoteException e) {
 			notFound = true;
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
@@ -202,7 +200,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 				runningJobs.size() == 0 ?
 					"No jobs running"
 				:
-					runningJobs.values().stream().map(j -> j.toString()).
+					runningJobs.values().stream().map(Job::toString).
 						collect(Collectors.joining("; "))
 			);
 			System.err.println("Waiting workers: " + waitingThreads.keySet());
@@ -382,7 +380,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		}
 	}
 
-	public static RemoteMethods getServer(String fullPath)
+	public static RemoteMethods getServer(@Nullable String fullPath)
 			throws MalformedURLException, RemoteException {
 		//if (System.getSecurityManager() == null) {
 		//	System.setSecurityManager(new SecurityManager());

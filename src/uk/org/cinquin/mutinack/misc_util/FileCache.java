@@ -57,7 +57,7 @@ public class FileCache<T extends Serializable> {
 			return (T) o;
 		}
 		T result = getCached0(path, cacheExtension, processor);
-		cache.put(canonicalPath, new SoftReference<Object> (result));
+		cache.put(canonicalPath, new SoftReference<> (result));
 		return result;
 	}
 	

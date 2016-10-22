@@ -50,6 +50,7 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
+import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnlyReportAll;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocation;
 import uk.org.cinquin.mutinack.statistics.DivideByTwo;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -68,22 +69,35 @@ public class AnalysisStats implements Serializable, Actualizable {
 	OutputLevel outputLevel;
 	final MutinackGroup groupSettings;
 	
-	public AnalysisStats(@NonNull String name, MutinackGroup groupSettings) {
+	public AnalysisStats(@NonNull String name, MutinackGroup groupSettings, boolean reportCoverageAtAllPositions) {
 		this.name = name;
 		this.groupSettings = groupSettings;
 		
+		if (reportCoverageAtAllPositions) {
+			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
+			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
+			nPosDuplexTooFewReadsPerStrand1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
+			nPosDuplexTooFewReadsPerStrand2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
+			nPosDuplexTooFewReadsAboveQ2Phred = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
+		} else {
+			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+			nPosDuplexTooFewReadsPerStrand1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+			nPosDuplexTooFewReadsPerStrand2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+			nPosDuplexTooFewReadsAboveQ2Phred = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		}
+
 		nRecordsNotInIntersection1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nRecordsNotInIntersection2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nTooLowMapQIntersect = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplex = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nPosDuplexBothStrandsPresent = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+		nPosIgnoredBecauseTooHighCoverage = new StatsCollector();
 		nReadMedianPhredBelowThreshold = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		phredAndLigSiteDistance = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, false);
 		nDuplexesTooMuchClipping = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nDuplexesNoStats = new DoubleAdder();
 		nDuplexesWithStats = new DoubleAdder();
-		nPosDuplexTooFewReadsPerStrand1 = new StatsCollector();
-		nPosDuplexTooFewReadsPerStrand2 = new StatsCollector();
-		nPosIgnoredBecauseTooHighCoverage = new StatsCollector();
 		nPosDuplexWithTopBottomDuplexDisagreementNoWT = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexWithTopBottomDuplexDisagreementNotASub = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		rawMismatchesQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
@@ -110,11 +124,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 		codingStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		templateStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		topBottomDisagreementsQ2TooHighCoverage = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
-		nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexCandidatesForDisagreementQ2TooHighCoverage = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexWithLackOfStrandConsensus1 = new StatsCollector();
 		nPosDuplexWithLackOfStrandConsensus2 = new StatsCollector();
-		nPosDuplexRescuedFromLeftRightBarcodeEquality = new StatsCollector();
 		nPosDuplexCompletePairOverlap = new StatsCollector();
 		nPosUncovered = new StatsCollector();
 		nQ2PromotionsBasedOnFractionReads = new StatsCollector();
@@ -129,7 +141,6 @@ public class AnalysisStats implements Serializable, Actualizable {
 		nPosQualityQ1 = new StatsCollector();
 		nPosQualityQ2 = new StatsCollector();
 		nPosQualityQ2OthersQ1Q2 = new StatsCollector();
-		nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosCandidatesForUniqueMutation = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		
@@ -139,7 +150,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 			//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
 			List<String> contigNames = groupSettings.getContigNames();
 			for (Field field : AnalysisStats.class.getDeclaredFields()) {
-				AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
+				@Nullable AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
 				if (annotation != null) {
 					for (int contig = 0; contig < contigNames.size(); contig++) {
 						int contigCopy = contig;
@@ -156,7 +167,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 													loc.position >= min &&
 													loc.position < max;
 										});
-								counter.accept(new SequenceLocation(contig, contigNames.get(contig), c * groupSettings.BIN_SIZE), 0);
+								counter.accept(new SequenceLocation(contig,
+									Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE), 0);
 							} catch (IllegalArgumentException | IllegalAccessException e) {
 								throw new RuntimeException(e);
 							}
@@ -183,7 +195,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 					for (int contig = 0; contig < contigNames.size(); contig++) {
 						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
 								contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
-							SequenceLocation location = new SequenceLocation(contig, contigNames.get(contig), c * groupSettings.BIN_SIZE);
+							SequenceLocation location = new SequenceLocation(contig,
+								Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE);
 							topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true), 0);
 							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
 							templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
@@ -315,6 +328,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final Histogram duplexinsertSize = new Histogram(1000);
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	public Histogram approximateReadInsertSize = new Histogram(1000);
+
+	@PrintInStatus(outputLevel = VERBOSE)
 	public final Histogram duplexAverageNClipped = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -350,6 +366,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = TERSE)
 	public final MultiCounter<?> nPosDuplex;
 
+	@PrintInStatus(outputLevel = VERBOSE)
+	public final MultiCounter<?> nPosDuplexBothStrandsPresent;
+
 	@PrintInStatus(outputLevel = TERSE)
 	public final MultiCounter<?> nReadMedianPhredBelowThreshold;
 
@@ -363,10 +382,13 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final DoubleAdder nDuplexesWithStats;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nPosDuplexTooFewReadsPerStrand1;
+	public final MultiCounter<?> nPosDuplexTooFewReadsPerStrand1;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nPosDuplexTooFewReadsPerStrand2;
+	public final MultiCounter<?> nPosDuplexTooFewReadsPerStrand2;
+
+	@PrintInStatus(outputLevel = TERSE)
+	public final MultiCounter<?> nPosDuplexTooFewReadsAboveQ2Phred;
 
 	@PrintInStatus(outputLevel = TERSE)
 	public final StatsCollector nPosIgnoredBecauseTooHighCoverage;
@@ -465,9 +487,6 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public final StatsCollector nPosDuplexWithLackOfStrandConsensus2;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosDuplexRescuedFromLeftRightBarcodeEquality;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public final StatsCollector nPosDuplexCompletePairOverlap;
@@ -571,6 +590,21 @@ public class AnalysisStats implements Serializable, Actualizable {
 				collect(Collectors.toList()).toString();
 		}
 	};
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability")
+	public final Histogram duplexCollisionProbability = new Histogram(100);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability at Q2 sites")
+	public final Histogram duplexCollisionProbabilityAtQ2 = new Histogram(100);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability when both strands represented")
+	public final Histogram duplexCollisionProbabilityWhen2Strands = new Histogram(100);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability at disagreement")
+	public final Histogram duplexCollisionProbabilityAtDisag = new Histogram(100);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Average duplex collision probability for duplexes covering genome position of disagreement")
+	public final Histogram duplexCollisionProbabilityLocalAvAtDisag = new Histogram(100);
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Histogram of variable barcode mapping distance mismatch")
@@ -718,6 +752,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 							field.getType().equals(StatsCollector.class) ||
 							field.getType().equals(Histogram.class)))) {
 				try {
+					if (field.get(this) == null) {
+						continue;
+					}
 					if (annotation != null && annotation.color().equals("greenBackground")) {
 						stream.print(greenB(colorize));
 					}
@@ -778,7 +815,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 			if (!SwitchableStats.class.isAssignableFrom(field.getType())) {
 				continue;
 			}
-			PrintInStatus annotation = field.getAnnotation(PrintInStatus.class);
+			@Nullable PrintInStatus annotation = field.getAnnotation(PrintInStatus.class);
 			if (annotation == null) {
 				continue;
 			}
@@ -813,7 +850,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 				continue;
 			}
 			try {
-				((Actualizable) field.get(this)).actualize();
+					if (field.get(this) != null) {
+						((Actualizable) field.get(this)).actualize();
+					}
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				throw new RuntimeException(e);
 			};
