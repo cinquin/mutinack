@@ -261,6 +261,7 @@ Mutinack is released under the GNU Affero General Public License version
 3.
 
 **References**
+
 <a name="1"></a>\[1\]: Taylor, P.H., Cinquin, A., Cinquin, O. (2016).
 Quantification of in vivo progenitor mutation accrual with ultra-low
 error rate and minimal input DNA using SIP-HAVA-seq. Genome Research
