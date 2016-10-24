@@ -3,16 +3,17 @@
 
 **General notes**
 
-"Mutinack" is a program that detects extraordinarily rare mutations 
-(with a frequency as low as ~10<sup>-10</sup>) from Illumina paired end
-sequencing of minute amounts of starting material, using a DNA library
-preparation protocol and an algorithm described in an upcoming
-manuscript. Mutinack can report detailed statistics on mutations and
-top/bottom strand disagreements over any genome region defined in a
+"Mutinack" is a program that detects mutations genome-wide with an error
+rate estimated to be as low as ~10<sup>-10</sup>, using Illumina paired
+end sequencing of minute amounts of starting material prepared following
+the SIP-HAVA-Seq protocol — as described in an accompanying manuscript
+\[[1](#1)\] (see \[[2](#2)\] for the original report of the duplex
+sequencing idea). Mutinack can report detailed statistics on mutations
+and top/bottom strand disagreements over any genome region defined in a
 custom BED file. While Mutinack was primarily designed with DNA-Seq in
 mind, it can accessorily be used to collapse RNA-Seq reads to only keep
 one set of reads per molecule in a cDNA library, which minimizes noise
-when quantifying gene expression (see e.g. \[[1](#1)-[2](#2)\]).
+when quantifying gene expression (see e.g. \[[1](#3)-[2](#4)\]).
 
 **Installing and building Mutinack**
 
@@ -260,13 +261,24 @@ Mutinack is released under the GNU Affero General Public License version
 3.
 
 **References**
+<a name="1"></a>\[1\]: Taylor, P.H., Cinquin, A., Cinquin, O. (2016).
+Quantification of in vivo progenitor mutation accrual with ultra-low
+error rate and minimal input DNA using SIP-HAVA-seq. Genome Research
+[advance online
+article](http://genome.cshlp.org/content/early/2016/10/19/gr.200501.115.
+full.pdf+html).
 
-<a name="1"></a>\[1\]: Shiroguchi, K., Jia, T.Z., Sims, P.A., Xie, X.S.
+<a name="2"></a>\[2\]: Schmitt, M.W., Kennedy, S.R., Salk, J.J., Fox,
+E.J., Hiatt, J.B., and Loeb, L.A. (2012). Detection of ultra-rare
+mutations by next-generation sequencing. Proc Natl Acad Sci U S A 109,
+14508–14513.
+
+<a name="3"></a>\[3\]: Shiroguchi, K., Jia, T.Z., Sims, P.A., Xie, X.S.
 (2012). Digital RNA sequencing minimizes sequence-dependent bias and
 amplification noise with optimized single-molecule barcodes. Proc Natl
 Acad Sci U S A 109, 1347–1352.
 
-<a name="2"></a>\[2\]: Fu, G.K., Xu, W., Wilhelmy, J., Mindrinos, M.N.,
+<a name="4"></a>\[4\]: Fu, G.K., Xu, W., Wilhelmy, J., Mindrinos, M.N.,
 Davis, R.W., Xiao, W., Fodor, S.P.A. (2014). Molecular indexing enables
 quantitative targeted RNA sequencing and reveals poor efficiencies in
 standard library preparations. Proc Natl Acad Sci U S A 111, 1891–1896.
