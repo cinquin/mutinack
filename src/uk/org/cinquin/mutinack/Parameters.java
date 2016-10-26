@@ -374,9 +374,7 @@ public final class Parameters implements Serializable {
 
 	@FilePath
 	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags; " +
-			"note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold, if predicted insert size is 0, "
-			+ "and under some circumstances if the mate mapping quality is below Q1 threshold, if the mate is mapped further away "
-			+ "than possible according to maximum insert size, or if it falls outside of the specified processing window (it is "
+			"note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold (it is "
 			+ "relatively rare but possible for a read to be omitted even though it counts toward coverage).", required = false)
 	public String outputAlignmentFile = null;
 
