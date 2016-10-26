@@ -911,9 +911,9 @@ public final class SubAnalyzer {
 				map(dr -> dr.localAndGlobalQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
 				max(Quality::compareTo).orElse(ATROCIOUS));
 
-			if (maxDuplexQ.atLeast(GOOD)) {
+			if (maxDuplexQ.atLeast(DUBIOUS)) {
 				candidate.resetLigSiteDistances();
-				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(GOOD)).
+				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(maxDuplexQ)).
 				forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
 			}
 
