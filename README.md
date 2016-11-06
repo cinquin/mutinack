@@ -13,7 +13,7 @@ and top/bottom strand disagreements over any genome region defined in a
 custom BED file. While Mutinack was primarily designed with DNA-Seq in
 mind, it can accessorily be used to collapse RNA-Seq reads to only keep
 one set of reads per molecule in a cDNA library, which minimizes noise
-when quantifying gene expression (see e.g. \[[1](#3)-[2](#4)\]).
+when quantifying gene expression (see e.g. \[[3](#3)-[4](#4)\]).
 
 **Installing and building Mutinack**
 
@@ -265,9 +265,8 @@ Mutinack is released under the GNU Affero General Public License version
 <a name="1"></a>\[1\]: Taylor, P.H., Cinquin, A., Cinquin, O. (2016).
 Quantification of in vivo progenitor mutation accrual with ultra-low
 error rate and minimal input DNA using SIP-HAVA-seq. Genome Research
-[advance online
-article](http://genome.cshlp.org/content/early/2016/10/19/gr.200501.115.
-full.pdf+html).
+26(11), 1600-1611. [Abstract](http://genome.cshlp.org/content/26/11/
+1600.abstract)
 
 <a name="2"></a>\[2\]: Schmitt, M.W., Kennedy, S.R., Salk, J.J., Fox,
 E.J., Hiatt, J.B., and Loeb, L.A. (2012). Detection of ultra-rare
