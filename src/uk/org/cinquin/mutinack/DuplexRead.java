@@ -27,6 +27,7 @@ import static uk.org.cinquin.mutinack.Assay.N_READS_PER_STRAND;
 import static uk.org.cinquin.mutinack.Assay.N_STRANDS_DISAGREEMENT;
 import static uk.org.cinquin.mutinack.Assay.N_STRAND_READS_ABOVE_Q2_PHRED;
 import static uk.org.cinquin.mutinack.Assay.TOP_STRAND_MAP_Q2;
+import static uk.org.cinquin.mutinack.Assay.TOTAL_N_READS_Q2;
 import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.Quality.DUBIOUS;
 import static uk.org.cinquin.mutinack.Quality.GOOD;
@@ -649,6 +650,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 				if (nBottomStrandsWithCandidate < analyzer.minReadsPerStrandQ1)
 					issues.add(location + "_TFR0T");
 			}
+		}
+
+		if (nBottomStrandsWithCandidate + nTopStrandsWithCandidate <
+			analyzer.minReadsPerDuplexQ2) {
+				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
 		if (dq.getMin().atLeast(GOOD)) {

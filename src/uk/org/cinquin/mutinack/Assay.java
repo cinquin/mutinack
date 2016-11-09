@@ -25,6 +25,7 @@ package uk.org.cinquin.mutinack;
 public enum Assay {
 
 	N_READS_PER_STRAND,
+	TOTAL_N_READS_Q2,
 	N_STRANDS_DISAGREEMENT,//Used to mark disagreements that are supported by too few strands to reach Q2
 	N_READS_WRONG_PAIR,//Also used for Q2 raw disagreements
 	N_STRAND_READS_ABOVE_Q2_PHRED,//Also used for Q2 raw disagreements

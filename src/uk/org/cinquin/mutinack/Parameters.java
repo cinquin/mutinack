@@ -196,9 +196,13 @@ public final class Parameters implements Serializable {
 			+ "original top and bottom strands are ignored when calling substitutions or indels", required = false)
 	public int minReadsPerStrandQ1 = 0;
 
-	@Parameter(names = "-minReadsPerStrandQ2", description = "Duplexes that have at least this number of reads "
-			+ "for original top and bottom strands can contribute candidates for substitutions or indels", required = false)
+	@Parameter(names = "-minReadsPerStrandQ2", description = "Only duplexes that have at least this number of reads "
+			+ "for original top and bottom strands can contribute Q2 candidates", required = false)
 	public int minReadsPerStrandQ2 = 3;
+
+	@Parameter(names = "-minReadsPerDuplexQ2", description = "Only duplexes that have at least this total number of reads "
+		+ "(irrespective of whether they come from the original top and bottom strands) can contribute Q2 candidates", required = false)
+	public int minReadsPerDuplexQ2 = 3;
 
 	@Parameter(names = "-promoteNQ1Duplexes", description = "Not yet functional, and probably never will be - Promote candidate that has at least this many Q1 duplexes to Q2", required = false, hidden = true)
 	public int promoteNQ1Duplexes = Integer.MAX_VALUE;
@@ -750,6 +754,7 @@ public final class Parameters implements Serializable {
 		result = prime * result + minReadsPerStrandForDisagreement;
 		result = prime * result + minReadsPerStrandQ1;
 		result = prime * result + minReadsPerStrandQ2;
+		result = prime * result + minReadsPerDuplexQ2;
 		result = prime * result + nConstantBarcodeMismatchesAllowed;
 		result = prime * result + (int) (nRecordsToProcess ^ (nRecordsToProcess >>> 32));
 		result = prime * result + nVariableBarcodeMismatchesAllowed;
@@ -980,6 +985,8 @@ public final class Parameters implements Serializable {
 		if (minReadsPerStrandQ1 != other.minReadsPerStrandQ1)
 			return false;
 		if (minReadsPerStrandQ2 != other.minReadsPerStrandQ2)
+			return false;
+		if (minReadsPerDuplexQ2 != other.minReadsPerDuplexQ2)
 			return false;
 		if (nConstantBarcodeMismatchesAllowed != other.nConstantBarcodeMismatchesAllowed)
 			return false;

@@ -187,6 +187,7 @@ public class Mutinack implements Actualizable {
 	final int minMappingQualityQ2;
 	final int minReadsPerStrandQ1;
 	final int minReadsPerStrandQ2;
+	final int minReadsPerDuplexQ2;
 	final int minReadsPerStrandForDisagreement;
 	final boolean Q2DisagCapsMatchingMutationQuality;
 	final int minBasePhredScoreQ1;
@@ -281,6 +282,7 @@ public class Mutinack implements Actualizable {
 			int ignoreLastNBases,
 			int minMappingQualityQ1, int minMappingQualityQ2,
 			int minReadsPerStrandQ1, int minReadsPerStrandQ2,
+			int minReadsPerDuplexQ2,
 			int minReadsPerStrandForDisagreement,
 			boolean Q2DisagCapsMatchingMutationQuality,
 			int minBasePhredScoreQ1, int minBasePhredScoreQ2,
@@ -334,6 +336,7 @@ public class Mutinack implements Actualizable {
 		this.minMappingQualityQ2 = minMappingQualityQ2;
 		this.minReadsPerStrandQ1 = minReadsPerStrandQ1;
 		this.minReadsPerStrandQ2 = minReadsPerStrandQ2;
+		this.minReadsPerDuplexQ2 = minReadsPerDuplexQ2;
 		this.minReadsPerStrandForDisagreement = minReadsPerStrandForDisagreement;
 		this.Q2DisagCapsMatchingMutationQuality = Q2DisagCapsMatchingMutationQuality;
 		this.minBasePhredScoreQ1 = minBasePhredScoreQ1;
@@ -795,6 +798,7 @@ public class Mutinack implements Actualizable {
 						argValues.minMappingQualityQ2,
 						argValues.minReadsPerStrandQ1,
 						argValues.minReadsPerStrandQ2,
+						argValues.minReadsPerDuplexQ2,
 						argValues.minReadsPerStrandForDisagreement,
 						argValues.Q2DisagCapsMatchingMutationQuality,
 						argValues.minBasePhredScoreQ1,
