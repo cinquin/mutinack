@@ -212,7 +212,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					final Handle<Boolean> tooHighCoverage = new Handle<>(false);
 					final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
 
-					analyzers./*parallelStream().*/forEach(a -> {
+					analyzers.parallelStream().forEach(a -> {
 						if (groupSettings.mutationsToAnnotate.containsKey(new Pair<>(location, a.name))) {
 							mutationToAnnotate.set(true);
 						}
