@@ -97,7 +97,7 @@ public final class Parameters implements Serializable {
 
 	@FilePath
 	@Parameter(names = "-outputJSONTo", description = "Path to which JSON-formatted output should be written",
-			required = false)
+		required = false)
 	public String outputJSONTo = "";
 
 	@Parameter(names = "-outputDuplexDetails", description = "For each reported mutation, give list of its reads and duplexes", required = false)
@@ -109,9 +109,9 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-contigByContigParallelization", description = "Contig-by-contig list of number of chunks into which to split contig for parallel processing; setting this value too high can be highly counter-productive; last value in the list applies to all contigs whose index falls outside of the list", required = false)
 	public List<Integer> contigByContigParallelization = new ArrayList<>();
 
-	@Parameter(names = "-maxThreadsPerPool", description = "Maximum number of threads per pool; "
-			+ "for now, to avoid deadlocks this number should be kept higher than number of inputs *"
-			+ " number of contigs * parallelization factor", required = false)
+	@Parameter(names = "-maxThreadsPerPool", description = "Maximum number of threads per pool;" +
+		" for now, to avoid deadlocks this number should be kept higher than number of inputs *" +
+		" number of contigs * parallelization factor", required = false)
 	public int maxThreadsPerPool = 64;
 
 	@Parameter(names = "-maxParallelContigs", description = "JVM-wide maximum number of concurrently analyzed contigs; first call sets final value", required = false)
@@ -130,8 +130,8 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-inputReads", description = "Input BAM read file, sorted and with an index; repeat as many times as there are samples", required = true)
 	public List<@NonNull String> inputReads = new ArrayList<>();
 
-	@Parameter(names = "-lenientSamValidation",description = "Passed to Picard; seems at least sometimes necessary for"
-			+ " alignments produced by BWA", required = false)
+	@Parameter(names = "-lenientSamValidation",description = "Passed to Picard; seems at least sometimes necessary for" +
+		" alignments produced by BWA", required = false)
 	public boolean lenientSamValidation = true;
 
 	@FilePathList
@@ -151,8 +151,8 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-randomizeMates", description = "Randomize first/second of pair; WARNING: this will lead to incorrect top/bottom strand grouping")
 	public boolean randomizeMates = false;
 
-	@Parameter(names = "-randomizeStrand", description = "Randomize read mapping to top or bottom strand, preserving for each duplex"
-		+ " the number in the top strand and the number in the bottom strand; WARNING: this will lead to incorrect mutation and disagreement detection")
+	@Parameter(names = "-randomizeStrand", description = "Randomize read mapping to top or bottom strand, preserving for each duplex" +
+		" the number in the top strand and the number in the bottom strand; WARNING: this will lead to incorrect mutation and disagreement detection")
 	public boolean randomizeStrand = false;
 
 	@FilePathList
@@ -164,7 +164,7 @@ public final class Parameters implements Serializable {
 
 	@FilePath
 	@Parameter(names = "-referenceGenome", description = "Reference genome in FASTA format; index file must be present",
-			required = true)
+		required = true)
 	public String referenceGenome = "";
 
 	@Parameter(names = "-contigNamesToProcess", description =
@@ -190,35 +190,35 @@ public final class Parameters implements Serializable {
 	public static final List<@NonNull Integer> defaultTruncateContigPositions = Arrays.asList(
 			15_072_423, 15_279_345, 13_783_700, 17_493_793, 13_794, 20_924_149, 17_718_866);
 
-	@Parameter(names = "-traceField", description = "Output each position at which "
-			+ "specified statistic is incremented; formatted as sampleName:statisticName", required = false)
+	@Parameter(names = "-traceField", description = "Output each position at which" +
+		" specified statistic is incremented; formatted as sampleName:statisticName", required = false)
 	public List<String> traceFields = new ArrayList<>();
 
-	@Parameter(names = "-contigStatsBinLength", description = "Length of bin to use for statistics that"
-			+ " are broken down more finely than contig by contig", required = false)
+	@Parameter(names = "-contigStatsBinLength", description = "Length of bin to use for statistics that" +
+		" are broken down more finely than contig by contig", required = false)
 	public int contigStatsBinLength = 2_000_000;
 
 	@Parameter(names = "-reportCoverageAtAllPositions", description = "Report key coverage statistics at every position analyzed; do not use when analyzing large regions!", arity = 1)
 	public boolean reportCoverageAtAllPositions = false;
 
-	@Parameter(names = "-minMappingQualityQ1", description = "Reads whose mapping quality is below this"
-			+ " threshold are discarded (best to keep this relatively low to allow non-unique mutation candidates to be identified in all samples)", required = false)
+	@Parameter(names = "-minMappingQualityQ1", description = "Reads whose mapping quality is below this" +
+		" threshold are discarded (best to keep this relatively low to allow non-unique mutation candidates to be identified in all samples)", required = false)
 	public int minMappingQualityQ1 = 20;
 
-	@Parameter(names = "-minMappingQualityQ2", description = "Reads whose mapping quality is below this"
-			+ " threshold are not used to propose Q2 mutation candidates", required = false)
+	@Parameter(names = "-minMappingQualityQ2", description = "Reads whose mapping quality is below this" +
+		" threshold are not used to propose Q2 mutation candidates", required = false)
 	public int minMappingQualityQ2 = 50;
 
-	@Parameter(names = "-minReadsPerStrandQ1", description = "Duplexes that have fewer reads for the "
-			+ "original top and bottom strands are ignored when calling substitutions or indels", required = false)
+	@Parameter(names = "-minReadsPerStrandQ1", description = "Duplexes that have fewer reads for the" +
+		" original top and bottom strands are ignored when calling substitutions or indels", required = false)
 	public int minReadsPerStrandQ1 = 0;
 
-	@Parameter(names = "-minReadsPerStrandQ2", description = "Only duplexes that have at least this number of reads "
-			+ "for original top and bottom strands can contribute Q2 candidates", required = false)
+	@Parameter(names = "-minReadsPerStrandQ2", description = "Only duplexes that have at least this number of reads" +
+		" for original top and bottom strands can contribute Q2 candidates", required = false)
 	public int minReadsPerStrandQ2 = 3;
 
-	@Parameter(names = "-minReadsPerDuplexQ2", description = "Only duplexes that have at least this total number of reads "
-		+ "(irrespective of whether they come from the original top and bottom strands) can contribute Q2 candidates", required = false)
+	@Parameter(names = "-minReadsPerDuplexQ2", description = "Only duplexes that have at least this total number of reads" +
+		" (irrespective of whether they come from the original top and bottom strands) can contribute Q2 candidates", required = false)
 	public int minReadsPerDuplexQ2 = 3;
 
 	@Parameter(names = "-promoteNQ1Duplexes", description = "Not yet functional, and probably never will be - Promote candidate that has at least this many Q1 duplexes to Q2", required = false, hidden = true)
@@ -230,20 +230,20 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-promoteFractionReads", description = "Promote candidate supported by at least this fraction of reads to Q2", required = false, hidden = hideAdvancedParameters)
 	public float promoteFractionReads = Float.MAX_VALUE;
 
-	@Parameter(names = "-minConsensusThresholdQ1", description = "Lenient value for minimum fraction of reads from the same"
-			+ " original strand that define a consensus (must be > 0.5)", required = false)
+	@Parameter(names = "-minConsensusThresholdQ1", description = "Lenient value for minimum fraction of reads from the same" +
+		" original strand that define a consensus (must be > 0.5)", required = false)
 	public float minConsensusThresholdQ1 = 0.51f;
 
-	@Parameter(names = "-minConsensusThresholdQ2", description = "Strict value for minimum fraction of reads from the same"
-			+ " original strand that define a consensus (must be > 0.5)", required = false)
+	@Parameter(names = "-minConsensusThresholdQ2", description = "Strict value for minimum fraction of reads from the same" +
+		" original strand that define a consensus (must be > 0.5)", required = false)
 	public float minConsensusThresholdQ2 = 0.95f;
 
-	@Parameter(names = "-disagreementConsensusThreshold", description = "NOT YET IMPLEMENTED; Disagreements are only reported if for each strand"
-			+ " consensus is above this threshold, in addition to being above minConsensusThresholdQ2", required = false, hidden = true)
+	@Parameter(names = "-disagreementConsensusThreshold", description = "NOT YET IMPLEMENTED; Disagreements are only reported if for each strand" +
+		" consensus is above this threshold, in addition to being above minConsensusThresholdQ2", required = false, hidden = true)
 	public float disagreementConsensusThreshold = 0.0f;
 
-	@Parameter(names = "-minReadsPerStrandForDisagreement", description = "Minimal number of reads "
-			+ "for original top and bottom strands to examine duplex for disagreement between these strands", required = false)
+	@Parameter(names = "-minReadsPerStrandForDisagreement", description = "Minimal number of reads" +
+		" for original top and bottom strands to examine duplex for disagreement between these strands", required = false)
 	public int minReadsPerStrandForDisagreement = 0;
 
 	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
@@ -255,12 +255,12 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value divided by 10 are reported and marked with a % sign", required = false)
 	public int topAlleleFreqReport = 3;
 
-	@Parameter(names = "-minBasePhredScoreQ1", description = "Bases whose Phred quality score is below this threshold"
-			+ " are discarded (keeping this relatively low helps identify problematic reads)", required = false)
+	@Parameter(names = "-minBasePhredScoreQ1", description = "Bases whose Phred quality score is below this threshold" +
+		" are discarded (keeping this relatively low helps identify problematic reads)", required = false)
 	public int minBasePhredScoreQ1 = 20;
 
-	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose Q2 mutation candidates"
-			, required = false)
+	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose Q2 mutation candidates",
+		required = false)
 	public int minBasePhredScoreQ2 = 30;
 
 	@Parameter(names = "-ignoreFirstNBasesQ1", description = "Bases that occur within this many bases of read start are discarded", required = false)
@@ -272,28 +272,25 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-ignoreLastNBases", description = "Potential mutations that occur within this many bases of read end are ignored", required = false)
 	public int ignoreLastNBases = 4;
 
-	@Parameter(names = "-minReadMedianPhredScore", description = "Reads whose median Phred quality score is below this threshold are discarded"
-			, required = false)
+	@Parameter(names = "-minReadMedianPhredScore", description = "Reads whose median Phred quality score is below this threshold are discarded", required = false)
 	public int minReadMedianPhredScore = 0;
 
-	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose Q2 mutation candidates"
-			, required = false)
+	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose Q2 mutation candidates", required = false)
 	public int minMedianPhredQualityAtPosition = 0;
 
-	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose Q2 mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold"
-			, required = false)
+	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose Q2 mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold", required = false)
 	public float maxFractionWrongPairsAtPosition = 1.0f;
 
-	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose Q2 mutation candidates"
-			, required = false)
+	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose Q2 mutation candidates",
+		required = false)
 	public int maxAverageBasesClipped = 15;
 
-	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose Q2 mutation candidates"
-			, required = false)
+	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose Q2 mutation candidates",
+		required = false)
 	public int maxAverageClippingOfAllCoveringDuplexes = 999;
 
-	@Parameter(names = "-maxNDuplexes", description = "Positions whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates"
-			, required = false)
+	@Parameter(names = "-maxNDuplexes", description = "Positions whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates",
+		required = false)
 	public List<Integer> maxNDuplexes = new ArrayList<>();
 
 	@Parameter(names = "-maxInsertSize", description = "Inserts above this size are not used to propose Q2 mutation candidates, and will most of the time be ignored when identifying Q1 candidates", required = false)
@@ -320,8 +317,8 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-minQ1Q2DuplexesToCallMutation", description = "Min number of Q1 or Q2 duplexes to call mutation (condition set by minQ2DuplexesToCallMutation must also be met)", required = false)
 	public int minQ1Q2DuplexesToCallMutation = 1;
 
-	@Parameter(names = "-acceptNInBarCode", description = "If true, an N read within the barcode is"
-			+ " considered a match", required = false)
+	@Parameter(names = "-acceptNInBarCode", description = "If true, an N read within the barcode is" +
+		" considered a match", required = false)
 	public boolean acceptNInBarCode = true;
 
 	@Parameter(names = "-variableBarcodeLength", description = "Length of variable barcode, irrespective of whether it has been removed from the aligned sequences", required = false)
@@ -359,12 +356,12 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-saveRawReadsMVDB", description = "Not functional at present", required = false, arity = 1, hidden = hideInProgressParameters)
 	public boolean saveRawReadsMVDB = false;
 
-	@Parameter(names = "-outputCoverageBed", description = "Output bed file that gives number of duplexes covering each position in the reference sequence; " +
-			"note that this is a highly-inefficient format that creates a huge file", required = false)
+	@Parameter(names = "-outputCoverageBed", description = "Output bed file that gives number of duplexes covering each position in the reference sequence;" +
+		" note that this is a highly-inefficient format that creates a huge file", required = false)
 	public boolean outputCoverageBed = false;
 
 	@Parameter(names = "-outputCoverageProto", description = "Output protobuf file that gives number of duplexes covering each position in the reference sequence",
-			required = false)
+		required = false)
 	public boolean outputCoverageProto = false;
 
 	/**
@@ -394,9 +391,9 @@ public final class Parameters implements Serializable {
 	public float randomOutputRate = 0;
 
 	@FilePath
-	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags; " +
-			"note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold (it is "
-			+ "relatively rare but possible for a read to be omitted even though it counts toward coverage).", required = false)
+	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags;" +
+		" note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold (it is" +
+		" relatively rare but possible for a read to be omitted even though it counts toward coverage).", required = false)
 	public String outputAlignmentFile = null;
 
 	@FilePath
@@ -413,13 +410,13 @@ public final class Parameters implements Serializable {
 	public boolean outputTopBottomDisagreementBED = true;
 
 	@FilePathList
-	@Parameter(names = "-reportStatsForBED", description = "Report number of observations that fall within " +
-			"the union of regions listed by BED file whose path follows", required = false)
+	@Parameter(names = "-reportStatsForBED", description = "Report number of observations that fall within" +
+		" the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForBED = new ArrayList<>();
 
 	@FilePathList
-	@Parameter(names = "-reportStatsForNotBED", description = "Report number of observations that do *not* fall within " +
-			"the union of regions listed by BED file whose path follows", required = false)
+	@Parameter(names = "-reportStatsForNotBED", description = "Report number of observations that do *not* fall within" +
+		" the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForNotBED = new ArrayList<>();
 
 	@FilePathList
@@ -431,18 +428,18 @@ public final class Parameters implements Serializable {
 	public List<@NonNull String> repetiveRegionBED = new ArrayList<>();
 
 	@FilePath
-	@Parameter(names = "-bedDisagreementOrienter", description = "Gene orientation read from this file "
-			+ "is used to orient top/bottom strand disagreements with respect to transcribed strand", required = false)
+	@Parameter(names = "-bedDisagreementOrienter", description = "Gene orientation read from this file" +
+		" is used to orient top/bottom strand disagreements with respect to transcribed strand", required = false)
 	public String bedDisagreementOrienter = null;
 
 	@FilePathList
-	@Parameter(names = "-reportBreakdownForBED", description = "Report number of observations that fall within " +
-			"each of the regions defined by BED file whose path follows", required = false)
+	@Parameter(names = "-reportBreakdownForBED", description = "Report number of observations that fall within" +
+		" each of the regions defined by BED file whose path follows", required = false)
 	public List<@NonNull String> reportBreakdownForBED = new ArrayList<>();
 
 	@FilePathList
 	@Parameter(names = "-saveBEDBreakdownTo", description = "Path for saving of BED region counts; argument " +
-			"list must match that given to -reportBreakdownForBED", required = false)
+		" list must match that given to -reportBreakdownForBED", required = false)
 	public List<@NonNull String> saveBEDBreakdownTo = new ArrayList<>();
 
 	@FilePath
@@ -451,7 +448,7 @@ public final class Parameters implements Serializable {
 
 	@FilePath
 	@Parameter(names = "-refSeqToOfficialGeneName", description = "Tab separated text file with RefSeq ID, tab, and official gene name and any other useful info; " +
-			"counts will be reported both by RefSeq ID and official gene name")
+		"counts will be reported both by RefSeq ID and official gene name")
 	public String refSeqToOfficialGeneName = null;
 
 	@FilePath
