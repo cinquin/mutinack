@@ -43,11 +43,11 @@ final class LocationExaminationResults {
 		rawDeletionsQ2 = new ArrayList<>(),
 		rawInsertionsQ2 = new ArrayList<>();
 
-	public int duplexInsertSize10thP = -1;
-	public int duplexInsertSize90thP = -1;
-	public double probAtLeastOneCollision = -1;
+	int duplexInsertSize10thP = -1;
+	int duplexInsertSize90thP = -1;
+	double probAtLeastOneCollision = -1;
 
 	//To assert that an instance is not concurrently modified by
 	//multiple threads
-	public final AtomicInteger threadCount = new AtomicInteger();
+	final AtomicInteger threadCount = new AtomicInteger();
 }
