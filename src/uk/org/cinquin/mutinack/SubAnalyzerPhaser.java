@@ -87,7 +87,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final List<GenomeFeatureTester> excludeBEDs;
 	private final List<BedReader> repetitiveBEDs;
 	private final List<Mutinack> analyzers;
-	private final List<@NonNull LocationExaminationResults> analyzerCandidateLists;
 	private final int contigIndex;
 	private final @NonNull String contigName;
 	private final int PROCESSING_CHUNK;
@@ -103,7 +102,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	public SubAnalyzerPhaser(Parameters param,
 							 AnalysisChunk analysisChunk,
 							 List<Mutinack> analyzers,
-							 List<@NonNull LocationExaminationResults> analyzerCandidateLists,
 							 SAMFileWriter alignmentWriter,
 							 OutputStreamWriter mutationAnnotationWriter,
 							 Map<SequenceLocation, Boolean> forceOutputAtLocations,
@@ -118,7 +116,6 @@ public class SubAnalyzerPhaser extends Phaser {
 		this.analysisChunk = analysisChunk;
 		this.groupSettings = analysisChunk.groupSettings;
 		this.analyzers = analyzers;
-		this.analyzerCandidateLists = analyzerCandidateLists;
 		lastProcessedPosition = analysisChunk.lastProcessedPosition;
 		pauseAt = analysisChunk.pauseAtPosition;
 		previousLastProcessable = new SettableInteger(-1);
@@ -191,10 +188,9 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 
 				if (!param.rnaSeq) {
-					for (int loopIndex = 0; loopIndex < nSubAnalyzers; loopIndex++) {
-							analyzerCandidateLists.set(loopIndex, analysisChunk.subAnalyzers.get(loopIndex)
-									.examineLocation(location));
-					}
+					final List<@NonNull LocationExaminationResults> analyzerCandidateLists =
+						analysisChunk.subAnalyzers.parallelStream().map(sa -> sa.examineLocation(location)).
+						collect(Collectors.toList());
 
 					final int dubiousOrGoodInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
 						acceptMin(analyzerCandidateLists,

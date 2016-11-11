@@ -1027,9 +1027,7 @@ public class Mutinack implements Actualizable {
 					analysisChunk.lastProcessedPosition = new SettableInteger();
 					analysisChunk.groupSettings = groupSettings;
 
-					final List<LocationExaminationResults> analyzerCandidateLists = new ArrayList<>();
 					analyzers.forEach(a -> {
-						analyzerCandidateLists.add(null);
 						final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a),
 							out);
 						a.subAnalyzers.add(subAnalyzer);
@@ -1037,7 +1035,7 @@ public class Mutinack implements Actualizable {
 					});
 
 					final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
-							analysisChunk, analyzers, analyzerCandidateLists,
+							analysisChunk, analyzers,
 							alignmentWriter, mutationAnnotationWriter, groupSettings.forceOutputAtLocations,
 							dubiousOrGoodDuplexCovInAllInputs,
 							goodDuplexCovInAllInputs,
