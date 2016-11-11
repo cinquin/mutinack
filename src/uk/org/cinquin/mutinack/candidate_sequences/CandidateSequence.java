@@ -75,7 +75,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float totalAllDuplexes;
 	private float totalReadsAtPosition;
 	private final @NonNull SequenceLocation location;
-	private final Mutinack owningAnalyzer;
+	private final transient Mutinack owningAnalyzer;
 	private int averageMappingQuality = -1;
 	private int minInsertSize = -1;
 	private int maxInsertSize = -1;
