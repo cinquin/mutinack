@@ -403,7 +403,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							examResults.nGoodOrDubiousDuplexes >= argValues.minQ1Q2DuplexesToCallMutation &&
 							analyzers.stream().filter(b -> b != a).mapToInt(b ->
 							analyzerCandidateLists.get(b.idx).nGoodOrDubiousDuplexes).sum()
-							>= a.minNumberDuplexesSisterArm
+							>= argValues.minNumberDuplexesSisterArm
 							) {
 
 							examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
@@ -813,7 +813,6 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 
 			analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
-				Mutinack analyzer = subAnalyzer.getAnalyzer();
 
 				for (int position = saveLastProcessedPosition + 1; position <= lastProcessedPosition.get();
 						position ++) {
@@ -826,8 +825,8 @@ public class SubAnalyzerPhaser extends Phaser {
 				
 				final Iterator<ExtendedSAMRecord> iterator = subAnalyzer.extSAMCache.values().iterator();
 				final int localPauseAt = pauseAt.get();
-				final int maxInsertSize = analyzer.maxInsertSize;
-				if (analyzer.rnaSeq) {
+				final int maxInsertSize = argValues.maxInsertSize;
+				if (argValues.rnaSeq) {
 					while (iterator.hasNext()) {
 						if (iterator.next().getAlignmentEnd() + maxInsertSize <= localPauseAt) {
 							iterator.remove();

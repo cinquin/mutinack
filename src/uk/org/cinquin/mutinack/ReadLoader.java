@@ -67,14 +67,17 @@ public class ReadLoader {
 	@SuppressWarnings("resource")
 	public static void load(
 			Mutinack analyzer,
+			Parameters param,
+			MutinackGroup groupSettings,
 			SubAnalyzer subAnalyzer,
 			AnalysisChunk analysisChunk,
-			Parameters argValues,
 			final int PROCESSING_CHUNK,
 			@NonNull List<@NonNull String> contigs,
 			final int contigIndex,
 			SAMFileWriter alignmentWriter,
 			Function<String, ReferenceSequence> contigSequences) {
+
+		final @NonNull List<@NonNull AnalysisStats> stats = analyzer.stats;
 
 		final SettableInteger lastProcessable = subAnalyzer.lastProcessablePosition;
 		final int startAt = analysisChunk.startAtPosition;
@@ -85,10 +88,10 @@ public class ReadLoader {
 		lastProcessedPosition.set(startAt - 1);
 		pauseAt.set(lastProcessable.get() + PROCESSING_CHUNK);
 
-		final boolean needRandom = analyzer.dropReadProbability > 0 ||
-			analyzer.randomizeMates;
+		final boolean needRandom = param.dropReadProbability > 0 ||
+			param.randomizeMates;
 		final Random random = needRandom ?
-				new Random(argValues.randomSeed)
+				new Random(param.randomSeed)
 			:
 				null;
 
@@ -99,11 +102,11 @@ public class ReadLoader {
 			final String contigName = contigs.get(contigIndex);
 			final int truncateAtPosition = analysisChunk.terminateAtPosition;
 
-			final Set<String> droppedReads = analyzer.dropReadProbability > 0 ? new THashSet<>(1_000_000) : null;
-			final Set<String> keptReads = analyzer.dropReadProbability > 0 ?  new THashSet<>(1_000_000) : null;
+			final Set<String> droppedReads = param.dropReadProbability > 0 ? new THashSet<>(1_000_000) : null;
+			final Set<String> keptReads = param.dropReadProbability > 0 ?  new THashSet<>(1_000_000) : null;
 
-			final Set<String> switchedMatePairs = analyzer.randomizeMates ? new THashSet<>(1_000_000) : null;
-			final Set<String> unswitchedMatePairs = analyzer.randomizeMates ? new THashSet<>(1_000_000) : null;
+			final Set<String> switchedMatePairs = param.randomizeMates ? new THashSet<>(1_000_000) : null;
+			final Set<String> unswitchedMatePairs = param.randomizeMates ? new THashSet<>(1_000_000) : null;
 
 			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigName, 0);
 
@@ -118,8 +121,8 @@ public class ReadLoader {
 								(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
 						);
 			};
-			synchronized(analyzer.groupSettings.statusUpdateTasks) {
-				analyzer.groupSettings.statusUpdateTasks.add(info);
+			synchronized(groupSettings.statusUpdateTasks) {
+				groupSettings.statusUpdateTasks.add(info);
 			}
 
 			final SAMFileReader bamReader = analyzer.readerPool.getObj();
@@ -131,7 +134,7 @@ public class ReadLoader {
 				}
 
 				int furthestPositionReadInContig = 0;
-				final int maxInsertSize = analyzer.maxInsertSize;
+				final int maxInsertSize = param.maxInsertSize;
 				final QueryInterval[] bamContig = {
 						bamReader.makeQueryInterval(contigName, Math.max(1, startAt - maxInsertSize + 1))};
 				analyzer.timeStartProcessing = System.nanoTime();
@@ -179,8 +182,7 @@ public class ReadLoader {
 							e.getUnclippedStart();
 						},
 						subAnalyzer.stats.nReadsInPrefetchQueue)) {
-					while (iterator.hasNext() && !phaser.isTerminated() && !analyzer.
-							groupSettings.terminateAnalysis) {
+					while (iterator.hasNext() && !phaser.isTerminated() && !groupSettings.terminateAnalysis) {
 
 						final SAMRecord samRecord = iterator.next();
 
@@ -201,7 +203,7 @@ public class ReadLoader {
 							continue;
 						}
 
-						if (analyzer.randomizeMates) {
+						if (param.randomizeMates) {
 							Objects.requireNonNull(switchedMatePairs);
 							Objects.requireNonNull(unswitchedMatePairs);
 							Objects.requireNonNull(random);
@@ -235,7 +237,7 @@ public class ReadLoader {
 							final Iterator<Entry<Pair<String, Integer>, SettableInteger>> esit = intersectReads.entrySet().iterator();
 							while (esit.hasNext()) {
 								if (esit.next().getKey().snd < current5p - 6) {
-									analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
+									stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 									esit.remove();
 								}
 							}
@@ -243,7 +245,7 @@ public class ReadLoader {
 									new HashSet<>(readAheadStash.entrySet());
 							for (Entry<Pair<String, @NonNull Integer>, SettableInteger> e: readAheadStashEntries) {
 								if (e.getKey().getSnd() < current5p - 6) {
-									analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
+									stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 									readAheadStash.removeAll(e.getKey());
 								} else if (e.getKey().getSnd() <= current5p + 6) {
 									readAheadStash.removeAll(e.getKey());
@@ -258,14 +260,14 @@ public class ReadLoader {
 								Iterator<SAMRecord> it = intersectionIterators.get(i);
 								while (it.hasNext()) {
 									SAMRecord ir = it.next();
-									if (ir.getMappingQuality() < argValues.minMappingQIntersect.get(i)) {
-										analyzer.stats.forEach(s -> s.nTooLowMapQIntersect.accept(location));
+									if (ir.getMappingQuality() < param.minMappingQIntersect.get(i)) {
+										stats.forEach(s -> s.nTooLowMapQIntersect.accept(location));
 										continue;
 									}
 									int ir5p = ir.getAlignmentStart();
 									final Pair<String, Integer> pair = new Pair<>(ExtendedSAMRecord.getReadFullName(ir), ir5p);
 									if (ir5p < current5p - 6) {
-										analyzer.stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
+										stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 									} else if (ir5p <= current5p + 6) {
 										intersectReads.put(pair);
 									} else {
@@ -281,11 +283,11 @@ public class ReadLoader {
 						if (nIntersect > 0 &&
 								intersectReads.get(new Pair<>(ExtendedSAMRecord.getReadFullName(samRecord),
 										current5p)) < nIntersect) {
-							analyzer.stats.forEach(s -> s.nRecordsNotInIntersection2.accept(location));
+							stats.forEach(s -> s.nRecordsNotInIntersection2.accept(location));
 							continue;
 						}
 
-						if (analyzer.dropReadProbability > 0) {
+						if (param.dropReadProbability > 0) {
 							Objects.requireNonNull(droppedReads);
 							Objects.requireNonNull(keptReads);
 							Objects.requireNonNull(random);
@@ -297,7 +299,7 @@ public class ReadLoader {
 							}
 							if (keptReads.contains(readName)) {
 								keptReads.remove(readName);
-							} else if (random.nextFloat() < analyzer.dropReadProbability) {
+							} else if (random.nextFloat() < param.dropReadProbability) {
 								//If mate is in a different contig, do not store a reference
 								//to the read name in droppedReads since this thread will never
 								//encounter the mate
@@ -313,14 +315,14 @@ public class ReadLoader {
 							}
 						}
 
-						analyzer.stats.forEach(s -> s.nRecordsProcessed.increment(location));
+						stats.forEach(s -> s.nRecordsProcessed.increment(location));
 
-						if (contigs.size() < 100 && !argValues.rnaSeq) {
+						if (contigs.size() < 100 && !param.rnaSeq) {
 							//Summing below is a bottleneck when there are a large
 							//number of contigs (tens of thousands)
-							if (analyzer.stats.get(0).nRecordsProcessed.sum() > argValues.nRecordsToProcess) {
+							if (stats.get(0).nRecordsProcessed.sum() > param.nRecordsToProcess) {
 								statusLogger.info("Analysis of contig " + contigName + " stopping "
-										+ "because it processed over " + argValues.nRecordsToProcess + " records");
+										+ "because it processed over " + param.nRecordsToProcess + " records");
 								phaser.forceTermination();
 								break;
 							}
@@ -328,7 +330,7 @@ public class ReadLoader {
 
 						final String samRecordContigName = samRecord.getReferenceName();
 						if ("*".equals(samRecordContigName)) {
-							analyzer.stats.forEach(s -> s.nRecordsUnmapped.increment(location));
+							stats.forEach(s -> s.nRecordsUnmapped.increment(location));
 							continue;
 						}
 
@@ -337,14 +339,14 @@ public class ReadLoader {
 						}
 
 						if (IGNORE_SECONDARY_MAPPINGS && samRecord.getNotPrimaryAlignmentFlag()) {
-							analyzer.stats.forEach(s -> s.nRecordsIgnoredBecauseSecondary.increment(location));
+							stats.forEach(s -> s.nRecordsIgnoredBecauseSecondary.increment(location));
 							continue;
 						}
 
 						int mappingQuality = samRecord.getMappingQuality();
-						analyzer.stats.forEach(s -> s.mappingQualityAllRecords.insert(mappingQuality));
-						if (mappingQuality < analyzer.minMappingQualityQ1) {
-							analyzer.stats.forEach(s -> s.nRecordsBelowMappingQualityThreshold.increment(location));
+						stats.forEach(s -> s.mappingQualityAllRecords.insert(mappingQuality));
+						if (mappingQuality < param.minMappingQualityQ1) {
+							stats.forEach(s -> s.nRecordsBelowMappingQualityThreshold.increment(location));
 							continue;
 						}
 
@@ -442,7 +444,7 @@ public class ReadLoader {
 					lastProcessable.set(truncateAtPosition + 1);
 				}
 
-				while (!phaser.isTerminated() && !analyzer.groupSettings.terminateAnalysis) {
+				while (!phaser.isTerminated() && !groupSettings.terminateAnalysis) {
 					phaser.arriveAndAwaitAdvance();
 				}
 
@@ -456,19 +458,19 @@ public class ReadLoader {
 		} catch (Throwable t) {
 			Util.printUserMustSeeMessage("Exception " + t +
 					" on thread " + Thread.currentThread());
-			analyzer.groupSettings.errorOccurred();
+			groupSettings.errorOccurred();
 			phaser.forceTermination();
 			throw new RuntimeException("Exception while processing contig " + lastContigName +
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
 		} finally {
 			if (info != null) {
-				synchronized(analyzer.groupSettings.statusUpdateTasks) {
-					if (!analyzer.groupSettings.statusUpdateTasks.remove(info)) {
+				synchronized(groupSettings.statusUpdateTasks) {
+					if (!groupSettings.statusUpdateTasks.remove(info)) {
 						logger.warn("Could not remove status udpate task");
 					};
 				}
 			}
-			if (analyzer.groupSettings.terminateAnalysis) {
+			if (groupSettings.terminateAnalysis) {
 				phaser.forceTermination();
 			}
 		}

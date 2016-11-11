@@ -117,7 +117,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	public final boolean leftBarcodeNegativeStrand, rightBarcodeNegativeStrand;
 
-	public DuplexRead(MutinackGroup groupSettings, byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
+	public DuplexRead(MutinackGroup groupSettings, Parameters param, byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
 			boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
 		this.groupSettings = groupSettings;
 		this.leftBarcode = leftBarcode;
@@ -429,7 +429,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 	static DuplexKeeper groupDuplexes(
 			DuplexKeeper duplexes,
 			Consumer<DuplexRead> preliminaryOp,
-			Supplier<DuplexKeeper> factory, Mutinack analyzer, AnalysisStats stats,
+			Supplier<DuplexKeeper> factory,
+			Parameters param,
+			AnalysisStats stats,
 			int callDepth) {
 
 		Handle<DuplexKeeper> result = new Handle<>(factory.get());
@@ -459,17 +461,17 @@ public final class DuplexRead implements HasInterval<Integer> {
 				preliminaryOp.accept(duplex2);
 
 				final int distance1 = duplex1.leftAlignmentStart.position - duplex2.leftAlignmentStart.position;
-				final int distance2 = analyzer.requireMatchInAlignmentEnd && duplex1.leftAlignmentEnd != null && duplex2.leftAlignmentEnd != null ?
+				final int distance2 = param.requireMatchInAlignmentEnd && duplex1.leftAlignmentEnd != null && duplex2.leftAlignmentEnd != null ?
 						duplex1.leftAlignmentEnd.position - duplex2.leftAlignmentEnd.position : 0;
 				final int distance3 = duplex1.rightAlignmentEnd.position - duplex2.rightAlignmentEnd.position;
-				final int distance4 = analyzer.requireMatchInAlignmentEnd && duplex1.rightAlignmentStart != null && duplex2.rightAlignmentStart != null ?
+				final int distance4 = param.requireMatchInAlignmentEnd && duplex1.rightAlignmentStart != null && duplex2.rightAlignmentStart != null ?
 						duplex1.rightAlignmentStart.position - duplex2.rightAlignmentStart.position : 0;
 
-				if (	duplex1.distanceTo(duplex2) <= analyzer.alignmentPositionMismatchAllowed &&
-						Math.abs(distance1) <= analyzer.alignmentPositionMismatchAllowed &&
-						Math.abs(distance2) <= analyzer.alignmentPositionMismatchAllowed &&
-						Math.abs(distance3) <= analyzer.alignmentPositionMismatchAllowed &&
-						Math.abs(distance4) <= analyzer.alignmentPositionMismatchAllowed) {
+				if (	duplex1.distanceTo(duplex2) <= param.alignmentPositionMismatchAllowed &&
+						Math.abs(distance1) <= param.alignmentPositionMismatchAllowed &&
+						Math.abs(distance2) <= param.alignmentPositionMismatchAllowed &&
+						Math.abs(distance3) <= param.alignmentPositionMismatchAllowed &&
+						Math.abs(distance4) <= param.alignmentPositionMismatchAllowed) {
 
 					final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, true);
 					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, true);
@@ -487,17 +489,17 @@ public final class DuplexRead implements HasInterval<Integer> {
 								stats);
 					}
 
-					if (leftMismatches <= analyzer.nVariableBarcodeMismatchesAllowed &&
-							rightMismatches <= analyzer.nVariableBarcodeMismatchesAllowed) {
+					if (leftMismatches <= param.nVariableBarcodeMismatchesAllowed &&
+							rightMismatches <= param.nVariableBarcodeMismatchesAllowed) {
 
 						mergeDuplexes(duplex2, duplex1);
 
 						boolean changed =
-								duplex2.computeConsensus(false, analyzer.variableBarcodeLength);
+								duplex2.computeConsensus(false, param.variableBarcodeLength);
 
 						if (changed) {
 							result.set(groupDuplexes(result.get(), d -> {},
-								factory, analyzer, stats, callDepth + 1));
+								factory, param, stats, callDepth + 1));
 						} else {
 							stats.duplexGroupingDepth.insert(callDepth);
 						}
@@ -545,6 +547,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		@NonNull CandidateCounter topCounter,
 		@NonNull CandidateCounter bottomCounter,
 		Mutinack analyzer,
+		Parameters param,
 		AnalysisStats stats) {
 
 		if (result.threadCount.incrementAndGet() != 1) {
@@ -553,7 +556,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		try {
 			examineAtLoc1(location, result, candidateSet, assaysToIgnoreForDisagreementQuality,
-				topCounter, bottomCounter, analyzer, stats);
+				topCounter, bottomCounter, analyzer, param, stats);
 		} finally {
 			if (result.threadCount.decrementAndGet() != 0) {
 				throw new AssertionFailedException();
@@ -569,6 +572,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
 			Mutinack analyzer,
+			Parameters param,
 			AnalysisStats stats) {
 
 		topCounter.reset();
@@ -622,19 +626,19 @@ public final class DuplexRead implements HasInterval<Integer> {
 		final @NonNull DetailedQualities dq = new DetailedQualities();
 		globalQuality.forEach(dq::add);
 
-		if (nBottomStrandsWithCandidate >= analyzer.minReadsPerStrandQ2 &&
-				nTopStrandsWithCandidate >= analyzer.minReadsPerStrandQ2) {
+		if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ2 &&
+				nTopStrandsWithCandidate >= param.minReadsPerStrandQ2) {
 			dq.addUnique(N_READS_PER_STRAND, GOOD);
-		} else if (nBottomStrandsWithCandidate >= analyzer.minReadsPerStrandQ1 &&
-				nTopStrandsWithCandidate >= analyzer.minReadsPerStrandQ1) {
+		} else if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ1 &&
+				nTopStrandsWithCandidate >= param.minReadsPerStrandQ1) {
 			dq.addUnique(N_READS_PER_STRAND, DUBIOUS);
 			stats.nPosDuplexTooFewReadsPerStrand2.accept(location);
 			result.strandCoverageImbalance = Math.max(result.strandCoverageImbalance,
 					Math.abs(bottomStrandRecords.size() - topStrandRecords.size()));
-			if (analyzer.logReadIssuesInOutputBam) {
-				if (nBottomStrandsWithCandidate < analyzer.minReadsPerStrandQ2)
+			if (param.logReadIssuesInOutputBam) {
+				if (nBottomStrandsWithCandidate < param.minReadsPerStrandQ2)
 					issues.add(location + "_TFR1B");
-				if (nTopStrandsWithCandidate < analyzer.minReadsPerStrandQ2)
+				if (nTopStrandsWithCandidate < param.minReadsPerStrandQ2)
 					issues.add(location + "_TFR1T");
 			}
 		} else {
@@ -644,16 +648,16 @@ public final class DuplexRead implements HasInterval<Integer> {
 				missingStrand = true;
 				result.nMissingStrands++;
 			}
-			if (analyzer.logReadIssuesInOutputBam) {
-				if (nTopStrandsWithCandidate < analyzer.minReadsPerStrandQ1)
+			if (param.logReadIssuesInOutputBam) {
+				if (nTopStrandsWithCandidate < param.minReadsPerStrandQ1)
 					issues.add(location + "_TFR0B");
-				if (nBottomStrandsWithCandidate < analyzer.minReadsPerStrandQ1)
+				if (nBottomStrandsWithCandidate < param.minReadsPerStrandQ1)
 					issues.add(location + "_TFR0T");
 			}
 		}
 
 		if (nBottomStrandsWithCandidate + nTopStrandsWithCandidate <
-			analyzer.minReadsPerDuplexQ2) {
+			param.minReadsPerDuplexQ2) {
 				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
@@ -661,22 +665,22 @@ public final class DuplexRead implements HasInterval<Integer> {
 			//Check if criteria are met even if ignoring bases with
 			//Phred quality scores that do not meet Q2 threshold
 
-			topCounter.minBasePhredScore = analyzer.minBasePhredScoreQ2;
+			topCounter.minBasePhredScore = param.minBasePhredScoreQ2;
 			topCounter.compute();
-			bottomCounter.minBasePhredScore = analyzer.minBasePhredScoreQ2;
+			bottomCounter.minBasePhredScore = param.minBasePhredScoreQ2;
 			bottomCounter.compute();
 			final CandidateDuplexEval topCount, bottomCount;
 			boolean topFailed = false, bottomFailed = false;
 			if ((top != null && (((topCount = topCounter.candidateCounts.get(top.candidate)) ==
 						null) ||
-						(topFailed = topCount.count < analyzer.minReadsPerStrandQ2)))
+						(topFailed = topCount.count < param.minReadsPerStrandQ2)))
 				||
 					(bottom != null && (((bottomCount = bottomCounter.candidateCounts.get(bottom.candidate)) ==
 						null) ||
-						(bottomFailed = bottomCount.count < analyzer.minReadsPerStrandQ2)))) {
+						(bottomFailed = bottomCount.count < param.minReadsPerStrandQ2)))) {
 				dq.addUnique(N_STRAND_READS_ABOVE_Q2_PHRED, DUBIOUS);
 				stats.nPosDuplexTooFewReadsAboveQ2Phred.accept(location);
-				if (analyzer.logReadIssuesInOutputBam) {
+				if (param.logReadIssuesInOutputBam) {
 					if (bottomFailed)
 						issues.add(location + "_TFR2B");
 					if (topFailed)
@@ -690,7 +694,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				acceptMax(topCounter.keptRecords,
 					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
 				getMax()
-			>= analyzer.minMappingQualityQ2 ?
+			>= param.minMappingQualityQ2 ?
 				MAXIMUM
 			:
 				DUBIOUS);
@@ -700,7 +704,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				acceptMax(bottomCounter.keptRecords,
 					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
 			getMax()
-			>= analyzer.minMappingQualityQ2 ?
+			>= param.minMappingQualityQ2 ?
 				MAXIMUM
 			:
 				DUBIOUS);
@@ -708,17 +712,17 @@ public final class DuplexRead implements HasInterval<Integer> {
 		final boolean bothStrandsPresent = bottom != null && top != null;
 		final boolean thresholds2Met, thresholds1Met;
 
-		thresholds2Met = ((top != null) ? top.count >= analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
-			(bottom != null ? bottom.count >= analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate : false);
+		thresholds2Met = ((top != null) ? top.count >= param.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
+			(bottom != null ? bottom.count >= param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate : false);
 
-		thresholds1Met = (top != null ? top.count >= analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate : true) &&
-			(bottom != null ? bottom.count >= analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate : true);
+		thresholds1Met = (top != null ? top.count >= param.minConsensusThresholdQ1 * nTopStrandsWithCandidate : true) &&
+			(bottom != null ? bottom.count >= param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate : true);
 
 		if (!thresholds1Met) {
 			//TODO Following quality assignment is redundant with CONSENSUS_Q0 below
 			dq.addUnique(CONSENSUS_THRESHOLDS_1, ATROCIOUS);
 			stats.nConsensusQ1NotMet.increment(location);
-			if (analyzer.logReadIssuesInOutputBam) {
+			if (param.logReadIssuesInOutputBam) {
 				issues.add(location + " CS0Y_" + (top != null ? top.count : "x") +
 						"_" + nTopStrandsWithCandidate + "_" +
 						(bottom != null ? bottom.count : "x") +
@@ -728,7 +732,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		if (maxInsertSize == 0) {
 			dq.addUnique(INSERT_SIZE, POOR);
-		} else if (maxInsertSize < analyzer.minInsertSize || minInsertSize > analyzer.maxInsertSize) {
+		} else if (maxInsertSize < param.minInsertSize || minInsertSize > param.maxInsertSize) {
 			dq.addUnique(INSERT_SIZE, DUBIOUS);
 		}
 
@@ -742,9 +746,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 
 		final int distanceToLigSite = getMaxDistanceToLigSite();
-		if (distanceToLigSite <= analyzer.ignoreFirstNBasesQ1) {
+		if (distanceToLigSite <= param.ignoreFirstNBasesQ1) {
 			dq.addUnique(CLOSE_TO_LIG, POOR);
-		} else if (distanceToLigSite <= analyzer.ignoreFirstNBasesQ2) {
+		} else if (distanceToLigSite <= param.ignoreFirstNBasesQ2) {
 			dq.addUnique(CLOSE_TO_LIG, DUBIOUS);
 		}
 
@@ -754,22 +758,22 @@ public final class DuplexRead implements HasInterval<Integer> {
 			} else if (thresholds1Met) {
 				dq.addUnique(CONSENSUS_Q1, DUBIOUS);
 				stats.nPosDuplexWithLackOfStrandConsensus2.increment(location);
-				if (analyzer.logReadIssuesInOutputBam) {
-					if (top.count < analyzer.minConsensusThresholdQ2 * nTopStrandsWithCandidate)
+				if (param.logReadIssuesInOutputBam) {
+					if (top.count < param.minConsensusThresholdQ2 * nTopStrandsWithCandidate)
 						issues.add(location + " CS1T_" + shortLengthFloatFormatter.get().format
 								(((float) top.count) / nTopStrandsWithCandidate));
-					if (bottom.count < analyzer.minConsensusThresholdQ2 * nBottomStrandsWithCandidate)
+					if (bottom.count < param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate)
 						issues.add(location + " CS1B_" + shortLengthFloatFormatter.get().format
 								(((float) bottom.count) / nBottomStrandsWithCandidate));
 				}
 			} else {
 				dq.addUnique(CONSENSUS_Q0, POOR);
 				stats.nPosDuplexWithLackOfStrandConsensus1.increment(location);
-				if (analyzer.logReadIssuesInOutputBam) {
-					if (top.count < analyzer.minConsensusThresholdQ1 * nTopStrandsWithCandidate)
+				if (param.logReadIssuesInOutputBam) {
+					if (top.count < param.minConsensusThresholdQ1 * nTopStrandsWithCandidate)
 						issues.add(location + " CS0T_" + shortLengthFloatFormatter.get().format
 								(((float) top.count) / nTopStrandsWithCandidate));
-					if (bottom.count < analyzer.minConsensusThresholdQ1 * nBottomStrandsWithCandidate)
+					if (bottom.count < param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate)
 						issues.add(location + " CS0B_" + shortLengthFloatFormatter.get().format
 								(((float) bottom.count) / nBottomStrandsWithCandidate));
 				}
@@ -777,8 +781,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 		} else {//Only the top or bottom strand is represented
 			CandidateDuplexEval presentStrand = top != null ? top : bottom;
 			float total = nTopStrandsWithCandidate + nBottomStrandsWithCandidate; //One is 0, doesn't matter which
-			if (presentStrand != null && presentStrand.count < analyzer.minConsensusThresholdQ1 * total) {
-				if (analyzer.logReadIssuesInOutputBam) {
+			if (presentStrand != null && presentStrand.count < param.minConsensusThresholdQ1 * total) {
+				if (param.logReadIssuesInOutputBam) {
 					issues.add(location + " CS0X_" + shortLengthFloatFormatter.get().format
 							(presentStrand.count / total));
 				}
@@ -788,9 +792,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		final boolean enoughReadsForQ2Disag =
 			bottom != null &&
-			bottom.count >= analyzer.minReadsPerStrandForDisagreement &&
+			bottom.count >= param.minReadsPerStrandForDisagreement &&
 			top != null &&
-			top.count >= analyzer.minReadsPerStrandForDisagreement;
+			top.count >= param.minReadsPerStrandForDisagreement;
 
 		final boolean highEnoughQualForQ2Disagreement =
 			dq.getMin().atLeast(GOOD) &&
@@ -943,7 +947,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
 			}
 
-			if (disagreement && analyzer.Q2DisagCapsMatchingMutationQuality &&
+			if (disagreement && param.Q2DisagCapsMatchingMutationQuality &&
 					candidate.getMutationType() != MutationType.WILDTYPE &&
 					(candidate.equals(top.candidate) || candidate.equals(bottom.candidate))) {
 				//Mark presence of at least one duplex with disagreement matching the mutation

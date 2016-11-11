@@ -96,6 +96,7 @@ public final class SubAnalyzer {
 	private static final Logger logger = LoggerFactory.getLogger(SubAnalyzer.class);
 	
 	final @NonNull Mutinack analyzer;
+	@NonNull Parameters param;
 	AnalysisStats stats;
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);	
 	final @NonNull Map<SequenceLocation, THashSet<CandidateSequence>> candidateSequences =
@@ -145,14 +146,15 @@ public final class SubAnalyzer {
 
 	SubAnalyzer(@NonNull Mutinack analyzer, PrintStream out) {
 		this.analyzer = analyzer;
-		useHashMap = analyzer.alignmentPositionMismatchAllowed == 0;
+		this.param = analyzer.param;
+		useHashMap = param.alignmentPositionMismatchAllowed == 0;
 	}
 	
 	private boolean meetsQ2Thresholds(@NonNull ExtendedSAMRecord extendedRec) {
 		return !extendedRec.formsWrongPair() &&
-				extendedRec.getnClipped() <= analyzer.maxAverageBasesClipped &&
-				extendedRec.getMappingQuality() >= analyzer.minMappingQualityQ2 &&
-				Math.abs(extendedRec.getInsertSize()) <= analyzer.maxInsertSize;
+				extendedRec.getnClipped() <= param.maxAverageBasesClipped &&
+				extendedRec.getMappingQuality() >= param.minMappingQualityQ2 &&
+				Math.abs(extendedRec.getInsertSize()) <= param.maxInsertSize;
 	}
 
 	/**
@@ -207,8 +209,8 @@ public final class SubAnalyzer {
 						"Mismatched locations");
 
 				String s = v.stream().
-						filter(c -> c.getLocation().position > truncateProcessingAt + analyzer.maxInsertSize &&
-								c.getLocation().position < startProcessingAt - analyzer.maxInsertSize).
+						filter(c -> c.getLocation().position > truncateProcessingAt + param.maxInsertSize &&
+								c.getLocation().position < startProcessingAt - param.maxInsertSize).
 						flatMap(v0 -> v0.getNonMutableConcurringReads().keySet().stream()).
 						map(read -> {
 							if (nLeftBehind.incrementAndGet() == 0) {
@@ -300,7 +302,7 @@ public final class SubAnalyzer {
 			new InterningSet<>(500);
 
 		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance(
-				analyzer.groupSettings);
+				analyzer.groupSettings, param);
 		
 		int nReadsExcludedFromDuplexes = 0;
 		
@@ -339,7 +341,7 @@ public final class SubAnalyzer {
 
 				ed.set(duplexRead);
 
-				if (ed.getMaxDistance() > analyzer.alignmentPositionMismatchAllowed) {
+				if (ed.getMaxDistance() > param.alignmentPositionMismatchAllowed) {
 					continue;
 				}
 
@@ -347,14 +349,14 @@ public final class SubAnalyzer {
 				//During first pass, do not allow any barcode mismatches
 				if (matchToLeft) {
 					barcodeMatch = basesEqual(duplexRead.leftBarcode, barcode, 
-							analyzer.acceptNInBarCode) &&
+							param.acceptNInBarCode) &&
 							basesEqual(duplexRead.rightBarcode, mateBarcode, 
-									analyzer.acceptNInBarCode);
+									param.acceptNInBarCode);
 				} else {
 					barcodeMatch = basesEqual(duplexRead.leftBarcode, mateBarcode, 
-							analyzer.acceptNInBarCode) &&
+							param.acceptNInBarCode) &&
 							basesEqual(duplexRead.rightBarcode, barcode, 
-									analyzer.acceptNInBarCode);
+									param.acceptNInBarCode);
 				}
 
 				if (barcodeMatch) {
@@ -392,8 +394,8 @@ public final class SubAnalyzer {
 
 			if (!foundDuplexRead) {
 				final DuplexRead duplexRead = matchToLeft ?
-						new DuplexRead(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
-						new DuplexRead(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
+						new DuplexRead(analyzer.groupSettings, param, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
+						new DuplexRead(analyzer.groupSettings, param, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 				if (matchToLeft) {
 					duplexRead.setPositions(
 							rExtended.getUnclippedStart(),
@@ -479,7 +481,7 @@ public final class SubAnalyzer {
 			}//End new duplex creation
 		}//End loop over reads
 		
-		if (analyzer.randomizeStrand) {
+		if (param.randomizeStrand) {
 			for (DuplexRead dr: duplexKeeper.getIterable()) {
 				if (dr.topStrandRecords.isEmpty() || dr.bottomStrandRecords.isEmpty()) {
 					continue;
@@ -517,28 +519,28 @@ public final class SubAnalyzer {
 				duplexKeeper.getIterable(), nReadsExcludedFromDuplexes));
 		}
 
-		final boolean allReadsSameBarcode = analyzer.alignmentPositionMismatchAllowed == 0;
+		final boolean allReadsSameBarcode = param.alignmentPositionMismatchAllowed == 0;
 		
 		//Group duplexes that have alignment positions that differ by at most
-		//analyzer.alignmentPositionMismatchAllowed
+		//param.alignmentPositionMismatchAllowed
 		//and left/right consensus that differ by at most
-		//analyzer.nVariableBarcodeMismatchesAllowed
+		//param.nVariableBarcodeMismatchesAllowed
 
 		final DuplexKeeper cleanedUpDuplexes =
-			analyzer.nVariableBarcodeMismatchesAllowed > 0 ?
+			param.nVariableBarcodeMismatchesAllowed > 0 ?
 				DuplexRead.groupDuplexes(
 					duplexKeeper,
-					duplex -> duplex.computeConsensus(allReadsSameBarcode, analyzer.variableBarcodeLength),
+					duplex -> duplex.computeConsensus(allReadsSameBarcode, param.variableBarcodeLength),
 					() -> getDuplexKeeper(fallBackOnIntervalTree),
-					analyzer,
+					param,
 					stats,
 					0)
 			:
 				duplexKeeper;
 
-		if (analyzer.nVariableBarcodeMismatchesAllowed == 0) {
+		if (param.nVariableBarcodeMismatchesAllowed == 0) {
 			cleanedUpDuplexes.getIterable().forEach(d -> d.computeConsensus(allReadsSameBarcode,
-				analyzer.variableBarcodeLength));
+				param.variableBarcodeLength));
 		}
 
 		//Group duplexes by alignment start (or equivalent)
@@ -555,7 +557,7 @@ public final class SubAnalyzer {
 			list.add(dr);
 		});
 
-		if (analyzer.variableBarcodeLength == 0) {
+		if (param.variableBarcodeLength == 0) {
 			final double @NonNull[] insertSizeProb =
 				Objects.requireNonNull(analyzer.insertSizeProb);
 			duplexPositions.forEachValue(list -> {
@@ -622,7 +624,7 @@ public final class SubAnalyzer {
 				stats.duplexAverageNClipped.insert(duplexRead.averageNClipped);
 			}
 			
-			if (duplexRead.averageNClipped > analyzer.maxAverageBasesClipped) {
+			if (duplexRead.averageNClipped > param.maxAverageBasesClipped) {
 				duplexRead.globalQuality.addUnique(AVERAGE_N_CLIPPED, DUBIOUS);
 				stats.nDuplexesTooMuchClipping.accept(roughLocation);
 			}
@@ -744,7 +746,7 @@ public final class SubAnalyzer {
 		for (DuplexRead duplexRead: duplexReads) {
 			Assert.isFalse(duplexRead.invalid);
 			Assert.isTrue(duplexRead.averageNClipped >= 0);
-			Assert.isTrue(analyzer.variableBarcodeLength > 0 ||
+			Assert.isTrue(param.variableBarcodeLength > 0 ||
 				Double.isNaN(duplexRead.probAtLeastOneCollision) ||
 				duplexRead.probAtLeastOneCollision >= 0);
 			duplexRead.examineAtLoc(
@@ -755,6 +757,7 @@ public final class SubAnalyzer {
 				topCounter,
 				bottomCounter,
 				analyzer,
+				param,
 				stats);
 			if (index < insertSizes.length) {
 				//Check in case array size was capped (for future use; it is
@@ -764,7 +767,7 @@ public final class SubAnalyzer {
 			}
 			averageClippingOfCoveringDuplexes += duplexRead.averageNClipped;
 			averageCollisionProb += duplexRead.probAtLeastOneCollision;
-			if (analyzer.variableBarcodeLength == 0 && !duplexRead.missingStrand) {
+			if (param.variableBarcodeLength == 0 && !duplexRead.missingStrand) {
 				stats.duplexCollisionProbabilityWhen2Strands.insert((int)
 					(1_000f * duplexRead.probAtLeastOneCollision));
 			}
@@ -781,12 +784,12 @@ public final class SubAnalyzer {
 
 		averageClippingOfCoveringDuplexes /= duplexReads.size();
 		averageCollisionProb /= duplexReads.size();
-		if (analyzer.variableBarcodeLength == 0) {
+		if (param.variableBarcodeLength == 0) {
 			stats.duplexCollisionProbability.insert((int) (1_000d * averageCollisionProb));
 		}
 		result.probAtLeastOneCollision = averageCollisionProb;
 
-		if (averageClippingOfCoveringDuplexes > analyzer.maxAverageClippingOfAllCoveringDuplexes) {
+		if (averageClippingOfCoveringDuplexes > param.maxAverageClippingOfAllCoveringDuplexes) {
 			for (DuplexRead duplexRead: duplexReads) {
 				duplexRead.localAndGlobalQuality.addUnique(
 					MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES, DUBIOUS);
@@ -846,13 +849,13 @@ public final class SubAnalyzer {
 		allPhredQualitiesAtPosition.sort();
 		final byte positionMedianPhred = nPhredQualities == 0 ? 127 :
 			allPhredQualitiesAtPosition.get(nPhredQualities / 2); 
-		if (positionMedianPhred < analyzer.minMedianPhredQualityAtPosition) {
+		if (positionMedianPhred < param.minMedianPhredQualityAtPosition) {
 			maxQForAllDuplexes = DUBIOUS;
 			stats.nMedianPhredAtPositionTooLow.increment(location);
 		}
 		stats.medianPositionPhredQuality.insert(positionMedianPhred);
 
-		if (nWrongPairsAtPosition / ((float) nPairsAtPosition) > analyzer.maxFractionWrongPairsAtPosition) {
+		if (nWrongPairsAtPosition / ((float) nPairsAtPosition) > param.maxFractionWrongPairsAtPosition) {
 			maxQForAllDuplexes = DUBIOUS;
 			stats.nFractionWrongPairsAtPositionTooHigh.increment(location);
 		}
@@ -918,17 +921,17 @@ public final class SubAnalyzer {
 			}
 
 			if (analyzer.computeSupplQuality && candidate.getQuality().getMin() == DUBIOUS &&
-				averageClippingOfCoveringDuplexes <= analyzer.maxAverageClippingOfAllCoveringDuplexes) {
+				averageClippingOfCoveringDuplexes <= param.maxAverageClippingOfAllCoveringDuplexes) {
 				//See if we should promote to Q2, but only if there is not too much clipping
 				final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().map(c -> c.duplexRead).
 					filter(d -> d != null && d.localAndGlobalQuality.getMin().atLeast(DUBIOUS)).
 					collect(uniqueValueCollector()).
 					size();
 				final Stream<ExtendedSAMRecord> highMapQReads = candidate.getNonMutableConcurringReads().keySet().stream().
-					filter(r -> r.record.getMappingQuality() >= analyzer.minMappingQualityQ2);
-				if (countQ1Duplexes >= analyzer.promoteNQ1Duplexes)
+					filter(r -> r.record.getMappingQuality() >= param.minMappingQualityQ2);
+				if (countQ1Duplexes >= param.promoteNQ1Duplexes)
 					candidate.setSupplQuality(GOOD);
-				else if (candidate.getNonMutableConcurringReads().size() >= analyzer.promoteFractionReads * totalReadsAtPosition &&
+				else if (candidate.getNonMutableConcurringReads().size() >= param.promoteFractionReads * totalReadsAtPosition &&
 					highMapQReads.count() >= 10) {//TODO Make 10 a parameter
 					candidate.setSupplQuality(GOOD);
 					stats.nQ2PromotionsBasedOnFractionReads.add(location, 1);
@@ -937,7 +940,7 @@ public final class SubAnalyzer {
 						filter(d -> d != null && d.localAndGlobalQuality.getMin().atLeast(POOR)).
 						mapToInt(d -> d.topStrandRecords.size() + d.bottomStrandRecords.size()).max().
 						orElse(0);
-					if (maxNStrands >= analyzer.promoteNSingleStrands) {
+					if (maxNStrands >= param.promoteNSingleStrands) {
 						candidate.setSupplQuality(GOOD);
 					}
 				}
@@ -951,7 +954,7 @@ public final class SubAnalyzer {
 			});
 			candidate.setnGoodDuplexes(count.get());
 
-			if (!analyzer.rnaSeq) {
+			if (!param.rnaSeq) {
 				candidate.getNonMutableConcurringReads().forEachKey(r -> {
 					final int refPosition = location.position;
 					final int readPosition = r.referencePositionToReadPosition(refPosition);
@@ -1025,7 +1028,7 @@ public final class SubAnalyzer {
 				candidate.setMinInsertSize(localMinInsertSize);
 				candidate.setMaxInsertSize(localMaxInsertSize);
 
-				if (localMaxInsertSize < analyzer.minInsertSize || localMinInsertSize > analyzer.maxInsertSize) {
+				if (localMaxInsertSize < param.minInsertSize || localMinInsertSize > param.maxInsertSize) {
 					candidate.getQuality().add(INSERT_SIZE, DUBIOUS);
 				}
 
@@ -1036,12 +1039,12 @@ public final class SubAnalyzer {
 				final boolean hasNoMate = candidate.getNonMutableConcurringReads().keySet().stream().map(er -> er.record.
 					getMateReferenceName() == null).reduce(false, Boolean::logicalOr);
 
-				if (localMaxInsertSize > analyzer.maxInsertSize) {
+				if (localMaxInsertSize > param.maxInsertSize) {
 					supplementalMessage.append("one predicted insert size is " + 
 						nf.format(localMaxInsertSize)).append("; ");
 				}
 
-				if (localMinInsertSize < analyzer.minInsertSize) {
+				if (localMinInsertSize < param.minInsertSize) {
 					supplementalMessage.append("one predicted insert size is " + 
 						nf.format(localMinInsertSize)).append("; ");
 				}
@@ -1227,16 +1230,16 @@ public final class SubAnalyzer {
 		final int insertSize = extendedRec.getInsertSize();
 		final int insertSizeAbs = Math.abs(insertSize);
 
-		if (insertSizeAbs > analyzer.maxInsertSize) {
+		if (insertSizeAbs > param.maxInsertSize) {
 			stats.nReadsInsertSizeAboveMaximum.increment(location);
-			if (analyzer.ignoreSizeOutOfRangeInserts) {
+			if (param.ignoreSizeOutOfRangeInserts) {
 				return -1;
 			}
 		}
 
-		if (insertSizeAbs < analyzer.minInsertSize) {
+		if (insertSizeAbs < param.minInsertSize) {
 			stats.nReadsInsertSizeBelowMinimum.increment(location);
-			if (analyzer.ignoreSizeOutOfRangeInserts) {
+			if (param.ignoreSizeOutOfRangeInserts) {
 				return -1;
 			}
 		}
@@ -1252,20 +1255,20 @@ public final class SubAnalyzer {
 				} else if (pairOrientation == PairOrientation.RF) {
 					stats.nReadsPairRF.increment(location);
 				}
-				if (analyzer.ignoreTandemRFPairs) {
+				if (param.ignoreTandemRFPairs) {
 					return -1;
 				}
 		}
 		
 		final boolean reversed = rec.getReadNegativeStrandFlag();
 
-		if (!checkConstantBarcode(extendedRec.constantBarcode, false, analyzer.nConstantBarcodeMismatchesAllowed)) {
-			if (checkConstantBarcode(extendedRec.constantBarcode, true, analyzer.nConstantBarcodeMismatchesAllowed)) {
+		if (!checkConstantBarcode(extendedRec.constantBarcode, false, param.nConstantBarcodeMismatchesAllowed)) {
+			if (checkConstantBarcode(extendedRec.constantBarcode, true, param.nConstantBarcodeMismatchesAllowed)) {
 				if (reversed)
 					stats.nConstantBarcodeDodgyNStrand.increment(location);
 				else
 					stats.nConstantBarcodeDodgy.increment(location);
-				if (!analyzer.acceptNInBarCode)
+				if (!param.acceptNInBarCode)
 					return -1;
 			} else {
 				stats.nConstantBarcodeMissing.increment(location);
@@ -1274,22 +1277,12 @@ public final class SubAnalyzer {
 		}
 		stats.nReadsConstantBarcodeOK.increment(location);
 		
-		if (extendedRec.medianPhred < analyzer.minReadMedianPhredScore) {
+		if (extendedRec.medianPhred < param.minReadMedianPhredScore) {
 			stats.nReadMedianPhredBelowThreshold.accept(location);
 			return -1;
 		}
 
 		stats.mappingQualityKeptRecords.insert(rec.getMappingQuality());
-
-		/*int localIgnoreLastNBases = analyzer.ignoreLastNBases;
-		
-		int adjustedLength = rec.getReadLength() - analyzer.unclippedBarcodeLength + analyzer.ignoreFirstNBasesQ1;
-		if (insertSizeAbs > 0 && insertSizeAbs < adjustedLength) {
-			//Reads ran into adapter ligated at the other end
-			//Update ignoreLastNBases to stay sufficiently away from ligation site
-			localIgnoreLastNBases = Math.max(adjustedLength - insertSizeAbs,
-					analyzer.ignoreLastNBases);
-		}*/
 
 		int refEndOfPreviousAlignment = -1;
 		int readEndOfPreviousAlignment = -1;
@@ -1298,12 +1291,12 @@ public final class SubAnalyzer {
 
 		if (insertSize == 0) {
 			stats.nReadsInsertNoSize.increment(location);
-			if (analyzer.ignoreZeroInsertSizeReads) {
+			if (param.ignoreZeroInsertSizeReads) {
 				return -1;
 			}
 		}
 
-		final boolean notRnaSeq = !analyzer.rnaSeq;
+		final boolean notRnaSeq = !param.rnaSeq;
 
 		for (AlignmentBlock block: rec.getAlignmentBlocks()) {
 			int refPosition = block.getReferenceStart() - 1;
@@ -1326,8 +1319,8 @@ public final class SubAnalyzer {
 				final boolean insertion = refPosition == refEndOfPreviousAlignment + 1;
 
 				final boolean tooLate = (readOnNegativeStrand ? 
-					(insertion ? readPosition <= analyzer.ignoreLastNBases : readPosition < analyzer.ignoreLastNBases) :
-					readPosition > rec.getReadLength() - analyzer.ignoreLastNBases) && notRnaSeq;
+					(insertion ? readPosition <= param.ignoreLastNBases : readPosition < param.ignoreLastNBases) :
+					readPosition > rec.getReadLength() - param.ignoreLastNBases) && notRnaSeq;
 
 				if (tooLate) {
 					if (DebugLogControl.shouldLog(TRACE, logger)) {
@@ -1344,8 +1337,8 @@ public final class SubAnalyzer {
 						}
 						location = new SequenceLocation(extendedRec.getLocation().contigIndex,
 							extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
-						int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, analyzer.ignoreFirstNBasesQ1);
-						int distance1 = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
+						int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, param.ignoreFirstNBasesQ1);
+						int distance1 = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
 						int distance = Math.max(distance0, distance1);
 						distance = -distance + 1;
 
@@ -1355,7 +1348,7 @@ public final class SubAnalyzer {
 								stats.rejectedIndelDistanceToLigationSite.insert(-distance);
 								stats.nCandidateIndelBeforeFirstNBases.increment(location);
 							}
-							logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+							logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
 						} else {
 							distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
 							distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
@@ -1387,7 +1380,7 @@ public final class SubAnalyzer {
 							candidate.refPositionOfMateLigationSite = extendedRec.getRefPositionOfMateLigationSite();
 							candidate.insertSizeNoBarcodeAccounting = false;
 
-							if (analyzer.computeRawDisagreements) {
+							if (param.computeRawDisagreements) {
 								final byte wildType = readBases[readEndOfPreviousAlignment];
 								final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
 									new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
@@ -1399,8 +1392,8 @@ public final class SubAnalyzer {
 								stats.rawInsertionLengthQ1.insert(insertedSequence.length);
 
 								if (meetsQ2Thresholds(extendedRec) &&
-									baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
-									!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
+									baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+									!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 										candidate.getMutableRawInsertionsQ2().add(mutationPair);
 								}
 							}
@@ -1426,8 +1419,8 @@ public final class SubAnalyzer {
 							continue;
 						}
 
-						int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, analyzer.ignoreFirstNBasesQ1);
-						int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, analyzer.ignoreFirstNBasesQ1);
+						int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, param.ignoreFirstNBasesQ1);
+						int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, param.ignoreFirstNBasesQ1);
 						int distance = Math.min(distance0, distance1) + 1;
 
 						final boolean Q1reject = distance < 0;
@@ -1437,7 +1430,7 @@ public final class SubAnalyzer {
 								stats.rejectedIndelDistanceToLigationSite.insert(-distance);
 								stats.nCandidateIndelBeforeFirstNBases.increment(location);
 							}
-							logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + analyzer.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+							logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
 						} else {
 							distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
 							distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
@@ -1506,7 +1499,7 @@ public final class SubAnalyzer {
 							readLocalCandidates.add(candidate, location);
 							extendedRec.nReferenceDisagreements++;
 
-							if (notRnaSeq && analyzer.computeRawDisagreements) {
+							if (notRnaSeq && param.computeRawDisagreements) {
 								@SuppressWarnings("null")
 								final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
 									new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
@@ -1517,8 +1510,8 @@ public final class SubAnalyzer {
 								stats.rawDeletionsQ1.accept(location, mutationPair);
 								stats.rawDeletionLengthQ1.insert(deletedSequence.length);
 								if (meetsQ2Thresholds(extendedRec) &&
-									baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
-									!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
+									baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+									!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 										candidate.getMutableRawDeletionsQ2().add(mutationPair);
 								}
 							}
@@ -1545,7 +1538,7 @@ public final class SubAnalyzer {
 				location = new SequenceLocation(extendedRec.getLocation().contigIndex,
 					extendedRec.getLocation().getContigName(), refPosition);
 
-				if (baseQualities[readPosition] < analyzer.minBasePhredScoreQ1) {
+				if (baseQualities[readPosition] < param.minBasePhredScoreQ1) {
 					stats.nBasesBelowPhredScore.increment(location);
 					if (forceCandidateInsertion) {
 						insertCandidateAtRegularPosition = false;
@@ -1560,10 +1553,10 @@ public final class SubAnalyzer {
 				stats.nCandidateSubstitutionsConsidered.increment(location);
 				if (readBases[readPosition] != StringUtil.toUpperCase(refBases[refPosition]) /*Mismatch*/) {
 
-					final boolean tooLate = readOnNegativeStrand ? readPosition < analyzer.ignoreLastNBases :
-						readPosition > (rec.getReadLength() - 1) - analyzer.ignoreLastNBases;
+					final boolean tooLate = readOnNegativeStrand ? readPosition < param.ignoreLastNBases :
+						readPosition > (rec.getReadLength() - 1) - param.ignoreLastNBases;
 
-					int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
+					int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
 
 					boolean goodToInsert = distance < 0 && !tooLate;
 
@@ -1653,7 +1646,7 @@ public final class SubAnalyzer {
 						if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
 							logger.warn("Recording Phred score multiple times at same position " + location);
 						}
-						if (analyzer.computeRawDisagreements && insertCandidateAtRegularPosition) {
+						if (param.computeRawDisagreements && insertCandidateAtRegularPosition) {
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ? 
 								new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
 									byteMap.get(Mutation.complement(mutation))) :
@@ -1661,15 +1654,15 @@ public final class SubAnalyzer {
 									byteMap.get(mutation));
 							stats.rawMismatchesQ1.accept(location, mutationPair);
 							if (meetsQ2Thresholds(extendedRec) &&
-								baseQualities[readPosition] >= analyzer.minBasePhredScoreQ2 &&
-								!extendedRec.formsWrongPair() && distance > analyzer.ignoreFirstNBasesQ2) {
+								baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+								!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 									candidate.getMutableRawMismatchesQ2().add(mutationPair);
 							}
 						}
 					}//End of mismatched read case
 				} else {
 					//Wildtype read
-					int distance = extendedRec.tooCloseToBarcode(readPosition, analyzer.ignoreFirstNBasesQ1);
+					int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
 					if (distance >= 0) {
 						if (!extendedRec.formsWrongPair()) {
 							distance = extendedRec.tooCloseToBarcode(readPosition, 0);
@@ -1695,8 +1688,8 @@ public final class SubAnalyzer {
 						}
 					}
 
-					if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - analyzer.ignoreLastNBases) || 
-						(readOnNegativeStrand && readPosition < analyzer.ignoreLastNBases))) {
+					if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - param.ignoreLastNBases) ||
+						(readOnNegativeStrand && readPosition < param.ignoreLastNBases))) {
 						if (insertCandidateAtRegularPosition) {
 							stats.nCandidateWildtypeAfterLastNBases.increment(location);
 						}

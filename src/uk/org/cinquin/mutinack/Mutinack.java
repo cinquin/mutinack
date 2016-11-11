@@ -179,49 +179,9 @@ public class Mutinack implements Actualizable {
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
 
 	final MutinackGroup groupSettings;
-	final int ignoreFirstNBasesQ1, ignoreFirstNBasesQ2;
-	final int ignoreLastNBases;
-	final int minInsertSize;
-	final int maxInsertSize;
-	final int minMappingQualityQ1;
-	final int minMappingQualityQ2;
-	final int minReadsPerStrandQ1;
-	final int minReadsPerStrandQ2;
-	final int minReadsPerDuplexQ2;
-	final int minReadsPerStrandForDisagreement;
-	final boolean Q2DisagCapsMatchingMutationQuality;
-	final int minBasePhredScoreQ1;
-	final int minBasePhredScoreQ2;
-	final int minReadMedianPhredScore;
-	final int minMedianPhredQualityAtPosition;
-	final float minConsensusThresholdQ1;
-	final float minConsensusThresholdQ2;
-	final float disagreementConsensusThreshold;
-	final boolean acceptNInBarCode;
-	final float dropReadProbability;
-	final boolean randomizeMates;
-	final boolean randomizeStrand;
-	final int nConstantBarcodeMismatchesAllowed;
-	final int nVariableBarcodeMismatchesAllowed;
-	final int alignmentPositionMismatchAllowed;
-	final int promoteNQ1Duplexes;
-	final int promoteNSingleStrands;
-	final float promoteFractionReads;
-	final int minNumberDuplexesSisterArm;
-	final boolean ignoreZeroInsertSizeReads;
-	final boolean ignoreSizeOutOfRangeInserts;
-	final boolean ignoreTandemRFPairs;
-	final boolean requireMatchInAlignmentEnd;
-	final boolean logReadIssuesInOutputBam;
-	final int maxAverageBasesClipped;
-	final int maxAverageClippingOfAllCoveringDuplexes;
-	final float maxFractionWrongPairsAtPosition;
-	final int maxNDuplexes;
+	final @NonNull Parameters param;
 	final boolean computeSupplQuality;
-	final boolean rnaSeq;
 	final Collection<GenomeFeatureTester> excludeBEDs;
-	final boolean computeRawDisagreements;
-
 	final int idx;
 	public final @NonNull String name;
 	long timeStartProcessing;
@@ -265,60 +225,29 @@ public class Mutinack implements Actualizable {
 	final @NonNull Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
 	@Nullable GenomeFeatureTester codingStrandTester;
 	final byte @NonNull[] constantBarcode;
-	final int variableBarcodeLength;
 	final int unclippedBarcodeLength;
+	final int maxNDuplexes;
 	public @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
 	private String finalOutputBaseName;
 	public boolean notifiedUnpairedReads = false;
 
 	public Mutinack(
 			MutinackGroup groupSettings,
-			Parameters argValues,
+			Parameters param,
 			@NonNull String name,
 			int idx,
 			@NonNull File inputBam,
 			@Nullable Histogram approximateReadInsertSize,
-			int ignoreFirstNBasesQ1, int ignoreFirstNBasesQ2,
-			int ignoreLastNBases,
-			int minMappingQualityQ1, int minMappingQualityQ2,
-			int minReadsPerStrandQ1, int minReadsPerStrandQ2,
-			int minReadsPerDuplexQ2,
-			int minReadsPerStrandForDisagreement,
-			boolean Q2DisagCapsMatchingMutationQuality,
-			int minBasePhredScoreQ1, int minBasePhredScoreQ2,
-			int minReadMedianPhredScore,
-			float minConsensusThresholdQ1, float minConsensusThresholdQ2,
-			float disagreementConsensusThreshold,
-			boolean acceptNInBarCode,
-			int minInsertSize, int maxInsertSize,
-			float dropReadProbability,
-			boolean randomizeMates,
-			boolean randomizeStrand,
-			int nConstantBarcodeMismatchesAllowed, int nVariableBarcodeMismatchesAllowed,
-			int alignmentPositionMismatchAllowed,
-			int promoteNPoorDuplexes,
-			int promoteNSingleStrands,
-			float promoteFractionReads,
-			int minNumberDuplexesSisterArm,
-			int variableBarcodeLength,
 			byte @NonNull[] constantBarcode,
-			boolean ignoreZeroInsertSizeReads,
-			boolean ignoreSizeOutOfRangeInserts,
-			boolean ignoreTandemRFPairs,
 			@NonNull List<File> intersectAlignmentFiles,
-			boolean requireMatchInAlignmentEnd,
 			boolean logReadIssuesInOutputBam,
-			int maxAverageBasesClipped,
-			int maxAverageClippingOfAllCoveringDuplexes,
-			int minMedianPhredQualityAtPosition,
-			float maxFractionWrongPairsAtPosition,
-			int maxNDuplex,
 			@NonNull OutputLevel outputLevel,
-			boolean rnaSeq,
 			List<GenomeFeatureTester> excludeBEDs,
-			boolean computeRawDisagreements,
-			boolean reportCoverageAtAllPositions) {
+			int maxNDuplexes) {
+
 		this.groupSettings = groupSettings;
+		param.validate();
+		this.param = param;
 		this.name = name;
 		this.inputBam = inputBam;
 		this.insertSizeProb = approximateReadInsertSize != null ?
@@ -326,69 +255,25 @@ public class Mutinack implements Actualizable {
 			:
 				null;
 		this.idx = idx;
-		this.ignoreFirstNBasesQ1 = ignoreFirstNBasesQ1;
-		this.ignoreFirstNBasesQ2 = ignoreFirstNBasesQ2;
-		if (ignoreFirstNBasesQ2 < ignoreFirstNBasesQ1) {
-			throw new IllegalArgumentException("Parameter ignoreFirstNBasesQ2 must be greater than ignoreFirstNBasesQ1");
-		}
-		this.ignoreLastNBases = ignoreLastNBases;
-		this.minMappingQualityQ1 = minMappingQualityQ1;
-		this.minMappingQualityQ2 = minMappingQualityQ2;
-		this.minReadsPerStrandQ1 = minReadsPerStrandQ1;
-		this.minReadsPerStrandQ2 = minReadsPerStrandQ2;
-		this.minReadsPerDuplexQ2 = minReadsPerDuplexQ2;
-		this.minReadsPerStrandForDisagreement = minReadsPerStrandForDisagreement;
-		this.Q2DisagCapsMatchingMutationQuality = Q2DisagCapsMatchingMutationQuality;
-		this.minBasePhredScoreQ1 = minBasePhredScoreQ1;
-		this.minBasePhredScoreQ2 = minBasePhredScoreQ2;
-		this.minReadMedianPhredScore = minReadMedianPhredScore;
-		this.minConsensusThresholdQ1 = minConsensusThresholdQ1;
-		this.minConsensusThresholdQ2 = minConsensusThresholdQ2;
-		this.disagreementConsensusThreshold = disagreementConsensusThreshold;
-		this.acceptNInBarCode = acceptNInBarCode;
-		this.minInsertSize = minInsertSize;
-		this.maxInsertSize = maxInsertSize;
-		this.dropReadProbability = dropReadProbability;
-		this.randomizeMates = randomizeMates;
-		this.randomizeStrand = randomizeStrand;
-		this.nConstantBarcodeMismatchesAllowed = nConstantBarcodeMismatchesAllowed;
-		this.nVariableBarcodeMismatchesAllowed = nVariableBarcodeMismatchesAllowed;
-		this.alignmentPositionMismatchAllowed = alignmentPositionMismatchAllowed;
-		this.promoteNQ1Duplexes = promoteNPoorDuplexes;
-		this.promoteNSingleStrands = promoteNSingleStrands;
-		this.promoteFractionReads = promoteFractionReads;
-		this.minNumberDuplexesSisterArm = minNumberDuplexesSisterArm;
-		this.variableBarcodeLength = variableBarcodeLength;
 		//Make sure reference tests can be substituted for equality tests;
 		//the analyzer's constant barcode needs to come from the interning map
 		this.constantBarcode = Util.getInternedCB(constantBarcode);
 		this.unclippedBarcodeLength = 0;
 
-		this.ignoreZeroInsertSizeReads = ignoreZeroInsertSizeReads;
-		this.ignoreSizeOutOfRangeInserts = ignoreSizeOutOfRangeInserts;
-		this.ignoreTandemRFPairs = ignoreTandemRFPairs;
 		this.intersectAlignmentFiles = intersectAlignmentFiles;
-		this.requireMatchInAlignmentEnd = requireMatchInAlignmentEnd;
-		this.logReadIssuesInOutputBam = logReadIssuesInOutputBam;
-		this.maxAverageBasesClipped = maxAverageBasesClipped;
-		this.maxAverageClippingOfAllCoveringDuplexes = maxAverageClippingOfAllCoveringDuplexes;
-		this.minMedianPhredQualityAtPosition = minMedianPhredQualityAtPosition;
-		this.maxFractionWrongPairsAtPosition = maxFractionWrongPairsAtPosition;
-		this.maxNDuplexes = maxNDuplex;
 
-		this.computeSupplQuality = promoteNQ1Duplexes != Integer.MAX_VALUE ||
-				promoteNSingleStrands != Integer.MAX_VALUE ||
-				promoteFractionReads != Float.MAX_VALUE;
+		this.computeSupplQuality = param.promoteNQ1Duplexes != Integer.MAX_VALUE ||
+				param.promoteNSingleStrands != Integer.MAX_VALUE ||
+				param.promoteFractionReads != Float.MAX_VALUE;
 
-		this.rnaSeq = rnaSeq;
 		this.excludeBEDs = excludeBEDs;
-		this.computeRawDisagreements = computeRawDisagreements;
+		this.maxNDuplexes = maxNDuplexes;
 
 		for (String statsName: Arrays.asList("main_stats", "ins_stats")) {
 			@SuppressWarnings("null")
-			AnalysisStats stat = new AnalysisStats(statsName, groupSettings, reportCoverageAtAllPositions);
+			AnalysisStats stat = new AnalysisStats(statsName, groupSettings, param.reportCoverageAtAllPositions);
 			stat.setOutputLevel(outputLevel);
-			for (String s: argValues.traceFields) {
+			for (String s: param.traceFields) {
 				try {
 					String[] split = s.split(":");
 					String analyzerName = split[0];
@@ -754,22 +639,6 @@ public class Mutinack implements Actualizable {
 							f.getAbsolutePath());
 				}
 
-				final int nMaxDupArg = argValues.maxNDuplexes.size();
-				if (nMaxDupArg > 0 && nMaxDupArg < argValues.inputReads.size()) {
-					throw new IllegalArgumentException("maxNDuplexes must be specified once for each input file or not at all");
-				}
-
-				final int maxNDuplex = argValues.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
-					argValues.maxNDuplexes.get(i);
-
-				final OutputLevel[] d = OutputLevel.values();
-				if (argValues.verbosity < 0 || argValues.verbosity >= d.length) {
-					throw new IllegalArgumentException("Invalid verbosity " + argValues.verbosity + "; must be >= 0 and < " + d.length);
-				}
-
-				@SuppressWarnings("null")
-				final @NonNull OutputLevel outputLevel = d[argValues.verbosity];
-
 				groupSettings.PROCESSING_CHUNK = argValues.processingChunk;
 				groupSettings.INTERVAL_SLOP = argValues.alignmentPositionMismatchAllowed;
 				groupSettings.BIN_SIZE = argValues.contigStatsBinLength;
@@ -779,8 +648,13 @@ public class Mutinack implements Actualizable {
 				groupSettings.setBarcodePositions(0, argValues.variableBarcodeLength - 1,
 						3, 5);
 
-				//TODO Create a constructor that just takes argValues as an input,
-				//and/or use the builder pattern
+				final int maxNDuplexes = argValues.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
+					argValues.maxNDuplexes.get(i);
+
+				final OutputLevel[] d = OutputLevel.values();
+				@SuppressWarnings("null")
+				final @NonNull OutputLevel outputLevel = d[argValues.verbosity];
+
 				final Mutinack analyzer = new Mutinack(
 						groupSettings,
 						argValues,
@@ -791,53 +665,12 @@ public class Mutinack implements Actualizable {
 								GetReadStats.getApproximateReadInsertSize(inputBam, argValues.maxInsertSize)
 							:
 								null,
-						argValues.ignoreFirstNBasesQ1,
-						argValues.ignoreFirstNBasesQ2,
-						argValues.ignoreLastNBases,
-						argValues.minMappingQualityQ1,
-						argValues.minMappingQualityQ2,
-						argValues.minReadsPerStrandQ1,
-						argValues.minReadsPerStrandQ2,
-						argValues.minReadsPerDuplexQ2,
-						argValues.minReadsPerStrandForDisagreement,
-						argValues.Q2DisagCapsMatchingMutationQuality,
-						argValues.minBasePhredScoreQ1,
-						argValues.minBasePhredScoreQ2,
-						argValues.minReadMedianPhredScore,
-						argValues.minConsensusThresholdQ1,
-						argValues.minConsensusThresholdQ2,
-						argValues.disagreementConsensusThreshold,
-						argValues.acceptNInBarCode,
-						argValues.minInsertSize,
-						argValues.maxInsertSize,
-						argValues.dropReadProbability,
-						argValues.randomizeMates,
-						argValues.randomizeStrand,
-						argValues.nConstantBarcodeMismatchesAllowed,
-						argValues.nVariableBarcodeMismatchesAllowed,
-						argValues.alignmentPositionMismatchAllowed,
-						argValues.promoteNQ1Duplexes,
-						argValues.promoteNSingleStrands,
-						argValues.promoteFractionReads,
-						argValues.minNumberDuplexesSisterArm,
-						argValues.variableBarcodeLength,
 						nonNullify(argValues.constantBarcode.getBytes()),
-						argValues.ignoreZeroInsertSizeReads,
-						argValues.ignoreSizeOutOfRangeInserts,
-						argValues.ignoreTandemRFPairs,
 						intersectFiles,
-						argValues.requireMatchInAlignmentEnd,
 						argValues.logReadIssuesInOutputBam && argValues.outputAlignmentFile != null,
-						argValues.maxAverageBasesClipped,
-						argValues.maxAverageClippingOfAllCoveringDuplexes,
-						argValues.minMedianPhredQualityAtPosition,
-						argValues.maxFractionWrongPairsAtPosition,
-						maxNDuplex,
 						outputLevel,
-						argValues.rnaSeq,
 						excludeBEDs,
-						argValues.computeRawDisagreements,
-						argValues.reportCoverageAtAllPositions);
+						maxNDuplexes);
 				analyzers.set(i,analyzer);
 
 				analyzer.finalOutputBaseName = (argValues.auxOutputFileBaseName != null ?
@@ -1246,8 +1079,9 @@ public class Mutinack implements Actualizable {
 								get(p);
 							final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
 
-							Runnable r = () -> ReadLoader.load(analyzer, subAnalyzer, analysisChunk,
-                                    argValues, groupSettings.PROCESSING_CHUNK, contigNames,
+							Runnable r = () -> ReadLoader.load(analyzer, analyzer.param, groupSettings,
+																		subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
+																		contigNames,
                                     contigIndex, alignmentWriter0,
                                     StaticStuffToAvoidMutating::getContigSequence);
 							futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));

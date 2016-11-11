@@ -43,8 +43,25 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 
 public final class Parameters implements Serializable {
+
+	public void validate() {
+		if (ignoreFirstNBasesQ2 < ignoreFirstNBasesQ1) {
+			throw new IllegalArgumentException("Parameter ignoreFirstNBasesQ2 must be greater than ignoreFirstNBasesQ1");
+		}
+
+		final int nMaxDupArg = maxNDuplexes.size();
+		if (nMaxDupArg > 0 && nMaxDupArg < inputReads.size()) {
+			throw new IllegalArgumentException("maxNDuplexes must be specified once for each input file or not at all");
+		}
+
+		final OutputLevel[] d = OutputLevel.values();
+		if (verbosity < 0 || verbosity >= d.length) {
+			throw new IllegalArgumentException("Invalid verbosity " + verbosity + "; must be >= 0 and < " + d.length);
+		}
+	}
 
 	@HideInToString
 	@JsonIgnore
