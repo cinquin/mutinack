@@ -34,6 +34,7 @@ import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.MutationType;
+import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -74,7 +75,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float totalAllDuplexes;
 	private float totalReadsAtPosition;
 	private final @NonNull SequenceLocation location;
-	private final int owningAnalyzer;
+	private final Mutinack owningAnalyzer;
 	private int averageMappingQuality = -1;
 	private int minInsertSize = -1;
 	private int maxInsertSize = -1;
@@ -158,11 +159,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return probCollision;
 	}
 
-	public CandidateSequence(int analyzerID, @NonNull MutationType mutationType,
+	public CandidateSequence(Mutinack owningAnalyzer, @NonNull MutationType mutationType,
 			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location, @Nullable ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {
-		owningAnalyzer = analyzerID;
+		this.owningAnalyzer = owningAnalyzer;
 		this.mutationType = mutationType;
 		this.sequence = sequence;
 		this.location = location;
@@ -287,7 +288,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public int getOwningAnalyzer() {
+	public Mutinack getOwningAnalyzer() {
 		return owningAnalyzer;
 	}
 

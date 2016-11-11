@@ -1366,7 +1366,7 @@ public final class SubAnalyzer {
 								readEndOfPreviousAlignment + 1, readPosition);
 
 							final CandidateSequence candidate = new CandidateSequence(
-								analyzer.idx, INSERTION,
+								analyzer, INSERTION,
 								insertedSequence,
 								location,
 								extendedRec, distance);
@@ -1468,7 +1468,7 @@ public final class SubAnalyzer {
 								SequenceLocation location2 = new SequenceLocation(extendedRec.getLocation().contigIndex,
 									extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
 								CandidateSequence hiddenCandidate = new CandidateDeletion(
-									analyzer.idx, deletedSequence, location2, extendedRec, Integer.MAX_VALUE,
+									analyzer, deletedSequence, location2, extendedRec, Integer.MAX_VALUE,
 									location, deletionEnd);
 								hiddenCandidate.setHidden(true);
 								hiddenCandidate.insertSize = insertSize;
@@ -1484,7 +1484,7 @@ public final class SubAnalyzer {
 								readLocalCandidates.add(hiddenCandidate, location2);
 							}
 
-							final CandidateSequence candidate = new CandidateDeletion(analyzer.idx,
+							final CandidateSequence candidate = new CandidateDeletion(analyzer,
 								deletedSequence, location, extendedRec, distance,
 								location, new SequenceLocation(extendedRec.getLocation().contigIndex,
 									extendedRec.getLocation().getContigName(), refPosition));
@@ -1619,7 +1619,7 @@ public final class SubAnalyzer {
 
 						final byte[] mutSequence = byteArrayMap.get(readBases[readPosition]);
 
-						final CandidateSequence candidate = new CandidateSequence(analyzer.idx,
+						final CandidateSequence candidate = new CandidateSequence(analyzer,
 							SUBSTITUTION, mutSequence, location, extendedRec, distance);
 
 						if (!extendedRec.formsWrongPair()) {
@@ -1640,7 +1640,7 @@ public final class SubAnalyzer {
 							readLocalCandidates.add(candidate, location);
 						}
 						if (locationPH != null) {
-							final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
+							final CandidateSequence candidate2 = new CandidateSequence(analyzer,
 								WILDTYPE, null, locationPH, extendedRec, distance);
 							if (!extendedRec.formsWrongPair()) {
 								candidate2.acceptLigSiteDistance(distance);
@@ -1706,7 +1706,7 @@ public final class SubAnalyzer {
 							insertCandidateAtRegularPosition = false;
 						}
 					}
-					final CandidateSequence candidate = new CandidateSequence(analyzer.idx, 
+					final CandidateSequence candidate = new CandidateSequence(analyzer,
 						WILDTYPE, null, location, extendedRec, -distance);
 					if (!extendedRec.formsWrongPair()) {
 						candidate.acceptLigSiteDistance(-distance);
@@ -1716,7 +1716,7 @@ public final class SubAnalyzer {
 						readLocalCandidates.add(candidate, location);
 					}
 					if (locationPH != null) {
-						final CandidateSequence candidate2 = new CandidateSequence(analyzer.idx, 
+						final CandidateSequence candidate2 = new CandidateSequence(analyzer,
 							WILDTYPE, null, locationPH, extendedRec, -distance);
 						if (!extendedRec.formsWrongPair()) {
 							candidate2.acceptLigSiteDistance(-distance);

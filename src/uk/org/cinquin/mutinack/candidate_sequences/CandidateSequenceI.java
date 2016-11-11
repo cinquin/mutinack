@@ -29,6 +29,7 @@ import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.MutationType;
+import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
@@ -41,7 +42,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setMinInsertSize(int minInsertSize);
 	int getAverageMappingQuality();
 	void setAverageMappingQuality(int averageMappingQuality);
-	int getOwningAnalyzer();
+	Mutinack getOwningAnalyzer();
 	@NonNull SequenceLocation getLocation();
 	float getTotalReadsAtPosition();
 	void setTotalReadsAtPosition(float totalReadsAtPosition);

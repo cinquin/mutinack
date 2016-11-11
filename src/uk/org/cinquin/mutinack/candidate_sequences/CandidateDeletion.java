@@ -23,6 +23,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.MutationType;
+import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.SequenceLocation;
 
 /**
@@ -64,13 +65,13 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 		return true;
 	}
 
-	public CandidateDeletion(int analyzerID,
+	public CandidateDeletion(Mutinack analyzer,
 			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location,
 			@NonNull ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD,
 			@NonNull SequenceLocation deletionStart, @NonNull SequenceLocation deletionEnd) {
-		super(analyzerID, MutationType.DELETION, sequence, location, initialConcurringRead,
+		super(analyzer, MutationType.DELETION, sequence, location, initialConcurringRead,
 			initialLigationSiteD);
 		this.deletionStart = deletionStart;
 		this.deletionEnd = deletionEnd;
