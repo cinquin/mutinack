@@ -31,23 +31,23 @@ import uk.org.cinquin.mutinack.misc_util.Signals.SignalProcessor;
 
 public class Submitter {
 
-	public static void submitToServer(Parameters argValues)
+	public static void submitToServer(Parameters param)
 			throws RemoteException, InterruptedException, MalformedURLException {
 
-		RemoteMethods server = Server.getServer(argValues.submitToServer);
+		RemoteMethods server = Server.getServer(param.submitToServer);
 		Job job = new Job();
-		argValues.submitToServer = null;
-		if (argValues.workingDirectory != null) {
+		param.submitToServer = null;
+		if (param.workingDirectory != null) {
 			synchronized(Runtime.getRuntime()) {
 				String saveUserDir = System.getProperty("user.dir");
-				System.setProperty("user.dir", argValues.workingDirectory);
-				argValues.canonifyFilePaths();
+				System.setProperty("user.dir", param.workingDirectory);
+				param.canonifyFilePaths();
 				System.setProperty("user.dir", saveUserDir);
 			}
 		} else {
-			argValues.canonifyFilePaths();
+			param.canonifyFilePaths();
 		}
-		job.parameters = argValues;
+		job.parameters = param;
 		ByteArrayOutputStream bostdout = new ByteArrayOutputStream();
 		@SuppressWarnings("resource")
 		RemoteOutputStreamServer osstdout = new SimpleRemoteOutputStream(bostdout);
@@ -86,7 +86,7 @@ public class Submitter {
 
 		SignalProcessor infoSignalHandler = signal -> {
 			System.err.println("Submitted job " + job + " to server " +
-				argValues.submitToServer);
+				param.submitToServer);
 		};
 
 		try {

@@ -41,20 +41,20 @@ import uk.org.cinquin.parfor.ParFor;
 
 public class Worker {
 
-	public static void runWorker(Parameters argValues) throws InterruptedException {
+	public static void runWorker(Parameters param) throws InterruptedException {
 		final int nWorkers;
 		final String cleanedUpName;
-		final int columnIndex = argValues.startWorker.indexOf(":");
+		final int columnIndex = param.startWorker.indexOf(":");
 		if (columnIndex < 0) {
 			nWorkers = 1;
-			cleanedUpName = argValues.startWorker;
+			cleanedUpName = param.startWorker;
 		} else {
 			try {
 				nWorkers =
-					Integer.parseInt(argValues.startWorker.substring(columnIndex + 1));
-				cleanedUpName = argValues.startWorker.substring(0, columnIndex);
+					Integer.parseInt(param.startWorker.substring(columnIndex + 1));
+				cleanedUpName = param.startWorker.substring(0, columnIndex);
 			} catch (NumberFormatException e) {
-				throw new ParseRTException("Problem parsing " + argValues.startWorker, e);
+				throw new ParseRTException("Problem parsing " + param.startWorker, e);
 			}
 		}
 		final ParFor pf;
