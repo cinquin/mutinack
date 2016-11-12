@@ -26,8 +26,8 @@ OpenJDK 1.8 or 1.9 early access build 114). The `mutinack.jar` file can
 be [directly downloaded](http://cinquin.org.uk/static/mutinack.jar), or
 built from a clone of this repository using `ant jar` (Ant is
 technically not required but makes the build very straightforward; Git
-is used to optionally include version information in the build). Be sure
-to perform a recursive clone of this repository (passing Git the
+is used to optionally include version information in the build). *Be sure
+to perform a recursive clone of this repository* (passing Git the
 `--recursive` argument). Note that on startup Mutinack checks whether a
 newer version is available for download; this can be disabled with the
 `-skipVersionCheck` flag.
@@ -77,10 +77,13 @@ priority to specifically test. The analysis can be run with `ant
 mutationCoverage` (run time is up to 1 day on a 64-core machine,
 depending on the mutators used).
 
-The project is compiled with Google's "Error Prone" static analyzer, and
+The project is compiled with Google's "Error Prone" static analyzer,
 comes with Ant and Maven targets to run Findbugs, which is pre-packaged
-in the distribution. The code is also regularly analyzed with Coverity
-Scan, which has very nice additions to Findbugs and does not currently
+in the distribution, and has an Ant target to run SonarQube (the target
+disables reporting of a few issues that are of low interest or that
+generate false positives at a high rate, and disables reporting of all
+issues in contrib code). The code was also regularly analyzed with
+Coverity Scan, which has very nice additions to Findbugs and did not
 detect any significant issue. Note however that recent versions of
 Mutinack cannot be analyzed with Coverity, because of an apparent bug in
 Coverity that has been reported to Synopsys. The Findbugs analysis
@@ -231,6 +234,9 @@ License): used for static analysis
 
 - [Error Prone](http://errorprone.info) by Google (Apache License
 Version 2.0): used for static analysis at compile time
+
+- [SonarQube](http://http://www.sonarqube.org) (GNU Lesser General Public
+License): used for static analysis
 
 - [ASM library](http://asm.ow2.org) by the OW2 Consortium (BSD license):
 used by Findbugs and JaCoCo; modified to work around [OpenJDK bug
