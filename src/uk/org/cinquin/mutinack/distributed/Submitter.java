@@ -70,7 +70,9 @@ public class Submitter {
 						bostdout.reset();
 					}
 					synchronized(bosstderr) {
-						System.err.print(new String(bosstderr.toByteArray()));
+						if (!param.suppressStderrOutput) {
+							System.err.print(new String(bosstderr.toByteArray()));
+						}
 						bosstderr.reset();
 					}
 				}

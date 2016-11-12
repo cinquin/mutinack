@@ -104,6 +104,9 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-verbosity", description = "0: main mutation detection results only; 3: open the firehose", required = false)
 	public int verbosity = 0;
 
+	@Parameter(names = "-suppressStderrOutput", description = "Only partially implemented so far", required = false)
+	public boolean suppressStderrOutput = false;
+
 	@FilePath
 	@Parameter(names = "-outputJSONTo", description = "Path to which JSON-formatted output should be written",
 		required = false)

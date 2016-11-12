@@ -354,7 +354,19 @@ public class Mutinack implements Actualizable {
 			Server unusedVariable =
 					new Server(0, param.startServer, param.recordRunsTo, param.keysFile);
 		} else if (param.submitToServer != null) {
-			Submitter.submitToServer(param);
+			if (param.suppressStderrOutput) {
+				try {
+					Submitter.submitToServer(param);
+				} catch (Exception e) {
+					if (param.suppressStderrOutput) {
+						System.err.println("Suppressing stderr exception detail as requested, and exiting");
+						e.printStackTrace(System.out);
+						System.exit(1);
+					}
+				}
+			} else {
+				Submitter.submitToServer(param);
+			}
 		} else if (param.startWorker != null) {
 			Worker.runWorker(param);
 		} else {
