@@ -1,0 +1,1 @@
+Test that -Q2DisagCapsMatchingMutationQuality true results in deletion candidate being downgraded to Q1.

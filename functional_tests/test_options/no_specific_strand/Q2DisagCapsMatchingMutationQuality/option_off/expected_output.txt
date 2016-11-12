@@ -1,0 +1,2 @@
+topBottomDelDisagreementsQ2: All: {(wt T, del TTTTTGG)=1}; total: 1
+*1|_	chrIV:14,941,896	deletion	-TTTTTGG-	test	1	1	1	8	1.0000	1.0000	1.0000	1.0000	60	0	-776	76	32	32

@@ -1,0 +1,1 @@
+When matching disagreement is only Q1 (in this case because it does not have enough reads per strand), test that -Q2DisagCapsMatchingMutationQuality true does not result in mutation candidate being downgraded to Q1.
