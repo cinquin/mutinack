@@ -509,7 +509,7 @@ public class Util {
 	}
 
 	public static boolean isSerializable(Object o) {
-		NullOutputStream os = new NullOutputStream();
+		NullOutputStream os = NullOutputStream.NULL_OUTPUT_STREAM;
 		try {
 			try(ObjectOutputStream out = new ObjectOutputStream(os)) {
 				out.writeObject(o);

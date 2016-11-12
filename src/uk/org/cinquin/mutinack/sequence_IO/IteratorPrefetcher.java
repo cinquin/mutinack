@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.sequence_IO;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -142,7 +143,7 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 		try {
 			result = queue.take();
 			if (result == THE_END) {
-				throw new IllegalStateException();
+				throw new NoSuchElementException();
 			}
 		} catch (InterruptedException e1) {
 			throw new RuntimeException();

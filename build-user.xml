@@ -101,4 +101,35 @@
       excludedMethods="uk.org.cinquin.mutinack.AnalysisChunk.toString,uk.org.cinquin.mutinack.ExtendedSAMRecord.toString,uk.org.cinquin.mutinack.Mutinack.close,uk.org.cinquin.mutinack.Mutinack.closeOutputs,uk.org.cinquin.mutinack.misc_util.Util.nonNullify,uk.org.cinquin.mutinack.misc_util.Util.nullableify"
       jvmArgs="-Xmx5G -XX:-OmitStackTraceInFastThrow -XX:CICompilerCount=3 -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey -XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey" />
   </target>
+
+  <property name="sonar.host.url" value="http://localhost:9000" />
+  <property name="sonar.projectKey" value="org.codehaus.sonar:mutinack" />
+  <property name="sonar.projectName" value="Mutinack" />
+  <property name="sonar.projectVersion" value="1.0" />
+  <property name="sonar.sources" value="src"/>
+  <property name="sonar.exclusions" value="src/contrib/**/*"/>
+  <property name="sonar.java.binaries" value="bin" />
+  <property name="sonar.java.libraries" value="lib/*.jar"/>
+
+  <property name="sonar.issue.ignore.multicriteria" value="i1,i2,i3,i4,i5"/>
+  <property name="sonar.issue.ignore.multicriteria.i1.ruleKey" value="squid:S1948"/>
+  <property name="sonar.issue.ignore.multicriteria.i1.resourceKey" value="**/*"/>
+  <property name="sonar.issue.ignore.multicriteria.i2.ruleKey" value="squid:S1166"/>
+  <property name="sonar.issue.ignore.multicriteria.i2.resourceKey" value="**/*"/>
+  <property name="sonar.issue.ignore.multicriteria.i3.ruleKey" value="squid:S2142"/>
+  <property name="sonar.issue.ignore.multicriteria.i3.resourceKey" value="**/*"/>
+  <property name="sonar.issue.ignore.multicriteria.i4.ruleKey" value="squid:S1143"/>
+  <property name="sonar.issue.ignore.multicriteria.i4.resourceKey" value="**/*"/>
+  <property name="sonar.issue.ignore.multicriteria.i5.ruleKey" value="squid:S1163"/>
+  <property name="sonar.issue.ignore.multicriteria.i5.resourceKey" value="**/*"/>
+
+  <target name="sonar">
+    <taskdef uri="antlib:org.sonar.ant" resource="org/sonar/ant/antlib.xml">
+      <classpath path="lib_build_run_test/sonar-ant-task-2.2.jar" />
+    </taskdef>
+ 
+    <!-- Execute the SonarQube analysis -->
+    <sonar:sonar xmlns:sonar="antlib:org.sonar.ant"></sonar:sonar>
+  </target>
+
 </project>

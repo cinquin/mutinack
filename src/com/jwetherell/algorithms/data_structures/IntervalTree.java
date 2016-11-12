@@ -13,7 +13,6 @@ import java.util.function.Predicate;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gnu.trove.procedure.TObjectProcedure;
 import gnu.trove.set.hash.THashSet;
 
 /**
@@ -76,7 +75,7 @@ public class IntervalTree<T> implements Serializable {
 	 *            is a list of IntervalData objects
 	 */
 	public IntervalTree(List<IntervalData<T>> intervals) {
-		if (intervals.size() == 0)
+		if (intervals.isEmpty())
 			root = new Interval<>();
 		else {
 			List<IntervalData<T>> sortedList = new ArrayList<>(intervals);
@@ -109,12 +108,12 @@ public class IntervalTree<T> implements Serializable {
 				}
 			}
 			int maxChildDepth = 0;
-			if (leftIntervals.size() > 0) {
+			if (!leftIntervals.isEmpty()) {
 				final Interval<T> newLeft = createFromList(leftIntervals, currentDepth + 1);
 				newInterval.left = newLeft;
 				maxChildDepth = newLeft.initialDepth;
 			}
-			if (rightIntervals.size() > 0) {
+			if (!rightIntervals.isEmpty()) {
 				final Interval<T> newRight = createFromList(rightIntervals, currentDepth + 1);
 				newInterval.right = newRight;
 				maxChildDepth = Math.max(maxChildDepth, newRight.initialDepth);
@@ -183,11 +182,11 @@ public class IntervalTree<T> implements Serializable {
 				children.add(interval.left);
 			if (interval.right != null)
 				children.add(interval.right);
-			if (children.size() > 0) {
+			if (!children.isEmpty()) {
 				for (int i = 0; i < children.size() - 1; i++) {
 					builder.append(getString(children.get(i), prefix + (isTail ? "    " : "│   "), false));
 				}
-				if (children.size() > 0) {
+				if (!children.isEmpty()) {
 					builder.append(getString(children.get(children.size() - 1), prefix + (isTail ? "    " : "│   "),
 							true));
 				}
@@ -401,7 +400,7 @@ public class IntervalTree<T> implements Serializable {
 		private long end = Long.MAX_VALUE;
 		private final @NonNull THashSet<T> set;
 		@SuppressWarnings("rawtypes")
-		private final static THashSet emptyTHashSet = new THashSet() {
+		private static final THashSet emptyTHashSet = new THashSet() {
 			@Override
 			public boolean add(Object obj) {
 				throw new UnsupportedOperationException();
@@ -429,7 +428,7 @@ public class IntervalTree<T> implements Serializable {
 		};
 
 		@SuppressWarnings({ "rawtypes", "null" })
-		public final static IntervalData EMPTY = new IntervalData (emptyTHashSet, Long.MIN_VALUE, Long.MIN_VALUE);
+		public static final IntervalData EMPTY = new IntervalData (emptyTHashSet, Long.MIN_VALUE, Long.MIN_VALUE);
 
 		/**
 		 * Interval data using object as its unique identifier
@@ -450,12 +449,7 @@ public class IntervalTree<T> implements Serializable {
 		 * @return True if keep going (NOT if found an object)
 		 */
 		public boolean forEach(Predicate<T> keepGoingPredicate) {
-			return set.forEach(new TObjectProcedure<T>() {
-				@Override
-				public boolean execute(T arg0) {
-					return keepGoingPredicate.test(arg0);
-				}
-			});
+			return set.forEach((T arg0) -> keepGoingPredicate.test(arg0));
 		}
 
 		/**

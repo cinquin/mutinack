@@ -49,7 +49,7 @@ public class FileCache<T extends Serializable> {
 		try {
 			canonicalPath = new File(path + cacheExtension).getCanonicalPath();
 		} catch (IOException e) {
-			throw new RuntimeException("Error getting canonical path for cache for " + path);
+			throw new RuntimeException("Error getting canonical path for cache for " + path, e);
 		}
 		SoftReference<Object> sr = cache.get(canonicalPath);
 		Object o = sr != null ? sr.get() : null;
@@ -67,7 +67,7 @@ public class FileCache<T extends Serializable> {
 		try {
 			cachedInfo = new File(path + cacheExtension).getCanonicalFile();
 		} catch (IOException e1) {
-			throw new RuntimeException("Error getting canonical path for cache for " + path);
+			throw new RuntimeException("Error getting canonical path for cache for " + path, e1);
 		}
 
 		T result = null;
