@@ -526,7 +526,8 @@ public class Mutinack implements Actualizable {
 								double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
 								final int contigIndex = contigNames.indexOf(contig);
 								if (contigIndex < 0) {
-									throw new IllegalArgumentException("Unknown contig " + contig);
+									throw new IllegalArgumentException("Unknown contig " + contig + "; known contigs are " +
+										contigNames);
 								}
 								final SequenceLocation parsedLocation = new SequenceLocation(contigIndex, contig,
 										(int) Math.floor(position), position - Math.floor(position) > 0);
