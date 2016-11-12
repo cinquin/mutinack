@@ -1,0 +1,1 @@
+Test that reads with duplicated names are rejected (at least when these reads map to close-by positions).
