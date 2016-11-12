@@ -59,9 +59,8 @@ public final class ParFor {
 	public static final class PluginRuntimeException extends RuntimeException {
 
 		private static final long serialVersionUID = 1737304285173402447L;
-		public boolean unmaskable;
 
-		public PluginRuntimeException(String message, Exception e, boolean b) {
+		public PluginRuntimeException(String message, Exception e) {
 			super(message, e);
 		}
 	}
@@ -291,8 +290,7 @@ public final class ParFor {
 			if (e != null) {
 				if (e instanceof InterruptedException)
 					throw ((InterruptedException) e);
-				PluginRuntimeException repackaged = new PluginRuntimeException(e.getMessage(), e, false);
-				repackaged.unmaskable = true;
+				PluginRuntimeException repackaged = new PluginRuntimeException(e.getMessage(), e);
 				throw repackaged;
 			}
 
@@ -357,8 +355,7 @@ public final class ParFor {
 			if (e != null) {
 				if (e instanceof InterruptedException)
 					throw ((InterruptedException) e);
-				PluginRuntimeException repackaged=new PluginRuntimeException(e.getMessage(), e, false);
-				repackaged.unmaskable = true;
+				PluginRuntimeException repackaged = new PluginRuntimeException(e.getMessage(), e);
 				throw repackaged;
 			}
 		}

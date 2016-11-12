@@ -24,7 +24,8 @@ import java.util.List;
 public class MultipleExceptions extends RuntimeException {
 	
 	private static final long serialVersionUID = -3843826759182832179L;
-	List<Throwable> causeList;
+	private final List<Throwable> causeList;
+
 	public MultipleExceptions(List<Throwable> causeList) {
 		super();
 		this.causeList = causeList;
