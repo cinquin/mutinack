@@ -27,7 +27,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -613,6 +616,46 @@ public final class Parameters implements Serializable {
 		}
 		return "Working directory: " + System.getProperty("user.dir") + "\n" +
 				nonDefaultValuesString + "\n" + defaultValuesString + "\n";
+	}
+
+	public Object getFieldValue(String name) {
+		try {
+			Field f = Parameters.class.getDeclaredField(name);
+			return f.get(this);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException |
+				IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static List<String> differingFields(Parameters obj1, Parameters obj2) {
+		List<String> result = new ArrayList<>();
+		for (Field field: Parameters.class.getDeclaredFields()) {
+			try {
+				if (field.getAnnotation(HideInToString.class) != null)
+					continue;
+				if (field.getName().equals("$jacocoData")) {
+					continue;
+				}
+
+				if (!Objects.equals(field.get(obj1), field.get(obj2))) {
+					result.add(field.getName());
+				}
+			} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return result;
+	}
+
+	public static Set<String> differingFields(List<Parameters> list) {
+		Set<String> result = new HashSet<>();
+		for (int i = list.size() - 1; i >= 0; i--) {
+			for (int j = 0; j < i; j++) {
+				result.addAll(differingFields(list.get(i), list.get(j)));
+			}
+		}
+		return result;
 	}
 
 	/** Fixed from https://groups.google.com/forum/#!topic/jcommander/EwabBYieP88
