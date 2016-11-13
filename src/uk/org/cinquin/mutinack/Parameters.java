@@ -199,9 +199,6 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-readContigsFromFile", description = "Read contig names from reference genome file")
 	public boolean readContigsFromFile = false;
 
-	public static final List<@NonNull Integer> defaultTruncateContigPositions = Arrays.asList(
-			15_072_423, 15_279_345, 13_783_700, 17_493_793, 13_794, 20_924_149, 17_718_866);
-
 	@Parameter(names = "-traceField", description = "Output each position at which" +
 		" specified statistic is incremented; formatted as sampleName:statisticName", required = false)
 	public List<String> traceFields = new ArrayList<>();
