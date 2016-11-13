@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -70,7 +70,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
 public class SubAnalyzerPhaser extends Phaser {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger("SubAnalyzerPhaser");
 	private static final boolean[] falseTrue = {false, true};
 	private static final byte[] QUESTION_MARK = {'?'};
@@ -90,15 +90,15 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final int contigIndex;
 	private final @NonNull String contigName;
 	private final int PROCESSING_CHUNK;
-	
+
 	private final ConcurrentHashMap<String, SAMRecord> readsToWrite;
 	private final SAMFileWriter outputAlignment;
 	private final OutputStreamWriter mutationAnnotationWriter;
 	private final int nSubAnalyzers;
 
-	private int nIterations = 0;	
+	private int nIterations = 0;
 	private final AtomicInteger dn = new AtomicInteger(0);
-	
+
 	public SubAnalyzerPhaser(Parameters param,
 							 AnalysisChunk analysisChunk,
 							 List<Mutinack> analyzers,
@@ -119,7 +119,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		lastProcessedPosition = analysisChunk.lastProcessedPosition;
 		pauseAt = analysisChunk.pauseAtPosition;
 		previousLastProcessable = new SettableInteger(-1);
-		
+
 		readsToWrite = alignmentWriter == null ?
 				null
 			:
@@ -130,15 +130,16 @@ public class SubAnalyzerPhaser extends Phaser {
 		this.goodDuplexCovInAllInputs = goodDuplexCovInAllInputs;
 		this.forceOutputAtLocations = forceOutputAtLocations;
 		nSubAnalyzers = analysisChunk.subAnalyzers.size();
-		
+
 		this.contigIndex = contigIndex;
 		this.contigName = contigName;
-		
+
 		this.excludeBEDs = excludeBEDs;
 		this.repetitiveBEDs = repetitiveBEDs;
 		this.PROCESSING_CHUNK = PROCESSING_CHUNK;
 	}
-	
+
+
 	@Override
 	protected final boolean onAdvance(int phase, int registeredParties) {
 		//This is the place to make comparisons between analyzer results
@@ -148,7 +149,9 @@ public class SubAnalyzerPhaser extends Phaser {
 			//within a reasonable range (at the cost of numbers not being unique across
 			//the file).
 		}
-		
+
+		final boolean returnValue;
+		boolean completedNormally = false;
 		try {
 			for (int i = 0; i < nSubAnalyzers; i++) {
 				SubAnalyzer sub = analysisChunk.subAnalyzers.get(i);
@@ -160,650 +163,37 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 
 			final int saveLastProcessedPosition = lastProcessedPosition.get();
-			for (int position = saveLastProcessedPosition + 1; position <= pauseAt.get() &&
-					!groupSettings.terminateAnalysis; position ++) {
 			outer:
-			for (boolean plusHalf: falseTrue) {
-				
-				final int statsIndex = plusHalf ? 1 : 0;
-				for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
-					subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
-				}
+			for (int position = saveLastProcessedPosition + 1;
+					position <= Math.min(pauseAt.get(), analysisChunk.terminateAtPosition)  &&
+					!groupSettings.terminateAnalysis; position ++) {
+					for (boolean plusHalf: falseTrue) {
+						final int statsIndex = plusHalf ? 1 : 0;
+						for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
+							subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
+						}
 
-				if (position > analysisChunk.terminateAtPosition) {
-					break outer;
-				}
-				
-				final @NonNull SequenceLocation location = new SequenceLocation(contigIndex, 
-						contigName, position, plusHalf);
+						final @NonNull SequenceLocation location =
+							new SequenceLocation(contigIndex, contigName, position, plusHalf);
 
-				for (GenomeFeatureTester tester: excludeBEDs) {
-					if (tester.test(location)) {
-						analysisChunk.subAnalyzers/*.parallelStream()*/.
-							forEach(sa -> {sa.candidateSequences.remove(location);
-									sa.stats.nPosExcluded.add(location, 1);});
-						lastProcessedPosition.set(position);
-						continue outer;
+						for (GenomeFeatureTester tester: excludeBEDs) {
+							if (tester.test(location)) {
+								analysisChunk.subAnalyzers/*.parallelStream()*/.
+									forEach(sa -> {sa.candidateSequences.remove(location);
+											sa.stats.nPosExcluded.add(location, 1);});
+								lastProcessedPosition.set(position);
+								continue outer;
+							}
+						}
+
+						try {
+							onAdvance1(statsIndex, position, location);
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
 					}
-				}
+			}
 
-				if (!param.rnaSeq) {
-					final List<@NonNull LocationExaminationResults> analyzerCandidateLists =
-						analysisChunk.subAnalyzers.parallelStream().map(sa -> sa.examineLocation(location)).
-						collect(Collectors.toList());
-
-					final int dubiousOrGoodInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
-						acceptMin(analyzerCandidateLists,
-							ler -> ((LocationExaminationResults) ler).nGoodOrDubiousDuplexes).
-						getMin();
-
-					final int goodDuplexCovInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
-						acceptMin(analyzerCandidateLists,
-							ler -> ((LocationExaminationResults) ler).nGoodDuplexes).
-						getMin();
-
-					dubiousOrGoodDuplexCovInAllInputs.insert(dubiousOrGoodInAllInputsAtPos);
-					goodDuplexCovInAllInputs.insert(goodDuplexCovInAllInputsAtPos);
-
-					final Handle<Boolean> tooHighCoverage = new Handle<>(false);
-					final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
-
-					analyzers.parallelStream().forEach(a -> {
-						if (groupSettings.mutationsToAnnotate.containsKey(new Pair<>(location, a.name))) {
-							mutationToAnnotate.set(true);
-						}
-						final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
-						final @NonNull LocationExaminationResults examResults = analyzerCandidateLists.get(a.idx);
-						final @Nullable OutputStreamWriter cbw = stats.coverageBEDWriter;
-						if (cbw != null) {
-							try {
-								cbw.append(location.getContigName() + "\t" +
-										(location.position + 1) + "\t" +
-										(location.position + 1) + "\t" +
-										examResults.nGoodOrDubiousDuplexes + "\n");
-							} catch (IOException e) {
-								throw new RuntimeException(e);
-							}
-						}
-
-						if (stats.positionByPositionCoverage != null) {
-							int[] array = Objects.requireNonNull(stats.positionByPositionCoverage.get(
-									location.getContigName()));
-							if (array.length <= location.position) {
-								throw new IllegalArgumentException("Position goes beyond end of contig " +
-										location.getContigName() + ": " + location.position +
-										" vs " + array.length);
-							} else {
-								array[location.position] += examResults.nGoodOrDubiousDuplexes;
-							}
-						}
-
-						if (examResults.alleleFrequencies != null) {
-							stats.alleleFrequencies.accept(location, examResults.alleleFrequencies);
-						}
-
-						for (CandidateSequence c: examResults.analyzedCandidateSequences) {
-							if (c.getQuality().getMin().atLeast(GOOD)) {
-								if (c.getMutationType().isWildtype()) {
-									stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
-									if (!repetitiveBEDs.isEmpty()) {
-										boolean repetitive = false;
-										for (GenomeFeatureTester t: repetitiveBEDs) {
-											if (t.test(location)) {
-												repetitive = true;
-												break;
-											}
-										}
-										if (repetitive) {
-											stats.wtQ2CandidateQ1Q2CoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
-										} else {
-											stats.wtQ2CandidateQ1Q2CoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);																
-										}
-									}
-								} else {
-									stats.mutantQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
-									if (!repetitiveBEDs.isEmpty()) {
-										boolean repetitive = false;
-										for (GenomeFeatureTester t: repetitiveBEDs) {
-											if (t.test(location)) {
-												repetitive = true;
-												break;
-											}
-										}
-										if (repetitive) {
-											stats.mutantQ2CandidateQ1Q2DCoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
-										} else {
-											stats.mutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);																
-										}
-									}
-								}
-							}
-						}
-
-						final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
-
-						if (localTooHighCoverage) {
-							stats.nPosIgnoredBecauseTooHighCoverage.increment(location);
-							tooHighCoverage.set(true);
-						}
-
-						if (!localTooHighCoverage) {
-							//a.stats.nPosDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
-
-							for (@NonNull ComparablePair<String, String> var: examResults.rawMismatchesQ2) {
-								stats.rawMismatchesQ2.accept(location, var);
-							}
-
-							for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
-								stats.rawDeletionsQ2.accept(location, var);
-								stats.rawDeletionLengthQ2.insert(var.snd.length());
-							}
-
-							for (@NonNull ComparablePair<String, String> var: examResults.rawInsertionsQ2) {
-								stats.rawInsertionsQ2.accept(location, var);
-								stats.rawInsertionLengthQ2.insert(var.snd.length());
-							}
-
-							for (Entry<DuplexDisagreement, List<DuplexRead>> entry: examResults.disagreements) {
-
-								DuplexDisagreement d = entry.getKey();
-
-								if (param.variableBarcodeLength == 0) {
-									stats.duplexCollisionProbabilityLocalAvAtDisag.insert(
-										(int) (examResults.probAtLeastOneCollision * 1_000d));
-
-									stats.duplexCollisionProbabilityAtDisag.insert(
-										(int) (d.probCollision * 1_000d));
-								}
-								
-								byte[] fstSeq = d.getFst().getSequence();
-								if (fstSeq == null) {
-									fstSeq = QUESTION_MARK;
-								}
-								byte[] sndSeq = d.getSnd().getSequence();
-								if (sndSeq == null) {
-									sndSeq = QUESTION_MARK;
-								}
-
-                                                                final Mutation mutant = d.getSnd();
-
-								try {
-									@Nullable
-									final OutputStreamWriter tpdw = d.hasAWtStrand ? stats.topBottomDisagreementWriter
-										: stats.noWtDisagreementWriter;
-									if (tpdw != null) {
-										tpdw.append(location.getContigName() + "\t" +
-												(location.position + 1) + "\t" + (location.position + 1) + "\t" +
-												(mutant.mutationType == SUBSTITUTION ?
-														(new String(fstSeq) + "" + new String(sndSeq)) 
-													:
-														new String (sndSeq)) + "\t" +
-												mutant.mutationType + "\t" +
-												(d.hasAWtStrand ? "" : (d.getFst().mutationType)) + "\t" +
-												examResults.duplexInsertSize10thP + "\t" +
-												examResults.duplexInsertSize90thP + "\t" +
-												examResults.alleleFrequencies.get(0) + "\t" +
-												examResults.alleleFrequencies.get(1) + "\t" +
-												mediumLengthFloatFormatter.get().format(d.probCollision) + "\t" +
-												mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + "\t" +
-												entry.getValue().size() + "\t" +
-												((param.verbosity < 2) ? "" :
-												entry.getValue().stream().limit(20).map(dp ->
-													Stream.concat(dp.topStrandRecords.stream(),
-														dp.bottomStrandRecords.stream())/*.findFirst()*/.
-														map(ExtendedSAMRecord::getFullName).collect(Collectors.joining(", ", "{ ", " }"))
-												).collect(Collectors.joining(", ", "[ ",         " ]"))) +
-												"\n");
-									}
-								} catch (IOException e) {
-									throw new RuntimeException(e);
-								}
-								
-								if (!d.hasAWtStrand) {
-										continue;
-								}
-
-								if (mutant.mutationType == SUBSTITUTION) {
-									stats.topBottomSubstDisagreementsQ2.accept(location, d);
-									mutant.isTemplateStrand().ifPresent(b -> {
-										if (b)
-											stats.templateStrandSubstQ2.accept(location, d);
-										else 
-											stats.codingStrandSubstQ2.accept(location, d);});
-								} else if (mutant.mutationType == DELETION) {
-									stats.topBottomDelDisagreementsQ2.accept(location, d);
-									mutant.isTemplateStrand().ifPresent(b -> {
-										if (b) 
-											stats.templateStrandDelQ2.accept(location, d);
-										else 
-											stats.codingStrandDelQ2.accept(location, d);});
-								} else if (mutant.mutationType == INSERTION) {
-									stats.topBottomInsDisagreementsQ2.accept(location, d);
-									mutant.isTemplateStrand().ifPresent(b -> {
-										if (b) 
-											stats.templateStrandInsQ2.accept(location, d);
-										else stats.codingStrandInsQ2.accept(location, d);
-									});
-								}
-
-							}
-						} else {
-							stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
-							for (@NonNull DuplexDisagreement d: examResults.disagreements.keys()) {
-								stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
-							}
-						}
-
-						if ((!localTooHighCoverage) &&
-							examResults.nGoodDuplexes >= param.minQ2DuplexesToCallMutation &&
-							examResults.nGoodOrDubiousDuplexes >= param.minQ1Q2DuplexesToCallMutation &&
-							analyzers.stream().filter(b -> b != a).mapToInt(b ->
-							analyzerCandidateLists.get(b.idx).nGoodOrDubiousDuplexes).sum()
-							>= param.minNumberDuplexesSisterArm
-							) {
-
-							examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
-								flatMap(c -> c.getDuplexes().stream()).
-								filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(GOOD)).
-								map(DuplexRead::getMaxDistanceToLigSite).
-								forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
-									stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
-
-							stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
-							stats.nPosQualityQ2OthersQ1Q2.increment(location);
-							@Nullable final GenomeFeatureTester codingStrandTester =
-								analyzers.get(0).codingStrandTester;
-							if (codingStrandTester != null &&
-									codingStrandTester.getNegativeStrand(location).isPresent()) {
-								stats.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.accept(location, examResults.nGoodDuplexes);
-							}
-							//XXX The following includes all candidates at *all* positions considered in
-							//processing chunk 
-							stats.nReadsAtPosQualityQ2OthersQ1Q2.insert(
-									examResults.analyzedCandidateSequences.
-									stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
-							stats.nQ1Q2AtPosQualityQ2OthersQ1Q2.insert(
-									examResults.analyzedCandidateSequences.
-									stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
-
-							if (param.variableBarcodeLength == 0) {
-								stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));
-							}
-						}
-					});//End parallel loop over analyzers to deal with coverage
-
-					//Filter candidates to identify non-wildtype versions
-					List<CandidateSequence> mutantCandidates = analyzerCandidateLists.stream().
-							map(c -> c.analyzedCandidateSequences).
-							flatMap(Collection::stream).filter(c -> {
-								boolean isMutant = !c.getMutationType().isWildtype();
-								return isMutant;
-							}).
-							collect(Collectors.toList());
-
-					final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
-						(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
-						acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getMin()).
-						getMax());
-
-					@SuppressWarnings("null")//Incorrect Eclipse auto-unboxing warning
-					final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
-						acceptMin(analyzerCandidateLists, cl -> {
-							List<@NonNull Integer> freq =
-								((LocationExaminationResults) cl).alleleFrequencies;
-							if (freq != null) {
-								return ((LocationExaminationResults) cl).alleleFrequencies.get(1);
-							} else {
-								return 99;
-							}
-						}).getMin();
-
-					final boolean lowTopAlleleFreq = minTopAlleleFreq < param.topAlleleFreqReport;
-
-					final boolean forceReporting = forceOutputAtLocations.get(location) != null ||
-						mutationToAnnotate.get() || lowTopAlleleFreq;
-					@SuppressWarnings("null")
-					final boolean randomlySelected = forceOutputAtLocations.get(location) != null &&
-						forceOutputAtLocations.get(location);
-
-					//Only report details when at least one mutant candidate is of Q2 quality
-					if (forceReporting || (maxCandMutQuality.atLeast(GOOD))) {
-						if (NONTRIVIAL_ASSERTIONS) for (GenomeFeatureTester t: excludeBEDs) {
-							Assert.isFalse(t.test(location), "%s excluded by %s"/*, location, t*/);
-						}
-
-						//Refilter also allowing Q1 candidates to compare output of different
-						//analyzers
-						final List<CandidateSequence> allQ1Q2Candidates = analyzerCandidateLists.stream().
-							map(l -> l.analyzedCandidateSequences).
-							flatMap(Collection::stream).
-							filter(c -> {
-								Assert.isFalse(c.getLocation().distanceOnSameContig(location) > 0);
-								return c.getQuality().getMin().greaterThan(POOR);}).
-							filter(c -> !c.isHidden()).
-							sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
-							collect(Collectors.toList());
-
-						final List<CandidateSequence> allCandidatesIncludingDisag = analyzerCandidateLists.stream().
-							map(l -> l.analyzedCandidateSequences).
-							flatMap(Collection::stream).
-							filter(c -> c.getLocation().equals(location) &&
-								(c.getQuality().getMin().greaterThan(POOR) || c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT))).
-							sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
-							collect(Collectors.toList());
-
-						final List<CandidateSequence> distinctQ1Q2Candidates = allQ1Q2Candidates.stream().distinct().
-							//Sorting might not be necessary
-							sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
-							collect(Collectors.toList());
-
-						final List<CandidateSequence> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
-							stream().distinct().
-							//Sorting might not be necessary
-							sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
-							collect(Collectors.toList());
-
-						for (CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
-							String baseOutput0 = "";
-
-							if (randomlySelected) {
-								baseOutput0 += "+";
-							}
-
-							if (lowTopAlleleFreq) {
-								baseOutput0 += "%";
-							}
-
-							candidate.nDuplexesSisterArm = allQ1Q2Candidates.stream().filter(
-									c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
-								mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum();
-
-							final long candidateCount = allQ1Q2Candidates.stream().
-								filter(c -> c.equals(candidate)).count();
-							
-							if (!candidate.getMutationType().isWildtype() &&
-								allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
-										(c.getQuality().getMin().atLeast(GOOD) || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).atLeast(GOOD)))).count() >= 2) {
-								baseOutput0 += "!";
-							} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
-									!candidate.getMutationType().isWildtype() &&
-									candidate.getQuality().getMin().atLeast(GOOD) &&
-									(candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation) &&
-									candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
-									(!tooHighCoverage.get()) &&
-									candidate.nDuplexesSisterArm >= param.minNumberDuplexesSisterArm
-									) {
-								//Then highlight the output with a *
-
-								baseOutput0 += "*";
-
-								baseOutput0 += candidate.getnGoodOrDubiousDuplexes();
-
-								analyzers.forEach(a -> {
-									final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
-									CandidateSequence c = analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
-											stream().filter(cd -> cd.equals(candidate)).findAny().orElse(null);
-
-									if (c != null) {
-										stats.nPosCandidatesForUniqueMutation.accept(location, c.getnGoodDuplexes());
-										stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert((int) c.getTotalGoodOrDubiousDuplexes());
-										if (!repetitiveBEDs.isEmpty()) {
-											boolean repetitive = false;
-											for (GenomeFeatureTester t: repetitiveBEDs) {
-												if (t.test(location)) {
-													repetitive = true;
-													break;
-												}
-											}
-											if (repetitive) {
-												stats.uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());
-											} else {
-												stats.uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());																
-											}
-										}
-									}
-								});
-								analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
-									contains(candidate)).forEach(a -> a.stats.get(statsIndex).nReadsAtPosWithSomeCandidateForQ2UniqueMutation.insert(
-										analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
-										stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum()));
-								analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
-									contains(candidate)).forEach(a -> a.stats.get(statsIndex).nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation.insert(
-										analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
-										stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum()));
-							}
-
-							if (!allQ1Q2Candidates.stream().anyMatch(c -> c.getOwningAnalyzer() == candidate.getOwningAnalyzer() &&
-									c.getMutationType().isWildtype())) {
-								//At least one analyzer does not have a wildtype candidate
-								baseOutput0 += "|";
-							} 
-
-							if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType().isWildtype())) {
-								//No wildtype candidate at this position
-								baseOutput0 += "_";
-							}
-
-							String baseOutput = baseOutput0 + "\t" + location + "\t" + candidate.getKind() + "\t" +
-									(!candidate.getMutationType().isWildtype() ? 
-											candidate.getChange() : "");
-
-							//Now output information for each analyzer
-							for (Mutinack analyzer: analyzers) {
-								final List<CandidateSequence> l = analyzerCandidateLists.get(analyzer.idx).analyzedCandidateSequences.
-										stream().filter(c -> c.equals(candidate)).collect(Collectors.toList());
-
-								String line = baseOutput + "\t" + analyzer.name + "\t";
-
-								final CandidateSequence c;
-								int nCandidates = l.size();
-								if (nCandidates > 1) {
-									throw new AssertionFailedException();
-								} else if (nCandidates == 0) {
-									//Analyzer does not have matching candidate (i.e. it did not get
-									//any reads matching the mutation)
-									continue;
-								} else {//1 candidate
-									c = l.get(0);
-									if (c.getQuality().getMin().lowerThan(GOOD)) {
-										line = line.replace("*", "x");
-									}
-									NumberFormat formatter = mediumLengthFloatFormatter.get();
-									Stream<String> qualityKD = c.getIssues().values().stream().map(
-											issues -> issues.getQualities().entrySet().
-											stream().filter(entry -> entry.getValue().lowerThan(GOOD)).
-											map(Object::toString).
-											collect(Collectors.joining(",", "{", "}")));
-									if (c.nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
-										qualityKD = Stream.concat(Stream.of(Assay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
-											qualityKD);
-									}
-									final Map<Assay, Quality> qualities = c.getQuality().getQualities();
-									final Quality disagQ = qualities.get(Assay.DISAGREEMENT);
-									if (disagQ != null) {
-										qualityKD = Stream.concat(Stream.of(Assay.DISAGREEMENT + "<=" + disagQ),
-											qualityKD);
-									}
-									if (qualities.containsKey(Assay.N_STRANDS_DISAGREEMENT)) {
-										qualityKD = Stream.concat(Stream.of(Assay.N_STRANDS_DISAGREEMENT.toString()),
-											qualityKD);
-									}
-									if (candidateCount > 1) {
-										qualityKD = Stream.concat(Stream.of(Assay.PRESENT_IN_SISTER_SAMPLE.toString()),
-											qualityKD);
-									}
-
-									String qualityKDString = qualityKD.collect(Collectors.joining(","));
-									/**
-									 * Make sure columns stay in sync with Mutinack.outputHeader
-									 */
-									line += c.getnGoodDuplexes() + "\t" + 
-										c.getnGoodOrDubiousDuplexes() + "\t" +
-										c.getnDuplexes() + "\t" +
-										c.getNonMutableConcurringReads().size() + "\t" +
-										formatter.format((c.getnGoodDuplexes() / c.getTotalGoodDuplexes())) + "\t" +
-										formatter.format((c.getnGoodOrDubiousDuplexes() / c.getTotalGoodOrDubiousDuplexes())) + "\t" +
-										formatter.format((c.getnDuplexes() / c.getTotalAllDuplexes())) + "\t" +
-										formatter.format((c.getNonMutableConcurringReads().size() / c.getTotalReadsAtPosition())) + "\t" +
-										(c.getAverageMappingQuality() == -1 ? "?" : c.getAverageMappingQuality()) + "\t" +
-										c.nDuplexesSisterArm + "\t" +
-										c.insertSize + "\t" +
-										c.getInsertSizeAtPos10thP() + "\t" +
-										c.getInsertSizeAtPos90thP() + "\t" +
-										c.minDistanceToLigSite + "\t" +
-										c.maxDistanceToLigSite + "\t" +
-										formatter.format(c.getMeanDistanceToLigSite()) + "\t" +
-										formatter.format(c.getProbCollision()) + "\t" +
-										c.positionInRead + "\t" +
-										c.readEL + "\t" +
-										c.readName + "\t" +
-										c.readAlignmentStart  + "\t" +
-										c.mateReadAlignmentStart  + "\t" +
-										c.readAlignmentEnd + "\t" +
-										c.mateReadAlignmentEnd + "\t" +
-										c.refPositionOfMateLigationSite + "\t" +
-										((param.outputDuplexDetails || param.annotateMutationsInFile != null) ?
-												qualityKDString
-											:
-												"" /*c.getIssues()*/) + "\t" +
-										c.getMedianPhredAtPosition() + "\t" +
-										(c.getMinInsertSize() == -1 ? "?" : c.getMinInsertSize()) + "\t" +
-										(c.getMaxInsertSize() == -1 ? "?" : c.getMaxInsertSize()) + "\t" +
-										analyzerCandidateLists.get(analyzer.idx).alleleFrequencies.get(0) + "\t" +
-										analyzerCandidateLists.get(analyzer.idx).alleleFrequencies.get(1) + "\t" +
-										(c.getSupplementalMessage() != null ? c.getSupplementalMessage() : "") + "\t";
-
-									boolean needComma = false;
-									for (Entry<String, GenomeFeatureTester> a: analyzer.filtersForCandidateReporting.entrySet()) {
-										if (!(a.getValue() instanceof BedComplement) && a.getValue().test(location)) {
-											if (needComma) {
-												line += ", ";
-											}
-											needComma = true;
-											Object val = a.getValue().apply(location);
-											line += a.getKey() + (val != null ? (": " + val) : "");
-										}
-									}
-								}
-
-								try {
-									final @Nullable OutputStreamWriter ambw = analyzer.stats.get(statsIndex).mutationBEDWriter;
-									if (ambw != null) {
-										ambw.append(location.getContigName() + "\t" + 
-												(location.position + 1) + "\t" + (location.position + 1) + "\t" +
-												candidate.getKind() + "\t" + baseOutput0 + "\t" +
-												c.getnGoodDuplexes() +
-												"\n");
-									}
-								} catch (IOException e) {
-									throw new RuntimeException(e);
-								}
-
-								final Pair<SequenceLocation, String> fullLocation =
-									new Pair<>(location, analyzer.name);
-								
-								@Nullable List<@NonNull Pair<@NonNull Mutation, @NonNull String>>
-									toAnnotateList = groupSettings.mutationsToAnnotate.get(fullLocation);
-
-								if (toAnnotateList != null) {
-									Iterator<@NonNull Pair<@NonNull Mutation, @NonNull String>> it = toAnnotateList.iterator();
-									while (it.hasNext()) {
-										final Pair<@NonNull Mutation, @NonNull String> toAnnotate = it.next();
-										final Mutation mut;
-										if ((mut = toAnnotate.fst).mutationType.
-											equals(candidate.getMutationType()) &&
-											Arrays.equals(mut.mutationSequence, candidate.getSequence())) {
-											mutationAnnotationWriter.append(toAnnotate.snd + "\t" + line + "\n");
-											it.remove();
-										}
-									}
-									if (toAnnotateList.isEmpty()) {
-										groupSettings.mutationsToAnnotate.remove(fullLocation);
-									}
-								}
-
-								analysisChunk.out.println(line);
-							}//End loop over analyzers
-						}//End loop over mutation candidates
-					}//End of candidate reporting
-				}//End !rnaSeq
-				lastProcessedPosition.set(position);
-				
-				if (readsToWrite != null) {
-					analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
-
-						Mutinack analyzer = subAnalyzer.getAnalyzer();
-
-						//If outputting an alignment populated with fields identifying the duplexes,
-						//fill in the fields here
-						for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
-							boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
-								duplexRead.maxInsertSize > 10_000;
-							boolean write = location.equals(duplexRead.rightAlignmentEnd) ||
-								(useAnyStart && location.equals(duplexRead.leftAlignmentEnd));
-							if (!write) {
-								continue;
-							}
-							final int randomIndexForDuplexName = dn.incrementAndGet();
-
-							final int nReads = duplexRead.bottomStrandRecords.size() + duplexRead.topStrandRecords.size();
-							final Quality minDuplexQuality = duplexRead.minQuality;
-							final Quality maxDuplexQuality = duplexRead.maxQuality;
-							Handle<String> topOrBottom = new Handle<>();
-							Consumer<ExtendedSAMRecord> queueWrite = (ExtendedSAMRecord e) -> {
-								final SAMRecord samRecord = e.record;
-								Integer dsAttr = (Integer) samRecord.getAttribute("DS");
-								if (dsAttr == null || nReads > dsAttr) {
-									if (dsAttr != null && readsToWrite.containsKey(e.getFullName())) {
-										//Read must have been already written
-										//For now, don't try to correct it with better duplex
-										return;
-									}
-									samRecord.setAttribute("DS", nReads);
-									samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
-									samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
-									samRecord.setAttribute("DQ", minDuplexQuality.toInt());
-									samRecord.setAttribute("DR", maxDuplexQuality.toInt());
-									String info = topOrBottom.get() + " Q" +
-											minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
-											" global Qs: " + duplexRead.globalQuality +
-											" P" + duplexRead.getMinMedianPhred() +
-											" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
-									samRecord.setAttribute("DI", info);
-									samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
-									samRecord.setAttribute("VB", new String(e.variableBarcode));
-									samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
-									samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
-											duplexRead.rightAlignmentStart + "-" + duplexRead.rightAlignmentEnd);
-									if (!duplexRead.issues.isEmpty()) {
-										samRecord.setAttribute("IS", duplexRead.issues.toString());
-									} else {
-										samRecord.setAttribute("IS", null);
-									}
-									samRecord.setAttribute("AI", analyzer.idx);
-									readsToWrite.put(e.getFullName(), samRecord);
-								}
-							};
-							if (param.collapseFilteredReads) {
-								if (!duplexRead.topStrandRecords.isEmpty()) {
-									topOrBottom.set("T");
-									queueWrite.accept(duplexRead.topStrandRecords.get(0));
-								}
-								if (!duplexRead.bottomStrandRecords.isEmpty()) {
-									topOrBottom.set("B");
-									queueWrite.accept(duplexRead.bottomStrandRecords.get(0));
-								}
-							} else {
-								topOrBottom.set("T");
-								duplexRead.topStrandRecords.forEach(queueWrite);
-								topOrBottom.set("B");
-								duplexRead.bottomStrandRecords.forEach(queueWrite);
-							}
-						}//End writing
-					});
-				}//End readsToWrite != null
-			}}//End loop over positions
-			
 			if (ENABLE_TRACE && shouldLog(TRACE)) {
 				logger.trace("Going from " + saveLastProcessedPosition + " to " + lastProcessedPosition.get() + " for chunk " + analysisChunk);
 			}
@@ -818,7 +208,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				if (shouldLog(TRACE)) {
 					logger.trace("SubAnalyzer " + analysisChunk + " completed " + (saveLastProcessedPosition + 1) + " to " + lastProcessedPosition.get());
 				}
-				
+
 				final Iterator<ExtendedSAMRecord> iterator = subAnalyzer.extSAMCache.values().iterator();
 				final int localPauseAt = pauseAt.get();
 				final int maxInsertSize = param.maxInsertSize;
@@ -838,7 +228,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				if (subAnalyzer.extSAMCache instanceof THashMap) {
 					((THashMap<?,?>) subAnalyzer.extSAMCache).compact();
 				}
-			});//End parallel loop over subAnalyzers
+			});//End loop over subAnalyzers
 
 			if (outputAlignment != null) {
 				synchronized(outputAlignment) {
@@ -848,7 +238,6 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 				readsToWrite.clear();
 			}
-			
 
 			if (nIterations < 2) {
 				nIterations++;
@@ -887,23 +276,647 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			if (maxLastProcessable == previousLastProcessable.get()) {
 				logger.debug("Phaser " + this + " will terminate");
-				return true;
+				returnValue = true;
+			} else {
+				previousLastProcessable.set(maxLastProcessable);
+				pauseAt.set(maxLastProcessable + PROCESSING_CHUNK);
+				returnValue = false;
 			}
-
-			previousLastProcessable.set(maxLastProcessable);
-			pauseAt.set(maxLastProcessable + PROCESSING_CHUNK);
-			
-			return false;
-		} catch (Exception e) {
-			forceTermination();
-			throw new RuntimeException(e);
+			completedNormally = true;
 		} finally {
-			for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
-				subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
+			if (completedNormally) {
+				for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
+					subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
+				}
+			} else {
+				forceTermination();
 			}
 		}
+
+		return returnValue;
 	}//End onAdvance
-	
+
+	private void onAdvance1(final int statsIndex, final int position,
+		final @NonNull SequenceLocation location) throws IOException {
+
+		if (!param.rnaSeq) {
+			final List<@NonNull LocationExaminationResults> analyzerCandidateLists =
+				analysisChunk.subAnalyzers.parallelStream().map(sa -> sa.examineLocation(location)).
+				collect(Collectors.toList());
+
+			final int dubiousOrGoodInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
+				acceptMin(analyzerCandidateLists,
+					ler -> ((LocationExaminationResults) ler).nGoodOrDubiousDuplexes).
+				getMin();
+
+			final int goodDuplexCovInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
+				acceptMin(analyzerCandidateLists,
+					ler -> ((LocationExaminationResults) ler).nGoodDuplexes).
+				getMin();
+
+			dubiousOrGoodDuplexCovInAllInputs.insert(dubiousOrGoodInAllInputsAtPos);
+			goodDuplexCovInAllInputs.insert(goodDuplexCovInAllInputsAtPos);
+
+			final Handle<Boolean> tooHighCoverage = new Handle<>(false);
+			final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
+
+			analyzers.parallelStream().forEach(a -> {
+				if (groupSettings.mutationsToAnnotate.containsKey(new Pair<>(location, a.name))) {
+					mutationToAnnotate.set(true);
+				}
+				final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
+				final @NonNull LocationExaminationResults examResults = analyzerCandidateLists.get(a.idx);
+				final @Nullable OutputStreamWriter cbw = stats.coverageBEDWriter;
+				if (cbw != null) {
+					try {
+						cbw.append(location.getContigName() + "\t" +
+								(location.position + 1) + "\t" +
+								(location.position + 1) + "\t" +
+								examResults.nGoodOrDubiousDuplexes + "\n");
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
+
+				if (stats.positionByPositionCoverage != null) {
+					int[] array = Objects.requireNonNull(stats.positionByPositionCoverage.get(
+							location.getContigName()));
+					if (array.length <= location.position) {
+						throw new IllegalArgumentException("Position goes beyond end of contig " +
+								location.getContigName() + ": " + location.position +
+								" vs " + array.length);
+					} else {
+						array[location.position] += examResults.nGoodOrDubiousDuplexes;
+					}
+				}
+
+				if (examResults.alleleFrequencies != null) {
+					stats.alleleFrequencies.accept(location, examResults.alleleFrequencies);
+				}
+
+				for (CandidateSequence c: examResults.analyzedCandidateSequences) {
+					if (c.getQuality().getMin().atLeast(GOOD)) {
+						if (c.getMutationType().isWildtype()) {
+							stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
+							if (!repetitiveBEDs.isEmpty()) {
+								boolean repetitive = false;
+								for (GenomeFeatureTester t: repetitiveBEDs) {
+									if (t.test(location)) {
+										repetitive = true;
+										break;
+									}
+								}
+								if (repetitive) {
+									stats.wtQ2CandidateQ1Q2CoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
+								} else {
+									stats.wtQ2CandidateQ1Q2CoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
+								}
+							}
+						} else {
+							stats.mutantQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
+							if (!repetitiveBEDs.isEmpty()) {
+								boolean repetitive = false;
+								for (GenomeFeatureTester t: repetitiveBEDs) {
+									if (t.test(location)) {
+										repetitive = true;
+										break;
+									}
+								}
+								if (repetitive) {
+									stats.mutantQ2CandidateQ1Q2DCoverageRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
+								} else {
+									stats.mutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert(examResults.nGoodOrDubiousDuplexes);
+								}
+							}
+						}
+					}
+				}
+
+				final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
+
+				if (localTooHighCoverage) {
+					stats.nPosIgnoredBecauseTooHighCoverage.increment(location);
+					tooHighCoverage.set(true);
+				}
+
+				if (!localTooHighCoverage) {
+					//a.stats.nPosDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
+
+					for (@NonNull ComparablePair<String, String> var: examResults.rawMismatchesQ2) {
+						stats.rawMismatchesQ2.accept(location, var);
+					}
+
+					for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
+						stats.rawDeletionsQ2.accept(location, var);
+						stats.rawDeletionLengthQ2.insert(var.snd.length());
+					}
+
+					for (@NonNull ComparablePair<String, String> var: examResults.rawInsertionsQ2) {
+						stats.rawInsertionsQ2.accept(location, var);
+						stats.rawInsertionLengthQ2.insert(var.snd.length());
+					}
+
+					for (Entry<DuplexDisagreement, List<DuplexRead>> entry: examResults.disagreements) {
+
+						DuplexDisagreement d = entry.getKey();
+
+						if (param.variableBarcodeLength == 0) {
+							stats.duplexCollisionProbabilityLocalAvAtDisag.insert(
+								(int) (examResults.probAtLeastOneCollision * 1_000d));
+
+							stats.duplexCollisionProbabilityAtDisag.insert(
+								(int) (d.probCollision * 1_000d));
+						}
+
+						byte[] fstSeq = d.getFst().getSequence();
+						if (fstSeq == null) {
+							fstSeq = QUESTION_MARK;
+						}
+						byte[] sndSeq = d.getSnd().getSequence();
+						if (sndSeq == null) {
+							sndSeq = QUESTION_MARK;
+						}
+
+						final Mutation mutant = d.getSnd();
+
+						try {
+							@SuppressWarnings("resource")
+							@Nullable
+							final OutputStreamWriter tpdw = d.hasAWtStrand ? stats.topBottomDisagreementWriter
+								: stats.noWtDisagreementWriter;
+							if (tpdw != null) {
+								tpdw.append(location.getContigName() + "\t" +
+										(location.position + 1) + "\t" + (location.position + 1) + "\t" +
+										(mutant.mutationType == SUBSTITUTION ?
+												(new String(fstSeq) + "" + new String(sndSeq))
+											:
+												new String (sndSeq)) + "\t" +
+										mutant.mutationType + "\t" +
+										(d.hasAWtStrand ? "" : (d.getFst().mutationType)) + "\t" +
+										examResults.duplexInsertSize10thP + "\t" +
+										examResults.duplexInsertSize90thP + "\t" +
+										examResults.alleleFrequencies.get(0) + "\t" +
+										examResults.alleleFrequencies.get(1) + "\t" +
+										mediumLengthFloatFormatter.get().format(d.probCollision) + "\t" +
+										mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + "\t" +
+										entry.getValue().size() + "\t" +
+										((param.verbosity < 2) ? "" :
+										entry.getValue().stream().limit(20).map(dp ->
+											Stream.concat(dp.topStrandRecords.stream(),
+												dp.bottomStrandRecords.stream())/*.findFirst()*/.
+												map(ExtendedSAMRecord::getFullName).collect(Collectors.joining(", ", "{ ", " }"))
+										).collect(Collectors.joining(", ", "[ ",         " ]"))) +
+										"\n");
+							}
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+
+						if (!d.hasAWtStrand) {
+								continue;
+						}
+
+						if (mutant.mutationType == SUBSTITUTION) {
+							stats.topBottomSubstDisagreementsQ2.accept(location, d);
+							mutant.isTemplateStrand().ifPresent(b -> {
+								if (b)
+									stats.templateStrandSubstQ2.accept(location, d);
+								else
+									stats.codingStrandSubstQ2.accept(location, d);});
+						} else if (mutant.mutationType == DELETION) {
+							stats.topBottomDelDisagreementsQ2.accept(location, d);
+							mutant.isTemplateStrand().ifPresent(b -> {
+								if (b)
+									stats.templateStrandDelQ2.accept(location, d);
+								else
+									stats.codingStrandDelQ2.accept(location, d);});
+						} else if (mutant.mutationType == INSERTION) {
+							stats.topBottomInsDisagreementsQ2.accept(location, d);
+							mutant.isTemplateStrand().ifPresent(b -> {
+								if (b)
+									stats.templateStrandInsQ2.accept(location, d);
+								else stats.codingStrandInsQ2.accept(location, d);
+							});
+						}
+
+					}
+				} else {
+					stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
+					for (@NonNull DuplexDisagreement d: examResults.disagreements.keys()) {
+						stats.topBottomDisagreementsQ2TooHighCoverage.accept(location, d);
+					}
+				}
+
+				if ((!localTooHighCoverage) &&
+					examResults.nGoodDuplexes >= param.minQ2DuplexesToCallMutation &&
+					examResults.nGoodOrDubiousDuplexes >= param.minQ1Q2DuplexesToCallMutation &&
+					analyzers.stream().filter(b -> b != a).mapToInt(b ->
+					analyzerCandidateLists.get(b.idx).nGoodOrDubiousDuplexes).sum()
+					>= param.minNumberDuplexesSisterArm
+					) {
+
+					examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
+						flatMap(c -> c.getDuplexes().stream()).
+						filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(GOOD)).
+						map(DuplexRead::getMaxDistanceToLigSite).
+						forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
+							stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
+
+					stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
+					stats.nPosQualityQ2OthersQ1Q2.increment(location);
+					@Nullable final GenomeFeatureTester codingStrandTester =
+						analyzers.get(0).codingStrandTester;
+					if (codingStrandTester != null &&
+							codingStrandTester.getNegativeStrand(location).isPresent()) {
+						stats.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.accept(location, examResults.nGoodDuplexes);
+					}
+					//XXX The following includes all candidates at *all* positions considered in
+					//processing chunk
+					stats.nReadsAtPosQualityQ2OthersQ1Q2.insert(
+							examResults.analyzedCandidateSequences.
+							stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
+					stats.nQ1Q2AtPosQualityQ2OthersQ1Q2.insert(
+							examResults.analyzedCandidateSequences.
+							stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum());
+
+					if (param.variableBarcodeLength == 0) {
+						stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));
+					}
+				}
+			});//End parallel loop over analyzers to deal with coverage
+
+			//Filter candidates to identify non-wildtype versions
+			List<CandidateSequence> mutantCandidates = analyzerCandidateLists.stream().
+					map(c -> c.analyzedCandidateSequences).
+					flatMap(Collection::stream).filter(c -> {
+						boolean isMutant = !c.getMutationType().isWildtype();
+						return isMutant;
+					}).
+					collect(Collectors.toList());
+
+			final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
+				(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
+				acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getMin()).
+				getMax());
+
+			@SuppressWarnings("null")//Incorrect Eclipse auto-unboxing warning
+			final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
+				acceptMin(analyzerCandidateLists, cl -> {
+					List<@NonNull Integer> freq =
+						((LocationExaminationResults) cl).alleleFrequencies;
+					if (freq != null) {
+						return ((LocationExaminationResults) cl).alleleFrequencies.get(1);
+					} else {
+						return 99;
+					}
+				}).getMin();
+
+			final boolean lowTopAlleleFreq = minTopAlleleFreq < param.topAlleleFreqReport;
+
+			final boolean forceReporting = forceOutputAtLocations.get(location) != null ||
+				mutationToAnnotate.get() || lowTopAlleleFreq;
+			@SuppressWarnings("null")
+			final boolean randomlySelected = forceOutputAtLocations.get(location) != null &&
+				forceOutputAtLocations.get(location);
+
+			//Only report details when at least one mutant candidate is of Q2 quality
+			if (forceReporting || (maxCandMutQuality.atLeast(GOOD))) {
+				if (NONTRIVIAL_ASSERTIONS) for (GenomeFeatureTester t: excludeBEDs) {
+					Assert.isFalse(t.test(location), "%s excluded by %s"/*, location, t*/);
+				}
+
+				//Refilter also allowing Q1 candidates to compare output of different
+				//analyzers
+				final List<CandidateSequence> allQ1Q2Candidates = analyzerCandidateLists.stream().
+					map(l -> l.analyzedCandidateSequences).
+					flatMap(Collection::stream).
+					filter(c -> {
+						Assert.isFalse(c.getLocation().distanceOnSameContig(location) > 0);
+						return c.getQuality().getMin().greaterThan(POOR);}).
+					filter(c -> !c.isHidden()).
+					sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+					collect(Collectors.toList());
+
+				final List<CandidateSequence> allCandidatesIncludingDisag = analyzerCandidateLists.stream().
+					map(l -> l.analyzedCandidateSequences).
+					flatMap(Collection::stream).
+					filter(c -> c.getLocation().equals(location) &&
+						(c.getQuality().getMin().greaterThan(POOR) || c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT))).
+					sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+					collect(Collectors.toList());
+
+				final List<CandidateSequence> distinctQ1Q2Candidates = allQ1Q2Candidates.stream().distinct().
+					//Sorting might not be necessary
+					sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+					collect(Collectors.toList());
+
+				final List<CandidateSequence> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
+					stream().distinct().
+					//Sorting might not be necessary
+					sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+					collect(Collectors.toList());
+
+				for (CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
+					String baseOutput0 = "";
+
+					if (randomlySelected) {
+						baseOutput0 += "+";
+					}
+
+					if (lowTopAlleleFreq) {
+						baseOutput0 += "%";
+					}
+
+					candidate.nDuplexesSisterArm = allQ1Q2Candidates.stream().filter(
+							c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
+						mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum();
+
+					final long candidateCount = allQ1Q2Candidates.stream().
+						filter(c -> c.equals(candidate)).count();
+
+					if (!candidate.getMutationType().isWildtype() &&
+						allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
+								(c.getQuality().getMin().atLeast(GOOD) || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).atLeast(GOOD)))).count() >= 2) {
+						baseOutput0 += "!";
+					} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
+							!candidate.getMutationType().isWildtype() &&
+							candidate.getQuality().getMin().atLeast(GOOD) &&
+							(candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation) &&
+							candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
+							(!tooHighCoverage.get()) &&
+							candidate.nDuplexesSisterArm >= param.minNumberDuplexesSisterArm
+							) {
+						//Then highlight the output with a *
+
+						baseOutput0 += "*";
+
+						baseOutput0 += candidate.getnGoodOrDubiousDuplexes();
+
+						analyzers.forEach(a -> {
+							final @NonNull AnalysisStats stats = a.stats.get(statsIndex);
+							CandidateSequence c = analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
+									stream().filter(cd -> cd.equals(candidate)).findAny().orElse(null);
+
+							if (c != null) {
+								stats.nPosCandidatesForUniqueMutation.accept(location, c.getnGoodDuplexes());
+								stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert((int) c.getTotalGoodOrDubiousDuplexes());
+								if (!repetitiveBEDs.isEmpty()) {
+									boolean repetitive = false;
+									for (GenomeFeatureTester t: repetitiveBEDs) {
+										if (t.test(location)) {
+											repetitive = true;
+											break;
+										}
+									}
+									if (repetitive) {
+										stats.uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());
+									} else {
+										stats.uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive.insert((int) c.getTotalGoodOrDubiousDuplexes());
+									}
+								}
+							}
+						});
+						analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
+							contains(candidate)).forEach(a -> a.stats.get(statsIndex).nReadsAtPosWithSomeCandidateForQ2UniqueMutation.insert(
+								analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
+								stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum()));
+						analyzers.stream().filter(a -> analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
+							contains(candidate)).forEach(a -> a.stats.get(statsIndex).nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation.insert(
+								analyzerCandidateLists.get(a.idx).analyzedCandidateSequences.
+								stream().mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum()));
+					}
+
+					if (!allQ1Q2Candidates.stream().anyMatch(c -> c.getOwningAnalyzer() == candidate.getOwningAnalyzer() &&
+							c.getMutationType().isWildtype())) {
+						//At least one analyzer does not have a wildtype candidate
+						baseOutput0 += "|";
+					}
+
+					if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType().isWildtype())) {
+						//No wildtype candidate at this position
+						baseOutput0 += "_";
+					}
+
+					String baseOutput = baseOutput0 + "\t" + location + "\t" + candidate.getKind() + "\t" +
+							(!candidate.getMutationType().isWildtype() ?
+									candidate.getChange() : "");
+
+					//Now output information for each analyzer
+					for (Mutinack analyzer: analyzers) {
+						final List<CandidateSequence> l = analyzerCandidateLists.get(analyzer.idx).analyzedCandidateSequences.
+								stream().filter(c -> c.equals(candidate)).collect(Collectors.toList());
+
+						String line = baseOutput + "\t" + analyzer.name + "\t";
+
+						final CandidateSequence c;
+						int nCandidates = l.size();
+						if (nCandidates > 1) {
+							throw new AssertionFailedException();
+						} else if (nCandidates == 0) {
+							//Analyzer does not have matching candidate (i.e. it did not get
+							//any reads matching the mutation)
+							continue;
+						} else {//1 candidate
+							c = l.get(0);
+							if (c.getQuality().getMin().lowerThan(GOOD)) {
+								line = line.replace("*", "x");
+							}
+							NumberFormat formatter = mediumLengthFloatFormatter.get();
+							Stream<String> qualityKD = c.getIssues().values().stream().map(
+									issues -> issues.getQualities().entrySet().
+									stream().filter(entry -> entry.getValue().lowerThan(GOOD)).
+									map(Object::toString).
+									collect(Collectors.joining(",", "{", "}")));
+							if (c.nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
+								qualityKD = Stream.concat(Stream.of(Assay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
+									qualityKD);
+							}
+							final Map<Assay, Quality> qualities = c.getQuality().getQualities();
+							final Quality disagQ = qualities.get(Assay.DISAGREEMENT);
+							if (disagQ != null) {
+								qualityKD = Stream.concat(Stream.of(Assay.DISAGREEMENT + "<=" + disagQ),
+									qualityKD);
+							}
+							if (qualities.containsKey(Assay.N_STRANDS_DISAGREEMENT)) {
+								qualityKD = Stream.concat(Stream.of(Assay.N_STRANDS_DISAGREEMENT.toString()),
+									qualityKD);
+							}
+							if (candidateCount > 1) {
+								qualityKD = Stream.concat(Stream.of(Assay.PRESENT_IN_SISTER_SAMPLE.toString()),
+									qualityKD);
+							}
+
+							String qualityKDString = qualityKD.collect(Collectors.joining(","));
+							/**
+							 * Make sure columns stay in sync with Mutinack.outputHeader
+							 */
+							line += c.getnGoodDuplexes() + "\t" +
+								c.getnGoodOrDubiousDuplexes() + "\t" +
+								c.getnDuplexes() + "\t" +
+								c.getNonMutableConcurringReads().size() + "\t" +
+								formatter.format((c.getnGoodDuplexes() / c.getTotalGoodDuplexes())) + "\t" +
+								formatter.format((c.getnGoodOrDubiousDuplexes() / c.getTotalGoodOrDubiousDuplexes())) + "\t" +
+								formatter.format((c.getnDuplexes() / c.getTotalAllDuplexes())) + "\t" +
+								formatter.format((c.getNonMutableConcurringReads().size() / c.getTotalReadsAtPosition())) + "\t" +
+								(c.getAverageMappingQuality() == -1 ? "?" : c.getAverageMappingQuality()) + "\t" +
+								c.nDuplexesSisterArm + "\t" +
+								c.insertSize + "\t" +
+								c.getInsertSizeAtPos10thP() + "\t" +
+								c.getInsertSizeAtPos90thP() + "\t" +
+								c.minDistanceToLigSite + "\t" +
+								c.maxDistanceToLigSite + "\t" +
+								formatter.format(c.getMeanDistanceToLigSite()) + "\t" +
+								formatter.format(c.getProbCollision()) + "\t" +
+								c.positionInRead + "\t" +
+								c.readEL + "\t" +
+								c.readName + "\t" +
+								c.readAlignmentStart  + "\t" +
+								c.mateReadAlignmentStart  + "\t" +
+								c.readAlignmentEnd + "\t" +
+								c.mateReadAlignmentEnd + "\t" +
+								c.refPositionOfMateLigationSite + "\t" +
+								((param.outputDuplexDetails || param.annotateMutationsInFile != null) ?
+										qualityKDString
+									:
+										"" /*c.getIssues()*/) + "\t" +
+								c.getMedianPhredAtPosition() + "\t" +
+								(c.getMinInsertSize() == -1 ? "?" : c.getMinInsertSize()) + "\t" +
+								(c.getMaxInsertSize() == -1 ? "?" : c.getMaxInsertSize()) + "\t" +
+								analyzerCandidateLists.get(analyzer.idx).alleleFrequencies.get(0) + "\t" +
+								analyzerCandidateLists.get(analyzer.idx).alleleFrequencies.get(1) + "\t" +
+								(c.getSupplementalMessage() != null ? c.getSupplementalMessage() : "") + "\t";
+
+							boolean needComma = false;
+							for (Entry<String, GenomeFeatureTester> a: analyzer.filtersForCandidateReporting.entrySet()) {
+								if (!(a.getValue() instanceof BedComplement) && a.getValue().test(location)) {
+									if (needComma) {
+										line += ", ";
+									}
+									needComma = true;
+									Object val = a.getValue().apply(location);
+									line += a.getKey() + (val != null ? (": " + val) : "");
+								}
+							}
+						}
+
+						try {
+							final @Nullable OutputStreamWriter ambw = analyzer.stats.get(statsIndex).mutationBEDWriter;
+							if (ambw != null) {
+								ambw.append(location.getContigName() + "\t" +
+										(location.position + 1) + "\t" + (location.position + 1) + "\t" +
+										candidate.getKind() + "\t" + baseOutput0 + "\t" +
+										c.getnGoodDuplexes() +
+										"\n");
+							}
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+
+						final Pair<SequenceLocation, String> fullLocation =
+							new Pair<>(location, analyzer.name);
+
+						@Nullable List<@NonNull Pair<@NonNull Mutation, @NonNull String>>
+							toAnnotateList = groupSettings.mutationsToAnnotate.get(fullLocation);
+
+						if (toAnnotateList != null) {
+							Iterator<@NonNull Pair<@NonNull Mutation, @NonNull String>> it = toAnnotateList.iterator();
+							while (it.hasNext()) {
+								final Pair<@NonNull Mutation, @NonNull String> toAnnotate = it.next();
+								final Mutation mut;
+								if ((mut = toAnnotate.fst).mutationType.
+									equals(candidate.getMutationType()) &&
+									Arrays.equals(mut.mutationSequence, candidate.getSequence())) {
+									mutationAnnotationWriter.append(toAnnotate.snd + "\t" + line + "\n");
+									it.remove();
+								}
+							}
+							if (toAnnotateList.isEmpty()) {
+								groupSettings.mutationsToAnnotate.remove(fullLocation);
+							}
+						}
+
+						analysisChunk.out.println(line);
+					}//End loop over analyzers
+				}//End loop over mutation candidates
+			}//End of candidate reporting
+		}//End !rnaSeq
+		lastProcessedPosition.set(position);
+
+		if (readsToWrite != null) {
+			analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
+
+				Mutinack analyzer = subAnalyzer.getAnalyzer();
+
+				//If outputting an alignment populated with fields identifying the duplexes,
+				//fill in the fields here
+				for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
+					boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
+						duplexRead.maxInsertSize > 10_000;
+					boolean write = location.equals(duplexRead.rightAlignmentEnd) ||
+						(useAnyStart && location.equals(duplexRead.leftAlignmentEnd));
+					if (!write) {
+						continue;
+					}
+					final int randomIndexForDuplexName = dn.incrementAndGet();
+
+					final int nReads = duplexRead.bottomStrandRecords.size() + duplexRead.topStrandRecords.size();
+					final Quality minDuplexQuality = duplexRead.minQuality;
+					final Quality maxDuplexQuality = duplexRead.maxQuality;
+					Handle<String> topOrBottom = new Handle<>();
+					Consumer<ExtendedSAMRecord> queueWrite = (ExtendedSAMRecord e) -> {
+						final SAMRecord samRecord = e.record;
+						Integer dsAttr = (Integer) samRecord.getAttribute("DS");
+						if (dsAttr == null || nReads > dsAttr) {
+							if (dsAttr != null && readsToWrite.containsKey(e.getFullName())) {
+								//Read must have been already written
+								//For now, don't try to correct it with better duplex
+								return;
+							}
+							samRecord.setAttribute("DS", nReads);
+							samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
+							samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
+							samRecord.setAttribute("DQ", minDuplexQuality.toInt());
+							samRecord.setAttribute("DR", maxDuplexQuality.toInt());
+							String info = topOrBottom.get() + " Q" +
+									minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
+									" global Qs: " + duplexRead.globalQuality +
+									" P" + duplexRead.getMinMedianPhred() +
+									" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
+							samRecord.setAttribute("DI", info);
+							samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
+							samRecord.setAttribute("VB", new String(e.variableBarcode));
+							samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
+							samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
+									duplexRead.rightAlignmentStart + "-" + duplexRead.rightAlignmentEnd);
+							if (!duplexRead.issues.isEmpty()) {
+								samRecord.setAttribute("IS", duplexRead.issues.toString());
+							} else {
+								samRecord.setAttribute("IS", null);
+							}
+							samRecord.setAttribute("AI", analyzer.idx);
+							readsToWrite.put(e.getFullName(), samRecord);
+						}
+					};
+					if (param.collapseFilteredReads) {
+						if (!duplexRead.topStrandRecords.isEmpty()) {
+							topOrBottom.set("T");
+							queueWrite.accept(duplexRead.topStrandRecords.get(0));
+						}
+						if (!duplexRead.bottomStrandRecords.isEmpty()) {
+							topOrBottom.set("B");
+							queueWrite.accept(duplexRead.bottomStrandRecords.get(0));
+						}
+					} else {
+						topOrBottom.set("T");
+						duplexRead.topStrandRecords.forEach(queueWrite);
+						topOrBottom.set("B");
+						duplexRead.bottomStrandRecords.forEach(queueWrite);
+					}
+				}//End writing
+			});
+		}//End readsToWrite != null
+	}
+
 	private static final boolean shouldLog(Level level) {
 		return logger.isEnabled(level);
 	}
