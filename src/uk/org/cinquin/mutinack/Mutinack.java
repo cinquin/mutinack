@@ -182,7 +182,6 @@ public class Mutinack implements Actualizable {
 	final @NonNull Parameters param;
 	final boolean computeSupplQuality;
 	final Collection<GenomeFeatureTester> excludeBEDs;
-	final int idx;
 	public final @NonNull String name;
 	long timeStartProcessing;
 	private final @NonNull List<SubAnalyzer> subAnalyzers = new ArrayList<>();
@@ -235,7 +234,6 @@ public class Mutinack implements Actualizable {
 			MutinackGroup groupSettings,
 			Parameters param,
 			@NonNull String name,
-			int idx,
 			@NonNull File inputBam,
 			@Nullable Histogram approximateReadInsertSize,
 			byte @NonNull[] constantBarcode,
@@ -254,7 +252,6 @@ public class Mutinack implements Actualizable {
 				approximateReadInsertSize.toProbabilityArray()
 			:
 				null;
-		this.idx = idx;
 		//Make sure reference tests can be substituted for equality tests;
 		//the analyzer's constant barcode needs to come from the interning map
 		this.constantBarcode = Util.getInternedCB(constantBarcode);
@@ -672,7 +669,6 @@ public class Mutinack implements Actualizable {
 						groupSettings,
 						param,
 						name,
-						i,
 						inputBam,
 						param.variableBarcodeLength == 0 ?
 								GetReadStats.getApproximateReadInsertSize(inputBam, param.maxInsertSize)
@@ -684,7 +680,7 @@ public class Mutinack implements Actualizable {
 						outputLevel,
 						excludeBEDs,
 						maxNDuplexes);
-				analyzers.set(i,analyzer);
+				analyzers.set(i, analyzer);
 
 				analyzer.finalOutputBaseName = (param.auxOutputFileBaseName != null ?
 						(param.auxOutputFileBaseName) : "") +

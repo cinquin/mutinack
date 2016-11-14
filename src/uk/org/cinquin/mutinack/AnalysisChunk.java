@@ -33,7 +33,7 @@ public class AnalysisChunk {
 	SettableInteger pauseAtPosition;
 	SettableInteger lastProcessedPosition;
 	Phaser phaser;
-	final List<SubAnalyzer> subAnalyzers = new ArrayList<>();
+	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
 	public PrintStream out;
 	public MutinackGroup groupSettings;
 

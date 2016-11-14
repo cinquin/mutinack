@@ -159,7 +159,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return probCollision;
 	}
 
-	public CandidateSequence(Mutinack owningAnalyzer, @NonNull MutationType mutationType,
+	public CandidateSequence(@NonNull Mutinack owningAnalyzer, @NonNull MutationType mutationType,
 			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location, @Nullable ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {

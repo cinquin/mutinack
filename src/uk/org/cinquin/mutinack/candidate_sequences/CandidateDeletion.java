@@ -65,7 +65,7 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 		return true;
 	}
 
-	public CandidateDeletion(Mutinack analyzer,
+	public CandidateDeletion(@NonNull Mutinack analyzer,
 			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location,
 			@NonNull ExtendedSAMRecord initialConcurringRead,
