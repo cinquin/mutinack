@@ -917,7 +917,7 @@ public final class SubAnalyzer {
 			if (maxDuplexQ.atLeast(DUBIOUS)) {
 				candidate.resetLigSiteDistances();
 				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(maxDuplexQ)).
-				forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
+					forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
 			}
 
 			if (analyzer.computeSupplQuality && candidate.getQuality().getMin() == DUBIOUS &&
