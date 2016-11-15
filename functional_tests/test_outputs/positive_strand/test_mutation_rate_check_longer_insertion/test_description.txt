@@ -1,0 +1,1 @@
+Test that an insertion of multiple bases generates a single mutation candidate, and that only this candidate counts towards the mutation rate.
