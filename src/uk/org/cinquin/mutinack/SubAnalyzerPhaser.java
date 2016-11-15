@@ -414,12 +414,15 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		//Refilter also allowing Q1 candidates to compare output of different
 		//analyzers
-		final List<CandidateSequence> allQ1Q2Candidates = locationExamResults.stream().
+		final List<CandidateSequence> allQ1Q2CandidatesWithHidden = locationExamResults.stream().
 			map(l -> l.analyzedCandidateSequences).
 			flatMap(Collection::stream).
 			filter(c -> {
 				Assert.isFalse(c.getLocation().distanceOnSameContig(location) > 0);
 				return c.getQuality().getMin().greaterThan(POOR);}).
+			collect(Collectors.toList());
+
+		final List<CandidateSequence> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.stream().
 			filter(c -> !c.isHidden()).
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
@@ -429,6 +432,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			flatMap(Collection::stream).
 			filter(c -> c.getLocation().equals(location) &&
 				(c.getQuality().getMin().greaterThan(POOR) || c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT))).
+			filter(c -> !c.isHidden()).
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
 
@@ -443,6 +447,12 @@ public class SubAnalyzerPhaser extends Phaser {
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
 
+		for (final CandidateSequence candidate: allCandidatesIncludingDisag) {
+			candidate.nDuplexesSisterArm = allQ1Q2CandidatesWithHidden.stream().filter(
+				c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
+			mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum();
+		}
+
 		for (final CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
 			String baseOutput0 = "";
 
@@ -454,17 +464,13 @@ public class SubAnalyzerPhaser extends Phaser {
 				baseOutput0 += "%";
 			}
 
-			candidate.nDuplexesSisterArm = allQ1Q2Candidates.stream().filter(
-					c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
-				mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum();
-
 			final long candidateCount = allQ1Q2Candidates.stream().
 				filter(c -> c.equals(candidate)).count();
 
 			if (!candidate.getMutationType().isWildtype() &&
 				allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
 						(c.getQuality().getMin().atLeast(GOOD) || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).atLeast(GOOD)))).count() >= 2) {
-				baseOutput0 += "!";
+				baseOutput0 += "!";//At least two samples show the same non-wildtype candidate
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
 					candidate.getQuality().getMin().atLeast(GOOD) &&
