@@ -27,14 +27,14 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 
-final class LocationExaminationResults {
+public final class LocationExaminationResults {
 	Collection<CandidateSequence> analyzedCandidateSequences;
 	int nGoodOrDubiousDuplexes = 0;
 	int nGoodDuplexesIgnoringDisag = 0;
 	int nGoodDuplexes = 0;
 	int strandCoverageImbalance;
 	int nMissingStrands;
-	List<@NonNull Integer> alleleFrequencies;
+	public List<@NonNull Integer> alleleFrequencies;
 	final @NonNull MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
 		disagreements = new MapOfLists<>();
 	int disagQ2Coverage = 0;

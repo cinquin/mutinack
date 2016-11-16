@@ -221,7 +221,8 @@ public class Mutinack implements Actualizable {
 										//reader is created
 	final double @Nullable[] insertSizeProb;
 	final @NonNull Collection<File> intersectAlignmentFiles;
-	final @NonNull Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
+	final @NonNull
+	public Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
 	@Nullable GenomeFeatureTester codingStrandTester;
 	final byte @NonNull[] constantBarcode;
 	final int unclippedBarcodeLength;

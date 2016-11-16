@@ -30,7 +30,6 @@ import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,7 +57,6 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
-import uk.org.cinquin.mutinack.features.BedComplement;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -394,22 +392,25 @@ public class SubAnalyzerPhaser extends Phaser {
 			forceOutputAtLocations.get(location);
 
 		if (forceReporting || maxCandMutQuality.atLeast(GOOD)) {
-			reportCandidates(locationExamResults, locationExamResultsMap, statsIndex,
-				location, randomlySelected, lowTopAlleleFreq, tooHighCoverage.get());
+			processAndReportCandidates(locationExamResults, locationExamResultsMap, statsIndex,
+				location, randomlySelected, lowTopAlleleFreq, tooHighCoverage.get(), true);
 		}
 	}
 
-	private void reportCandidates(
+	private void processAndReportCandidates(
 		final Collection<@NonNull LocationExaminationResults> locationExamResults,
 		final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap,
-		final int statsIndex, @NonNull SequenceLocation location,
+		final int statsIndex,
+		@NonNull SequenceLocation location,
 		final boolean randomlySelected,
 		final boolean lowTopAlleleFreq,
-		final boolean tooHighCoverage) throws IOException {
+		final boolean tooHighCoverage,
+		final boolean doOutput) throws IOException {
 
-		//Output detections at this position
-		if (NONTRIVIAL_ASSERTIONS) for (GenomeFeatureTester t: excludeBEDs) {
-			Assert.isFalse(t.test(location), "%s excluded by %s"/*, location, t*/);
+		if (NONTRIVIAL_ASSERTIONS) {
+			for (GenomeFeatureTester t: excludeBEDs) {
+				Assert.isFalse(t.test(location), "%s excluded by %s"/*, location, t*/);
+			}
 		}
 
 		//Refilter also allowing Q1 candidates to compare output of different
@@ -418,7 +419,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			map(l -> l.analyzedCandidateSequences).
 			flatMap(Collection::stream).
 			filter(c -> {
-				Assert.isFalse(c.getLocation().distanceOnSameContig(location) > 0);
+				Assert.isTrue(c.getLocation().distanceOnSameContig(location) == 0);
 				return c.getQuality().getMin().greaterThan(POOR);}).
 			collect(Collectors.toList());
 
@@ -430,8 +431,8 @@ public class SubAnalyzerPhaser extends Phaser {
 		final List<CandidateSequence> allCandidatesIncludingDisag = locationExamResults.stream().
 			map(l -> l.analyzedCandidateSequences).
 			flatMap(Collection::stream).
-			filter(c -> c.getLocation().equals(location) &&
-				(c.getQuality().getMin().greaterThan(POOR) || c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT))).
+			filter(c -> c.getQuality().getMin().greaterThan(POOR) ||
+				c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT)).
 			filter(c -> !c.isHidden()).
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
@@ -447,6 +448,14 @@ public class SubAnalyzerPhaser extends Phaser {
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
 
+		final CrossSampleLocationAnalysis csla = new CrossSampleLocationAnalysis(location);
+
+		csla.randomlySelected = randomlySelected;
+		csla.lowTopAlleleFreq = lowTopAlleleFreq;
+		if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType().isWildtype())) {
+			csla.noWt = true;
+		}
+
 		for (final CandidateSequence candidate: allCandidatesIncludingDisag) {
 			candidate.nDuplexesSisterArm = allQ1Q2CandidatesWithHidden.stream().filter(
 				c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
@@ -454,23 +463,14 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 
 		for (final CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
-			String baseOutput0 = "";
 
-			if (randomlySelected) {
-				baseOutput0 += "+";
-			}
-
-			if (lowTopAlleleFreq) {
-				baseOutput0 += "%";
-			}
-
-			final long candidateCount = allQ1Q2Candidates.stream().
+			final int candidateCount = (int) allQ1Q2Candidates.stream().
 				filter(c -> c.equals(candidate)).count();
 
 			if (!candidate.getMutationType().isWildtype() &&
 				allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
 						(c.getQuality().getMin().atLeast(GOOD) || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).atLeast(GOOD)))).count() >= 2) {
-				baseOutput0 += "!";//At least two samples show the same non-wildtype candidate
+				csla.twoOrMoreSamplesWithSameQ2MutationCandidate = true;
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
 					candidate.getQuality().getMin().atLeast(GOOD) &&
@@ -479,11 +479,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					!tooHighCoverage &&
 					candidate.nDuplexesSisterArm >= param.minNumberDuplexesSisterArm
 					) {
-				//Then highlight the output with a *
 
-				baseOutput0 += "*";
-
-				baseOutput0 += candidate.getnGoodOrDubiousDuplexes();
+				csla.nDuplexesUniqueQ2MutationCandidate.add(candidate.getnGoodOrDubiousDuplexes());
 
 				final @NonNull AnalysisStats stats = candidate.getOwningAnalyzer().stats.get(statsIndex);
 				stats.nPosCandidatesForUniqueMutation.accept(location, candidate.getnGoodDuplexes());
@@ -519,25 +516,18 @@ public class SubAnalyzerPhaser extends Phaser {
 					});
 			}//End Q2 candidate
 
-			boolean oneAnalyzerNoWt = false;
+			boolean oneSampleNoWt = false;
 			for (LocationExaminationResults results: locationExamResults) {
 				if (!results.analyzedCandidateSequences.stream().
 						anyMatch(c -> c.getMutationType().isWildtype() && c.getnGoodOrDubiousDuplexes() > 0)) {
-					oneAnalyzerNoWt = true;
+					oneSampleNoWt = true;
 					break;
 				}
 			}
-			if (oneAnalyzerNoWt) {
-				baseOutput0 += "|";
-			}
-
-			if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType().isWildtype())) {
-				//No wildtype candidate at this position
-				baseOutput0 += "_";
-			}
+			csla.oneSampleNoWt = oneSampleNoWt;
 
 			final String baseOutput =
-				baseOutput0 + "\t" +
+				csla.toString() + "\t" +
 				location + "\t" +
 				candidate.getKind() + "\t" +
 				(!candidate.getMutationType().isWildtype() ?
@@ -546,9 +536,30 @@ public class SubAnalyzerPhaser extends Phaser {
 			//Now output information for the candidate for each analyzer
 			//(unless no reads matched the candidate)
 			for (@NonNull SubAnalyzer sa: analysisChunk.subAnalyzers) {
-				outputCandidate(sa.analyzer, candidate, candidateCount, location,
-					sa.analyzer.stats.get(statsIndex), baseOutput0, baseOutput,
-					Objects.requireNonNull(locationExamResultsMap.get(sa)));
+
+				final @NonNull LocationExaminationResults examResults =
+					Objects.requireNonNull(locationExamResultsMap.get(sa));
+				final List<CandidateSequence> l = examResults.analyzedCandidateSequences.
+					stream().filter(c -> c.equals(candidate)).collect(Collectors.toList());
+
+				final CandidateSequence matchingSACandidate;
+				final int nCandidates = l.size();
+				if (nCandidates > 1) {
+					throw new AssertionFailedException();
+				} else if (nCandidates == 0) {
+					//Analyzer does not have matching candidate (i.e. it did not get
+					//any reads matching the mutation)
+					continue;
+				} else {//1 candidate
+					matchingSACandidate = l.get(0);
+					matchingSACandidate.setnMatchingCandidatesOtherSamples(candidateCount);
+				}
+
+				if (doOutput) {
+					outputCandidate(sa.analyzer, matchingSACandidate, location,
+						sa.analyzer.stats.get(statsIndex), csla.toString(), baseOutput,
+						examResults);
+				}
 			}
 		}//End loop over mutation candidates
 
@@ -557,7 +568,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	private void outputCandidate(
 			final @NonNull Mutinack analyzer,
 			final @NonNull CandidateSequence candidate,
-			final long candidateCount,
 			final @NonNull SequenceLocation location,
 			final AnalysisStats stats,
 			final @NonNull String baseOutput0,
@@ -565,101 +575,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull LocationExaminationResults examResults
 		) throws IOException {
 
-		final List<CandidateSequence> l = examResults.analyzedCandidateSequences.
-				stream().filter(c -> c.equals(candidate)).collect(Collectors.toList());
-
-		String line = baseOutput + "\t" + analyzer.name + "\t";
-
-		final CandidateSequence c;
-		int nCandidates = l.size();
-		if (nCandidates > 1) {
-			throw new AssertionFailedException();
-		} else if (nCandidates == 0) {
-			//Analyzer does not have matching candidate (i.e. it did not get
-			//any reads matching the mutation)
-			return;
-		} else {//1 candidate
-			c = l.get(0);
-			if (c.getQuality().getMin().lowerThan(GOOD)) {
-				line = line.replace("*", "x");
-			}
-			NumberFormat formatter = mediumLengthFloatFormatter.get();
-			Stream<String> qualityKD = c.getIssues().values().stream().map(
-					issues -> issues.getQualities().entrySet().
-					stream().filter(entry -> entry.getValue().lowerThan(GOOD)).
-					map(Object::toString).
-					collect(Collectors.joining(",", "{", "}")));
-			if (c.nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
-				qualityKD = Stream.concat(Stream.of(Assay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
-					qualityKD);
-			}
-			final Map<Assay, Quality> qualities = c.getQuality().getQualities();
-			final Quality disagQ = qualities.get(Assay.DISAGREEMENT);
-			if (disagQ != null) {
-				qualityKD = Stream.concat(Stream.of(Assay.DISAGREEMENT + "<=" + disagQ),
-					qualityKD);
-			}
-			if (qualities.containsKey(Assay.N_STRANDS_DISAGREEMENT)) {
-				qualityKD = Stream.concat(Stream.of(Assay.N_STRANDS_DISAGREEMENT.toString()),
-					qualityKD);
-			}
-			if (candidateCount > 1) {
-				qualityKD = Stream.concat(Stream.of(Assay.PRESENT_IN_SISTER_SAMPLE.toString()),
-					qualityKD);
-			}
-
-			String qualityKDString = qualityKD.collect(Collectors.joining(","));
-			/**
-			 * Make sure columns stay in sync with Mutinack.outputHeader
-			 */
-			line += c.getnGoodDuplexes() + "\t" +
-				c.getnGoodOrDubiousDuplexes() + "\t" +
-				c.getnDuplexes() + "\t" +
-				c.getNonMutableConcurringReads().size() + "\t" +
-				formatter.format((c.getnGoodDuplexes() / c.getTotalGoodDuplexes())) + "\t" +
-				formatter.format((c.getnGoodOrDubiousDuplexes() / c.getTotalGoodOrDubiousDuplexes())) + "\t" +
-				formatter.format((c.getnDuplexes() / c.getTotalAllDuplexes())) + "\t" +
-				formatter.format((c.getNonMutableConcurringReads().size() / c.getTotalReadsAtPosition())) + "\t" +
-				(c.getAverageMappingQuality() == -1 ? "?" : c.getAverageMappingQuality()) + "\t" +
-				c.nDuplexesSisterArm + "\t" +
-				c.insertSize + "\t" +
-				c.getInsertSizeAtPos10thP() + "\t" +
-				c.getInsertSizeAtPos90thP() + "\t" +
-				c.minDistanceToLigSite + "\t" +
-				c.maxDistanceToLigSite + "\t" +
-				formatter.format(c.getMeanDistanceToLigSite()) + "\t" +
-				formatter.format(c.getProbCollision()) + "\t" +
-				c.positionInRead + "\t" +
-				c.readEL + "\t" +
-				c.readName + "\t" +
-				c.readAlignmentStart  + "\t" +
-				c.mateReadAlignmentStart  + "\t" +
-				c.readAlignmentEnd + "\t" +
-				c.mateReadAlignmentEnd + "\t" +
-				c.refPositionOfMateLigationSite + "\t" +
-				((param.outputDuplexDetails || param.annotateMutationsInFile != null) ?
-						qualityKDString
-					:
-						"" /*c.getIssues()*/) + "\t" +
-				c.getMedianPhredAtPosition() + "\t" +
-				(c.getMinInsertSize() == -1 ? "?" : c.getMinInsertSize()) + "\t" +
-				(c.getMaxInsertSize() == -1 ? "?" : c.getMaxInsertSize()) + "\t" +
-				examResults.alleleFrequencies.get(0) + "\t" +
-				examResults.alleleFrequencies.get(1) + "\t" +
-				(c.getSupplementalMessage() != null ? c.getSupplementalMessage() : "") + "\t";
-
-			boolean needComma = false;
-			for (Entry<String, GenomeFeatureTester> a: analyzer.filtersForCandidateReporting.entrySet()) {
-				if (!(a.getValue() instanceof BedComplement) && a.getValue().test(location)) {
-					if (needComma) {
-						line += ", ";
-					}
-					needComma = true;
-					Object val = a.getValue().apply(location);
-					line += a.getKey() + (val != null ? (": " + val) : "");
-				}
-			}
-		}
+		String line = baseOutput + "\t" + analyzer.name + "\t" +
+			candidate.toOutputString(param, examResults);
 
 		try {
 			final @Nullable OutputStreamWriter ambw = stats.mutationBEDWriter;
@@ -667,7 +584,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				ambw.append(location.getContigName() + "\t" +
 						(location.position + 1) + "\t" + (location.position + 1) + "\t" +
 						candidate.getKind() + "\t" + baseOutput0 + "\t" +
-						c.getnGoodDuplexes() +
+						candidate.getnGoodDuplexes() +
 						"\n");
 			}
 		} catch (IOException e) {

@@ -16,11 +16,15 @@
  */
 package uk.org.cinquin.mutinack.candidate_sequences;
 import java.io.Serializable;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -30,15 +34,21 @@ import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import uk.org.cinquin.mutinack.Assay;
 import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
+import uk.org.cinquin.mutinack.LocationExaminationResults;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
+import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.features.BedComplement;
+import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
@@ -76,6 +86,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float totalReadsAtPosition;
 	private final @NonNull SequenceLocation location;
 	private final transient Mutinack owningAnalyzer;
+	private final String sampleName;
 	private int averageMappingQuality = -1;
 	private int minInsertSize = -1;
 	private int maxInsertSize = -1;
@@ -84,6 +95,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int nWrongPairs;
 	private boolean hidden = false;
 	
+	private int nMatchingCandidatesOtherSamples = -1;
+
 	private byte singleBasePhredQuality = -1;
 	private TByteArrayList phredQualityScores;
 	private transient Map<DuplexRead, DetailedQualities> issues;
@@ -164,6 +177,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			@NonNull SequenceLocation location, @Nullable ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {
 		this.owningAnalyzer = owningAnalyzer;
+		this.sampleName = owningAnalyzer.name;
 		this.mutationType = mutationType;
 		this.sequence = sequence;
 		this.location = location;
@@ -677,6 +691,107 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setInsertSizeAtPos90thP(int insertSizeAtPos90thP) {
 		this.insertSizeAtPos90thP = insertSizeAtPos90thP;
+	}
+
+	@Override
+	public String getSampleName() {
+		return sampleName;
+	}
+
+	@Override
+	public @NonNull String toOutputString(Parameters param, LocationExaminationResults examResults) {
+		StringBuilder result = new StringBuilder();
+
+		NumberFormat formatter = Util.mediumLengthFloatFormatter.get();
+		Stream<String> qualityKD = getIssues().values().stream().map(
+				iss -> iss.getQualities().entrySet().
+				stream().filter(entry -> entry.getValue().lowerThan(Quality.GOOD)).
+				map(Object::toString).
+				collect(Collectors.joining(",", "{", "}")));
+		if (nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
+			qualityKD = Stream.concat(Stream.of(Assay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
+				qualityKD);
+		}
+		final Map<Assay, Quality> qualities = getQuality().getQualities();
+		final Quality disagQ = qualities.get(Assay.DISAGREEMENT);
+		if (disagQ != null) {
+			qualityKD = Stream.concat(Stream.of(Assay.DISAGREEMENT + "<=" + disagQ),
+				qualityKD);
+		}
+		if (qualities.containsKey(Assay.N_STRANDS_DISAGREEMENT)) {
+			qualityKD = Stream.concat(Stream.of(Assay.N_STRANDS_DISAGREEMENT.toString()),
+				qualityKD);
+		}
+		if (getnMatchingCandidatesOtherSamples() > 1) {
+			qualityKD = Stream.concat(Stream.of(Assay.PRESENT_IN_SISTER_SAMPLE.toString()),
+				qualityKD);
+		}
+
+		String qualityKDString = qualityKD.collect(Collectors.joining(","));
+		/**
+		 * Make sure columns stay in sync with Mutinack.outputHeader
+		 */
+		result.append(getnGoodDuplexes() + "\t" +
+			getnGoodOrDubiousDuplexes() + "\t" +
+			getnDuplexes() + "\t" +
+			getNonMutableConcurringReads().size() + "\t" +
+			formatter.format((getnGoodDuplexes() / getTotalGoodDuplexes())) + "\t" +
+			formatter.format((getnGoodOrDubiousDuplexes() / getTotalGoodOrDubiousDuplexes())) + "\t" +
+			formatter.format((getnDuplexes() / getTotalAllDuplexes())) + "\t" +
+			formatter.format((getNonMutableConcurringReads().size() / getTotalReadsAtPosition())) + "\t" +
+			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + "\t" +
+			nDuplexesSisterArm + "\t" +
+			insertSize + "\t" +
+			getInsertSizeAtPos10thP() + "\t" +
+			getInsertSizeAtPos90thP() + "\t" +
+			minDistanceToLigSite + "\t" +
+			maxDistanceToLigSite + "\t" +
+			formatter.format(getMeanDistanceToLigSite()) + "\t" +
+			formatter.format(getProbCollision()) + "\t" +
+			positionInRead + "\t" +
+			readEL + "\t" +
+			readName + "\t" +
+			readAlignmentStart  + "\t" +
+			mateReadAlignmentStart  + "\t" +
+			readAlignmentEnd + "\t" +
+			mateReadAlignmentEnd + "\t" +
+			refPositionOfMateLigationSite + "\t" +
+			((param.outputDuplexDetails || param.annotateMutationsInFile != null) ?
+					qualityKDString
+				:
+					"" /*getIssues()*/) + "\t" +
+			getMedianPhredAtPosition() + "\t" +
+			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + "\t" +
+			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + "\t" +
+			examResults.alleleFrequencies.get(0) + "\t" +
+			examResults.alleleFrequencies.get(1) + "\t" +
+			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
+			);
+
+		boolean needComma = false;
+		final Mutinack analyzer = getOwningAnalyzer();
+		for (Entry<String, GenomeFeatureTester> a: analyzer.filtersForCandidateReporting.entrySet()) {
+			if (!(a.getValue() instanceof BedComplement) && a.getValue().test(location)) {
+				if (needComma) {
+					result.append(", ");
+				}
+				needComma = true;
+				Object val = a.getValue().apply(location);
+				result.append(a.getKey() + (val != null ? (": " + val) : ""));
+			}
+		}
+
+		return result.toString();
+	}
+
+	@Override
+	public int getnMatchingCandidatesOtherSamples() {
+		return nMatchingCandidatesOtherSamples;
+	}
+
+	@Override
+	public void setnMatchingCandidatesOtherSamples(int nMatchingCandidatesOtherSamples) {
+		this.nMatchingCandidatesOtherSamples = nMatchingCandidatesOtherSamples;
 	}
 
 }

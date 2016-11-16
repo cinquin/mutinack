@@ -28,14 +28,19 @@ import gnu.trove.map.TObjectIntMap;
 import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
+import uk.org.cinquin.mutinack.LocationExaminationResults;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
+import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 
 public interface CandidateSequenceI extends Serializable {
 
+	int getnMatchingCandidatesOtherSamples();
+	void setnMatchingCandidatesOtherSamples(int i);
+	@NonNull String toOutputString(Parameters param, LocationExaminationResults examResults);
 	int getMaxInsertSize();
 	void setMaxInsertSize(int maxInsertSize);
 	int getMinInsertSize();
@@ -43,6 +48,7 @@ public interface CandidateSequenceI extends Serializable {
 	int getAverageMappingQuality();
 	void setAverageMappingQuality(int averageMappingQuality);
 	Mutinack getOwningAnalyzer();
+	String getSampleName();
 	@NonNull SequenceLocation getLocation();
 	float getTotalReadsAtPosition();
 	void setTotalReadsAtPosition(float totalReadsAtPosition);
