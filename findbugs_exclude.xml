@@ -19,4 +19,7 @@
   <Match>
     <Class name="~.*PosByPosNumbersPB.*"/>
   </Match>
+  <Match>
+    <Package name="~.*benchmarking.generated.*"/>
+  </Match>
 </FindBugsFilter>
