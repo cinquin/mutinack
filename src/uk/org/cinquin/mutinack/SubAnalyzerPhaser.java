@@ -165,8 +165,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final int saveLastProcessedPosition = lastProcessedPosition.get();
 			outer:
 			for (int position = saveLastProcessedPosition + 1;
-				position <= Math.min(pauseAt.get(), analysisChunk.terminateAtPosition)  &&
-				!groupSettings.terminateAnalysis; position ++) {
+					position <= Math.min(pauseAt.get(), analysisChunk.terminateAtPosition)  &&
+					!groupSettings.terminateAnalysis; position ++) {
 				for (boolean plusHalf: falseTrue) {
 					final int statsIndex = plusHalf ? 1 : 0;
 					for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {

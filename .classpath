@@ -22,5 +22,6 @@
 	<classpathentry kind="lib" path="lib/jackson-databind-2.7.0.jar" sourcepath="lib_build_run_test/jackson-databind-2.7.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/fst-2.43-onejar.jar" sourcepath="lib_build_run_test/jackson-core-2.7.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/rmiio-2.1.3-SNAPSHOT.jar" sourcepath="lib_build_run_test/rmiio-sources.zip"/>
+	<classpathentry kind="lib" path="lib_build_run_test/jmh-core-1.17-SNAPSHOT.jar" sourcepath="lib_build_run_test/jmh-core-1.17-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -50,7 +50,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -177,10 +176,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 		} else {
 			newLeft = SimpleCounter.getBarcodeConsensus(allDuplexRecords.stream().
 					filter(rExt -> rExt.record.getInferredInsertSize() >= 0).
-					collect(Collectors.toList()), barcodeLength);
+					map(r -> r.variableBarcode), barcodeLength);
 			newRight = SimpleCounter.getBarcodeConsensus(allDuplexRecords.stream().
 					filter(rExt -> rExt.record.getInferredInsertSize() < 0).
-					collect(Collectors.toList()), barcodeLength);
+					map(r -> r.variableBarcode), barcodeLength);
 		}
 
 		computeGlobalProperties();
