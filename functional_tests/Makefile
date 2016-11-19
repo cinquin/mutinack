@@ -109,23 +109,22 @@ tests_no_alignment_saving: $(RESULTS) $(RESULT_CHECKS)
 clean: clean_jars clean_results clean_check clean_log_and_temp_files
 
 clean_log_and_temp_files:
-	$(shell find . -name '*.log' -delete -or -name '*.check' -delete -or -name '*.swp' -delete -or -name '*.core' -delete -or -name '*.dict' -delete -or -name '*.bwt' -delete -or -name '*.bt2' -delete -or -name '*.rbwt' -delete -or -name '*.ann' -delete -or -name '*.rsa' -delete -or -name refBWA079.fa -delete -or -name BWA_OPTIONS_FILE -delete -or -name '*.amb' -delete -or -name '*.rpac' -delete -or -name '*.pac' -delete -or -name '*.cached' -delete -or -name '*.info' -delete -or -name .DS_Store -delete -or -name 'ins_stats_*' -delete -or -name 'main_stats_*' -delete -or -name 'coverage_*.txt' -delete -or -name 'refSeq*' -delete -or -name '*.sa' -delete)
+	@find . -name '*.log' -delete -or -name '*.check' -delete -or -name '*.swp' -delete -or -name '*.core' -delete -or -name '*.dict' -delete -or -name '*.bwt' -delete -or -name '*.bt2' -delete -or -name '*.rbwt' -delete -or -name '*.ann' -delete -or -name '*.rsa' -delete -or -name refBWA079.fa -delete -or -name BWA_OPTIONS_FILE -delete -or -name '*.amb' -delete -or -name '*.rpac' -delete -or -name '*.pac' -delete -or -name '*.cached' -delete -or -name '*.info' -delete -or -name .DS_Store -delete -or -name 'ins_stats_*' -delete -or -name 'main_stats_*' -delete -or -name 'coverage_*.txt' -delete -or -name 'refSeq*' -delete -or -name '*.sa' -delete
 
 clean_results:
-	$(shell find . -name '*control_mutations.bed' -delete -or -name '*control_top_bottom_disag.bed' -delete -or -name '*test_mutations.bed' -delete -or -name '*test_top_bottom_disag.bed' -delete -or -name '*_coverage.bed' -delete -or -name '*_coverage.proto' -delete -or -name '*main_stats_.bed' -delete -or -name '*main_stats.bed' -delete -or -name '*ins_stats_.bed' -delete -or -name '*ins_stats.bed' -not -name 'expected_*' -delete -or -name '*_coverage.txt' -not -name 'expected_*' -delete -or -name '*_nPosDuplex.bed' -not -name 'expected_*' -delete -or -name '*.json' -delete)
-	@echo "$(RESULTS) $(OUTPUT_ALIGNMENTS)" | xargs -n200 rm -f
+	@find . -name '*control_mutations.bed' -delete -or -name '*control_top_bottom_disag.bed' -delete -or -name '*test_mutations.bed' -delete -or -name '*test_top_bottom_disag.bed' -delete -or -name '*_coverage.bed' -delete -or -name '*_coverage.proto' -delete -or -name '*main_stats_.bed' -delete -or -name '*main_stats.bed' -delete -or -name '*ins_stats_.bed' -delete -or -name '*ins_stats.bed' -not -name 'expected_*' -delete -or -name '*_coverage.txt' -not -name 'expected_*' -delete -or -name '*_nPosDuplex.bed' -not -name 'expected_*' -delete -or -name '*.json' -delete -or -name 'labeled_reads.bam' -delete -or -name 'labeled_reads.bam.bai' -delete -or -name 'labeled_reads.bai' -delete -or -name 'run.out' -delete
 
 clean_check:
-	@echo "$(RESULT_CHECKS)" | xargs -n200 rm -f
+	find . -name 'run.out.check' -delete
 
 clean_jars:
-	@echo "$(JARS)" | xargs -n200 rm -f
+	find . -name 'mutinack.jar' -mindepth 2 -delete -or -name 'jacoco.jar' -mindepth 2 -delete
 
 clean_FAILED:
-	@echo "$(FAILED_TESTS)" | xargs -n200 rm -f
+	find . -name 'FAILED' -mindepth 2 -delete
 
 clean_hardlinks: clean_jars
-	@echo "$(REFFILES) $(LOGBACKCONF) $(CHECK_AUX)"| xargs -n200 rm -f
+	find . -mindepth 2 '(' -name ref.fa -delete -or -name ref.fa.fai -delete -or -name logback.xml -delete -or -name Makefile_aux_output_check -delete -or -name grep_lines_in_file -delete ')'
 
 #Create hardlinks to the master files present in the root functional_tests directory.
 #Symbolic links lead to undesirable complications, and independent copies lead to
