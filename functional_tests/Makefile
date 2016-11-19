@@ -37,7 +37,7 @@ MAX := $(foreach x,$(twenty),$(twenty))
 
 # T estimates how many targets we are building by replacing BUILD with a special string
 T := $(shell $(MAKE) -nrRf $(firstword $(MAKEFILE_LIST)) $(MAKECMDGOALS) \
-            BUILD="COUNTTHIS" | grep run.out | grep -c "COUNTTHIS")
+            BUILD="COUNTTHIS" 2> /dev/null | grep run.out | grep -c "COUNTTHIS")
 
 # N is the number of pending targets in base 1, well in fact, base x :-)
 N := $(wordlist 1,$T,$(MAX))
