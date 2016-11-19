@@ -118,10 +118,10 @@ clean_check:
 	find . -name 'run.out.check' -delete
 
 clean_jars:
-	find . -name 'mutinack.jar' -mindepth 2 -delete -or -name 'jacoco.jar' -mindepth 2 -delete
+	find . -mindepth 2 -name 'mutinack.jar' -delete -or -name 'jacoco.jar' -delete
 
 clean_FAILED:
-	find . -name 'FAILED' -mindepth 2 -delete
+	find . -mindepth 2 -name 'FAILED' -delete
 
 clean_hardlinks: clean_jars
 	find . -mindepth 2 '(' -name ref.fa -delete -or -name ref.fa.fai -delete -or -name logback.xml -delete -or -name Makefile_aux_output_check -delete -or -name grep_lines_in_file -delete ')'
