@@ -57,13 +57,13 @@ endif
 #been verified as correct is run.out.check.
 ifndef FILES
 export FILES := $(shell find . -name args.txt -print | grep -v .AppleDouble)
-export N_FILES := $(words $(FILES))
-export RESULTS := $(FILES:args.txt=run.out)
-export OUTPUT_ALIGNMENTS := $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai) $(FILES:args.txt=labeled_reads.bam.bai)
+N_FILES := $(words $(FILES))
+RESULTS := $(FILES:args.txt=run.out)
+OUTPUT_ALIGNMENTS := $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai) $(FILES:args.txt=labeled_reads.bam.bai)
 RESULT_CHECKS := $(FILES:args.txt=run.out.check)
-export FAILED_TESTS := $(shell find . -name FAILED -print)
-export FAILED_RESULTS := $(FAILED_TESTS:FAILED=run.out)
-export FAILED_CHECKS := $(FAILED_TESTS:FAILED=run.out.check)
+FAILED_TESTS := $(shell find . -name FAILED -print)
+FAILED_RESULTS := $(FAILED_TESTS:FAILED=run.out)
+FAILED_CHECKS := $(FAILED_TESTS:FAILED=run.out.check)
 endif
 
 .PHONY: passed_message
