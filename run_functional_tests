@@ -30,7 +30,7 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 N_PARALLEL_JOBS=2
 
 #NailGun server seems to require a kill -9 to exit
-trap 'code=$?; processes="$server_pid $nailgun_server_pid $worker_pids"; ([ "$processes" != "  " ] && kill $processes) || true; ([ -n "$nailgun_server_pid" ] && kill -9 $nailgun_server_pid) || true; exit $code' INT QUIT TERM EXIT
+trap 'code=$?; processes="$server_pid $nailgun_server_pid $worker_pids"; ([ "$processes" != "  " ] && kill $processes 2>/dev/null ) || true; ([ -n "$nailgun_server_pid" ] && kill -9 $nailgun_server_pid 2> /dev/null ) || true; exit $code' INT QUIT TERM EXIT
 
 server_pid=`./run_server` || (echo "Could not start Mutinack server" && false)
 echo Started server $server_pid
@@ -65,27 +65,35 @@ ${MAKE} clean
 
 for target in all_failed all
 do
-	counter=0
-	while true
+	for assertions in "-enableCostlyAssertions true" "-enableCostlyAssertions false"
 	do
-		if [ `(${TIME} ${MAKE} -k -j${N_PARALLEL_JOBS} $target 1>&2) && echo 1 || echo 0` -eq 1 ]
+		if [ "$target" = "all" ]
 		then
-#success
-			break
+			${MAKE} clean_results
 		fi
-
-		counter=`expr $counter + 1`
-		if [ $counter -eq 1 ]
-		then
-			if [ "$target" = "all_failed" -a $BAIL_IF_FAILED_TESTS_NOT_FIXED -ne 1 ]
+		export COSTLY_ASSERTIONS_OPTION="$assertions"
+		counter=0
+		while true
+		do
+			if [ `(${TIME} ${MAKE} -k -j${N_PARALLEL_JOBS} ${target}_results 1>&2 && ${MAKE} -k -j${N_PARALLEL_JOBS} ${target}_checks 1>&2 ) && echo 1 || echo 0` -eq 1 ]
 			then
+#success
 				break
 			fi
-			echo "Functional tests failed; giving up"
-			update_repo "ERROR: failed functional tests"
-			exit 1
-		fi
-		echo "Functional tests failed; trying again"
+
+			counter=`expr $counter + 1`
+			if [ $counter -eq 1 ]
+			then
+				if [ "$target" = "all_failed" -a $BAIL_IF_FAILED_TESTS_NOT_FIXED -ne 1 ]
+				then
+					break
+				fi
+				echo "Functional tests failed; giving up"
+				update_repo "ERROR: failed functional tests"
+				exit 1
+			fi
+			echo "Functional tests failed; trying again"
+		done
 	done
 done
 counter=`expr $counter + 1`

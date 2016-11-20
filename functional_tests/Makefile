@@ -27,6 +27,10 @@ DEBUG_ATTACH =
 #Uncomment the line below to remotely debug
 #DEBUG_ATTACH = $(shell echo -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`)
 
+ifndef COSTLY_ASSERTIONS_OPTION
+export COSTLY_ASSERTIONS_OPTION = -enableCostlyAssertions true
+endif
+
 #####Progress reporter adapted from http://stackoverflow.com/questions/451413/make-makefile-progress-indication
 #The progress reporter counts the number of XXX/run.out targets that will be built with the current make
 #invocation. This is still a bit buggy, but only the progress report is affected; actual tests are fine.
@@ -77,6 +81,21 @@ outputAlignments:
 
 .PHONY: tests
 tests: $(RESULTS) $(RESULT_CHECKS) | outputAlignments
+
+.PHONY: results
+results: $(RESULTS) | outputAlignments
+
+.PHONY: all_results
+all_results: results
+
+.PHONY: all_checks
+all_checks: $(RESULT_CHECKS)
+
+.PHONY: all_failed_checks
+all_failed_checks: $(FAILED_CHECKS)
+
+.PHONY: all_failed_results
+all_failed_results: $(FAILED_RESULTS)
 
 #Used to force program to be re-run when the output check failed in a previous run.
 #This mechanism is advantageous in that it makes it possible to keep the run.out
@@ -160,7 +179,7 @@ ref.fa.info:
 %/run.out: %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
-	@(cd $* && $(PATH_TO_NG) uk.org.cinquin.mutinack.Mutinack -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt))  > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
+	@(cd $* && $(PATH_TO_NG) uk.org.cinquin.mutinack.Mutinack $(COSTLY_ASSERTIONS_OPTION) -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt))  > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
 
 AVOID_STUPID_RULE_SIDE_EFFECT = $(MAKE)
 
