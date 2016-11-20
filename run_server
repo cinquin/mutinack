@@ -1,4 +1,5 @@
 #!/bin/bash
-#-Djava.security.debug=access
+set -e
+#TODO Daemonize and catch setup errors
 (nohup java -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djava.security.manager -Djava.security.policy==java.policy -jar mutinack.jar -recordRunsTo recordedFunctionalTestRuns.bin -startServer localhost/mutinackTesting &> run_server_out) &
 echo $!
