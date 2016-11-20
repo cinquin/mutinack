@@ -76,7 +76,9 @@ public final class CandidateCounter {
 							continue;
 						}
 					}
-					keptRecords.add(r);
+					if (!keptRecords.add(r)) {
+						throw new AssertionFailedException();
+					}
 					final CandidateDuplexEval eval = candidateCounts.computeIfAbsent(candidate, c -> {
 						return new CandidateDuplexEval(candidate);
 					});
