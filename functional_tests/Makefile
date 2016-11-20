@@ -4,11 +4,13 @@ MAX_MEM_OPT = -Xmx200M
 JVM_BUG_WORKAROUND = 
 #JVM_BUG_WORKAROUND = -XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey
 #https://bugs.openjdk.java.net/browse/JDK-8132870
-JACOCO := $(shell echo -javaagent:jacoco.jar=destfile=`pwd`/../target/jacoco.exec)
+ifndef BASEDIR
+export BASEDIR := $(shell echo `pwd`)
+endif
+JACOCO := -javaagent:jacoco.jar=destfile=$(BASEDIR)/../target/jacoco.exec
 JVM_OPTIONS = -XX:-OmitStackTraceInFastThrow -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3
 SUBMIT_TO_SERVER = -submitToServer localhost/mutinackTesting
-PATH_TO_NG = $(shell echo `pwd`/ng)
-BASEDIR = $(shell echo `pwd`)
+PATH_TO_NG := $(BASEDIR)/ng
 
 GIT := false
 #Uncomment the line below to allow failed functional tests to be marked in the git repository and
@@ -53,17 +55,16 @@ endif
 #Directories in which tests are to be run are identified by the presence of an
 #"args.txt" file. The output file that marks tests whose output (saved to run.out) has
 #been verified as correct is run.out.check.
-FILES = $(shell find . -name args.txt -print | grep -v .AppleDouble)
-
-N_FILES = $(shell echo $(FILES) | tr ' ' '\n' | wc -l)
-RESULTS = $(FILES:args.txt=run.out) 
-OUTPUT_ALIGNMENTS = $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai) $(FILES:args.txt=labeled_reads.bam.bai)
-RESULT_CHECKS = $(FILES:args.txt=run.out.check)
-JARS = $(shell find . -mindepth 2 -name mutinack.jar -print) $(shell find . -mindepth 2 -name jacoco.jar -print)
-REFFILES = $(shell find . -mindepth 2 '(' -name ref.fa -print -or -name ref.fa.fai -print ')')
-LOGBACKCONF = $(shell find . -mindepth 2 -name logback.xml -print)
-CHECK_AUX = $(shell find . -mindepth 2 '(' -name Makefile_aux_output_check -print -or -name grep_lines_in_file -print ')')
-PROGRAM_OUTPUT = $(shell find . -name .\*control_mutations.bed -print -or -name .\*control_top_bottom_disag.bed -print -or -name .\*test_mutations.bed -print -or -name .\*test_top_bottom_disag.bed -print -or -name '*_coverage.bed' -print -or -name '*_coverage.proto' -print -or -name '*main_stats_.bed' -print -or -name '*main_stats.bed' -print -or -name '*ins_stats_.bed' -print -or -name '*ins_stats.bed' -print -or -name '*coverage_*.txt' -print)
+ifndef FILES
+export FILES := $(shell find . -name args.txt -print | grep -v .AppleDouble)
+export N_FILES := $(words $(FILES))
+export RESULTS := $(FILES:args.txt=run.out)
+export OUTPUT_ALIGNMENTS := $(FILES:args.txt=labeled_reads.bam) $(FILES:args.txt=labeled_reads.bai) $(FILES:args.txt=labeled_reads.bam.bai)
+RESULT_CHECKS := $(FILES:args.txt=run.out.check)
+export FAILED_TESTS := $(shell find . -name FAILED -print)
+export FAILED_RESULTS := $(FAILED_TESTS:FAILED=run.out)
+export FAILED_CHECKS := $(FAILED_TESTS:FAILED=run.out.check)
+endif
 
 .PHONY: passed_message
 passed_message: tests
@@ -82,10 +83,6 @@ tests: $(RESULTS) $(RESULT_CHECKS) | outputAlignments
 #files for inspection, instead of Make simply deleting them whenever a runtime or
 #validation error is encountered.
 FORCE_RERUN = 
-
-FAILED_TESTS = $(shell find . -name FAILED -print)
-FAILED_RESULTS = $(FAILED_TESTS:FAILED=run.out)
-FAILED_CHECKS = $(FAILED_TESTS:FAILED=run.out.check)
 
 all_failed: $(FAILED_CHECKS)
 	@$(eval FORCE_RERUN = .FORCE)
