@@ -455,11 +455,24 @@ public class SubAnalyzerPhaser extends Phaser {
 			csla.noWt = true;
 		}
 
-		for (final CandidateSequence candidate: allCandidatesIncludingDisag) {
-			candidate.nDuplexesSisterArm = allQ1Q2CandidatesWithHidden.stream().filter(
-				c -> c.getOwningAnalyzer() != candidate.getOwningAnalyzer()).
-			mapToInt(CandidateSequence::getnGoodOrDubiousDuplexes).sum();
-		}
+		final Map<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new IdentityHashMap<>(8);
+		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
+			flatMap(Collection::stream).filter(c -> c.getQuality().getMin().greaterThan(POOR)).
+			forEach(c->
+				nGoodOrDubiousDuplexes.computeIfAbsent(c.getOwningSubAnalyzer(), c0 -> new SettableInteger(0)).
+					addAndGet(c.getnGoodOrDubiousDuplexes())
+			);
+
+		final Map<SubAnalyzer, Integer> nGoodOrDubiousDuplexesOthers = new IdentityHashMap<>(8);
+		nGoodOrDubiousDuplexes.forEach((sa, count) -> nGoodOrDubiousDuplexesOthers.put(sa,
+			nGoodOrDubiousDuplexes.keySet().stream().
+			filter(sa2 -> sa2 != sa).mapToInt(sa2 -> nGoodOrDubiousDuplexes.get(sa2).get()).sum()));
+
+		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
+			flatMap(Collection::stream).forEach(c -> {
+				Integer i = nGoodOrDubiousDuplexesOthers.get(c.getOwningSubAnalyzer());
+				c.nDuplexesSisterArm = (i == null) ? 0 : i;
+			});
 
 		for (final CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
 

@@ -714,6 +714,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				stream().filter(entry -> entry.getValue().lowerThan(Quality.GOOD)).
 				map(Object::toString).
 				collect(Collectors.joining(",", "{", "}")));
+		Assert.isTrue(nDuplexesSisterArm > -1);
 		if (nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
 			qualityKD = Stream.concat(Stream.of(Assay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
 				qualityKD);
