@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package uk.org.cinquin.mutinack;
+import static uk.org.cinquin.mutinack.Assay.AVERAGE_N_CLIPPED;
 import static uk.org.cinquin.mutinack.Assay.BOTTOM_STRAND_MAP_Q2;
 import static uk.org.cinquin.mutinack.Assay.CLOSE_TO_LIG;
 import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q0;
@@ -24,6 +25,7 @@ import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
 import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
 import static uk.org.cinquin.mutinack.Assay.MISSING_STRAND;
 import static uk.org.cinquin.mutinack.Assay.N_READS_PER_STRAND;
+import static uk.org.cinquin.mutinack.Assay.N_READS_WRONG_PAIR;
 import static uk.org.cinquin.mutinack.Assay.N_STRANDS_DISAGREEMENT;
 import static uk.org.cinquin.mutinack.Assay.N_STRAND_READS_ABOVE_Q2_PHRED;
 import static uk.org.cinquin.mutinack.Assay.TOP_STRAND_MAP_Q2;
@@ -47,6 +49,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -976,6 +979,89 @@ public final class DuplexRead implements HasInterval<Integer> {
 		//to compute quality of candidates at this location
 		maxQuality = max(maxQuality, Objects.requireNonNull(dq.getMin()));
 		minQuality = min(minQuality, Objects.requireNonNull(dq.getMin()));
+
+	}
+
+	public void randomizeStrands(Random random) {
+		if (topStrandRecords.isEmpty() || bottomStrandRecords.isEmpty()) {
+			return;
+		}
+		List<@NonNull ExtendedSAMRecord> shuffled = new ArrayList<>();
+		shuffled.addAll(topStrandRecords);
+		shuffled.addAll(bottomStrandRecords);
+		Collections.shuffle(shuffled, random);
+		int nTop = topStrandRecords.size();
+		topStrandRecords.clear();
+		bottomStrandRecords.clear();
+		for (int i = 0; i < nTop; i++) {
+			topStrandRecords.add(shuffled.get(i));
+		}
+		for (int i = shuffled.size() - 1; i >= nTop; i--) {
+			bottomStrandRecords.add(shuffled.get(i));
+		}
+	}
+
+	public void analyzeForStats(AnalysisStats stats, final int maxAverageBasesClipped) {
+		Assert.isFalse(invalid);
+
+		stats.duplexTotalRecords.insert(totalNRecords);
+
+		Collection<ExtendedSAMRecord> allDuplexRecords =
+				new ArrayList<>(topStrandRecords.size() +
+						bottomStrandRecords.size());
+		allDuplexRecords.addAll(topStrandRecords);
+		allDuplexRecords.addAll(bottomStrandRecords);
+
+		final boolean alreadyVisitedForStats = allDuplexRecords.stream().anyMatch(
+				r -> r.duplexAlreadyVisitedForStats);
+
+		if (!alreadyVisitedForStats) {
+			allDuplexRecords.forEach(r -> r.duplexAlreadyVisitedForStats = true);
+			stats.duplexinsertSize.insert(Math.abs(allDuplexRecords.iterator().next().getInsertSize()));
+		}
+
+		int i = 0;
+		double sumDisagreementRates = 0d;
+		int sumNClipped = 0;
+		int nReadsWrongPairRecomputed = 0;
+
+		for (ExtendedSAMRecord r: allDuplexRecords) {
+			if (r.formsWrongPair()) {
+				nReadsWrongPairRecomputed++;
+			}
+
+			Assert.isFalse(r.getnClipped() < 0);
+			sumNClipped += r.getnClipped();
+			i++;
+			sumDisagreementRates += (r.nReferenceDisagreements / ((float) (r.effectiveLength)));
+		}
+
+		if (nReadsWrongPairRecomputed > 0) {
+			globalQuality.addUnique(N_READS_WRONG_PAIR, DUBIOUS);
+		}
+
+		if (i == 0) {
+			stats.nDuplexesNoStats.add(1);
+		} else {
+			stats.nDuplexesWithStats.add(1);
+			referenceDisagreementRate = (float) (sumDisagreementRates / i);
+			stats.averageDuplexReferenceDisagreementRate.insert((int) (1000 * referenceDisagreementRate));
+			averageNClipped = sumNClipped / i;
+			stats.duplexAverageNClipped.insert(averageNClipped);
+		}
+
+		if (averageNClipped > maxAverageBasesClipped) {
+			globalQuality.addUnique(AVERAGE_N_CLIPPED, DUBIOUS);
+			stats.nDuplexesTooMuchClipping.accept(Objects.requireNonNull(roughLocation));
+		}
+
+
+		final int inferredSize = Math.abs(allDuplexRecords.iterator().next().getInsertSize());
+		if (inferredSize < 130) {
+			stats.duplexInsert100_130AverageNClipped.insert(averageNClipped);
+		} else if (inferredSize < 180) {
+			stats.duplexInsert130_180averageNClipped.insert(averageNClipped);
+		}
 
 	}
 
