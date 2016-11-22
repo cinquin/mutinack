@@ -98,12 +98,12 @@ public final class SubAnalyzer {
 	AnalysisStats stats;
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);	
 	final @NonNull Map<SequenceLocation, THashSet<CandidateSequence>> candidateSequences =
-			new THashMap<>(50_000);	
+			new THashMap<>(1_000);
 	int truncateProcessingAt = Integer.MAX_VALUE;
 	int startProcessingAt = 0;
 	List<@NonNull DuplexRead> analyzedDuplexes;
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
-			new THashMap<>(50_000, 0.1f);
+			new THashMap<>(10_000, 0.1f);
 	private final AtomicInteger threadCount = new AtomicInteger();
 	private final Random random = new Random();//TODO seed with argValues.randomSeed
 
@@ -189,7 +189,7 @@ public final class SubAnalyzer {
 	void load() {
 		Assert.isFalse(threadCount.incrementAndGet() > 1);
 		try {
-			final List<@NonNull DuplexRead> resultDuplexes = new ArrayList<>(10_000);
+			final List<@NonNull DuplexRead> resultDuplexes = new ArrayList<>(3_000);
 			loadAll(resultDuplexes);
 			analyzedDuplexes = resultDuplexes;
 		} finally {

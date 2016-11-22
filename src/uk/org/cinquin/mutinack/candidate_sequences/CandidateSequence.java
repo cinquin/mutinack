@@ -407,7 +407,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads() {
 		if (concurringReads == null) {
-			concurringReads = new TObjectIntHashMap<>(300, 0.5f, NO_ENTRY_VALUE);
+			concurringReads = new TObjectIntHashMap<>(100, 0.5f, NO_ENTRY_VALUE);
 			if (initialConcurringRead != null) {
 				concurringReads.put(initialConcurringRead, initialLigationSiteD);
 			}
