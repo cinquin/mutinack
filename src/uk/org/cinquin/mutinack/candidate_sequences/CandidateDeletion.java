@@ -23,8 +23,8 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.MutationType;
-import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.SubAnalyzer;
 
 /**
  * Equality test does not include sequence itself, just its span in the reference genome.
@@ -65,13 +65,13 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 		return true;
 	}
 
-	public CandidateDeletion(@NonNull Mutinack analyzer,
+	public CandidateDeletion(@NonNull SubAnalyzer subAnalyzer,
 			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location,
 			@NonNull ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD,
 			@NonNull SequenceLocation deletionStart, @NonNull SequenceLocation deletionEnd) {
-		super(analyzer, MutationType.DELETION, sequence, location, initialConcurringRead,
+		super(subAnalyzer, MutationType.DELETION, sequence, location, initialConcurringRead,
 			initialLigationSiteD);
 		this.deletionStart = deletionStart;
 		this.deletionEnd = deletionEnd;

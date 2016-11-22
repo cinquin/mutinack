@@ -34,6 +34,7 @@ import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 
 public interface CandidateSequenceI extends Serializable {
@@ -48,6 +49,7 @@ public interface CandidateSequenceI extends Serializable {
 	int getAverageMappingQuality();
 	void setAverageMappingQuality(int averageMappingQuality);
 	Mutinack getOwningAnalyzer();
+	SubAnalyzer getOwningSubAnalyzer();
 	String getSampleName();
 	@NonNull SequenceLocation getLocation();
 	float getTotalReadsAtPosition();

@@ -188,7 +188,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 					try {
 						if (!param.rnaSeq) {
-							onAdvance1(statsIndex, position, location);
+							onAdvance1(position, location);
 						}
 						lastProcessedPosition.set(position);
 						if (readsToWrite != null) {
@@ -302,7 +302,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		return returnValue;
 	}//End onAdvance
 
-	private void onAdvance1(final int statsIndex, final int position,
+	private void onAdvance1(final int position,
 			final @NonNull SequenceLocation location) throws IOException {
 
 		final @NonNull Map<SubAnalyzer, LocationExaminationResults> locationExamResultsMap0 =
@@ -349,7 +349,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				Objects.requireNonNull(locationExamResultsMap.get(sa)),
 				tooHighCoverage,
 				mutationToAnnotate,
-				sa.analyzer.stats.get(statsIndex),
+				Objects.requireNonNull(sa.stats),
 				location,
 				locationExamResultsMap,
 				sa.analyzer)
@@ -392,7 +392,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			forceOutputAtLocations.get(location);
 
 		if (forceReporting || maxCandMutQuality.atLeast(GOOD)) {
-			processAndReportCandidates(locationExamResults, locationExamResultsMap, statsIndex,
+			processAndReportCandidates(locationExamResults, locationExamResultsMap,
 				location, randomlySelected, lowTopAlleleFreq, tooHighCoverage.get(), true);
 		}
 	}
@@ -400,7 +400,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	private void processAndReportCandidates(
 		final Collection<@NonNull LocationExaminationResults> locationExamResults,
 		final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap,
-		final int statsIndex,
 		@NonNull SequenceLocation location,
 		final boolean randomlySelected,
 		final boolean lowTopAlleleFreq,
@@ -482,7 +481,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				csla.nDuplexesUniqueQ2MutationCandidate.add(candidate.getnGoodOrDubiousDuplexes());
 
-				final @NonNull AnalysisStats stats = candidate.getOwningAnalyzer().stats.get(statsIndex);
+				final @NonNull AnalysisStats stats = Objects.requireNonNull(
+					candidate.getOwningSubAnalyzer().stats);
 				stats.nPosCandidatesForUniqueMutation.accept(location, candidate.getnGoodDuplexes());
 				stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert((int) candidate.getTotalGoodOrDubiousDuplexes());
 				if (!repetitiveBEDs.isEmpty()) {
@@ -506,7 +506,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					forEach(sa -> {
 						final LocationExaminationResults examResults =
 							Objects.requireNonNull(locationExamResultsMap.get(sa));
-						final AnalysisStats stats0 = sa.analyzer.stats.get(statsIndex);
+						final AnalysisStats stats0 = sa.stats;
 						stats0.nReadsAtPosWithSomeCandidateForQ2UniqueMutation.insert(
 							examResults.analyzedCandidateSequences.
 							stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
@@ -557,7 +557,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				if (doOutput) {
 					outputCandidate(sa.analyzer, matchingSACandidate, location,
-						sa.analyzer.stats.get(statsIndex), csla.toString(), baseOutput,
+						sa.stats, csla.toString(), baseOutput,
 						examResults);
 				}
 			}
