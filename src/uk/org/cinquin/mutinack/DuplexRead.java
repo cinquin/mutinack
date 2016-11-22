@@ -916,10 +916,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		localAndGlobalQuality = dq;
 
+		final boolean atrocious = dq.getMin().atMost(ATROCIOUS);
+
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		candidateSet.forEach(candidate -> {
 			Assert.isFalse(top == null && bottom == null);
-			if (!disagreement &&
+			if (!atrocious &&
 					(bottom == null || candidate.equals(bottom.candidate)) &&
 					(top == null || candidate.equals(top.candidate))) {
 				return true;
