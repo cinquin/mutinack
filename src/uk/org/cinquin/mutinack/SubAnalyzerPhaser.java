@@ -54,7 +54,6 @@ import contrib.net.sf.samtools.SAMRecord;
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.features.BedReader;
@@ -231,9 +230,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						}
 					}
 				}
-				if (subAnalyzer.extSAMCache instanceof THashMap) {
-					((THashMap<?,?>) subAnalyzer.extSAMCache).compact();
-				}
+				subAnalyzer.extSAMCache.compact();
 			});//End loop over subAnalyzers
 
 			if (outputAlignment != null) {
@@ -466,7 +463,8 @@ public class SubAnalyzerPhaser extends Phaser {
 		final Map<SubAnalyzer, Integer> nGoodOrDubiousDuplexesOthers = new IdentityHashMap<>(8);
 		nGoodOrDubiousDuplexes.forEach((sa, count) -> nGoodOrDubiousDuplexesOthers.put(sa,
 			nGoodOrDubiousDuplexes.keySet().stream().
-			filter(sa2 -> sa2 != sa).mapToInt(sa2 -> nGoodOrDubiousDuplexes.get(sa2).get()).sum()));
+			filter(sa2 -> sa2 != sa).mapToInt(sa2 ->
+				Objects.requireNonNull(nGoodOrDubiousDuplexes.get(sa2)).get()).sum()));
 
 		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
 			flatMap(Collection::stream).forEach(c -> {
