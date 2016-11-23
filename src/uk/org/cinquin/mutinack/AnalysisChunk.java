@@ -36,9 +36,11 @@ public class AnalysisChunk {
 	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
 	public PrintStream out;
 	public MutinackGroup groupSettings;
+	public final int nParameterSets;
 
-	public AnalysisChunk(@NonNull String contigName) {
+	public AnalysisChunk(@NonNull String contigName, int nParameterSets) {
 		this.contigName = contigName;
+		this.nParameterSets = nParameterSets;
 	}
 
 	@Override

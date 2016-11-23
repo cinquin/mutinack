@@ -71,7 +71,6 @@ import uk.org.cinquin.mutinack.statistics.Histogram;
 public class SubAnalyzerPhaser extends Phaser {
 
 	private static final Logger logger = LoggerFactory.getLogger("SubAnalyzerPhaser");
-	private static final boolean[] falseTrue = {false, true};
 	private static final byte[] QUESTION_MARK = {'?'};
 
 	private final AnalysisChunk analysisChunk;
@@ -166,14 +165,20 @@ public class SubAnalyzerPhaser extends Phaser {
 			for (int position = saveLastProcessedPosition + 1;
 					position <= Math.min(pauseAt.get(), analysisChunk.terminateAtPosition)  &&
 					!groupSettings.terminateAnalysis; position ++) {
-				for (boolean plusHalf: falseTrue) {
-					final int statsIndex = plusHalf ? 1 : 0;
+				for (int statsIndex = 0; statsIndex < analysisChunk.nParameterSets; statsIndex++) {
+					Boolean insertion = null;
 					for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
 						subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
+						if (insertion == null) {
+							insertion = subAnalyzer.stats.forInsertions;
+						} else {
+							Assert.isTrue(subAnalyzer.stats.forInsertions == insertion);
+						}
 					}
 
 					final @NonNull SequenceLocation location =
-						new SequenceLocation(contigIndex, contigName, position, plusHalf);
+						new SequenceLocation(contigIndex, contigName, position,
+							Objects.requireNonNull(insertion));
 
 					for (GenomeFeatureTester tester: excludeBEDs) {
 						if (tester.test(location)) {

@@ -40,6 +40,7 @@ import uk.org.cinquin.mutinack.AnalysisStats;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.MutinackGroup;
+import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
@@ -57,7 +58,7 @@ public class ExtendedSAMRecordTest {
 			@Mocked Mutinack analyzer) {
 		
 		settings.BIN_SIZE = 10_000_000;
-		AnalysisStats s = new AnalysisStats("test_stats", settings, false);
+		AnalysisStats s = new AnalysisStats("test_stats", new Parameters(), false, settings, false);
 		analyzer.stats = Arrays.asList(s);
 		
 		IntegerDelegate alignmentStart1 = new IntegerDelegate();
@@ -270,7 +271,7 @@ public class ExtendedSAMRecordTest {
 			{
 				put("contig1", 10_000_000);
 			}});
-		AnalysisStats s = new AnalysisStats("test_stats", settings, false);
+		AnalysisStats s = new AnalysisStats("test_stats", new Parameters(), false, settings, false);
 		analyzer.stats = Arrays.asList(s);
 		
 		IntegerDelegate alignmentStart2 = new IntegerDelegate();
@@ -476,7 +477,7 @@ public class ExtendedSAMRecordTest {
 			String readName, boolean firstOfPair, AnalysisStats stats, MutinackGroup settings, Mutinack analyzer) {
 		
 		settings.BIN_SIZE = 10_000_000;
-		AnalysisStats s = new AnalysisStats("test_stats", settings, false);
+		AnalysisStats s = new AnalysisStats("test_stats", new Parameters(), firstOfPair, settings, false);
 		analyzer.stats = Arrays.asList(s);
 
 		new NonStrictExpectations() {{

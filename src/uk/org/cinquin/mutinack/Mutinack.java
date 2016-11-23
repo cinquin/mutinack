@@ -269,7 +269,8 @@ public class Mutinack implements Actualizable {
 
 		for (String statsName: Arrays.asList("main_stats", "ins_stats")) {
 			@SuppressWarnings("null")
-			AnalysisStats stat = new AnalysisStats(statsName, groupSettings, param.reportCoverageAtAllPositions);
+			AnalysisStats stat = new AnalysisStats(statsName, param, statsName.equals("ins_stats"),
+				groupSettings, param.reportCoverageAtAllPositions);
 			stat.setOutputLevel(outputLevel);
 			for (String s: param.traceFields) {
 				try {
@@ -1021,7 +1022,7 @@ public class Mutinack implements Actualizable {
 					contigParallelizationFactor;
 				for (int p = 0; p < contigParallelizationFactor; p++) {
 					final AnalysisChunk analysisChunk = new AnalysisChunk(
-						Objects.requireNonNull(contigNames.get(contigIndex)));
+						Objects.requireNonNull(contigNames.get(contigIndex)), 2);
 					analysisChunk.out = out;
 					contigAnalysisChunks.add(analysisChunk);
 

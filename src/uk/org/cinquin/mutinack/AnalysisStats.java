@@ -68,9 +68,17 @@ public class AnalysisStats implements Serializable, Actualizable {
 	private final @NonNull String name;
 	OutputLevel outputLevel;
 	final MutinackGroup groupSettings;
-	
-	public AnalysisStats(@NonNull String name, MutinackGroup groupSettings, boolean reportCoverageAtAllPositions) {
+	final Parameters analysisParameters;
+	final boolean forInsertions;
+
+	public AnalysisStats(@NonNull String name,
+			@NonNull Parameters param,
+			boolean forInsertions,
+			@NonNull MutinackGroup groupSettings,
+			boolean reportCoverageAtAllPositions) {
 		this.name = name;
+		this.analysisParameters = param;
+		this.forInsertions = forInsertions;
 		this.groupSettings = groupSettings;
 		
 		if (reportCoverageAtAllPositions) {
