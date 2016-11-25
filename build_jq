@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+cd jq
+make BISON_PKGDATADIR=$PWD/usr/share/bison src/parser.c || make src/parser.c
+make -j4

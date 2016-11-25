@@ -1,13 +1,29 @@
 language: c
 language: java
 jdk: oraclejdk8
+
+addons:
+    apt:
+        packages:
+            - oracle-java8-installer
+            - libonig-dev
+            - valgrind
+            - bison
+
 before_install:
   - sudo apt-get update
   - sudo apt-get install perl
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
   - sudo cpanm File::Grep
+  - ./before_install_jq
+
 install:
-script: "cat /home/travis/build/cinquin/mutinack/cov-int/build-log.txt ; rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && (cd nailgun && make && mvn install) && ./run_functional_tests"
+  - ./install_jq
+
+before_script:
+  - ./before_script_jq
+
+script: "cat /home/travis/build/cinquin/mutinack/cov-int/build-log.txt ; rm -Rf build bin lib_unjarred && ant clean insert-git-info unjar_dependencies && ant jar junitreport && ./build_jq && (cd nailgun && make && mvn install) && ./run_functional_tests"
 
 env:
   global:
@@ -24,6 +40,3 @@ addons:
     build_command_prepend: "ant clean"
     build_command: "ant"
     branch_pattern: "coverity"
-  apt:
-    packages:
-      - oracle-java8-installer

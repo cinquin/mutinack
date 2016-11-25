@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+cd jq
+PATH=/usr/local/opt/bison/bin:$PWD/usr/bin:$PATH
+autoreconf -i
+./configure YACC="$(which bison) -y"

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+cd jq
+bundle install --gemfile=docs/Gemfile
+wget http://ftp.debian.org/debian/pool/main/b/bison/bison_3.0.2.dfsg-2_amd64.deb
+ar p bison_3.0.2.dfsg-2_amd64.deb data.tar.xz | tar xJ
