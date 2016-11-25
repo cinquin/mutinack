@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 cd jq
 (brew update && brew install flex && brew install bison && brew install oniguruma) || true
-rm src/{lexer,parser}.{c,h}
+rm src/{lexer,parser}.{c,h} || true
