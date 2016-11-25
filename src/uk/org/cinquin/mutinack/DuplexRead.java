@@ -936,7 +936,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 			for (int i = bottomStrandRecords.size() - 1; i >= 0; --i) {
 				ExtendedSAMRecord r = bottomStrandRecords.get(i);
-				if (reads.remove(r) != noEntryValue) {
+				if (candidate.removeConcurringRead(r) != noEntryValue) {
 					nRemoved++;
 				}
 				Assert.isFalse(reads.contains(r));
@@ -944,7 +944,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			}
 			for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
 				ExtendedSAMRecord r = topStrandRecords.get(i);
-				if (reads.remove(r) != noEntryValue) {
+				if (candidate.removeConcurringRead(r) != noEntryValue) {
 					nRemoved++;
 				}
 				Assert.isFalse(reads.contains(r));

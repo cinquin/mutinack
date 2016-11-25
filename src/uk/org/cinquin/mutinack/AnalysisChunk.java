@@ -16,7 +16,6 @@
  */
 package uk.org.cinquin.mutinack;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Phaser;
@@ -34,7 +33,6 @@ public class AnalysisChunk {
 	SettableInteger lastProcessedPosition;
 	Phaser phaser;
 	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
-	public PrintStream out;
 	public MutinackGroup groupSettings;
 	public final int nParameterSets;
 

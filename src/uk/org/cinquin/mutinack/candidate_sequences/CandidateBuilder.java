@@ -32,7 +32,11 @@ public final class CandidateBuilder {
 	private final boolean negativeStrand;
 
 	public CandidateBuilder add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
-		c.setNegativeStrand(negativeStrand);
+		if (negativeStrand) {
+			c.incrementNegativeStrandCount(1);
+		} else {
+			c.incrementPositiveStrandCount(1);
+		}
 		@Nullable CandidateSequence previousCandidate = candidates.get(l);
 		Assert.isNull(previousCandidate);
 		candidates.put(l, c);

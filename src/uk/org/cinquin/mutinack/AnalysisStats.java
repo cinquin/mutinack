@@ -37,6 +37,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -70,6 +72,11 @@ public class AnalysisStats implements Serializable, Actualizable {
 	final MutinackGroup groupSettings;
 	final Parameters analysisParameters;
 	final boolean forInsertions;
+	public final ConcurrentMap<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();
+	public transient PrintStream detectionOutputStream;
+	public transient OutputStreamWriter annotationOutputStream;
+	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter,
+		mutationBEDWriter, coverageBEDWriter;
 
 	public AnalysisStats(@NonNull String name,
 			@NonNull Parameters param,
@@ -558,8 +565,6 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public final Histogram nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
-
-	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter, mutationBEDWriter, coverageBEDWriter;
 
 	@PrintInStatus(outputLevel = VERBOSE, description = "Q1 or Q2 duplex coverage histogram")
 	public final Histogram Q1Q2DuplexCoverage = new Histogram(500);

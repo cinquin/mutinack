@@ -32,15 +32,12 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	public final MutationType mutationType;
 	private final byte wildtype;
 	public final byte[] mutationSequence;
-	@SuppressWarnings("unused")
-	private final boolean negativeStrand;
 	private Boolean templateStrand;
 
 	public Mutation(MutationType mutationType, byte wildtype, boolean negativeStrand,
 			byte[] mutationSequence, @NonNull Optional<Boolean> templateStrand) {
 		this.mutationType = mutationType;
 		this.wildtype = wildtype;
-		this.negativeStrand = negativeStrand;
 		this.mutationSequence = mutationSequence;
 		this.setTemplateStrand(templateStrand);
 	}
@@ -135,7 +132,6 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		mutationType = c.getMutationType();
 		wildtype = c.getWildtypeSequence();
 		mutationSequence = c.getSequence();
-		negativeStrand = c.isNegativeStrand();
 	}
 	
 	private String mutationSequenceString () {

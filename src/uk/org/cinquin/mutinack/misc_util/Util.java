@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -93,6 +94,14 @@ public class Util {
 			}
 		}
 		return result;
+	}
+
+	public static Number parseNumber(String s) {
+		try {
+			return NumberFormat.getInstance().parse(s);
+		} catch (ParseException e) {
+			throw new RuntimeException("Could not parse " + s + " to number", e);
+		}
 	}
 
 	public static List<SequenceLocation> parseListLocations(List<String> l,

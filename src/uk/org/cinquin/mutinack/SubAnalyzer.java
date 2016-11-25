@@ -649,6 +649,8 @@ public final class SubAnalyzer {
 
 		for (CandidateSequence candidate: candidateSet) {
 			candidate.getQuality().reset();
+			candidate.getDuplexes().clear();//Should have no effect
+			candidate.restoreConcurringReads();
 			final Set<DuplexRead> candidateDuplexReads = 
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			candidate.getNonMutableConcurringReads().forEachEntry((r, c) -> {
@@ -660,7 +662,6 @@ public final class SubAnalyzer {
 				}
 				return true;
 			});
-			candidate.getDuplexes().addAll(candidateDuplexReads);//XXX Not necessary?
 			duplexReads.addAll(candidateDuplexReads);
 		}
 		
@@ -827,6 +828,7 @@ public final class SubAnalyzer {
 				//continue;
 			}
 
+			candidate.getIssues().clear();
 			candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localAndGlobalQuality) != null) {
 				throw new AssertionFailedException();
 			}});
@@ -843,8 +845,8 @@ public final class SubAnalyzer {
 				map(dr -> dr.localAndGlobalQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
 				max(Quality::compareTo).orElse(ATROCIOUS));
 
+			candidate.resetLigSiteDistances();
 			if (maxDuplexQ.atLeast(DUBIOUS)) {
-				candidate.resetLigSiteDistances();
 				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(maxDuplexQ)).
 					forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
 			}
@@ -1331,7 +1333,8 @@ public final class SubAnalyzer {
 							INSERTION,
 							insertedSequence,
 							location,
-							extendedRec, distance);
+							extendedRec,
+							distance);
 
 
 						if (!extendedRec.formsWrongPair()) {

@@ -236,6 +236,8 @@ public class Mutinack implements Actualizable {
 			Parameters param,
 			@NonNull String name,
 			@NonNull File inputBam,
+			@NonNull PrintStream out,
+			@Nullable OutputStreamWriter mutationAnnotationWriter,
 			@Nullable Histogram approximateReadInsertSize,
 			byte @NonNull[] constantBarcode,
 			@NonNull List<File> intersectAlignmentFiles,
@@ -267,25 +269,116 @@ public class Mutinack implements Actualizable {
 		this.excludeBEDs = excludeBEDs;
 		this.maxNDuplexes = maxNDuplexes;
 
-		for (String statsName: Arrays.asList("main_stats", "ins_stats")) {
-			@SuppressWarnings("null")
-			AnalysisStats stat = new AnalysisStats(statsName, param, statsName.equals("ins_stats"),
-				groupSettings, param.reportCoverageAtAllPositions);
-			stat.setOutputLevel(outputLevel);
-			for (String s: param.traceFields) {
-				try {
-					String[] split = s.split(":");
-					String analyzerName = split[0];
-					if (analyzerName.equals(name)) {
-						stat.traceField(split[1], s + ": ");
-					}
-				} catch (Exception e) {
-					throw new RuntimeException("Problem setting up traceField " + s, e);
-				}
+		List<String> statsNames = Arrays.asList("main_stats", "ins_stats");
+
+		if (param.exploreParameters.size() == 0) {
+			for (String statsName: statsNames) {
+				stats.add(createStats(statsName, param, out, out, mutationAnnotationWriter,
+					mutationAnnotationWriter, outputLevel));
 			}
-			stat.approximateReadInsertSize = approximateReadInsertSize;
-			stats.add(stat);
+		} else {
+			if (!param.includeInsertionsInParamExploration) {
+				statsNames = Arrays.asList("main_stats");
+			}
+			final BiConsumer<String, Parameters> consumer = (statsName, p) ->
+				stats.add(createStats(statsName, p, out, out, mutationAnnotationWriter,
+					mutationAnnotationWriter, outputLevel));
+			recursiveParameterFill(consumer, 0, param.exploreParameters, statsNames, param,
+				param.cartesianProductOfExploredParameters);
 		}
+	}
+
+	private static void recursiveParameterFill(BiConsumer<String, Parameters> consumer,
+			int index, List<String> exploreParameters, List<String> statsNames, Parameters param,
+			boolean cartesian) {
+		final String s = exploreParameters.get(index);
+		final String errorMessagePrefix = "Could not parse exploreParameter argument " + s;
+		final String[] split = s.split(":");
+		final String paramToExplore = split[0];
+		final Number min, max;
+		final int nSteps;
+		try {
+			min = Util.parseNumber(split[1]);
+			max = Util.parseNumber(split[2]);
+			if (split.length == 4) {
+				nSteps = Integer.parseInt(split[3]);
+			} else if (split.length == 3) {
+				nSteps = max.intValue() - min.intValue() + 1;
+			} else
+				throw new AssertionFailedException();
+		} catch (RuntimeException e) {
+			throw new RuntimeException(errorMessagePrefix, e);
+		}
+
+		checkInteger(nSteps, errorMessagePrefix);
+		Object val = param.getFieldValue(paramToExplore);
+		if (val instanceof Integer) {
+			checkInteger(min, errorMessagePrefix);
+			checkInteger(max, errorMessagePrefix);
+		}
+
+		for (double step = 0; step < nSteps; step++) {
+			Parameters clone = param.clone();
+			clone.exploreParameters = Collections.emptyList();
+			clone.distinctParameters = new HashMap<>();
+			clone.distinctParameters.putAll(param.distinctParameters);
+			final double value = min.doubleValue() + (max.doubleValue() - min.doubleValue()) *
+				step / nSteps;
+			Number numberValue;
+			if (clone.isParameterInteger(paramToExplore, Integer.class) ||
+				clone.isParameterInteger(paramToExplore, Long.class))
+				numberValue = (int) Math.round(value);
+			else
+				numberValue = value;
+			if (clone.distinctParameters.put(paramToExplore, numberValue) != null) {
+				throw new AssertionFailedException();
+			}
+			clone.setNumericalFieldValue(paramToExplore, numberValue);
+			if (index == exploreParameters.size() - 1 || !cartesian) {
+				for (String stat: statsNames) {
+					consumer.accept(stat, clone);
+				}
+			} else if (cartesian) {
+				recursiveParameterFill(consumer, index + 1, exploreParameters, statsNames, clone, cartesian);
+			}
+		}
+		if (!cartesian && index < exploreParameters.size() - 1) {
+			recursiveParameterFill(consumer, index + 1, exploreParameters, statsNames, param, cartesian);
+		}
+	}
+
+	private static void checkInteger(Number n, String errorMessage) {
+		if (!(n instanceof Integer) && !(n instanceof Long)) {
+			throw new IllegalArgumentException(errorMessage + ": " + n + " not an integer but a " +
+				n.getClass().getCanonicalName());
+		}
+	}
+
+	private @NonNull AnalysisStats createStats(
+			String statsName,
+			Parameters param1,
+			PrintStream out,
+			PrintStream detectionOutputStream,
+			OutputStreamWriter annotationOutputStream,
+			OutputStreamWriter mutationAnnotationWriter,
+			OutputLevel outputLevel) {
+		AnalysisStats stat = new AnalysisStats(statsName, param1, statsName.equals("ins_stats"),
+			Objects.requireNonNull(groupSettings), param1.reportCoverageAtAllPositions);
+		stat.detectionOutputStream = out;
+		stat.annotationOutputStream = mutationAnnotationWriter;
+		stat.setOutputLevel(outputLevel);
+		for (String s: param1.traceFields) {
+			try {
+				String[] split = s.split(":");
+				String analyzerName = split[0];
+				if (analyzerName.equals(name)) {
+					stat.traceField(split[1], s + ": ");
+				}
+			} catch (Exception e) {
+				throw new RuntimeException("Problem setting up traceField " + s, e);
+			}
+		}
+		return stat;
 	}
 
 	public static void main(String args[]) throws InterruptedException, ExecutionException, FileNotFoundException {
@@ -622,6 +715,8 @@ public class Mutinack implements Actualizable {
 				}
 			}
 
+			final @Nullable OutputStreamWriter mutationWriterCopy = mutationAnnotationWriter;
+
 			IntStream.range(0, param.inputReads.size()).parallel().forEach(i -> {
 				final String inputReads = param.inputReads.get(i);
 				final File inputBam = new File(inputReads);
@@ -672,6 +767,8 @@ public class Mutinack implements Actualizable {
 						param,
 						name,
 						inputBam,
+						out,
+						mutationWriterCopy,
 						param.variableBarcodeLength == 0 ?
 								GetReadStats.getApproximateReadInsertSize(inputBam, param.maxInsertSize)
 							:
@@ -991,6 +1088,17 @@ public class Mutinack implements Actualizable {
 
 			final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
 
+			int nParameterSets = -1;
+			for (Mutinack m: analyzers) {
+				int n = m.stats.size();
+				if (nParameterSets == -1) {
+					nParameterSets = n;
+				} else if (n != nParameterSets) {
+					throw new AssertionFailedException("Analyzer " + m.name + " has " + n +
+						" parameter sets instead of " + nParameterSets);
+				}
+			}
+
 			for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
 				final int contigIndex = contigIndex0;
 
@@ -1022,8 +1130,7 @@ public class Mutinack implements Actualizable {
 					contigParallelizationFactor;
 				for (int p = 0; p < contigParallelizationFactor; p++) {
 					final AnalysisChunk analysisChunk = new AnalysisChunk(
-						Objects.requireNonNull(contigNames.get(contigIndex)), 2);
-					analysisChunk.out = out;
+						Objects.requireNonNull(contigNames.get(contigIndex)), nParameterSets);
 					contigAnalysisChunks.add(analysisChunk);
 
 					final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
@@ -1046,7 +1153,7 @@ public class Mutinack implements Actualizable {
 					});
 
 					final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
-							analysisChunk, analyzers,
+							analysisChunk,
 							alignmentWriter, mutationAnnotationWriter, groupSettings.forceOutputAtLocations,
 							dubiousOrGoodDuplexCovInAllInputs,
 							goodDuplexCovInAllInputs,

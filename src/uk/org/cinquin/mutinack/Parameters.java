@@ -27,8 +27,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -46,9 +48,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 
-public final class Parameters implements Serializable {
+public final class Parameters implements Serializable, Cloneable {
 
 	public void validate() {
 		if (ignoreFirstNBasesQ2 < ignoreFirstNBasesQ1) {
@@ -70,11 +73,48 @@ public final class Parameters implements Serializable {
 				throw new IllegalArgumentException("Unexpected .bai extension in input read path " + ir);
 			}
 		}
+
+		final Set<String> parametersToExplore = new HashSet<>();
+
+		for (String p: exploreParameters) {
+			String [] split = p.split(":");
+			if (split.length != 4 && split.length != 3) {
+				throw new IllegalArgumentException("exploreParameters argument should be formatted as " +
+					"name:min:max:step, but " + (split.length - 1) + " columns found in " + p);
+			}
+			final String paramName = split[0];
+			if (!parametersToExplore.add(paramName)) {
+				throw new IllegalArgumentException("Can specify each argument at most once in exploreParameters, " +
+					"but " + paramName + "is specified more than once");
+			}
+			final Field f;
+			try {
+				f = Parameters.class.getDeclaredField(paramName);
+			} catch (NoSuchFieldException e) {
+				throw new RuntimeException("Unknown parameter " + paramName, e);
+			} catch (SecurityException e) {
+				throw new RuntimeException(e);
+			}
+			if (f.getAnnotation(OnlyUsedOnAdvance.class) == null) {
+				throw new IllegalArgumentException("Parameter " + paramName + " does not support exploration");
+			}
+			final Object value;
+			try {
+				value = f.get(this);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+			if (!(value instanceof Integer) && !(value instanceof Float)) {
+				throw new IllegalArgumentException("Parameter " + paramName + " is not a number");
+			}
+		}
 	}
 
 	@HideInToString
 	@JsonIgnore
 	public transient MutinackGroup group;
+
+	public Map<String, Number> distinctParameters = new HashMap<>();
 
 	public static final long serialVersionUID = 1L;
 	@JsonIgnore
@@ -216,18 +256,22 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-minMappingQualityQ2", description = "Reads whose mapping quality is below this" +
 		" threshold are not used to propose Q2 mutation candidates", required = false)
+	@OnlyUsedOnAdvance
 	public int minMappingQualityQ2 = 50;
 
 	@Parameter(names = "-minReadsPerStrandQ1", description = "Duplexes that have fewer reads for the" +
 		" original top and bottom strands are ignored when calling substitutions or indels", required = false)
+	@OnlyUsedOnAdvance
 	public int minReadsPerStrandQ1 = 0;
 
 	@Parameter(names = "-minReadsPerStrandQ2", description = "Only duplexes that have at least this number of reads" +
 		" for original top and bottom strands can contribute Q2 candidates", required = false)
+	@OnlyUsedOnAdvance
 	public int minReadsPerStrandQ2 = 3;
 
 	@Parameter(names = "-minReadsPerDuplexQ2", description = "Only duplexes that have at least this total number of reads" +
 		" (irrespective of whether they come from the original top and bottom strands) can contribute Q2 candidates", required = false)
+	@OnlyUsedOnAdvance
 	public int minReadsPerDuplexQ2 = 3;
 
 	@Parameter(names = "-promoteNQ1Duplexes", description = "Not yet functional, and probably never will be - Promote candidate that has at least this many Q1 duplexes to Q2", required = false, hidden = true)
@@ -241,10 +285,12 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-minConsensusThresholdQ1", description = "Lenient value for minimum fraction of reads from the same" +
 		" original strand that define a consensus (must be > 0.5)", required = false)
+	@OnlyUsedOnAdvance
 	public float minConsensusThresholdQ1 = 0.51f;
 
 	@Parameter(names = "-minConsensusThresholdQ2", description = "Strict value for minimum fraction of reads from the same" +
 		" original strand that define a consensus (must be > 0.5)", required = false)
+	@OnlyUsedOnAdvance
 	public float minConsensusThresholdQ2 = 0.95f;
 
 	@Parameter(names = "-disagreementConsensusThreshold", description = "NOT YET IMPLEMENTED; Disagreements are only reported if for each strand" +
@@ -253,9 +299,11 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-minReadsPerStrandForDisagreement", description = "Minimal number of reads" +
 		" for original top and bottom strands to examine duplex for disagreement between these strands", required = false)
+	@OnlyUsedOnAdvance
 	public int minReadsPerStrandForDisagreement = 0;
 
 	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
+	@OnlyUsedOnAdvance
 	public boolean Q2DisagCapsMatchingMutationQuality = true;
 
 	@Parameter(names = "-computeRawDisagreements", description = "Compute disagreements between raw reads and reference sequence", arity = 1, required = false)
@@ -270,6 +318,7 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose Q2 mutation candidates",
 		required = false)
+	@OnlyUsedOnAdvance
 	public int minBasePhredScoreQ2 = 30;
 
 	@Parameter(names = "-ignoreFirstNBasesQ1", description = "Bases that occur within this many bases of read start are discarded", required = false)
@@ -285,6 +334,7 @@ public final class Parameters implements Serializable {
 	public int minReadMedianPhredScore = 0;
 
 	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose Q2 mutation candidates", required = false)
+	@OnlyUsedOnAdvance
 	public int minMedianPhredQualityAtPosition = 0;
 
 	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose Q2 mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold", required = false)
@@ -292,10 +342,12 @@ public final class Parameters implements Serializable {
 
 	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose Q2 mutation candidates",
 		required = false)
+	@OnlyUsedOnAdvance
 	public int maxAverageBasesClipped = 15;
 
 	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose Q2 mutation candidates",
 		required = false)
+	@OnlyUsedOnAdvance
 	public int maxAverageClippingOfAllCoveringDuplexes = 999;
 
 	@Parameter(names = "-maxNDuplexes", description = "Positions whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates",
@@ -318,12 +370,15 @@ public final class Parameters implements Serializable {
 	public boolean ignoreTandemRFPairs = false;
 
 	@Parameter(names = "-minNumberDuplexesSisterArm", description = "Min number of duplexes in sister arm to call a candidate mutation unique; adjust this number to deal with heterozygous mutations", required = false)
+	@OnlyUsedOnAdvance
 	public int minNumberDuplexesSisterArm = 10;
 
 	@Parameter(names = "-minQ2DuplexesToCallMutation", description = "Min number of Q2 duplexes to call mutation (condition set by minQ1Q2DuplexesToCallMutation must also be met)", required = false)
+	@OnlyUsedOnAdvance
 	public int minQ2DuplexesToCallMutation = 1;
 
 	@Parameter(names = "-minQ1Q2DuplexesToCallMutation", description = "Min number of Q1 or Q2 duplexes to call mutation (condition set by minQ2DuplexesToCallMutation must also be met)", required = false)
+	@OnlyUsedOnAdvance
 	public int minQ1Q2DuplexesToCallMutation = 1;
 
 	@Parameter(names = "-acceptNInBarCode", description = "If true, an N read within the barcode is" +
@@ -503,6 +558,15 @@ public final class Parameters implements Serializable {
 	@Parameter(names = "-keysFile", description = "Location of .jks file for RMI SSL encryption", required = false, hidden = hideAdvancedParameters)
 	public String keysFile = "mutinack_public_selfsigned.jks";
 
+	@Parameter(names = "-exploreParameter", description = "", required = false, hidden = true)
+	public List<String> exploreParameters = new ArrayList<>();
+
+	@Parameter(names = "-cartesianProductOfExploredParameters", description = "", required = false, hidden = true, arity = 1)
+	public boolean cartesianProductOfExploredParameters = true;
+
+	@Parameter(names = "-includeInsertionsInParamExploration", description = "", required = false, hidden = true, arity = 1)
+	public boolean includeInsertionsInParamExploration = false;
+
 	@Retention(RetentionPolicy.RUNTIME)
 	/**
 	 * Used to mark parameters that it is not useful to print in toString method.
@@ -510,6 +574,9 @@ public final class Parameters implements Serializable {
 	 *
 	 */
 	public @interface HideInToString {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface OnlyUsedOnAdvance {}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface FilePath {}
@@ -628,6 +695,31 @@ public final class Parameters implements Serializable {
 		try {
 			Field f = Parameters.class.getDeclaredField(name);
 			return f.get(this);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException |
+				IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public boolean isParameterInteger(String name, Class<?> clazz) {
+		Field f;
+		try {
+			f = Parameters.class.getDeclaredField(name);
+			return clazz.isInstance(f.get(this));
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public void setNumericalFieldValue(String name, Number value) {
+		try {
+			Field f = Parameters.class.getDeclaredField(name);
+			if (f.get(this) instanceof Integer) {
+				f.set(this, value.intValue());
+			} else if (f.get(this) instanceof Float) {
+				f.set(this, value.floatValue());
+			} else
+				throw new AssertionFailedException();
 		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException |
 				IllegalAccessException e) {
 			throw new RuntimeException(e);
@@ -874,6 +966,15 @@ public final class Parameters implements Serializable {
 		result = prime * result + (version ? 1231 : 1237);
 		result = prime * result + ((workingDirectory == null) ? 0 : workingDirectory.hashCode());
 		return result;
+	}
+
+	@Override
+	public Parameters clone() {
+		try {
+			return (Parameters) super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override

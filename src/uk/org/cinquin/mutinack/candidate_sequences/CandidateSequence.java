@@ -64,43 +64,53 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 public class CandidateSequence implements CandidateSequenceI, Serializable {
 	
 	private static final long serialVersionUID = 8222086925028013360L;
+
 	private @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
-	private final @NonNull MutationType mutationType;
-	private final byte @Nullable[] sequence;
-	private int hashCode;
-	private byte wildtypeSequence;
 	private DetailedQualities quality;
 	private @Nullable Quality supplQuality;
+	private transient Map<DuplexRead, DetailedQualities> issues;
 	private @Nullable StringBuilder supplementalMessage;
-	private final transient @Nullable ExtendedSAMRecord initialConcurringRead;
-	private final int initialLigationSiteD;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
 	private transient @Nullable Collection<@NonNull DuplexRead> duplexes;
 	private int nGoodDuplexes;
 	private int nGoodDuplexesIgnoringDisag;
 	private int nGoodOrDubiousDuplexes;
 	private int nDuplexes;
-	private float totalGoodDuplexes;
-	private float totalGoodOrDubiousDuplexes;
-	private float totalAllDuplexes;
-	private float totalReadsAtPosition;
-	private final @NonNull SequenceLocation location;
-	private final transient SubAnalyzer owningSubAnalyzer;
-	private final String sampleName;
+	private int totalGoodDuplexes;
+	private int totalGoodOrDubiousDuplexes;
+	private int totalAllDuplexes;
+	private int totalReadsAtPosition;
 	private int averageMappingQuality = -1;
 	private int minInsertSize = -1;
 	private int maxInsertSize = -1;
 	private int insertSizeAtPos10thP = -1;
 	private int insertSizeAtPos90thP = -1;
 	private int nWrongPairs;
-	private boolean hidden = false;
-	
-	private int nMatchingCandidatesOtherSamples = -1;
-
 	private byte singleBasePhredQuality = -1;
 	private TByteArrayList phredQualityScores;
-	private transient Map<DuplexRead, DetailedQualities> issues;
+	private Serializable preexistingDetection;
+	private byte medianPhredAtPosition;
+	public int minDistanceToLigSite = Integer.MAX_VALUE;
+	public int maxDistanceToLigSite = Integer.MIN_VALUE;
+	public float meanDistanceToLigSite = Float.NaN;
+	public int nDistancesToLigSite = 0;
+	public float probCollision = Float.NaN;
+	public int nDuplexesSisterArm = -1;
+	private int nMatchingCandidatesOtherSamples = -1;
+
+	private int negativeStrandCount = 0, positiveStrandCount = 0;
+
+	private final @NonNull MutationType mutationType;
+	private final byte @Nullable[] sequence;
+	private int hashCode;
+	private byte wildtypeSequence;
+	private final transient @NonNull ExtendedSAMRecord initialConcurringRead;
+	private final int initialLigationSiteD;
+	private final @NonNull SequenceLocation location;
+	private final transient SubAnalyzer owningSubAnalyzer;
+	private final String sampleName;
+	private boolean hidden = false;
 	
 	//For debugging purposes
 	public int insertSize = -1;
@@ -113,18 +123,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public int readAlignmentEnd = -1;
 	public int mateReadAlignmentEnd = -1;
 	public int refPositionOfMateLigationSite = 1;
-	
-	private byte medianPhredAtPosition;
-	
-	public int minDistanceToLigSite = Integer.MAX_VALUE;
-	public int maxDistanceToLigSite = Integer.MIN_VALUE;
-	public float meanDistanceToLigSite = Float.NaN;
-	public int nDistancesToLigSite = 0;
-
-	public float probCollision = Float.NaN;
-	
-	private boolean negativeStrand;
-	public int nDuplexesSisterArm = -1;
 	
 	public void resetLigSiteDistances() {
 		minDistanceToLigSite = Integer.MAX_VALUE;
@@ -175,7 +173,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public CandidateSequence(@NonNull SubAnalyzer owningSubAnalyzer, @NonNull MutationType mutationType,
 			byte @Nullable[] sequence,
-			@NonNull SequenceLocation location, @Nullable ExtendedSAMRecord initialConcurringRead,
+			@NonNull SequenceLocation location, @NonNull ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {
 		this.owningSubAnalyzer = owningSubAnalyzer;
 		this.sampleName = owningSubAnalyzer.analyzer.name;
@@ -318,42 +316,42 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public float getTotalReadsAtPosition() {
+	public int getTotalReadsAtPosition() {
 		return totalReadsAtPosition;
 	}
 
 	@Override
-	public void setTotalReadsAtPosition(float totalReadsAtPosition) {
+	public void setTotalReadsAtPosition(int totalReadsAtPosition) {
 		this.totalReadsAtPosition = totalReadsAtPosition;
 	}
 
 	@Override
-	public float getTotalAllDuplexes() {
+	public int getTotalAllDuplexes() {
 		return totalAllDuplexes;
 	}
 
 	@Override
-	public void setTotalAllDuplexes(float totalAllDuplexes) {
+	public void setTotalAllDuplexes(int totalAllDuplexes) {
 		this.totalAllDuplexes = totalAllDuplexes;
 	}
 
 	@Override
-	public float getTotalGoodOrDubiousDuplexes() {
+	public int getTotalGoodOrDubiousDuplexes() {
 		return totalGoodOrDubiousDuplexes;
 	}
 
 	@Override
-	public void setTotalGoodOrDubiousDuplexes(float totalGoodOrDubiousDuplexes) {
+	public void setTotalGoodOrDubiousDuplexes(int totalGoodOrDubiousDuplexes) {
 		this.totalGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;
 	}
 
 	@Override
-	public float getTotalGoodDuplexes() {
+	public int getTotalGoodDuplexes() {
 		return totalGoodDuplexes;
 	}
 
 	@Override
-	public void setTotalGoodDuplexes(float totalGoodDuplexes) {
+	public void setTotalGoodDuplexes(int totalGoodDuplexes) {
 		this.totalGoodDuplexes = totalGoodDuplexes;
 	}
 	
@@ -415,9 +413,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return concurringReads;
 	}
 	
-	private static final TObjectIntMap<ExtendedSAMRecord>
-		EMPTY_OBJECTINT_HASHMAP = new TObjectIntHashMap<>(0, 0.5f, NO_ENTRY_VALUE);
-
        private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
 	
 	@SuppressWarnings("null")
@@ -426,15 +421,28 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (concurringReads != null) {
 			return concurringReads;
 		} else {
-			if (initialConcurringRead == null) {
-				return EMPTY_OBJECTINT_HASHMAP;
-			} else {
-				if (singletonConcurringRead == null) {
-					singletonConcurringRead =
-						new SingletonObjectIntMap<>(initialConcurringRead, initialLigationSiteD);
-				}
-				return singletonConcurringRead;
+			if (singletonConcurringRead == null) {
+				singletonConcurringRead =
+					new SingletonObjectIntMap<>(initialConcurringRead, initialLigationSiteD);
 			}
+			return singletonConcurringRead;
+		}
+	}
+
+	private transient @Nullable TObjectIntHashMap<ExtendedSAMRecord> originalConcurringReads;
+
+	public int removeConcurringRead(@NonNull ExtendedSAMRecord er) {
+		if (originalConcurringReads == null) {
+			originalConcurringReads = new TObjectIntHashMap<>();
+			originalConcurringReads.putAll(getMutableConcurringReads());
+		}
+		return getMutableConcurringReads().remove(er);
+	}
+
+	public void restoreConcurringReads() {
+		if (originalConcurringReads != null) {
+			concurringReads = originalConcurringReads;
+			originalConcurringReads = null;
 		}
 	}
 
@@ -458,8 +466,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 	
 	@Override
-	public /*@Nullable*/ Quality getSupplQuality() {//Remove Nullable annotation to
-		//silence spurious Eclipse warning in Mutinack.java
+	public @Nullable Quality getSupplQuality() {
 		return supplQuality;
 	}
 
@@ -574,15 +581,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.nWrongPairs = nWrongPairs;
 	}
 	
-	public void setNegativeStrand(boolean negativeStrand) {
-		this.negativeStrand = negativeStrand;
-	}
-	
-	@Override
-	public boolean isNegativeStrand() {
-		return negativeStrand;
-	}
-
 	public int getnGoodDuplexesIgnoringDisag() {
 		return nGoodDuplexesIgnoringDisag;
 	}
@@ -604,6 +602,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		candidate.addPhredQualitiesToList(getPhredQualityScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
 		acceptLigSiteDistance(candidate.getMaxDistanceToLigSite());
+		incrementNegativeStrandCount(candidate.getNegativeStrandCount());
+		incrementPositiveStrandCount(candidate.getPositiveStrandCount());
 		if (!candidate.getRawMismatchesQ2().isEmpty()) {
 			getMutableRawMismatchesQ2().addAll(candidate.getRawMismatchesQ2()); //TODO Is it
 			//worth optimizing this out if not keeping track of raw disagreements? That would
@@ -742,10 +742,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			getnGoodOrDubiousDuplexes() + "\t" +
 			getnDuplexes() + "\t" +
 			getNonMutableConcurringReads().size() + "\t" +
-			formatter.format((getnGoodDuplexes() / getTotalGoodDuplexes())) + "\t" +
-			formatter.format((getnGoodOrDubiousDuplexes() / getTotalGoodOrDubiousDuplexes())) + "\t" +
-			formatter.format((getnDuplexes() / getTotalAllDuplexes())) + "\t" +
-			formatter.format((getNonMutableConcurringReads().size() / getTotalReadsAtPosition())) + "\t" +
+			formatter.format((getnGoodDuplexes() / ((float) getTotalGoodDuplexes()))) + "\t" +
+			formatter.format((getnGoodOrDubiousDuplexes() / ((float) getTotalGoodOrDubiousDuplexes()))) + "\t" +
+			formatter.format((getnDuplexes() / ((float) getTotalAllDuplexes()))) + "\t" +
+			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + "\t" +
 			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + "\t" +
 			nDuplexesSisterArm + "\t" +
 			insertSize + "\t" +
@@ -799,6 +799,36 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setnMatchingCandidatesOtherSamples(int nMatchingCandidatesOtherSamples) {
 		this.nMatchingCandidatesOtherSamples = nMatchingCandidatesOtherSamples;
+	}
+
+	@Override
+	public Serializable getPreexistingDetection() {
+		return preexistingDetection;
+	}
+
+	@Override
+	public void setPreexistingDetection(Serializable preexistingDetection) {
+		this.preexistingDetection = preexistingDetection;
+	}
+
+	@Override
+	public int getPositiveStrandCount() {
+		return positiveStrandCount;
+	}
+
+	@Override
+	public int getNegativeStrandCount() {
+		return negativeStrandCount;
+	}
+
+	@Override
+	public void incrementPositiveStrandCount(int i) {
+		positiveStrandCount += i;
+	}
+
+	@Override
+	public void incrementNegativeStrandCount(int i) {
+		negativeStrandCount += i;
 	}
 
 }
