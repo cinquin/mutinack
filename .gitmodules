@@ -1,3 +1,6 @@
 [submodule "nailgun"]
 	path = nailgun
 	url = https://github.com/cinquin/nailgun.git
+[submodule "jq"]
+	path = jq
+	url = https://github.com/cinquin/jq.git
