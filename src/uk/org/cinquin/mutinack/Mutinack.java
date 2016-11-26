@@ -396,6 +396,8 @@ public class Mutinack implements Actualizable {
 			System.out.println(e.getMessage());
 			//Make sure to return a non-0 value so Make sees the run failed
 			System.exit(1);
+		} catch (QuietException e) {
+			throw e;
 		} catch (Throwable t) {
 			if (System.console() == null) {
 				t.printStackTrace(System.err);
@@ -452,9 +454,9 @@ public class Mutinack implements Actualizable {
 					Submitter.submitToServer(param);
 				} catch (Exception e) {
 					if (param.suppressStderrOutput) {
-						System.err.println("Suppressing stderr exception detail as requested, and exiting");
+						System.err.println("Suppressing stderr exception detail as requested");
 						e.printStackTrace(System.out);
-						System.exit(1);
+						throw new QuietException(e);
 					}
 				}
 			} else {
@@ -465,6 +467,16 @@ public class Mutinack implements Actualizable {
 		} else {
 			realMain1(param, System.out, System.err);
 		}
+	}
+
+	private static class QuietException extends RuntimeException {
+
+		private static final long serialVersionUID = -3006672561001099942L;
+
+		public QuietException(Exception e) {
+			super(e);
+		}
+
 	}
 
 	private static boolean versionChecked = false;
