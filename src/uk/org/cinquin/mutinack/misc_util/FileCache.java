@@ -45,8 +45,8 @@ public class FileCache<T extends Serializable> {
 	
 	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
 	
-	@SuppressWarnings("unchecked")
-	public static <T> T getCached(String path, String cacheExtension, Function<String, @NonNull T> processor) {
+	@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
+	public static <T> @NonNull T getCached(String path, String cacheExtension, Function<String, @NonNull T> processor) {
 		String canonicalPath;
 		try {
 			canonicalPath = new File(path + cacheExtension).getCanonicalPath();
@@ -58,13 +58,13 @@ public class FileCache<T extends Serializable> {
 		if (o != null) {
 			return (T) o;
 		}
-		T result = getCached0(path, cacheExtension, processor);
+		@NonNull T result = getCached0(path, cacheExtension, processor);
 		cache.put(canonicalPath, new SoftReference<> (result));
 		return result;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static <T> T getCached0(String path, String cacheExtension, Function<String, @NonNull T> processor) {
+	@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
+	public static <T> @NonNull T getCached0(String path, String cacheExtension, Function<String, @NonNull T> processor) {
 		File cachedInfo;
 		try {
 			cachedInfo = new File(path + cacheExtension).getCanonicalFile();
