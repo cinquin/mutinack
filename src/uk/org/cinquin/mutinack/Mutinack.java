@@ -456,7 +456,7 @@ public class Mutinack implements Actualizable {
 					if (param.suppressStderrOutput) {
 						System.err.println("Suppressing stderr exception detail as requested");
 						e.printStackTrace(System.out);
-						throw new QuietException(e);
+						throw new QuietException(e.getMessage());
 					}
 				}
 			} else {
@@ -473,8 +473,8 @@ public class Mutinack implements Actualizable {
 
 		private static final long serialVersionUID = -3006672561001099942L;
 
-		public QuietException(Exception e) {
-			super(e);
+		public QuietException(String message) {
+			super(message, null, true, false);
 		}
 
 	}
