@@ -29,6 +29,9 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import gnu.trove.TByteCollection;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
@@ -52,6 +55,9 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.statistics.json.ByteArrayStringSerializer;
+import uk.org.cinquin.mutinack.statistics.json.ByteStringSerializer;
+import uk.org.cinquin.mutinack.statistics.json.TByteArrayListSerializer;
 
 
 /**
@@ -65,6 +71,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	
 	private static final long serialVersionUID = 8222086925028013360L;
 
+	@JsonIgnore
 	private @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
 	private DetailedQualities quality;
@@ -88,6 +95,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int insertSizeAtPos90thP = -1;
 	private int nWrongPairs;
 	private byte singleBasePhredQuality = -1;
+	@JsonSerialize(using = TByteArrayListSerializer.class)
 	private TByteArrayList phredQualityScores;
 	private Serializable preexistingDetection;
 	private byte medianPhredAtPosition;
@@ -102,8 +110,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
 	private final @NonNull MutationType mutationType;
+	@JsonSerialize(using = ByteArrayStringSerializer.class)
 	private final byte @Nullable[] sequence;
+	@JsonIgnore
 	private int hashCode;
+	@JsonSerialize(using = ByteStringSerializer.class)
 	private byte wildtypeSequence;
 	private final transient @NonNull ExtendedSAMRecord initialConcurringRead;
 	private final int initialLigationSiteD;

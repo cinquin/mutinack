@@ -26,10 +26,13 @@ import java.util.function.BiConsumer;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import uk.org.cinquin.mutinack.misc_util.Handle;
 
 public class DetailedQualities implements Serializable {
 	
+	@JsonIgnore
 	private @Nullable Map<Assay, @NonNull Quality> unmodifiableMap;
 	
 	private static final long serialVersionUID = -5423960175598403757L;
