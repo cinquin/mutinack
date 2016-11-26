@@ -485,6 +485,8 @@ public class Mutinack implements Actualizable {
 	public static void realMain1(Parameters param, PrintStream out, PrintStream err)
 			throws InterruptedException, IOException {
 
+		Thread.interrupted();//XXX The actual problem needs to be fixed upstream
+
 		DebugLogControl.COSTLY_ASSERTIONS = param.enableCostlyAssertions;
 
 		if (!versionChecked && !param.noStatusMessages && !param.skipVersionCheck) {
