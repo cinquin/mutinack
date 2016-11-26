@@ -525,6 +525,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-submitToServer", description = "RMI address", required = false, hidden = hideInProgressParameters)
 	public String submitToServer = null;
 
+	@Parameter(names = "-writePIDPath", description = "Write PID to this file when ready", required = false, hidden = hideInProgressParameters)
+	public String writePIDPath = null;
+
 	@Parameter(names = "-startServer", help = true, description = "RMI address", required = false, hidden = hideInProgressParameters)
 	public String startServer = null;
 

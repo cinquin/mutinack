@@ -444,7 +444,8 @@ public class Mutinack implements Actualizable {
 			Server.createRegistry(param.startServer);
 			@SuppressWarnings("unused")
 			Server unusedVariable =
-					new Server(0, param.startServer, param.recordRunsTo, param.keysFile);
+					new Server(0, param.startServer, param.recordRunsTo, param.keysFile, param.writePIDPath,
+						param.noStatusMessages);
 		} else if (param.submitToServer != null) {
 			if (param.suppressStderrOutput) {
 				try {

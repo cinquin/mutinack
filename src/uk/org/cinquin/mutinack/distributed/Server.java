@@ -52,6 +52,7 @@ import org.nustaq.serialization.FSTConfiguration;
 
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.misc_util.Signals;
+import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
@@ -68,6 +69,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	private final String recordRunsTo;
 	private final Map<String, Parameters> recordedRuns;
 	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
+	private final boolean silent;
 
 	private void dumpRecordedRuns() {
 		if (recordedRuns == null) {
@@ -147,10 +149,11 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		new RMISSLClientSocketFactory();
 
 	public Server(int port, @Nullable String fullPath0, String recordRunsTo,
-			String keysFile)
+			String keysFile, @Nullable String writePIDPath, boolean silent)
 			throws RemoteException {
 		super(0, clientSocketFactory, new RMISSLServerSocketFactory(keysFile));
 		final String fullPath = fillInDefaultRMIPath(fullPath0);
+		this.silent = silent;
 
 		boolean notFound = false;
 		try {
@@ -231,6 +234,9 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			System.exit(0);//JVM won't exit by itself upon receiving the TERM signal
 		});
 
+		if (writePIDPath != null) {
+			Util.writePID(writePIDPath);
+		}
 	}
 
 	private final static Job END_OF_WORK_MARKER = new Job();
@@ -316,7 +322,9 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 			if (recordedRuns != null) {
 				recordedRuns.put(job.parameters.runName, job.parameters);
-				System.err.println("Recorded job " + job.parameters.runName);
+				if (!silent) {
+					System.err.println("Recorded job " + job.parameters.runName);
+				}
 			}
 
 			synchronized(job) {

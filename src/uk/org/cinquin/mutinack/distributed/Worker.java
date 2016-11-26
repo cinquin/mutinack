@@ -242,7 +242,11 @@ public class Worker {
 			for (int i = 0; i < nWorkers; i++) {
 				pf.addLoopWorker(worker);
 			}
-			pf.run(true);
+			pf.run(false);
+			if (param.writePIDPath != null) {
+				Util.writePID(param.writePIDPath);
+			}
+			pf.waitForCompletion();
 		} finally {
 			Signals.removeSignalProcessor("TERM", termSignalProcessor);
 		}

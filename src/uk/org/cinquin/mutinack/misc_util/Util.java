@@ -17,8 +17,11 @@
 package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -527,6 +530,17 @@ public class Util {
 			return false;
 		}
 		return true;
+	}
+
+	public static void writePID(@NonNull String path) {
+		//TODO Switch to Process API when Java 9 is out
+		final String name = ManagementFactory.getRuntimeMXBean().getName();
+		final String pidString = name.split("@")[0] + "\n";
+		try (PrintWriter pidOut = new PrintWriter(path)) {
+			pidOut.write(pidString);
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

@@ -30,18 +30,20 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 N_PARALLEL_JOBS=2
 
 #NailGun server seems to require a kill -9 to exit
-trap 'code=$?; processes="$server_pid $nailgun_server_pid $worker_pids"; ([ "$processes" != "  " ] && kill $processes 2>/dev/null ) || true; ([ -n "$nailgun_server_pid" ] && kill -9 $nailgun_server_pid 2> /dev/null ) || true; exit $code' INT QUIT TERM EXIT
+trap 'code=$?; processes="$server_pid $nailgun_server_pid $worker_pids"; ([ "$processes" != "  " ] && kill -9 $processes 2>/dev/null ) || true; exit $code' INT QUIT TERM EXIT
 
-server_pid=`./run_server` || (echo "Could not start Mutinack server" && false)
+nailgun_port=`./getAvailablePort.py 2113`
+export nailgun_port
+
+server_pid=`./run_server localhost/mutinackTesting${nailgun_port}` || (echo "Could not start Mutinack server" && false)
 echo Started server $server_pid
-nailgun_server_pid=`./run_nailgun_server` || (echo "Could not start NailGun server" && false)
+nailgun_server_pid=`./run_nailgun_server ${nailgun_port}` || (echo "Could not start NailGun server" && false)
 echo Started nailgun server $nailgun_server_pid
-sleep 3
 
 worker_pids=''
 for i in `seq 1 $N_PARALLEL_JOBS`
 do
-	worker_pid=`./run_worker` || (echo "Could not start Mutinack worker" && false)
+	worker_pid=`./run_worker localhost/mutinackTesting${nailgun_port}` || (echo "Could not start Mutinack worker" && false)
 	echo Started worker $worker_pid
 	worker_pids=`echo $worker_pids $worker_pid`
 done
