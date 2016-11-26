@@ -27,9 +27,11 @@ import java.lang.ref.SoftReference;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.nustaq.serialization.FSTConfiguration;
 
 import contrib.uk.org.lidalia.slf4jext.Logger;
@@ -44,7 +46,7 @@ public class FileCache<T extends Serializable> {
 	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
 	
 	@SuppressWarnings("unchecked")
-	public static <T> T getCached(String path, String cacheExtension, Function<String, T> processor) {
+	public static <T> T getCached(String path, String cacheExtension, Function<String, @NonNull T> processor) {
 		String canonicalPath;
 		try {
 			canonicalPath = new File(path + cacheExtension).getCanonicalPath();
@@ -62,7 +64,7 @@ public class FileCache<T extends Serializable> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static <T> T getCached0(String path, String cacheExtension, Function<String, T> processor) {
+	public static <T> T getCached0(String path, String cacheExtension, Function<String, @NonNull T> processor) {
 		File cachedInfo;
 		try {
 			cachedInfo = new File(path + cacheExtension).getCanonicalFile();
@@ -99,7 +101,7 @@ public class FileCache<T extends Serializable> {
 						+ cachedInfo.getAbsolutePath() + "; continuing anyway", e);
 			}
 		}
-		return result;
+		return Objects.requireNonNull(result);
 	}
 
 }

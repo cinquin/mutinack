@@ -131,7 +131,7 @@ public class StaticStuffToAvoidMutating {
 	
 	public static @NonNull Map<@NonNull String, @NonNull Integer> loadContigsFromFile(
 			String referenceGenome) {
-		return FileCache.getCached(referenceGenome, ".info", path -> {
+		return Objects.requireNonNull(FileCache.getCached(referenceGenome, ".info", path -> {
 			@NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 = new HashMap<>();
 			try(Stream<String> lines = Files.lines(Paths.get(referenceGenome))) {
 				Handle<String> currentName = new Handle<>();
@@ -166,6 +166,6 @@ public class StaticStuffToAvoidMutating {
 			} catch (IOException e) {
 				throw new RuntimeException("Problem reading size of contigs from reference file " + path, e);
 			}
-		});
+		}));
 	}
 }
