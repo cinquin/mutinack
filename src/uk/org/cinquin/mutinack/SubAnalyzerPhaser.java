@@ -599,7 +599,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 
 				if (!sa.stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(csla)).
-					candidates.add(matchingSAWithoutTransientFields)) {
+					setCsla(csla).candidates.add(matchingSAWithoutTransientFields)) {
 						throw new AssertionFailedException();
 				}
 
@@ -827,6 +827,11 @@ public class SubAnalyzerPhaser extends Phaser {
 		for (Entry<DuplexDisagreement, List<DuplexRead>> entry: examResults.disagreements) {
 
 			DuplexDisagreement d = entry.getKey();
+
+			if (!stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(null)).
+				disagreements.add(d)) {
+					throw new AssertionFailedException();
+			}
 
 			if (stats.analysisParameters.variableBarcodeLength == 0) {
 				stats.duplexCollisionProbabilityLocalAvAtDisag.insert(
