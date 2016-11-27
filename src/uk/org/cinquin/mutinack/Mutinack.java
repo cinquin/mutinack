@@ -453,11 +453,9 @@ public class Mutinack implements Actualizable {
 				try {
 					Submitter.submitToServer(param);
 				} catch (Exception e) {
-					if (param.suppressStderrOutput) {
-						System.err.println("Suppressing stderr exception detail as requested");
-						e.printStackTrace(System.out);
-						throw new QuietException(e.getMessage());
-					}
+					System.err.println("Suppressing stderr exception detail as requested");
+					e.printStackTrace(System.out);
+					throw new QuietException(e.getMessage());
 				}
 			} else {
 				Submitter.submitToServer(param);
