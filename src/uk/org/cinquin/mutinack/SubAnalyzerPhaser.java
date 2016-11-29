@@ -28,11 +28,7 @@ import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSER
 import static uk.org.cinquin.mutinack.misc_util.Util.mediumLengthFloatFormatter;
 import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,6 +66,7 @@ import uk.org.cinquin.mutinack.misc_util.IntMinMax;
 import uk.org.cinquin.mutinack.misc_util.ObjMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
+import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
@@ -586,20 +583,10 @@ public class SubAnalyzerPhaser extends Phaser {
 					matchingSACandidate.setnMatchingCandidatesOtherSamples(candidateCount);
 				}
 
-				final CandidateSequence matchingSAWithoutTransientFields;
-				final ByteArrayOutputStream os = new ByteArrayOutputStream();
-				try(ObjectOutputStream out = new ObjectOutputStream(os)) {
-					out.writeObject(matchingSACandidate);
-					ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(os.toByteArray()));
-					try {
-						matchingSAWithoutTransientFields = (CandidateSequence) in.readObject();
-					} catch (ClassNotFoundException e) {
-						throw new RuntimeException(e);
-					}
-				}
-
-				if (!sa.stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(csla, examResults)).
-					setCrossSampleLocationAnalysis(csla).candidates.add(matchingSAWithoutTransientFields)) {
+				if (!sa.stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(csla,
+						Util.serializeAndDeserialize(examResults))).
+					setCrossSampleLocationAnalysis(csla).candidates.add(
+							Util.serializeAndDeserialize(matchingSACandidate))) {
 						throw new AssertionFailedException();
 				}
 
@@ -828,7 +815,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			DuplexDisagreement d = entry.getKey();
 
-			if (!stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(null, examResults)).
+			if (!stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(null,
+					Util.serializeAndDeserialize(examResults))).
 				disagreements.add(d)) {
 					throw new AssertionFailedException();
 			}

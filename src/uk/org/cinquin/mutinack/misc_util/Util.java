@@ -16,9 +16,12 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
@@ -542,5 +545,25 @@ public class Util {
 			throw new RuntimeException(e);
 		}
 	}
+
+	@SuppressWarnings({ "null", "unchecked" })
+	public static<T> @NonNull T serializeAndDeserialize(T o) {
+		final ByteArrayOutputStream os = new ByteArrayOutputStream();
+		final @NonNull T result;
+		try(ObjectOutputStream out = new ObjectOutputStream(os)) {
+			out.writeObject(o);
+			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(os.toByteArray()));
+			try {
+				result = (T) in.readObject();
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		if (result == null) throw new AssertionFailedException();
+		return result;
+	}
+
 
 }
