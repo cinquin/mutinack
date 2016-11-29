@@ -1362,11 +1362,16 @@ public class Mutinack implements Actualizable {
 		if (!param.outputJSONTo.isEmpty()) {
 			analyzers.forEach(Actualizable::actualize);
 			JsonRoot root = new JsonRoot();
-			root.mutinackVersion = GitCommitInfo.getGitCommit();
+			final String mutinackVersion = GitCommitInfo.getGitCommit();
+			root.mutinackVersion = mutinackVersion;
 			root.parameters = param;
 			root.samples = analyzers.stream().map(ParedDownMutinack::new).
 					collect(Collectors.toList());
 			analyzers.forEach(Actualizable::actualize);
+			analyzers.stream().flatMap(a -> a.subAnalyzers.stream()).
+				filter(sa -> sa != null).
+				map(sa -> sa.stats).
+				forEach(stats -> stats.mutinackVersions.add(mutinackVersion));
 			ObjectMapper mapper = new ObjectMapper();
 			SimpleModule module = new SimpleModule();
 			mapper.registerModule(module).setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
