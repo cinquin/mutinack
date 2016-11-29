@@ -598,8 +598,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				}
 
-				if (!sa.stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(csla)).
-					setCsla(csla).candidates.add(matchingSAWithoutTransientFields)) {
+				if (!sa.stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(csla, examResults)).
+					setCrossSampleLocationAnalysis(csla).candidates.add(matchingSAWithoutTransientFields)) {
 						throw new AssertionFailedException();
 				}
 
@@ -828,7 +828,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			DuplexDisagreement d = entry.getKey();
 
-			if (!stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(null)).
+			if (!stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(null, examResults)).
 				disagreements.add(d)) {
 					throw new AssertionFailedException();
 			}

@@ -1,5 +1,6 @@
 package uk.org.cinquin.mutinack;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +11,9 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 
-public class CrossSampleLocationAnalysis {
+public class CrossSampleLocationAnalysis implements Serializable {
+	private static final long serialVersionUID = 8408952788062841827L;
+
 	public final SequenceLocation location;
 	public boolean randomlySelected;
 	public boolean lowTopAlleleFreq;

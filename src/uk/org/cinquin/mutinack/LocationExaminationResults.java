@@ -16,6 +16,7 @@
  */
 package uk.org.cinquin.mutinack;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -23,11 +24,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 
-public final class LocationExaminationResults {
+public final class LocationExaminationResults implements Serializable {
+	private static final long serialVersionUID = -2966237959317593137L;
+
+	@JsonIgnore //Already listed in LocationAnalysis
 	Collection<CandidateSequence> analyzedCandidateSequences;
 	int nGoodOrDubiousDuplexes = 0;
 	int nGoodDuplexesIgnoringDisag = 0;
@@ -35,9 +41,10 @@ public final class LocationExaminationResults {
 	int strandCoverageImbalance;
 	int nMissingStrands;
 	public List<@NonNull Integer> alleleFrequencies;
-	final @NonNull MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
-		disagreements = new MapOfLists<>();
+	final transient @NonNull MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
+		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable
 	int disagQ2Coverage = 0;
+	@JsonIgnore
 	final @NonNull Collection<@NonNull ComparablePair<String, String>>
 		rawMismatchesQ2 = new ArrayList<>(),
 		rawDeletionsQ2 = new ArrayList<>(),
@@ -49,5 +56,6 @@ public final class LocationExaminationResults {
 
 	//To assert that an instance is not concurrently modified by
 	//multiple threads
+	@JsonIgnore
 	final AtomicInteger threadCount = new AtomicInteger();
 }
