@@ -104,6 +104,20 @@ work around it, use the following JVM flags:
 `-XX:CompileCommand=exclude,gnu.trove.impl.hash.TObjectHash::insertKey`
 and `-XX:CompileCommand=exclude,gnu.trove.impl.hash.TIntHash::insertKey`.
 
+**Benchmarking**
+
+In a couple cases, benchmarks that rely on the Java Microbenchmarking
+Harness (JMH) are provided to justify the choice of a particular
+algorithm implementation over other possibilities. Results are included
+as comments above the declaration of the benchmark methods (your mileage
+may vary, the benchmarking environment is not the same as the
+environment for actual mutation detection runs, in particular when it
+comes to pressure on the garbage collector, beware of other processes
+running on the same machine and of e.g. "Turbo Boost" etc.). Build the
+benchmarks with `ant clean && ant jmh_jar` (note that running the
+`clean` target is not gratuitous) and run with
+`java -jar benchmarks.jar`.
+
 **Sample datasets**
 
 BAM files derived from alignment of *C. elegans* germ cell sequence data

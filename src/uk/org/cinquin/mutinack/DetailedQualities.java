@@ -17,46 +17,103 @@
 package uk.org.cinquin.mutinack;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.EnumMap;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import uk.org.cinquin.mutinack.candidate_sequences.AssayInfo;
+import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.collections.CustomEnumMap;
 
-public class DetailedQualities implements Serializable {
-	
-	@JsonIgnore
-	private @Nullable Map<Assay, @NonNull Quality> unmodifiableMap;
-	
+/**
+ * Keeps track of a "min_assay" group, and a "max_assay" group.
+ * Overall quality is computed as
+ * min(min_{assay: min_assay}(Q(assay)), max_{assay: max_assay}(Q(assay)))
+ * where Q(assay) is the quality mapped to each assay using e.g. the {@link #add(Enum, Quality) add}
+ * and {@link #addUnique(Enum, Quality) addUnique} methods.
+ *
+ * For now, only 1 max_assay assay is allowed.
+ * @author olivier
+ *
+ * @param <T>
+ */
+public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Serializable {
 	private static final long serialVersionUID = -5423960175598403757L;
-	private final @NonNull Map<Assay, @NonNull Quality> qualities = new EnumMap<>(Assay.class);
-	private Quality min = null;
+
+	private final @NonNull Map<T, @NonNull Quality> qualities;
+	private @Nullable Quality min = null, max = null;
+
+	/**
+	 * Currently only used for assertions
+	 */
+	private final boolean hasMaxGroup;
+
+	//Not a ConcurrentMap because of the high runtime cost (even after the map has been
+	//filled), according to sampling
+	private final static Map<Class<?>, Method> methodMap = new HashMap<>();
+
+	private static <T> boolean getHasMaxGroup(Class<T> assayClass) {
+		try {
+			return (boolean)
+				methodMap.computeIfAbsent(assayClass, clazz -> {
+					try {
+						return clazz.getMethod("hasMaxGroup");
+					} catch (NoSuchMethodException | SecurityException e) {
+						throw new RuntimeException(e);
+					}
+				}).invoke(null);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	static {
+		getHasMaxGroup(DuplexAssay.class);
+		getHasMaxGroup(PositionAssay.class);
+	}
+	
+	public DetailedQualities(Class<T> assayClass) {
+		qualities = new CustomEnumMap<>(assayClass);
+		hasMaxGroup = getHasMaxGroup(assayClass);
+	}
 	
 	@Override
 	public String toString() {
 		return qualities.toString();
 	}
 	
-	public Map<Assay, Quality> getQualities() {
-		if (unmodifiableMap == null) {
-			//Not thread safe but that doesn't matter
-			unmodifiableMap = Collections.unmodifiableMap(qualities);
-		}
-		return unmodifiableMap;
+	public Stream<Entry<T, Quality>> getQualities() {
+		return qualities.entrySet().stream();
 	}
 
-	public void addUnique(Assay assay, @NonNull Quality q) {
+	public boolean qualitiesContain(T a) {
+		return qualities.containsKey(a);
+	}
+
+	public void addUnique(T assay, @NonNull Quality q) {
 		if (qualities.put(assay, q) != null) {
 			throw new IllegalStateException(assay + " already defined");
 		}
-		updateMin(q);
+		if (assay.isMinGroup()) {
+			updateMin(q);
+		}
+		if (assay.isMaxGroup()) {
+			if (max != null) {
+				throw new IllegalStateException("Only 1 max_assay assay allowed for now");
+			}
+			updateMax(q);
+		}
 	}
 	
 	@SuppressWarnings("null")
@@ -68,7 +125,19 @@ public class DetailedQualities implements Serializable {
 		}
 	}
 
-	public void add(Assay assay, @NonNull Quality q) {
+	@SuppressWarnings("null")
+	private void updateMax(@NonNull Quality q) {
+		if (max == null) {
+			max = q;
+		} else {
+			max = Quality.max(q, max);
+		}
+	}
+
+	public void add(T assay, @NonNull Quality q) {
+		if (assay.isMaxGroup()) {
+			throw new IllegalArgumentException();
+		}
 		Quality previousQ = qualities.get(assay);
 		if (previousQ == null) {
 			qualities.put(assay, q);
@@ -78,37 +147,76 @@ public class DetailedQualities implements Serializable {
 		updateMin(q);
 	}
 	
-	public Quality getMin() {
-		return min;
-	}
-	
-	public Quality getMinIgnoring(Set<Assay> assaysToIgnore) {
-		Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);
-		//NB forEach does not seem to have an efficient implementation
-		//in EnumMap (it maps to the default interface implementation)
-		qualities.forEach((k, v) -> {
-			if (!assaysToIgnore.contains(k)) {
-				min1.set(Quality.min(min1.get(), v));
-			}
-		});
-		return min1.get();
-	}
-	
-	public Quality getQuality(Assay assay) {
-		Quality q = qualities.get(assay);
-		if (q == null) {
-			return Quality.ATROCIOUS;
-		} else {
-			return q;
+	public Quality getValue(boolean allowNullMax) {
+		if (!allowNullMax && hasMaxGroup && max == null) {
+			throw new IllegalStateException();
 		}
+		return Quality.nullableMin(max, min);
 	}
 
-	public void forEach(BiConsumer<Assay, Quality> consumer) {
+	public Quality getValue() {
+		return getValue(false);
+	}
+	
+	@SuppressWarnings("null")
+	public Quality getValueIgnoring(Set<T> assaysToIgnore, boolean allowNullMax) {
+		final Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);
+		final Handle<@Nullable Quality> max1 = new Handle<>(null);
+		qualities.forEach((k, v) -> {
+			if (assaysToIgnore.contains(k)) {
+				return;
+			}
+			if (k.isMinGroup()) {
+				min1.set(Quality.min(min1.get(), v));
+			} else if (k.isMaxGroup()) {
+				if (max1.get() == null) {
+					max1.set(v);
+				} else {
+					max1.set(Quality.max(max1.get(), v));
+				}
+			}//else ignorable assay
+		});
+		final Quality max1Val = max1.get();
+		if ((!allowNullMax) && max1Val == null && hasMaxGroup) {
+			throw new IllegalStateException();
+		}
+		return Quality.nullableMin(max1Val, min1.get());
+	}
+	
+	public Quality getValueIgnoring(Set<T> assaysToIgnore) {
+		return getValueIgnoring(assaysToIgnore, false);
+	}
+
+	public Quality getQuality(T assay) {
+		return qualities.get(assay);
+	}
+
+	public void forEach(BiConsumer<T, @NonNull Quality> consumer) {
 		qualities.forEach(consumer::accept);
 	}
 
 	public void reset() {
 		qualities.clear();
 		min = null;
+		max = null;
 	}
+
+	public void addAll(DetailedQualities<@NonNull T> q) {
+		q.forEach(this::add);
+	}
+
+	public void addAllUnique(@NonNull DetailedQualities<T> q) {
+		q.forEach(this::addUnique);
+	}
+
+	public boolean downgradeUniqueIfFalse(T assay, boolean b) {
+		addUnique(assay, b ? Quality.GOOD : Quality.DUBIOUS);
+		return b;
+	}
+
+	public boolean downgradeIfFalse(T assay, boolean b) {
+		add(assay, b ? Quality.GOOD : Quality.DUBIOUS);
+		return b;
+	}
+
 }

@@ -21,12 +21,15 @@ import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
 import static uk.org.cinquin.mutinack.MutationType.DELETION;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
-import static uk.org.cinquin.mutinack.Quality.GOOD;
-import static uk.org.cinquin.mutinack.Quality.POOR;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.AT_LEAST_ONE_DISAG;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.DISAG_THAT_MISSED_Q2;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MIN_DUPLEXES_SISTER_SAMPLE;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.TOO_HIGH_COVERAGE;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.GOOD;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.POOR;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.mediumLengthFloatFormatter;
-import static uk.org.cinquin.mutinack.misc_util.Util.nonNullify;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -57,6 +60,7 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -371,7 +375,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
 			(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
-			acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getMin()).
+			acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getValue()).
 			getMax());
 
 		@SuppressWarnings("null")//Incorrect Eclipse auto-unboxing warning
@@ -433,7 +437,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			flatMap(Collection::stream).
 			filter(c -> {
 				Assert.isTrue(c.getLocation().distanceOnSameContig(location) == 0);
-				return c.getQuality().getMin().greaterThan(POOR);}).
+				return c.getQuality().getValue().greaterThan(POOR);}).
 			collect(Collectors.toList());
 
 		final List<CandidateSequence> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.stream().
@@ -444,8 +448,8 @@ public class SubAnalyzerPhaser extends Phaser {
 		final List<CandidateSequence> allCandidatesIncludingDisag = locationExamResults.stream().
 			map(l -> l.analyzedCandidateSequences).
 			flatMap(Collection::stream).
-			filter(c -> c.getQuality().getMin().greaterThan(POOR) ||
-				c.getQuality().getQualities().containsKey(Assay.DISAGREEMENT)).
+			filter(c -> c.getQuality().getValue().greaterThan(POOR) ||
+				c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)).
 			filter(c -> !c.isHidden()).
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
@@ -461,6 +465,13 @@ public class SubAnalyzerPhaser extends Phaser {
 			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
 			collect(Collectors.toList());
 
+		final List<DuplexDisagreement> allQ2DuplexDisagreements =
+			locationExamResults.stream().
+			flatMap(ler -> ler.disagreements.keySet().stream()).
+			filter(d -> d.quality.atLeast(GOOD)).//Filtering is a NOP right now since all disags are Q2
+			distinct().
+			collect(Collectors.toList());
+
 		final CrossSampleLocationAnalysis csla = new CrossSampleLocationAnalysis(location);
 
 		csla.randomlySelected = randomlySelected;
@@ -471,7 +482,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final Map<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new IdentityHashMap<>(8);
 		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
-			flatMap(Collection::stream).filter(c -> c.getQuality().getMin().greaterThan(POOR)).
+			flatMap(Collection::stream).filter(c -> c.getQuality().getValue().greaterThan(POOR)).
 			forEach(c->
 				nGoodOrDubiousDuplexes.computeIfAbsent(c.getOwningSubAnalyzer(), c0 -> new SettableInteger(0)).
 					addAndGet(c.getnGoodOrDubiousDuplexes())
@@ -496,15 +507,26 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			if (!candidate.getMutationType().isWildtype() &&
 				allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
-						(c.getQuality().getMin().atLeast(GOOD) || (c.getSupplQuality() != null && nonNullify(c.getSupplQuality()).atLeast(GOOD)))).count() >= 2) {
+						(c.getQuality().getValue().atLeast(GOOD))).count() >= 2) {
 				csla.twoOrMoreSamplesWithSameQ2MutationCandidate = true;
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
-					candidate.getQuality().getMin().atLeast(GOOD) &&
+					candidate.getQuality().getValue().atLeast(GOOD) &&
 					candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation &&
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
-					!tooHighCoverage &&
-					candidate.nDuplexesSisterArm >= param.minNumberDuplexesSisterArm
+					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE, !tooHighCoverage) &&
+					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
+						candidate.nDuplexesSisterArm >= param.minNumberDuplexesSisterArm) &&
+					(!param.Q2DisagCapsMatchingMutationQuality ||
+						(//Disagreements from the same sample will have already-downgraded mutation quality,
+						//if analysis parameter dictates it, but check again in case a matching disagreement is
+						//present in another sample
+						candidate.getQuality().downgradeIfFalse(AT_LEAST_ONE_DISAG,
+								allQ2DuplexDisagreements.stream().noneMatch(
+									disag -> disag.snd.equals(candidate.getMutation()) ||
+									disag.fst.equals(candidate.getMutation())))
+						)
+					)
 					) {
 
 				csla.nDuplexesUniqueQ2MutationCandidate.add(candidate.getnGoodOrDubiousDuplexes());
@@ -702,7 +724,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 
 		for (CandidateSequence c: examResults.analyzedCandidateSequences) {
-			if (c.getQuality().getMin().atLeast(GOOD)) {
+			if (c.getQuality().getValue().atLeast(GOOD)) {
 				if (c.getMutationType().isWildtype()) {
 					stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
 					if (!repetitiveBEDs.isEmpty()) {
@@ -766,7 +788,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
 				flatMap(c -> c.getDuplexes().stream()).
-				filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(GOOD)).
+				filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(GOOD)).
 				map(DuplexRead::getMaxDistanceToLigSite).
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});

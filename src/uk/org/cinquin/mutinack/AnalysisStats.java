@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
@@ -215,7 +216,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 								contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
 							SequenceLocation location = new SequenceLocation(contig,
 								Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE);
-							topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true), 0);
+							topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true, Quality.GOOD), 0);
 							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
 							templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
 						}

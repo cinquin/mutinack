@@ -17,22 +17,25 @@
 package uk.org.cinquin.mutinack;
 
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
-import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
-import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
-import static uk.org.cinquin.mutinack.Assay.MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES;
-import static uk.org.cinquin.mutinack.Assay.MAX_DPLX_Q_IGNORING_DISAG;
-import static uk.org.cinquin.mutinack.Assay.MAX_Q_FOR_ALL_DUPLEXES;
-import static uk.org.cinquin.mutinack.Assay.NO_DUPLEXES;
 import static uk.org.cinquin.mutinack.MutationType.INSERTION;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
 import static uk.org.cinquin.mutinack.MutationType.WILDTYPE;
-import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
-import static uk.org.cinquin.mutinack.Quality.DUBIOUS;
-import static uk.org.cinquin.mutinack.Quality.GOOD;
-import static uk.org.cinquin.mutinack.Quality.MAXIMUM;
-import static uk.org.cinquin.mutinack.Quality.MINIMUM;
-import static uk.org.cinquin.mutinack.Quality.POOR;
-import static uk.org.cinquin.mutinack.Quality.max;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.DISAGREEMENT;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.MISSING_STRAND;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_READS_PER_STRAND;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.QUALITY_AT_POSITION;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.FRACTION_WRONG_PAIRS_AT_POS;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_AVERAGE_CLIPPING_OF_DUPLEX_AT_POS;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_DPLX_Q_IGNORING_DISAG;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_Q_FOR_ALL_DUPLEXES;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MEDIAN_PHRED_AT_POS;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.NO_DUPLEXES;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.ATROCIOUS;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.DUBIOUS;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.GOOD;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.MINIMUM;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.POOR;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.max;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector.uniqueValueCollector;
@@ -56,7 +59,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -81,6 +83,9 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDeletion;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -107,9 +112,12 @@ public final class SubAnalyzer {
 	private final AtomicInteger threadCount = new AtomicInteger();
 	private final Random random = new Random();//TODO seed with argValues.randomSeed
 
-	@SuppressWarnings("null")
-	private static final @NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality 
-		= Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(DISAGREEMENT)));
+	private static final @NonNull Set<DuplexAssay>
+		assaysToIgnoreForDisagreementQuality
+		= Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(DISAGREEMENT))),
+
+		assaysToIgnoreForDuplexNStrands
+		= Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(N_READS_PER_STRAND, MISSING_STRAND)));
 	
 	static final @NonNull TByteObjectMap<@NonNull String> byteMap;
 	static {
@@ -719,11 +727,11 @@ public final class SubAnalyzer {
 		}
 		result.probAtLeastOneCollision = averageCollisionProb;
 
+		final DetailedQualities<PositionAssay> positionQualities = new DetailedQualities<>(PositionAssay.class);
+
 		if (averageClippingOfCoveringDuplexes > param.maxAverageClippingOfAllCoveringDuplexes) {
-			for (DuplexRead duplexRead: duplexReads) {
-				duplexRead.localAndGlobalQuality.addUnique(
-					MAX_AVERAGE_CLIPPING_ALL_COVERING_DUPLEXES, DUBIOUS);
-			}
+			positionQualities.addUnique(
+					MAX_AVERAGE_CLIPPING_OF_DUPLEX_AT_POS, DUBIOUS);
 		}
 
 		Assert.noException(() -> {
@@ -773,24 +781,22 @@ public final class SubAnalyzer {
 			nWrongPairsAtPosition += candidate.getnWrongPairs();
 		}
 
-		Quality maxQForAllDuplexes = MAXIMUM;
-
 		final int nPhredQualities = allPhredQualitiesAtPosition.size();
 		allPhredQualitiesAtPosition.sort();
 		final byte positionMedianPhred = nPhredQualities == 0 ? 127 :
 			allPhredQualitiesAtPosition.get(nPhredQualities / 2); 
 		if (positionMedianPhred < param.minMedianPhredQualityAtPosition) {
-			maxQForAllDuplexes = DUBIOUS;
+			positionQualities.addUnique(MEDIAN_PHRED_AT_POS, DUBIOUS);
 			stats.nMedianPhredAtPositionTooLow.increment(location);
 		}
 		stats.medianPositionPhredQuality.insert(positionMedianPhred);
 
 		if (nWrongPairsAtPosition / ((float) nPairsAtPosition) > param.maxFractionWrongPairsAtPosition) {
-			maxQForAllDuplexes = DUBIOUS;
+			positionQualities.addUnique(FRACTION_WRONG_PAIRS_AT_POS, DUBIOUS);
 			stats.nFractionWrongPairsAtPositionTooHigh.increment(location);
 		}
 
-		if (maxQForAllDuplexes.lowerThan(GOOD)) {
+		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
 			result.disagreements.clear();
 		} else {
 			stats.nPosDuplexCandidatesForDisagreementQ2.accept(location, result.disagQ2Coverage);
@@ -803,6 +809,7 @@ public final class SubAnalyzer {
 		}
 
 		for (CandidateSequence candidate: candidateSet) {
+			candidate.getQuality().addAllUnique(positionQualities);
 			candidate.setMedianPhredAtPosition(positionMedianPhred);
 			//TODO Should report min rather than average collision probability?
 			candidate.setProbCollision((float) result.probAtLeastOneCollision);
@@ -833,57 +840,51 @@ public final class SubAnalyzer {
 				throw new AssertionFailedException();
 			}});
 
-			final Quality maxQ = maxQForAllDuplexes;
+			final Quality posQMin =	positionQualities.getValue(true);
 			final Quality maxDuplexQ = candidate.getDuplexes().stream().
 				map(dr -> {
-					dr.localAndGlobalQuality.addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxQ);
-					return dr.localAndGlobalQuality.getMin();
+					if (posQMin != null) {
+						dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
+					}
+					return dr.localAndGlobalQuality.getValue();
 				}).
 				max(Quality::compareTo).orElse(ATROCIOUS);
-			candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
-			candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, candidate.getDuplexes().stream().
-				map(dr -> dr.localAndGlobalQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality)).
-				max(Quality::compareTo).orElse(ATROCIOUS));
+
+			switch(param.candidateQ2Criterion) {
+				case "1Q2Duplex":
+					candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
+					break;
+				case "NQ1Duplexes":
+					final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().
+					map(c -> c.duplexRead).
+					collect(uniqueValueCollector()).stream().
+					filter(d -> d != null && d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).
+						atLeast(GOOD)).
+					count();
+					if (countQ1Duplexes >= param.minQ1Duplexes) {
+						candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
+					}
+					break;
+				default:
+					throw new AssertionFailedException();
+			}
+
+			if (PositionAssay.COMPUTE_MAX_DPLX_Q_IGNORING_DISAG) {
+				candidate.getDuplexes().stream().
+					map(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality, true)).
+					max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
+			}
 
 			candidate.resetLigSiteDistances();
 			if (maxDuplexQ.atLeast(DUBIOUS)) {
-				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(maxDuplexQ)).
+				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(maxDuplexQ)).
 					forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
 			}
 
-			if (analyzer.computeSupplQuality && candidate.getQuality().getMin() == DUBIOUS &&
-				averageClippingOfCoveringDuplexes <= param.maxAverageClippingOfAllCoveringDuplexes) {
-				//See if we should promote to Q2, but only if there is not too much clipping
-				final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().map(c -> c.duplexRead).
-					filter(d -> d != null && d.localAndGlobalQuality.getMin().atLeast(DUBIOUS)).
-					collect(uniqueValueCollector()).
-					size();
-				final Stream<ExtendedSAMRecord> highMapQReads = candidate.getNonMutableConcurringReads().keySet().stream().
-					filter(r -> r.record.getMappingQuality() >= param.minMappingQualityQ2);
-				if (countQ1Duplexes >= param.promoteNQ1Duplexes)
-					candidate.setSupplQuality(GOOD);
-				else if (candidate.getNonMutableConcurringReads().size() >= param.promoteFractionReads * totalReadsAtPosition &&
-					highMapQReads.count() >= 10) {//TODO Make 10 a parameter
-					candidate.setSupplQuality(GOOD);
-					stats.nQ2PromotionsBasedOnFractionReads.add(location, 1);
-				} else {
-					final int maxNStrands = candidate.getNonMutableConcurringReads().keySet().stream().map(c -> c.duplexRead).
-						filter(d -> d != null && d.localAndGlobalQuality.getMin().atLeast(POOR)).
-						mapToInt(d -> d.topStrandRecords.size() + d.bottomStrandRecords.size()).max().
-						orElse(0);
-					if (maxNStrands >= param.promoteNSingleStrands) {
-						candidate.setSupplQuality(GOOD);
-					}
-				}
-			}//End quality promotion
-
-			SettableInteger count = new SettableInteger(0);
-			candidate.getDuplexes().forEach(dr -> {
-				if (dr.localAndGlobalQuality.getMin().atLeast(GOOD)) {
-					count.incrementAndGet();
-				}
-			});
-			candidate.setnGoodDuplexes(count.get());
+			final int count = (int)
+				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(GOOD)).
+					count();
+			candidate.setnGoodDuplexes(count);
 
 			if (!param.rnaSeq) {
 				candidate.getNonMutableConcurringReads().forEachKey(r -> {
@@ -908,13 +909,13 @@ public final class SubAnalyzer {
 			}
 
 			candidate.setnGoodDuplexesIgnoringDisag(candidate.getDuplexes().stream().
-				filter(dr -> dr.localAndGlobalQuality.getMinIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD)).
+				filter(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD)).
 				collect(uniqueValueCollector()).size());
 
 			totalGoodDuplexes += candidate.getnGoodDuplexes();
 
 			candidate.setnGoodOrDubiousDuplexes(candidate.getDuplexes().stream().
-				filter(dr -> dr.localAndGlobalQuality.getMin().atLeast(DUBIOUS)).
+				filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(DUBIOUS)).
 				collect(uniqueValueCollector()).size());
 
 			totalGoodOrDubiousDuplexes += candidate.getnGoodOrDubiousDuplexes();
@@ -923,7 +924,7 @@ public final class SubAnalyzer {
 			if (candidate.getMutationType().isWildtype()) {
 				candidate.setSupplementalMessage(null);
 				wildtypeBase = candidate.getWildtypeSequence();
-			} else if (candidate.getQuality().getMin().greaterThan(POOR)) {
+			} else if (candidate.getQuality().getValue().greaterThan(POOR)) {
 
 				final StringBuilder supplementalMessage = new StringBuilder();
 				final Map<String, Integer> stringCounts = new HashMap<>(100);
@@ -960,7 +961,7 @@ public final class SubAnalyzer {
 				candidate.setMaxInsertSize(localMaxInsertSize);
 
 				if (localMaxInsertSize < param.minInsertSize || localMinInsertSize > param.maxInsertSize) {
-					candidate.getQuality().add(INSERT_SIZE, DUBIOUS);
+					candidate.getQuality().add(PositionAssay.INSERT_SIZE, DUBIOUS);
 				}
 
 				final boolean has0PredictedInsertSize = localMinInsertSize == 0;
@@ -1001,7 +1002,7 @@ public final class SubAnalyzer {
 
 				candidate.setSupplementalMessage(supplementalMessage);
 			}
-			maxQuality = max(maxQuality, candidate.getQuality().getMin());
+			maxQuality = max(maxQuality, candidate.getQuality().getValue());
 		}//End loop over candidates
 
 		for (CandidateSequence candidate: candidateSet) {

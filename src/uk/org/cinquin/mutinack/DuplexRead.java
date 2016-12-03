@@ -15,28 +15,28 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package uk.org.cinquin.mutinack;
-import static uk.org.cinquin.mutinack.Assay.AVERAGE_N_CLIPPED;
-import static uk.org.cinquin.mutinack.Assay.BOTTOM_STRAND_MAP_Q2;
-import static uk.org.cinquin.mutinack.Assay.CLOSE_TO_LIG;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q0;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_Q1;
-import static uk.org.cinquin.mutinack.Assay.CONSENSUS_THRESHOLDS_1;
-import static uk.org.cinquin.mutinack.Assay.DISAGREEMENT;
-import static uk.org.cinquin.mutinack.Assay.INSERT_SIZE;
-import static uk.org.cinquin.mutinack.Assay.MISSING_STRAND;
-import static uk.org.cinquin.mutinack.Assay.N_READS_PER_STRAND;
-import static uk.org.cinquin.mutinack.Assay.N_READS_WRONG_PAIR;
-import static uk.org.cinquin.mutinack.Assay.N_STRANDS_DISAGREEMENT;
-import static uk.org.cinquin.mutinack.Assay.N_STRAND_READS_ABOVE_Q2_PHRED;
-import static uk.org.cinquin.mutinack.Assay.TOP_STRAND_MAP_Q2;
-import static uk.org.cinquin.mutinack.Assay.TOTAL_N_READS_Q2;
-import static uk.org.cinquin.mutinack.Quality.ATROCIOUS;
-import static uk.org.cinquin.mutinack.Quality.DUBIOUS;
-import static uk.org.cinquin.mutinack.Quality.GOOD;
-import static uk.org.cinquin.mutinack.Quality.MAXIMUM;
-import static uk.org.cinquin.mutinack.Quality.POOR;
-import static uk.org.cinquin.mutinack.Quality.max;
-import static uk.org.cinquin.mutinack.Quality.min;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.AVERAGE_N_CLIPPED;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.BOTTOM_STRAND_MAP_Q2;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CLOSE_TO_LIG;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CONSENSUS_Q0;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CONSENSUS_Q1;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CONSENSUS_THRESHOLDS_1;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.DISAGREEMENT;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.INSERT_SIZE;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.MISSING_STRAND;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_READS_PER_STRAND;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_READS_WRONG_PAIR;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_STRAND_READS_ABOVE_Q2_PHRED;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.TOP_STRAND_MAP_Q2;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.TOTAL_N_READS_Q2;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.ATROCIOUS;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.DUBIOUS;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.GOOD;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.MAXIMUM;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.MINIMUM;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.POOR;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.max;
+import static uk.org.cinquin.mutinack.candidate_sequences.Quality.min;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.Util.shortLengthFloatFormatter;
 
@@ -66,6 +66,9 @@ import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDuplexEval;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -108,9 +111,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 	 * Quality factoring in number of reads for top or bottom strand, percent consensus for
 	 * reads from a given strand. Minimum and maximum across all base positions in duplex.
 	*/
-	@NonNull Quality minQuality = Quality.MAXIMUM, maxQuality = Quality.MINIMUM;
-	DetailedQualities localAndGlobalQuality;
-	final @NonNull DetailedQualities globalQuality = new DetailedQualities();
+	@NonNull Quality minQuality = MAXIMUM, maxQuality = MINIMUM;
+	DetailedQualities<DuplexAssay> localAndGlobalQuality;
+	final @NonNull DetailedQualities<DuplexAssay> globalQuality = new DetailedQualities<>(DuplexAssay.class);
 	SequenceLocation roughLocation;
 	float referenceDisagreementRate;
 	int averageNClipped = -1;
@@ -338,7 +341,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return leftAlignmentStart + ", " + rightAlignmentStart + ", " +
 			leftAlignmentEnd + ", " + rightAlignmentEnd + ", " + new String(leftBarcode) + "-" +
 			new String(rightBarcode) + ", " + " Q" + minQuality +
-			(localAndGlobalQuality == null ? "" : (" " + localAndGlobalQuality.getQualities().entrySet().stream().
+			(localAndGlobalQuality == null ? "" : (" " + localAndGlobalQuality.getQualities().
 				min((e1, e2) -> e1.getValue().compareTo(e2.getValue())).map(Entry::getKey).map(
 					Enum::toString).orElse("") + " ")) +
 			"->" + maxQuality + topStrandRecords.toString() + " " +
@@ -539,13 +542,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return null;
 	}
 
-	private static final Set<Assay> ignorePhred =
+	private static final Set<DuplexAssay> ignorePhred =
 			Collections.singleton(N_STRAND_READS_ABOVE_Q2_PHRED);
 
 	public void examineAtLoc(@NonNull SequenceLocation location,
 		LocationExaminationResults result,
 		@NonNull THashSet<@NonNull CandidateSequence> candidateSet,
-		@NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality,
+		@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 		@NonNull CandidateCounter topCounter,
 		@NonNull CandidateCounter bottomCounter,
 		Mutinack analyzer,
@@ -570,7 +573,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
 			@NonNull THashSet<@NonNull CandidateSequence> candidateSet,
-			@NonNull Set<@NonNull Assay> assaysToIgnoreForDisagreementQuality,
+			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
 			Mutinack analyzer,
@@ -625,7 +628,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			stats.nPosDuplexBothStrandsPresent.accept(location);
 		}
 
-		final @NonNull DetailedQualities dq = new DetailedQualities();
+		final @NonNull DetailedQualities<DuplexAssay> dq = new DetailedQualities<>(DuplexAssay.class);
 		globalQuality.forEach(dq::add);
 
 		if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ2 &&
@@ -663,7 +666,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
-		if (dq.getMin().atLeast(GOOD)) {
+		if (dq.getValue().atLeast(GOOD)) {
 			//Check if criteria are met even if ignoring bases with
 			//Phred quality scores that do not meet Q2 threshold
 
@@ -799,7 +802,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			top.count >= param.minReadsPerStrandForDisagreement;
 
 		final boolean highEnoughQualForQ2Disagreement =
-			dq.getMin().atLeast(GOOD) &&
+			dq.getValue().atLeast(GOOD) &&
 			enoughReadsForQ2Disag;
 
 		final boolean noHiddenCandidateAndBSP = bothStrandsPresent &&
@@ -843,9 +846,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 					stats.nPosDuplexWithTopBottomDuplexDisagreementNoWT.accept(location);
 
 					duplexDisagreementQ2 = switchOrder ?
-							new DuplexDisagreement(m1, m2, false)
+							new DuplexDisagreement(m1, m2, false, GOOD)
 						:
-							new DuplexDisagreement(m2, m1, false);
+							new DuplexDisagreement(m2, m1, false, GOOD);
 
 					duplexDisagreementQ2.probCollision = probAtLeastOneCollision;
 				} else {
@@ -873,9 +876,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 					}
 
 					duplexDisagreementQ2 = reverseComplementDisag ?
-						new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true)
+						new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true, GOOD)
 					:
-						new DuplexDisagreement(wildtype, actualMutant, true);
+						new DuplexDisagreement(wildtype, actualMutant, true, GOOD);
 					duplexDisagreementQ2.probCollision = probAtLeastOneCollision;
 
 					switch(actualMutant.mutationType) {
@@ -907,8 +910,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 			duplexDisagreementQ2 = null;
 		}
 		Assert.isFalse(duplexDisagreementQ2 != null &&
-				dq.getMinIgnoring(assaysToIgnoreForDisagreementQuality).lowerThan(GOOD),
-			() -> dq.getQualities().toString());
+				dq.getValueIgnoring(assaysToIgnoreForDisagreementQuality).lowerThan(GOOD),
+			() -> dq.toString());
 
 		if (duplexDisagreementQ2 != null) {
 			result.disagreements.addAt(duplexDisagreementQ2, this);
@@ -916,7 +919,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		localAndGlobalQuality = dq;
 
-		final boolean atrocious = dq.getMin().atMost(ATROCIOUS);
+		final boolean atrocious = dq.getValue().atMost(ATROCIOUS);
 
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		candidateSet.forEach(candidate -> {
@@ -959,15 +962,16 @@ public final class DuplexRead implements HasInterval<Integer> {
 				//if the disagreement is of sufficiently high quality, so that a single
 				//low-quality duplex cannot force downgrading of mutation (which may be
 				//undesirable if other high-quality duplexes support presence of the mutation).
-				candidate.getQuality().add(DISAGREEMENT, (duplexDisagreementQ2 != null) ? DUBIOUS : GOOD);
+				candidate.getQuality().add(PositionAssay.AT_LEAST_ONE_DISAG,
+					(duplexDisagreementQ2 != null) ? DUBIOUS : GOOD);
 				if (!enoughReadsForQ2Disag) {
-					candidate.getQuality().add(N_STRANDS_DISAGREEMENT, GOOD);
+					candidate.getQuality().add(PositionAssay.DISAG_THAT_MISSED_Q2, GOOD);
 				}
 			}
 			return true;
 		});
 
-		if (dq.getMinIgnoring(ignorePhred).atLeast(GOOD)) {
+		if (dq.getValueIgnoring(ignorePhred).atLeast(GOOD)) {
 			long totalNPhreds = topCounter.nPhreds + bottomCounter.nPhreds;
 			if (totalNPhreds > 0) {
 				long sumPhreds = topCounter.sumPhreds + bottomCounter.sumPhreds;
@@ -979,8 +983,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		//Used to report global stats on duplex (including all locations), not
 		//to compute quality of candidates at this location
-		maxQuality = max(maxQuality, Objects.requireNonNull(dq.getMin()));
-		minQuality = min(minQuality, Objects.requireNonNull(dq.getMin()));
+		maxQuality = max(maxQuality, Objects.requireNonNull(dq.getValue()));
+		minQuality = min(minQuality, Objects.requireNonNull(dq.getValue()));
 
 	}
 

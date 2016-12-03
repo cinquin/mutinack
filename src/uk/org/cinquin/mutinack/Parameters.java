@@ -74,6 +74,19 @@ public final class Parameters implements Serializable, Cloneable {
 			}
 		}
 
+		switch(candidateQ2Criterion) {
+			case "1Q2Duplex":
+				break;
+			case "NQ1Duplexes":
+				if (minQ1Duplexes == Integer.MAX_VALUE) {
+					throw new IllegalArgumentException("Option minQ1Duplexes must be set for NQ1Duplexes mode");
+				}
+				break;
+			default:
+				throw new RuntimeException("Option candidateQ2Criterion must be one of 1Q2Duplex or NQ1Duplexes, not "
+					+ candidateQ2Criterion);
+		}
+
 		final Set<String> parametersToExplore = new HashSet<>();
 
 		for (String p: exploreParameters) {
@@ -274,14 +287,19 @@ public final class Parameters implements Serializable, Cloneable {
 	@OnlyUsedOnAdvance
 	public int minReadsPerDuplexQ2 = 3;
 
-	@Parameter(names = "-promoteNQ1Duplexes", description = "Not yet functional, and probably never will be - Promote candidate that has at least this many Q1 duplexes to Q2", required = false, hidden = true)
-	public int promoteNQ1Duplexes = Integer.MAX_VALUE;
+	@Parameter(names = "-candidateQ2Criterion", description = "Must be one of 1Q2Duplex, NQ1Duplexes", required = false)
+	@OnlyUsedOnAdvance
+	public String candidateQ2Criterion = "1Q2Duplex";
 
-	@Parameter(names = "-promoteNSingleStrands", description = "Not yet functional, and probably never will be - Promote duplex that has just 1 original strand but at least this many reads to Q1", required = false, hidden = true)
+	@Parameter(names = "-minQ1Duplexes", description = "Allow mutation candidate to be Q2 when it has at least this many Q1 duplexes", required = false, hidden = true)
+	@OnlyUsedOnAdvance
+	public int minQ1Duplexes = Integer.MAX_VALUE;
+
+	/*@Parameter(names = "-promoteNSingleStrands", description = "Not yet functional, and probably never will be - Promote duplex that has just 1 original strand but at least this many reads to Q1", required = false, hidden = true)
 	public int promoteNSingleStrands = Integer.MAX_VALUE;
 
 	@Parameter(names = "-promoteFractionReads", description = "Promote candidate supported by at least this fraction of reads to Q2", required = false, hidden = hideAdvancedParameters)
-	public float promoteFractionReads = Float.MAX_VALUE;
+	public float promoteFractionReads = Float.MAX_VALUE;*/
 
 	@Parameter(names = "-minConsensusThresholdQ1", description = "Lenient value for minimum fraction of reads from the same" +
 		" original strand that define a consensus (must be > 0.5)", required = false)
@@ -302,7 +320,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@OnlyUsedOnAdvance
 	public int minReadsPerStrandForDisagreement = 0;
 
-	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
+	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement in the same sample or in sister sample caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
 	@OnlyUsedOnAdvance
 	public boolean Q2DisagCapsMatchingMutationQuality = true;
 
@@ -864,6 +882,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((bamReadsWithBarcodeField == null) ? 0 : bamReadsWithBarcodeField.hashCode());
 		result = prime * result + ((bedDisagreementOrienter == null) ? 0 : bedDisagreementOrienter.hashCode());
 		result = prime * result + ((bedFeatureSuppInfoFile == null) ? 0 : bedFeatureSuppInfoFile.hashCode());
+		result = prime * result + ((candidateQ2Criterion == null) ? 0 : candidateQ2Criterion.hashCode());
 		result = prime * result + (collapseFilteredReads ? 1231 : 1237);
 		result = prime * result + (computeRawDisagreements ? 1231 : 1237);
 		result = prime * result + constantBarcode.hashCode();
@@ -906,13 +925,14 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + minMappingQualityQ2;
 		result = prime * result + minMedianPhredQualityAtPosition;
 		result = prime * result + minNumberDuplexesSisterArm;
+		result = prime * result + minQ1Duplexes;
 		result = prime * result + minQ1Q2DuplexesToCallMutation;
 		result = prime * result + minQ2DuplexesToCallMutation;
 		result = prime * result + minReadMedianPhredScore;
+		result = prime * result + minReadsPerDuplexQ2;
 		result = prime * result + minReadsPerStrandForDisagreement;
 		result = prime * result + minReadsPerStrandQ1;
 		result = prime * result + minReadsPerStrandQ2;
-		result = prime * result + minReadsPerDuplexQ2;
 		result = prime * result + nConstantBarcodeMismatchesAllowed;
 		result = prime * result + (int) (nRecordsToProcess ^ (nRecordsToProcess >>> 32));
 		result = prime * result + nVariableBarcodeMismatchesAllowed;
@@ -927,9 +947,6 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + (outputTopBottomDisagreementBED ? 1231 : 1237);
 		result = prime * result + parallelizationFactor;
 		result = prime * result + processingChunk;
-		result = prime * result + Float.floatToIntBits(promoteFractionReads);
-		result = prime * result + promoteNQ1Duplexes;
-		result = prime * result + promoteNSingleStrands;
 		result = prime * result + Float.floatToIntBits(randomOutputRate);
 		result = prime * result + (int) (randomSeed ^ (randomSeed >>> 32));
 		result = prime * result + (randomizeMates ? 1231 : 1237);
@@ -1024,6 +1041,11 @@ public final class Parameters implements Serializable, Cloneable {
 			if (other.bedFeatureSuppInfoFile != null)
 				return false;
 		} else if (!bedFeatureSuppInfoFile.equals(other.bedFeatureSuppInfoFile))
+			return false;
+		if (candidateQ2Criterion == null) {
+			if (other.candidateQ2Criterion != null)
+				return false;
+		} else if (!candidateQ2Criterion.equals(other.candidateQ2Criterion))
 			return false;
 		if (collapseFilteredReads != other.collapseFilteredReads)
 			return false;
@@ -1141,19 +1163,21 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (minNumberDuplexesSisterArm != other.minNumberDuplexesSisterArm)
 			return false;
+		if (minQ1Duplexes != other.minQ1Duplexes)
+			return false;
 		if (minQ1Q2DuplexesToCallMutation != other.minQ1Q2DuplexesToCallMutation)
 			return false;
 		if (minQ2DuplexesToCallMutation != other.minQ2DuplexesToCallMutation)
 			return false;
 		if (minReadMedianPhredScore != other.minReadMedianPhredScore)
 			return false;
+		if (minReadsPerDuplexQ2 != other.minReadsPerDuplexQ2)
+			return false;
 		if (minReadsPerStrandForDisagreement != other.minReadsPerStrandForDisagreement)
 			return false;
 		if (minReadsPerStrandQ1 != other.minReadsPerStrandQ1)
 			return false;
 		if (minReadsPerStrandQ2 != other.minReadsPerStrandQ2)
-			return false;
-		if (minReadsPerDuplexQ2 != other.minReadsPerDuplexQ2)
 			return false;
 		if (nConstantBarcodeMismatchesAllowed != other.nConstantBarcodeMismatchesAllowed)
 			return false;
@@ -1194,12 +1218,6 @@ public final class Parameters implements Serializable, Cloneable {
 		if (parallelizationFactor != other.parallelizationFactor)
 			return false;
 		if (processingChunk != other.processingChunk)
-			return false;
-		if (Float.floatToIntBits(promoteFractionReads) != Float.floatToIntBits(other.promoteFractionReads))
-			return false;
-		if (promoteNQ1Duplexes != other.promoteNQ1Duplexes)
-			return false;
-		if (promoteNSingleStrands != other.promoteNSingleStrands)
 			return false;
 		if (Float.floatToIntBits(randomOutputRate) != Float.floatToIntBits(other.randomOutputRate))
 			return false;

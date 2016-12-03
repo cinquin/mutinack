@@ -19,7 +19,7 @@ package uk.org.cinquin.mutinack.tests;
 
 import org.junit.Test;
 
-import uk.org.cinquin.mutinack.Quality;
+import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 
 public class QualityTest {

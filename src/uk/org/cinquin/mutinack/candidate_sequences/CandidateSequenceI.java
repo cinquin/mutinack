@@ -32,7 +32,6 @@ import uk.org.cinquin.mutinack.LocationExaminationResults;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Parameters;
-import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
@@ -72,7 +71,7 @@ public interface CandidateSequenceI extends Serializable {
 	@NonNull TObjectIntMap<ExtendedSAMRecord> getNonMutableConcurringReads();
 	StringBuilder getSupplementalMessage();
 	void setSupplementalMessage(StringBuilder supplementalMessage);
-	DetailedQualities getQuality();
+	DetailedQualities<PositionAssay> getQuality();
 	byte getWildtypeSequence();
 	void setWildtypeSequence(byte wildtypeSequence);
 	byte @Nullable[] getSequence();
@@ -82,8 +81,6 @@ public interface CandidateSequenceI extends Serializable {
 	@NonNull TByteArrayList getPhredQualityScores();
 	void addPhredQualitiesToList(@NonNull TByteCollection ql);
 	void mergeWith(@NonNull CandidateSequenceI c);
-	@Nullable Quality getSupplQuality();
-	void setSupplQuality(@Nullable Quality supplQuality);
 	int getMaxDistanceToLigSite();
 	int getMinDistanceToLigSite();
 	Collection<ComparablePair<String, String>> getRawMismatchesQ2();

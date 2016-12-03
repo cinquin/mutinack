@@ -37,15 +37,14 @@ import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import uk.org.cinquin.mutinack.Assay;
 import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.LocationExaminationResults;
+import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Parameters;
-import uk.org.cinquin.mutinack.Quality;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.features.BedComplement;
@@ -74,9 +73,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@JsonIgnore
 	private @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
-	private DetailedQualities quality;
-	private @Nullable Quality supplQuality;
-	private transient Map<DuplexRead, DetailedQualities> issues;
+	private DetailedQualities<PositionAssay> quality;
+	private transient Map<DuplexRead, DetailedQualities<DuplexAssay>> issues;
 	private @Nullable StringBuilder supplementalMessage;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
 	private transient @Nullable Collection<@NonNull DuplexRead> duplexes;
@@ -123,6 +121,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private final String sampleName;
 	private boolean hidden = false;
 	
+	@JsonIgnore
+	private transient Mutation mutation;
+
 	//For debugging purposes
 	public int insertSize = -1;
 	public int positionInRead = -1;
@@ -469,23 +470,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@SuppressWarnings("null")
 	@Override
-	public @NonNull DetailedQualities getQuality() {
+	public @NonNull DetailedQualities<PositionAssay> getQuality() {
 		if (quality == null) {
-			quality = new DetailedQualities();
+			quality = new DetailedQualities<>(PositionAssay.class);
 		}
 		return quality;
 	}
 	
-	@Override
-	public @Nullable Quality getSupplQuality() {
-		return supplQuality;
-	}
-
-	@Override
-	public void setSupplQuality(@Nullable Quality supplQuality) {
-		this.supplQuality = supplQuality;
-	}
-
 	@Override
 	public int getMaxDistanceToLigSite() {
 		return maxDistanceToLigSite;
@@ -608,7 +599,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public void mergeWith(@NonNull CandidateSequenceI candidate) {
 		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s"/*,
 				this, candidate, candidate.getNonMutableConcurringReads()*/);
-		Assert.isFalse(getSupplQuality() != null || candidate.getSupplQuality() != null);
 		getMutableConcurringReads().putAll(candidate.getNonMutableConcurringReads());
 		candidate.addPhredQualitiesToList(getPhredQualityScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
@@ -629,7 +619,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@SuppressWarnings("null")
-	public @NonNull Map<DuplexRead, DetailedQualities> getIssues() {
+	public @NonNull Map<DuplexRead, DetailedQualities<DuplexAssay>> getIssues() {
 		if (issues == null) {
 			issues = new THashMap<>();
 		}
@@ -721,27 +711,28 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 		NumberFormat formatter = Util.mediumLengthFloatFormatter.get();
 		Stream<String> qualityKD = getIssues().values().stream().map(
-				iss -> iss.getQualities().entrySet().
-				stream().filter(entry -> entry.getValue().lowerThan(Quality.GOOD)).
+				iss -> iss.getQualities().
+				filter(entry -> entry.getValue().lowerThan(Quality.GOOD)).
 				map(Object::toString).
 				collect(Collectors.joining(",", "{", "}")));
 		Assert.isTrue(nDuplexesSisterArm > -1);
+		//TODO The following issues added below to qualityKD should just be retrieved from the
+		//qualities field instead of being recomputed
 		if (nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
-			qualityKD = Stream.concat(Stream.of(Assay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
+			qualityKD = Stream.concat(Stream.of(PositionAssay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
 				qualityKD);
 		}
-		final Map<Assay, Quality> qualities = getQuality().getQualities();
-		final Quality disagQ = qualities.get(Assay.DISAGREEMENT);
+		final Quality disagQ = getQuality().getQuality(PositionAssay.AT_LEAST_ONE_DISAG);
 		if (disagQ != null) {
-			qualityKD = Stream.concat(Stream.of(Assay.DISAGREEMENT + "<=" + disagQ),
+			qualityKD = Stream.concat(Stream.of(DuplexAssay.DISAGREEMENT + "<=" + disagQ),
 				qualityKD);
 		}
-		if (qualities.containsKey(Assay.N_STRANDS_DISAGREEMENT)) {
-			qualityKD = Stream.concat(Stream.of(Assay.N_STRANDS_DISAGREEMENT.toString()),
+		if (getQuality().qualitiesContain(PositionAssay.DISAG_THAT_MISSED_Q2)) {
+			qualityKD = Stream.concat(Stream.of(PositionAssay.DISAG_THAT_MISSED_Q2.toString()),
 				qualityKD);
 		}
 		if (getnMatchingCandidatesOtherSamples() > 1) {
-			qualityKD = Stream.concat(Stream.of(Assay.PRESENT_IN_SISTER_SAMPLE.toString()),
+			qualityKD = Stream.concat(Stream.of(PositionAssay.PRESENT_IN_SISTER_SAMPLE.toString()),
 				qualityKD);
 		}
 
@@ -840,6 +831,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void incrementNegativeStrandCount(int i) {
 		negativeStrandCount += i;
+	}
+
+	public Mutation getMutation() {
+		if (mutation == null) {
+			mutation = new Mutation(this);
+		}
+		return mutation;
 	}
 
 }

@@ -180,7 +180,6 @@ public class Mutinack implements Actualizable {
 
 	final MutinackGroup groupSettings;
 	final @NonNull Parameters param;
-	final boolean computeSupplQuality;
 	final Collection<GenomeFeatureTester> excludeBEDs;
 	public final @NonNull String name;
 	long timeStartProcessing;
@@ -261,10 +260,6 @@ public class Mutinack implements Actualizable {
 		this.unclippedBarcodeLength = 0;
 
 		this.intersectAlignmentFiles = intersectAlignmentFiles;
-
-		this.computeSupplQuality = param.promoteNQ1Duplexes != Integer.MAX_VALUE ||
-				param.promoteNSingleStrands != Integer.MAX_VALUE ||
-				param.promoteFractionReads != Float.MAX_VALUE;
 
 		this.excludeBEDs = excludeBEDs;
 		this.maxNDuplexes = maxNDuplexes;
