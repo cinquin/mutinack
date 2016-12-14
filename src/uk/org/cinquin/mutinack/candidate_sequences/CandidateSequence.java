@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,6 +26,9 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -37,6 +40,7 @@ import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
@@ -66,14 +70,15 @@ import uk.org.cinquin.mutinack.statistics.json.TByteArrayListSerializer;
  * @author olivier
  *
  */
+@PersistenceCapable
 public class CandidateSequence implements CandidateSequenceI, Serializable {
-	
+
 	private static final long serialVersionUID = 8222086925028013360L;
 
 	@JsonIgnore
-	private @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
+	private transient @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
-	private DetailedQualities<PositionAssay> quality;
+	@Persistent private DetailedQualities<PositionAssay> quality;
 	private transient Map<DuplexRead, DetailedQualities<DuplexAssay>> issues;
 	private @Nullable StringBuilder supplementalMessage;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
@@ -93,76 +98,78 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int insertSizeAtPos90thP = -1;
 	private int nWrongPairs;
 	private byte singleBasePhredQuality = -1;
-	@JsonSerialize(using = TByteArrayListSerializer.class)
-	private TByteArrayList phredQualityScores;
-	private Serializable preexistingDetection;
+	@Persistent @JsonSerialize(using = TByteArrayListSerializer.class)
+		private TByteArrayList phredQualityScores;
+	@Persistent private Serializable preexistingDetection;
 	private byte medianPhredAtPosition;
-	public int minDistanceToLigSite = Integer.MAX_VALUE;
-	public int maxDistanceToLigSite = Integer.MIN_VALUE;
-	public float meanDistanceToLigSite = Float.NaN;
-	public int nDistancesToLigSite = 0;
-	public float probCollision = Float.NaN;
-	public int nDuplexesSisterArm = -1;
+	private int minDistanceToLigSite = Integer.MAX_VALUE;
+	private int maxDistanceToLigSite = Integer.MIN_VALUE;
+	private float meanDistanceToLigSite = Float.NaN;
+	private int nDistancesToLigSite = 0;
+	private float probCollision = Float.NaN;
+	private int nDuplexesSisterArm = -1;
 	private int nMatchingCandidatesOtherSamples = -1;
 
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
-	private final @NonNull MutationType mutationType;
-	@JsonSerialize(using = ByteArrayStringSerializer.class)
-	private final byte @Nullable[] sequence;
-	@JsonIgnore
-	private int hashCode;
+	@Final @Persistent private @NonNull MutationType mutationType;
+	@Final @Persistent @JsonSerialize(using = ByteArrayStringSerializer.class)
+		private byte @Nullable[] sequence;
+	@JsonIgnore private int hashCode;
 	@JsonSerialize(using = ByteStringSerializer.class)
-	private byte wildtypeSequence;
+		private byte wildtypeSequence;
 	private final transient @NonNull ExtendedSAMRecord initialConcurringRead;
-	private final int initialLigationSiteD;
-	private final @NonNull SequenceLocation location;
+	@Final private int initialLigationSiteD;
+	@Final @Persistent private @NonNull SequenceLocation location;
 	private final transient SubAnalyzer owningSubAnalyzer;
-	private final String sampleName;
+	@Final private String sampleName;
 	private boolean hidden = false;
-	
-	@JsonIgnore
-	private transient Mutation mutation;
+
+	@JsonIgnore private transient Mutation mutation;
 
 	//For debugging purposes
-	public int insertSize = -1;
-	public int positionInRead = -1;
-	public int readEL = -1;
-	public boolean insertSizeNoBarcodeAccounting = false;
-	public @Nullable String readName;
-	public int readAlignmentStart = -1;
-	public int mateReadAlignmentStart = -1;
-	public int readAlignmentEnd = -1;
-	public int mateReadAlignmentEnd = -1;
-	public int refPositionOfMateLigationSite = 1;
-	
+	private int insertSize = -1;
+	private int positionInRead = -1;
+	private int readEL = -1;
+	private boolean insertSizeNoBarcodeAccounting = false;
+	@Nullable private String readName;
+	private int readAlignmentStart = -1;
+	private int mateReadAlignmentStart = -1;
+	private int readAlignmentEnd = -1;
+	private int mateReadAlignmentEnd = -1;
+	private int refPositionOfMateLigationSite = 1;
+
+	@Override
 	public void resetLigSiteDistances() {
-		minDistanceToLigSite = Integer.MAX_VALUE;
-		maxDistanceToLigSite = Integer.MIN_VALUE;
-		meanDistanceToLigSite = Float.NaN;
-		nDistancesToLigSite = 0;
+		setMinDistanceToLigSite(Integer.MAX_VALUE);
+		setMaxDistanceToLigSite(Integer.MIN_VALUE);
+		setMeanDistanceToLigSite(Float.NaN);
+		setnDistancesToLigSite(0);
 	}
-	
+
+	@Override
 	public void acceptLigSiteDistance(int distance) {
-		if (distance < minDistanceToLigSite) {
-			minDistanceToLigSite = distance;
+		if (distance < getMinDistanceToLigSite()) {
+			setMinDistanceToLigSite(distance);
 		}
-		if (distance > maxDistanceToLigSite) {
-			maxDistanceToLigSite = distance;
+		if (distance > getMaxDistanceToLigSite()) {
+			setMaxDistanceToLigSite(distance);
 		}
-		if (nDistancesToLigSite == 0) {
-			meanDistanceToLigSite = distance;
+		if (getnDistancesToLigSite() == 0) {
+			setMeanDistanceToLigSite(distance);
 		} else {
-			meanDistanceToLigSite = (meanDistanceToLigSite * nDistancesToLigSite + distance) /
-				(nDistancesToLigSite + 1);
+			setMeanDistanceToLigSite((getMeanDistanceToLigSite() * getnDistancesToLigSite() + distance) /
+				(getnDistancesToLigSite() + 1));
 		}
-		nDistancesToLigSite++;
+		setnDistancesToLigSite(getnDistancesToLigSite() + 1);
 	}
-	
+
+	@Override
 	public boolean isHidden() {
 		return hidden;
 	}
 
+	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
 	}
@@ -171,16 +178,30 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return medianPhredAtPosition;
 	}
 
+	@Override
 	public void setMedianPhredAtPosition(byte medianPhredAtPosition) {
 		this.medianPhredAtPosition = medianPhredAtPosition;
 	}
 
+	@Override
 	public void setProbCollision(float probCollision) {
 		this.probCollision = probCollision;
 	}
 
 	public float getProbCollision() {
 		return probCollision;
+	}
+
+	@SuppressWarnings("null")
+	public CandidateSequence(String sampleName, @NonNull MutationType mutationType,
+			byte @Nullable[] sequence) {
+		this.mutationType = mutationType;
+		this.sequence = sequence;
+		this.sampleName = sampleName;
+		this.owningSubAnalyzer = null;
+		this.location = null;
+		this.initialLigationSiteD = -1;
+		this.initialConcurringRead = null;
 	}
 
 	public CandidateSequence(@NonNull SubAnalyzer owningSubAnalyzer, @NonNull MutationType mutationType,
@@ -202,12 +223,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		switch(getMutationType()) {
 			case WILDTYPE:
 				break;
-			case DELETION: 
+			case DELETION:
 				throw new AssertionFailedException();
 			case INSERTION:
 				break;
 			case SUBSTITUTION:
-				result += ": " + new String(new byte[] {getWildtypeSequence()}) + 
+				result += ": " + new String(new byte[] {getWildtypeSequence()}) +
 				"->" + new String(getSequence());
 				break;
 			default : throw new AssertionFailedException();
@@ -231,7 +252,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		result = prime * result + Arrays.hashCode(getSequence());
 		hashCode = result;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -241,6 +262,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			return false;
 		}
 		if (!(obj instanceof CandidateSequence)) {
+			return false;
+		}
+		if (obj instanceof CandidateDeletion) {
 			return false;
 		}
 		CandidateSequence other = (CandidateSequence) obj;
@@ -271,7 +295,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				result = "wt";
 				break;
 			default:
-				throw new AssertionFailedException();			
+				throw new AssertionFailedException();
 		}
 		return result;
 	}
@@ -366,7 +390,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public void setTotalGoodDuplexes(int totalGoodDuplexes) {
 		this.totalGoodDuplexes = totalGoodDuplexes;
 	}
-	
+
 	@Override
 	public int getnDuplexes() {
 		return nDuplexes;
@@ -424,9 +448,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return concurringReads;
 	}
-	
-       private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
-	
+
+	private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
+
 	@SuppressWarnings("null")
 	@Override
 	public @NonNull TObjectIntMap<ExtendedSAMRecord> getNonMutableConcurringReads() {
@@ -443,6 +467,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	private transient @Nullable TObjectIntHashMap<ExtendedSAMRecord> originalConcurringReads;
 
+	@Override
 	public int removeConcurringRead(@NonNull ExtendedSAMRecord er) {
 		if (originalConcurringReads == null) {
 			originalConcurringReads = new TObjectIntHashMap<>();
@@ -451,6 +476,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return getMutableConcurringReads().remove(er);
 	}
 
+	@Override
 	public void restoreConcurringReads() {
 		if (originalConcurringReads != null) {
 			concurringReads = originalConcurringReads;
@@ -476,7 +502,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return quality;
 	}
-	
+
 	@Override
 	public int getMaxDistanceToLigSite() {
 		return maxDistanceToLigSite;
@@ -511,12 +537,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public @NonNull MutationType getMutationType() {
 		return mutationType;
 	}
-	
+
 	@Override
 	public @NonNull String getKind() {
 		return getMutationType().toString();
 	}
-	
+
+	@Override
 	public void addBasePhredQualityScore(byte q) {
 		Assert.isFalse(q < 0, "Negative Phred quality score: %s"/*, q*/);
 		if (phredQualityScores == null && singleBasePhredQuality == -1) {
@@ -526,7 +553,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			phredQualityScores.add(q);
 		}
 	}
-	
+
 	private void allocateBasePhredQualityArray() {
 		if (phredQualityScores != null) {
 			return;
@@ -538,14 +565,14 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			singleBasePhredQuality = -2;
 		}
 	}
-	
+
 	@SuppressWarnings("null")
 	@Override
 	public @NonNull TByteArrayList getPhredQualityScores() {
 		allocateBasePhredQualityArray();
 		return phredQualityScores;
 	}
-	
+
 	public byte getMedianPhredQuality() {
 		if (phredQualityScores == null) {
 			if (singleBasePhredQuality == -2) {
@@ -559,7 +586,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		phredQualityScores.sort();
 		return phredQualityScores.get(phredQualityScores.size() / 2);
 	}
-	
+
 	@Override
 	public void addPhredQualitiesToList(@NonNull TByteCollection ql) {
 		if (phredQualityScores == null) {
@@ -575,22 +602,26 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 	}
 
+	@Override
 	public int getnWrongPairs() {
 		return nWrongPairs;
 	}
 
+	@Override
 	public void setnWrongPairs(int nWrongPairs) {
 		this.nWrongPairs = nWrongPairs;
 	}
-	
+
+	@Override
 	public int getnGoodDuplexesIgnoringDisag() {
 		return nGoodDuplexesIgnoringDisag;
 	}
 
+	@Override
 	public void setnGoodDuplexesIgnoringDisag(int nGoodDuplexesIgnoringDisag) {
 		this.nGoodDuplexesIgnoringDisag = nGoodDuplexesIgnoringDisag;
 	}
-	
+
 	public boolean containsType(Class<? extends CandidateSequence> class1) {
 		return class1.isInstance(this);
 	}
@@ -618,6 +649,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 	}
 
+	@Override
 	@SuppressWarnings("null")
 	public @NonNull Map<DuplexRead, DetailedQualities<DuplexAssay>> getIssues() {
 		if (issues == null) {
@@ -634,7 +666,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return rawMismatchesQ2;
 	}
-	
+
 	@Override
 	@SuppressWarnings("null")
 	public @NonNull Collection<ComparablePair<String, String>> getRawMismatchesQ2() {
@@ -643,7 +675,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return rawMismatchesQ2;
 	}
-	
+
 	@Override
 	@SuppressWarnings("null")
 	public @NonNull Collection<ComparablePair<String, String>> getMutableRawDeletionsQ2() {
@@ -652,7 +684,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return rawDeletionsQ2;
 	}
-	
+
 	@Override
 	@SuppressWarnings("null")
 	public @NonNull Collection<ComparablePair<String, String>> getRawDeletionsQ2() {
@@ -661,7 +693,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return rawDeletionsQ2;
 	}
-	
+
 	@Override
 	@SuppressWarnings("null")
 	public @NonNull Collection<ComparablePair<String, String>> getMutableRawInsertionsQ2() {
@@ -670,7 +702,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return rawInsertionsQ2;
 	}
-	
+
 	@Override
 	@SuppressWarnings("null")
 	public @NonNull Collection<ComparablePair<String, String>> getRawInsertionsQ2() {
@@ -750,21 +782,21 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + "\t" +
 			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + "\t" +
 			nDuplexesSisterArm + "\t" +
-			insertSize + "\t" +
+			getInsertSize() + "\t" +
 			getInsertSizeAtPos10thP() + "\t" +
 			getInsertSizeAtPos90thP() + "\t" +
-			minDistanceToLigSite + "\t" +
-			maxDistanceToLigSite + "\t" +
+			getMinDistanceToLigSite() + "\t" +
+			getMaxDistanceToLigSite() + "\t" +
 			formatter.format(getMeanDistanceToLigSite()) + "\t" +
 			formatter.format(getProbCollision()) + "\t" +
-			positionInRead + "\t" +
-			readEL + "\t" +
-			readName + "\t" +
-			readAlignmentStart  + "\t" +
-			mateReadAlignmentStart  + "\t" +
-			readAlignmentEnd + "\t" +
-			mateReadAlignmentEnd + "\t" +
-			refPositionOfMateLigationSite + "\t" +
+			getPositionInRead() + "\t" +
+			getReadEL() + "\t" +
+			getReadName() + "\t" +
+			getReadAlignmentStart()  + "\t" +
+			getMateReadAlignmentStart()  + "\t" +
+			getReadAlignmentEnd() + "\t" +
+			getMateReadAlignmentEnd() + "\t" +
+			getRefPositionOfMateLigationSite() + "\t" +
 			((param.outputDuplexDetails || param.annotateMutationsInFile != null) ?
 					qualityKDString
 				:
@@ -833,11 +865,132 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		negativeStrandCount += i;
 	}
 
+	@Override
 	public Mutation getMutation() {
 		if (mutation == null) {
 			mutation = new Mutation(this);
 		}
 		return mutation;
+	}
+
+	@Override
+	public int getnDuplexesSisterArm() {
+		return nDuplexesSisterArm;
+	}
+
+	@Override
+	public void setnDuplexesSisterArm(int nDuplexesSisterArm) {
+		this.nDuplexesSisterArm = nDuplexesSisterArm;
+	}
+
+	public void setMinDistanceToLigSite(int minDistanceToLigSite) {
+		this.minDistanceToLigSite = minDistanceToLigSite;
+	}
+
+	public void setMaxDistanceToLigSite(int maxDistanceToLigSite) {
+		this.maxDistanceToLigSite = maxDistanceToLigSite;
+	}
+
+	public void setMeanDistanceToLigSite(float meanDistanceToLigSite) {
+		this.meanDistanceToLigSite = meanDistanceToLigSite;
+	}
+
+	public int getnDistancesToLigSite() {
+		return nDistancesToLigSite;
+	}
+
+	public void setnDistancesToLigSite(int nDistancesToLigSite) {
+		this.nDistancesToLigSite = nDistancesToLigSite;
+	}
+
+	public int getInsertSize() {
+		return insertSize;
+	}
+
+	@Override
+	public void setInsertSize(int insertSize) {
+		this.insertSize = insertSize;
+	}
+
+	public int getPositionInRead() {
+		return positionInRead;
+	}
+
+	@Override
+	public void setPositionInRead(int positionInRead) {
+		this.positionInRead = positionInRead;
+	}
+
+	public int getReadEL() {
+		return readEL;
+	}
+
+	@Override
+	public void setReadEL(int readEL) {
+		this.readEL = readEL;
+	}
+
+	public boolean isInsertSizeNoBarcodeAccounting() {
+		return insertSizeNoBarcodeAccounting;
+	}
+
+	@Override
+	public void setInsertSizeNoBarcodeAccounting(boolean insertSizeNoBarcodeAccounting) {
+		this.insertSizeNoBarcodeAccounting = insertSizeNoBarcodeAccounting;
+	}
+
+	public String getReadName() {
+		return readName;
+	}
+
+	@Override
+	public void setReadName(@NonNull String readName) {
+		this.readName = readName;
+	}
+
+	public int getReadAlignmentStart() {
+		return readAlignmentStart;
+	}
+
+	@Override
+	public void setReadAlignmentStart(int readAlignmentStart) {
+		this.readAlignmentStart = readAlignmentStart;
+	}
+
+	public int getMateReadAlignmentStart() {
+		return mateReadAlignmentStart;
+	}
+
+	@Override
+	public void setMateReadAlignmentStart(int mateReadAlignmentStart) {
+		this.mateReadAlignmentStart = mateReadAlignmentStart;
+	}
+
+	public int getReadAlignmentEnd() {
+		return readAlignmentEnd;
+	}
+
+	@Override
+	public void setReadAlignmentEnd(int readAlignmentEnd) {
+		this.readAlignmentEnd = readAlignmentEnd;
+	}
+
+	public int getMateReadAlignmentEnd() {
+		return mateReadAlignmentEnd;
+	}
+
+	@Override
+	public void setMateReadAlignmentEnd(int mateReadAlignmentEnd) {
+		this.mateReadAlignmentEnd = mateReadAlignmentEnd;
+	}
+
+	public int getRefPositionOfMateLigationSite() {
+		return refPositionOfMateLigationSite;
+	}
+
+	@Override
+	public void setRefPositionOfMateLigationSite(int refPositionOfMateLigationSite) {
+		this.refPositionOfMateLigationSite = refPositionOfMateLigationSite;
 	}
 
 }

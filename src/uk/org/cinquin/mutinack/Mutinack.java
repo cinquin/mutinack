@@ -66,10 +66,17 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import javax.jdo.JDODataStoreException;
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Transaction;
+
+import org.datanucleus.store.rdbms.exceptions.MissingTableException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -97,6 +104,7 @@ import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
+import uk.org.cinquin.mutinack.database.PMF;
 import uk.org.cinquin.mutinack.distributed.Server;
 import uk.org.cinquin.mutinack.distributed.Submitter;
 import uk.org.cinquin.mutinack.distributed.Worker;
@@ -177,6 +185,7 @@ public class Mutinack implements Actualizable {
 	private volatile static ExecutorService contigThreadPool;
 
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
+	private final Date startDate;
 
 	final MutinackGroup groupSettings;
 	final @NonNull Parameters param;
@@ -218,7 +227,8 @@ public class Mutinack implements Actualizable {
 				}
 			}).min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
-	final double @Nullable[] insertSizeProb;
+	final double @Nullable[] insertSizeProbSmooth;
+	final double @Nullable[] insertSizeProbRaw;
 	final @NonNull Collection<File> intersectAlignmentFiles;
 	final @NonNull
 	public Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
@@ -250,10 +260,13 @@ public class Mutinack implements Actualizable {
 		this.param = param;
 		this.name = name;
 		this.inputBam = inputBam;
-		this.insertSizeProb = approximateReadInsertSize != null ?
-				approximateReadInsertSize.toProbabilityArray()
-			:
-				null;
+		if (approximateReadInsertSize != null) {
+			insertSizeProbRaw = approximateReadInsertSize.toProbabilityArray(false);;
+			insertSizeProbSmooth = approximateReadInsertSize.toProbabilityArray(true);;
+		} else {
+			insertSizeProbRaw = null;
+			insertSizeProbSmooth = null;
+		}
 		//Make sure reference tests can be substituted for equality tests;
 		//the analyzer's constant barcode needs to come from the interning map
 		this.constantBarcode = Util.getInternedCB(constantBarcode);
@@ -281,6 +294,11 @@ public class Mutinack implements Actualizable {
 			recursiveParameterFill(consumer, 0, param.exploreParameters, statsNames, param,
 				param.cartesianProductOfExploredParameters);
 		}
+		stats.forEach(stat -> {
+			stat.approximateReadInsertSize = insertSizeProbSmooth;
+			stat.approximateReadInsertSizeRaw = insertSizeProbRaw;
+		});
+		this.startDate = new Date();
 	}
 
 	private static void recursiveParameterFill(BiConsumer<String, Parameters> consumer,
@@ -778,7 +796,7 @@ public class Mutinack implements Actualizable {
 						out,
 						mutationWriterCopy,
 						param.variableBarcodeLength == 0 ?
-								GetReadStats.getApproximateReadInsertSize(inputBam, param.maxInsertSize)
+								GetReadStats.getApproximateReadInsertSize(inputBam, param.maxInsertSize, param.minMappingQualityQ2)
 							:
 								null,
 						nonNullify(param.constantBarcode.getBytes()),
@@ -1089,6 +1107,7 @@ public class Mutinack implements Actualizable {
 				}).collect(Collectors.joining(",")));
 
 				outputJSON(param, analyzers);
+				outputToDatabase(param, analyzers);
 			};
 			Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
@@ -1218,13 +1237,7 @@ public class Mutinack implements Actualizable {
 					//some threads may be secondary to the primary exception
 					//but may still be examined before the primary exception
 					for (Future<?> f: futures) {
-						gatherer.tryAdd(() -> {
-							try {
-								f.get();
-							} catch (ExecutionException | InterruptedException e) {
-								throw new RuntimeException(e);
-							}
-						});
+						gatherer.tryAdd(() -> f.get());
 					}
 
 					gatherer.throwIfPresent();
@@ -1353,20 +1366,24 @@ public class Mutinack implements Actualizable {
 		return result;
 	}
 
+	private static JsonRoot getJsonRoot(Parameters param, Collection<Mutinack> analyzers) {
+		JsonRoot root = new JsonRoot();
+		final String mutinackVersion = GitCommitInfo.getGitCommit();
+		root.mutinackVersion = mutinackVersion;
+		root.parameters = param;
+		root.samples = analyzers.stream().map(a -> new ParedDownMutinack(a, a.startDate, new Date(),
+					a.param.runBatchName, a.param.runName)).
+				collect(Collectors.toList());
+		analyzers.forEach(Actualizable::actualize);
+		analyzers.stream().flatMap(a -> a.subAnalyzers.stream()).
+			filter(sa -> sa != null).
+			map(sa -> sa.stats).
+			forEach(stats -> stats.mutinackVersions.add(mutinackVersion));
+		return root;
+	}
+
 	private static void outputJSON(Parameters param, Collection<Mutinack> analyzers) {
 		if (!param.outputJSONTo.isEmpty()) {
-			analyzers.forEach(Actualizable::actualize);
-			JsonRoot root = new JsonRoot();
-			final String mutinackVersion = GitCommitInfo.getGitCommit();
-			root.mutinackVersion = mutinackVersion;
-			root.parameters = param;
-			root.samples = analyzers.stream().map(ParedDownMutinack::new).
-					collect(Collectors.toList());
-			analyzers.forEach(Actualizable::actualize);
-			analyzers.stream().flatMap(a -> a.subAnalyzers.stream()).
-				filter(sa -> sa != null).
-				map(sa -> sa.stats).
-				forEach(stats -> stats.mutinackVersions.add(mutinackVersion));
 			ObjectMapper mapper = new ObjectMapper();
 			SimpleModule module = new SimpleModule();
 			mapper.registerModule(module).setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
@@ -1375,6 +1392,7 @@ public class Mutinack implements Actualizable {
 					.withSetterVisibility(JsonAutoDetect.Visibility.NONE)
 					.withCreatorVisibility(JsonAutoDetect.Visibility.NONE)
 					.withIsGetterVisibility(JsonAutoDetect.Visibility.NONE));
+			JsonRoot root = getJsonRoot(param, analyzers);
 			try {
 				mapper.writerWithDefaultPrettyPrinter().writeValue(
 						new File(param.outputJSONTo), root);
@@ -1382,7 +1400,53 @@ public class Mutinack implements Actualizable {
 				throw new RuntimeException(e);
 			}
 		}
+	}
 
+	private static void runWithOneAutoCreateRetry(Consumer<Boolean> r) {
+		boolean autoCreate = true;//Set to false to try first without autoCreate
+		boolean exception = true;
+		while (exception) {
+			try {
+				r.accept(autoCreate);
+				exception = false;
+			} catch (MissingTableException | JDODataStoreException e) {
+				if (autoCreate) {
+					throw e;
+				} else {
+					autoCreate = true;
+				}
+			}
+		}
+	}
+
+	private static void outputToDatabase(Parameters param, Collection<Mutinack> analyzers) {
+		if (param.outputToDatabaseURL.isEmpty()) {
+			return;
+		}
+		JsonRoot root = getJsonRoot(param, analyzers);
+		runWithOneAutoCreateRetry(autoCreate -> {
+			PersistenceManagerFactory pmf = PMF.getPMF(param, autoCreate);
+			try {
+				PersistenceManager persistenceManager = pmf.getPersistenceManager();
+				final Transaction t = persistenceManager.currentTransaction();
+				t.setOptimistic(false);
+				t.setSerializeRead(true);
+				t.setRestoreValues(false);
+				t.begin();
+				try {
+					persistenceManager.makePersistent(root);
+					t.commit();
+				} finally {
+					if (t.isActive()) {
+						t.rollback();
+					} else {
+						persistenceManager.detachCopy(root);
+					}
+				}
+			} finally {
+				pmf.close();
+			}
+		});
 	}
 
 	private static void close(SAMFileWriter alignmentWriter,
@@ -1397,24 +1461,12 @@ public class Mutinack implements Actualizable {
 		}
 
 		if (mutationAnnotationWriter != null) {
-			gatherer.tryAdd(() -> {
-				try {
-					mutationAnnotationWriter.close();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
+			gatherer.tryAdd(() -> mutationAnnotationWriter.close());
 		}
 
 		for (Mutinack analyzer: analyzers) {
 			if (analyzer != null) {
-				gatherer.tryAdd(() -> {
-					try {
-						analyzer.closeOutputs();
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				});
+				gatherer.tryAdd(() -> analyzer.closeOutputs());
 			}
 		}
 
@@ -1433,17 +1485,10 @@ public class Mutinack implements Actualizable {
 	private void closeOutputs() {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		for (Closeable c: itemsToClose) {
-			gatherer.tryAdd(() ->
-			{
-				try {
-					c.close();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
+			gatherer.tryAdd(() -> c.close());
 		}
 
-		gatherer.tryAdd(() -> stats.forEach(s -> {
+		stats.forEach(s -> gatherer.tryAdd(() -> {
 			if (s.positionByPositionCoverage != null) {
 				Builder builder = s.positionByPositionCoverageProtobuilder;
 				for (Entry<String, int[]> e: s.positionByPositionCoverage.entrySet()) {
@@ -1458,11 +1503,7 @@ public class Mutinack implements Actualizable {
 				}
 				Path path = Paths.get(builder.getSampleName() + ".proto");
 				builder.setSampleName(path.getFileName().toString());
-				try {
-					Files.write(path, builder.build().toByteArray());
-				} catch (Exception e1) {
-					throw new RuntimeException(e1);
-				}
+				Files.write(path, builder.build().toByteArray());
 			}
 		}));
 
@@ -1478,12 +1519,15 @@ public class Mutinack implements Actualizable {
 	}
 
 	private double processingThroughput() {
-		return (stats.get(0).nRecordsProcessed.sum()) /
+		return (stats.
+				get(0).
+				nRecordsProcessed.sum()) /
 				((System.nanoTime() - timeStartProcessing) / 1_000_000_000d);
 	}
 
 	private void printStatus(PrintStream stream, boolean colorize) {
 		stats.forEach(s -> {
+			actualize();
 			stream.println();
 			stream.println(greenB(colorize) + "Statistics " + s.getName() + " for " + inputBam.getAbsolutePath() + reset(colorize));
 

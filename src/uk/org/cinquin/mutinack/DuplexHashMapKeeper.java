@@ -19,7 +19,7 @@ package uk.org.cinquin.mutinack;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import uk.org.cinquin.mutinack.misc_util.TIntObjectListHashMap;
+import uk.org.cinquin.mutinack.misc_util.collections.TIntObjectListHashMap;
 
 public class DuplexHashMapKeeper extends TIntObjectListHashMap<DuplexRead> implements DuplexKeeper {
 

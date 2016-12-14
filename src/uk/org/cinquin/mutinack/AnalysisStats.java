@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +47,21 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.jdo.annotations.Extension;
+import javax.jdo.annotations.Join;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.collections.MutationHistogramMap;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnlyReportAll;
@@ -68,15 +77,17 @@ import uk.org.cinquin.mutinack.statistics.StatsCollector;
 import uk.org.cinquin.mutinack.statistics.SwitchableStats;
 import uk.org.cinquin.mutinack.statistics.Traceable;
 
+@PersistenceCapable
 public class AnalysisStats implements Serializable, Actualizable {
-	
-	private final @NonNull String name;
+
+	private @Final @Persistent @NonNull String name;
 	OutputLevel outputLevel;
 	final MutinackGroup groupSettings;
-	final Set<String> mutinackVersions = new HashSet<>();
-	final Parameters analysisParameters;
-	final boolean forInsertions;
-	public final ConcurrentMap<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();
+	@Final @Persistent Set<String> mutinackVersions = new HashSet<>();
+	@Final @Persistent Parameters analysisParameters;
+	@Final @Persistent boolean forInsertions;
+	//Changed to Map instead of ConcurrentMap to please datanucleus
+	@Final @Persistent @Join Map<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();
 	public transient PrintStream detectionOutputStream;
 	public transient OutputStreamWriter annotationOutputStream;
 	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter,
@@ -91,7 +102,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 		this.analysisParameters = param;
 		this.forInsertions = forInsertions;
 		this.groupSettings = groupSettings;
-		
+
 		if (reportCoverageAtAllPositions) {
 			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
 			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
@@ -124,14 +135,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 		vBarcodeMismatches2M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		vBarcodeMismatches3OrMore = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawDeletionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		rawDeletionLengthQ1 = new Histogram(200);	
+		rawDeletionLengthQ1 = new Histogram(200);
 		rawInsertionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		rawInsertionLengthQ1 = new Histogram(200);	
+		rawInsertionLengthQ1 = new Histogram(200);
 		rawMismatchesQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawDeletionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		rawDeletionLengthQ2 = new Histogram(200);	
+		rawDeletionLengthQ2 = new Histogram(200);
 		rawInsertionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		rawInsertionLengthQ2 = new Histogram(200);	
+		rawInsertionLengthQ2 = new Histogram(200);
 		topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		alleleFrequencies = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
@@ -162,9 +173,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 		nPosQualityQ2OthersQ1Q2 = new StatsCollector();
 		nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosCandidatesForUniqueMutation = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-		
-		nReadsInPrefetchQueue = new Histogram(1_000);	
-		
+
+		nReadsInPrefetchQueue = new Histogram(1_000);
+
 		{	//Force output of fields annotated with AddChromosomeBins to be broken down by
 			//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
 			List<String> contigNames = groupSettings.getContigNames();
@@ -178,7 +189,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 							int cCopy = c;
 							try {
 								MultiCounter <?> counter = ((MultiCounter<?>) field.get(this));
-								counter.addPredicate(contigNames.get(contig) + "_bin_" + String.format("%03d", c), 
+								counter.addPredicate(contigNames.get(contig) + "_bin_" + String.format("%03d", c),
 										loc -> {
 											final int min = groupSettings.BIN_SIZE * cCopy;
 											final int max = groupSettings.BIN_SIZE * (cCopy + 1);
@@ -224,8 +235,18 @@ public class AnalysisStats implements Serializable, Actualizable {
 				}
 			}
 		}
+
+		//Assert that annotations have not been discarded
+		//This does not need to be done on every instance, but exceptions are better
+		//handled in a non-static context
+		try {
+			Assert.isNonNull(AnalysisStats.class.getDeclaredField("duplexGroupingDepth").
+				getAnnotation(PrintInStatus.class));
+		} catch (NoSuchFieldException | SecurityException e) {
+			throw new RuntimeException(e);
+		}
 	}
-	
+
 	public @NonNull String getName() {
 		return name;
 	}
@@ -236,357 +257,370 @@ public class AnalysisStats implements Serializable, Actualizable {
 	private @interface AddChromosomeBins {};
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram duplexGroupingDepth = new Histogram(100);
-	
-	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram duplexTotalRecords = new Histogram(500);
-	
-	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rejectedIndelDistanceToLigationSite = new Histogram(200);	
+	@Final @Persistent(serialized="true")
+	@Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram duplexGroupingDepth = new Histogram(100);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rejectedSubstDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexTotalRecords = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram wtRejectedDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram rejectedIndelDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram wtAcceptedBaseDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram rejectedSubstDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram singleAnalyzerQ2CandidateDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram wtRejectedDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram crossAnalyzerQ2CandidateDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram wtAcceptedBaseDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram substDisagDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram singleAnalyzerQ2CandidateDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram insDisagDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram crossAnalyzerQ2CandidateDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram delDisagDistanceToLigationSite = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	ConcurrentMap<Mutation, Histogram> disagMutConsensus = new MutationHistogramMap();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram disagDelSize = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	ConcurrentMap<Mutation, Histogram> disagWtConsensus = new MutationHistogramMap();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram Q2CandidateDistanceToLigationSiteN = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram substDisagDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram wtQ2CandidateQ1Q2Coverage = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram insDisagDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram wtQ2CandidateQ1Q2CoverageRepetitive = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram delDisagDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram wtQ2CandidateQ1Q2CoverageNonRepetitive = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram disagDelSize = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram mutantQ2CandidateQ1Q2Coverage = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram Q2CandidateDistanceToLigationSiteN = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram mutantQ2CandidateQ1Q2DCoverageRepetitive = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram wtQ2CandidateQ1Q2Coverage = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram mutantQ2CandidateQ1Q2DCoverageNonRepetitive = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram wtQ2CandidateQ1Q2CoverageRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram uniqueMutantQ2CandidateQ1Q2DCoverage = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram wtQ2CandidateQ1Q2CoverageNonRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram mutantQ2CandidateQ1Q2Coverage = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive = new Histogram(200);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram mutantQ2CandidateQ1Q2DCoverageRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nPosExcluded = new StatsCollector();
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram mutantQ2CandidateQ1Q2DCoverageNonRepetitive = new Histogram(200);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram uniqueMutantQ2CandidateQ1Q2DCoverage = new Histogram(200);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive = new Histogram(200);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive = new Histogram(200);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nPosExcluded = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nRecordsProcessed = new StatsCollector();
+	public @Final @Persistent StatsCollector nRecordsProcessed = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector ignoredUnpairedReads = new StatsCollector();
+	public @Final @Persistent StatsCollector ignoredUnpairedReads = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nRecordsInFile = new StatsCollector();
+	public @Final @Persistent StatsCollector nRecordsInFile = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nRecordsUnmapped = new StatsCollector();
+	public @Final @Persistent StatsCollector nRecordsUnmapped = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nRecordsBelowMappingQualityThreshold = new StatsCollector();
+	public @Final @Persistent StatsCollector nRecordsBelowMappingQualityThreshold = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram mappingQualityKeptRecords = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram mappingQualityKeptRecords = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram mappingQualityAllRecords = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram mappingQualityAllRecords = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram averageReadPhredQuality0 = new Histogram(500);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram averageReadPhredQuality0 = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram averageReadPhredQuality1 = new Histogram(500);	
-	
-	@PrintInStatus(outputLevel = VERBOSE)
-	final MultiCounter<ComparablePair<Integer, Integer>> phredAndLigSiteDistance;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	final Histogram medianReadPhredQuality = new Histogram(500);
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram medianPositionPhredQuality = new Histogram(500);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram averageReadPhredQuality1 = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram averageDuplexReferenceDisagreementRate = new Histogram(500);
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") MultiCounter<ComparablePair<Integer, Integer>> phredAndLigSiteDistance;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram medianReadPhredQuality = new Histogram(500);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram medianPositionPhredQuality = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram duplexinsertSize = new Histogram(1000);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram averageDuplexReferenceDisagreementRate = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public Histogram approximateReadInsertSize = new Histogram(1000);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexinsertSize = new Histogram(1000);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram duplexAverageNClipped = new Histogram(500);
+	public @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") double[] approximateReadInsertSize = null;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") double[] approximateReadInsertSizeRaw = null;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexAverageNClipped = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram duplexInsert130_180averageNClipped = new Histogram(500);
-	
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram duplexInsert100_130AverageNClipped = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexInsert130_180averageNClipped = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram disagreementOrientationProportions1 = new Histogram(10);
-	
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram disagreementOrientationProportions2 = new Histogram(10);
-	
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector disagreementMatesSameOrientation = new StatsCollector();
-	
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nComplexDisagreementsQ2 = new StatsCollector();
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexInsert100_130AverageNClipped = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nRecordsIgnoredBecauseSecondary = new StatsCollector();
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram disagreementOrientationProportions1 = new Histogram(10);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nRecordsNotInIntersection1;
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram disagreementOrientationProportions2 = new Histogram(10);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nRecordsNotInIntersection2;
+	public @Final @Persistent StatsCollector disagreementMatesSameOrientation = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nTooLowMapQIntersect;
+	public @Final @Persistent StatsCollector nComplexDisagreementsQ2 = new StatsCollector();
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nRecordsIgnoredBecauseSecondary = new StatsCollector();
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nRecordsNotInIntersection1;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nRecordsNotInIntersection2;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nTooLowMapQIntersect;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nPosDuplex;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplex;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<?> nPosDuplexBothStrandsPresent;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexBothStrandsPresent;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nReadMedianPhredBelowThreshold;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nReadMedianPhredBelowThreshold;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nDuplexesTooMuchClipping;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nDuplexesTooMuchClipping;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final DoubleAdder nDuplexesNoStats;
+	public @Final @Persistent DoubleAdder nDuplexesNoStats;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final DoubleAdder nDuplexesWithStats;
+	public @Final @Persistent DoubleAdder nDuplexesWithStats;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nPosDuplexTooFewReadsPerStrand1;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexTooFewReadsPerStrand1;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nPosDuplexTooFewReadsPerStrand2;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexTooFewReadsPerStrand2;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nPosDuplexTooFewReadsAboveQ2Phred;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexTooFewReadsAboveQ2Phred;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nPosIgnoredBecauseTooHighCoverage;
+	public @Final @Persistent StatsCollector nPosIgnoredBecauseTooHighCoverage;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nPosDuplexWithTopBottomDuplexDisagreementNoWT;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexWithTopBottomDuplexDisagreementNoWT;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nPosDuplexWithTopBottomDuplexDisagreementNotASub;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexWithTopBottomDuplexDisagreementNotASub;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ1;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawMismatchesQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches1M;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> vBarcodeMismatches1M;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches2M;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> vBarcodeMismatches2M;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> vBarcodeMismatches3OrMore;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> vBarcodeMismatches3OrMore;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ1;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawDeletionsQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawDeletionLengthQ1;	
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram rawDeletionLengthQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawInsertionsQ1;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawInsertionsQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawInsertionLengthQ1;	
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram rawInsertionLengthQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawMismatchesQ2;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawMismatchesQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawDeletionsQ2;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawDeletionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawDeletionLengthQ2;	
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram rawDeletionLengthQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<String, String>> rawInsertionsQ2;
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawInsertionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram rawInsertionLengthQ2;	
-
-	@PrintInStatus(outputLevel = TERSE)
-	@AddChromosomeBins
-	public final MultiCounter<DuplexDisagreement> topBottomSubstDisagreementsQ2;
-	
-	@PrintInStatus(outputLevel = TERSE)
-	@AddChromosomeBins
-	public final MultiCounter<DuplexDisagreement> topBottomDelDisagreementsQ2;
-
-	@PrintInStatus(outputLevel = TERSE)
-	@AddChromosomeBins
-	public final MultiCounter<List<Integer>> alleleFrequencies;
-
-	@PrintInStatus(outputLevel = TERSE)
-	@AddChromosomeBins
-	public final MultiCounter<DuplexDisagreement> topBottomInsDisagreementsQ2;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandSubstQ2;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandSubstQ2;
-	
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandDelQ2;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandDelQ2;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandInsQ2;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandInsQ2;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<DuplexDisagreement> topBottomDisagreementsQ2TooHighCoverage;
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram rawInsertionLengthQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
-	public final MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2TooHighCoverage;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosDuplexWithLackOfStrandConsensus1;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosDuplexWithLackOfStrandConsensus2;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosDuplexCompletePairOverlap;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nPosUncovered;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nQ2PromotionsBasedOnFractionReads;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nPosQualityPoor;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosQualityPoorA;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosQualityPoorT;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosQualityPoorG;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nPosQualityPoorC;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nConsensusQ1NotMet;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nMedianPhredAtPositionTooLow;
-
-	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nFractionWrongPairsAtPositionTooHigh;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nPosQualityQ1;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nPosQualityQ2;
-
-	@PrintInStatus(outputLevel = VERBOSE)
-	public final StatsCollector nPosQualityQ2OthersQ1Q2;
+	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomSubstDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2;
+	@AddChromosomeBins
+	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomDelDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate;
+	@AddChromosomeBins
+	public @Final @Persistent(serialized = "true") MultiCounter<List<Integer>> alleleFrequencies;
+
+	@PrintInStatus(outputLevel = TERSE)
+	@AddChromosomeBins
+	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomInsDisagreementsQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandSubstQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandSubstQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandDelQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandDelQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandInsQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandInsQ2;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomDisagreementsQ2TooHighCoverage;
+
+	@PrintInStatus(outputLevel = TERSE)
+	@AddChromosomeBins
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2TooHighCoverage;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosDuplexWithLackOfStrandConsensus1;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosDuplexWithLackOfStrandConsensus2;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosDuplexCompletePairOverlap;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nPosUncovered;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nQ2PromotionsBasedOnFractionReads;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityPoor;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityPoorA;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityPoorT;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityPoorG;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityPoorC;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nConsensusQ1NotMet;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nMedianPhredAtPositionTooLow;
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nFractionWrongPairsAtPositionTooHigh;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityQ1;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent StatsCollector nPosQualityQ2OthersQ1Q2;
+
+	@PrintInStatus(outputLevel = TERSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2;
+
+	@PrintInStatus(outputLevel = TERSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate;
 
 	@PrintInStatus(color = "greenBackground", outputLevel = TERSE)
-	public final MultiCounter<?> nPosCandidatesForUniqueMutation;
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosCandidatesForUniqueMutation;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram nReadsAtPosQualityQ2OthersQ1Q2 = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram nReadsAtPosQualityQ2OthersQ1Q2 = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final Histogram nReadsAtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram nReadsAtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram nQ1Q2AtPosQualityQ2OthersQ1Q2 = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram nQ1Q2AtPosQualityQ2OthersQ1Q2 = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	public final Histogram nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE, description = "Q1 or Q2 duplex coverage histogram")
-	public final Histogram Q1Q2DuplexCoverage = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram Q1Q2DuplexCoverage = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE, description = "Q2 duplex coverage histogram")
-	public final Histogram Q2DuplexCoverage = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram Q2DuplexCoverage = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Missing strands for positions that have no usable duplex")
-	public final Histogram missingStrandsWhenNoUsableDuplex = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram missingStrandsWhenNoUsableDuplex = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Top/bottom coverage imbalance for positions that have no usable duplex")
-	public final Histogram strandCoverageImbalanceWhenNoUsableDuplex = new Histogram(500);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram strandCoverageImbalanceWhenNoUsableDuplex = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Histogram of copy number for duplex bottom strands")
-	public final Histogram copyNumberOfDuplexBottomStrands = new Histogram(500) {
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram copyNumberOfDuplexBottomStrands = new Histogram(500) {
 		private static final long serialVersionUID = 6597978073262739721L;
 		private final NumberFormat formatter = new DecimalFormat("0.###E0");
-		
+
 		@Override
 		public String toString() {
 			final double nPosDuplexf = nPosDuplex.sum();
@@ -596,7 +630,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	};
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE,  description = "Histogram of copy number for duplex top strands")
-	public final Histogram copyNumberOfDuplexTopStrands = new Histogram(500) {
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram copyNumberOfDuplexTopStrands = new Histogram(500) {
 		private static final long serialVersionUID = -8213283701959613589L;
 		private final NumberFormat formatter = new DecimalFormat("0.###E0");
 
@@ -609,19 +643,19 @@ public class AnalysisStats implements Serializable, Actualizable {
 	};
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability")
-	public final Histogram duplexCollisionProbability = new Histogram(100);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexCollisionProbability = new Histogram(100);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability at Q2 sites")
-	public final Histogram duplexCollisionProbabilityAtQ2 = new Histogram(100);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexCollisionProbabilityAtQ2 = new Histogram(100);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability when both strands represented")
-	public final Histogram duplexCollisionProbabilityWhen2Strands = new Histogram(100);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexCollisionProbabilityWhen2Strands = new Histogram(100);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability at disagreement")
-	public final Histogram duplexCollisionProbabilityAtDisag = new Histogram(100);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexCollisionProbabilityAtDisag = new Histogram(100);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Average duplex collision probability for duplexes covering genome position of disagreement")
-	public final Histogram duplexCollisionProbabilityLocalAvAtDisag = new Histogram(100);
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram duplexCollisionProbabilityLocalAvAtDisag = new Histogram(100);
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Histogram of variable barcode mapping distance mismatch")
@@ -639,54 +673,54 @@ public class AnalysisStats implements Serializable, Actualizable {
 	};*/
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nBasesBelowPhredScore = new StatsCollector();
+	public @Final @Persistent StatsCollector nBasesBelowPhredScore = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nConstantBarcodeMissing = new StatsCollector(), 
-	nConstantBarcodeDodgy = new StatsCollector(), 
+	public @Final @Persistent StatsCollector nConstantBarcodeMissing = new StatsCollector(),
+	nConstantBarcodeDodgy = new StatsCollector(),
 	nConstantBarcodeDodgyNStrand = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nReadsConstantBarcodeOK = new StatsCollector();
+	public @Final @Persistent StatsCollector nReadsConstantBarcodeOK = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsConsidered = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsConsidered = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsToA = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsToA = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsToT = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsToT = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsToG = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsToG = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsToC = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsToC = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nNs = new StatsCollector();
+	public @Final @Persistent StatsCollector nNs = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nCandidateInsertions = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateInsertions = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
-	public final StatsCollector nCandidateDeletions = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateDeletions = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsAfterLastNBases = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsAfterLastNBases = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateWildtypeAfterLastNBases = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateWildtypeAfterLastNBases = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateSubstitutionsBeforeFirstNBases = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateSubstitutionsBeforeFirstNBases = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateIndelAfterLastNBases = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateIndelAfterLastNBases = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nCandidateIndelBeforeFirstNBases = new StatsCollector();
+	public @Final @Persistent StatsCollector nCandidateIndelBeforeFirstNBases = new StatsCollector();
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -711,31 +745,31 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final StatsCollector nVariableBarcodesCloseMisses = new StatsCollector();*/
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nReadsInsertNoSize = new StatsCollector();
+	public @Final @Persistent StatsCollector nReadsInsertNoSize = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	@DivideByTwo public final StatsCollector nReadsPairRF = new StatsCollector();
+	@DivideByTwo public @Final @Persistent StatsCollector nReadsPairRF = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	@DivideByTwo public final StatsCollector nReadsPairTandem = new StatsCollector();
+	@DivideByTwo public @Final @Persistent StatsCollector nReadsPairTandem = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	@DivideByTwo public final StatsCollector nReadsInsertSizeAboveMaximum = new StatsCollector();
+	@DivideByTwo public @Final @Persistent StatsCollector nReadsInsertSizeAboveMaximum = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	@DivideByTwo public final StatsCollector nReadsInsertSizeBelowMinimum = new StatsCollector();
+	@DivideByTwo public @Final @Persistent StatsCollector nReadsInsertSizeBelowMinimum = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public final StatsCollector nMateOutOfReach = new StatsCollector();
+	public @Final @Persistent StatsCollector nMateOutOfReach = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
-	final StatsCollector nProcessedBases = new StatsCollector();
-	
+	@Final @Persistent StatsCollector nProcessedBases = new StatsCollector();
+
 	@PrintInStatus(outputLevel = TERSE)
 	boolean analysisTruncated;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	final Histogram nReadsInPrefetchQueue;
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false") Histogram nReadsInPrefetchQueue;
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -745,7 +779,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final StatsCollector nProcessedFirst6BasesSecondOfPair = new StatsCollector();*/
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	final DoubleAdder phredSumProcessedbases = new DoubleAdder();
+	@Final @Persistent DoubleAdder phredSumProcessedbases = new DoubleAdder();
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -753,23 +787,25 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public final DoubleAdder phredSumFirst6basesSecondOfPair = new DoubleAdder();*/
-	
-	public Map<String, int[]> positionByPositionCoverage;
+
+	public @Persistent Map<String, int[]> positionByPositionCoverage;
 	transient Builder positionByPositionCoverageProtobuilder;
 
 	@SuppressWarnings("null")
 	public void print(PrintStream stream, boolean colorize) {
 		stream.println();
 		NumberFormat formatter = DoubleAdderFormatter.nf.get();
-		for (Field field : AnalysisStats.class.getDeclaredFields()) {
+		ConcurrentModificationException cme = null;
+		for (Field field: AnalysisStats.class.getDeclaredFields()) {
 			PrintInStatus annotation = field.getAnnotation(PrintInStatus.class);
-			if ((annotation != null && annotation.outputLevel().compareTo(outputLevel) <= 0) || 
-					(annotation == null && 
-					(field.getType().equals(LongAdderFormatter.class) || 
+			if ((annotation != null && annotation.outputLevel().compareTo(outputLevel) <= 0) ||
+					(annotation == null &&
+					(field.getType().equals(LongAdderFormatter.class) ||
 							field.getType().equals(StatsCollector.class) ||
 							field.getType().equals(Histogram.class)))) {
 				try {
-					if (field.get(this) == null) {
+					final Object fieldValue = field.get(this);
+					if (fieldValue == null) {
 						continue;
 					}
 					if (annotation != null && annotation.color().equals("greenBackground")) {
@@ -780,25 +816,22 @@ public class AnalysisStats implements Serializable, Actualizable {
 						divisor = 2;
 					else
 						divisor = 1;
-					boolean hasDescription = annotation != null && ! annotation.description().equals("");
-					stream.print(blueF(colorize) + (hasDescription ? annotation.description() : field.getName()) + ": " + reset(colorize));
+					boolean hasDescription = annotation != null && !annotation.description().isEmpty();
+					stream.print(blueF(colorize) + (hasDescription ? annotation.description() : field.getName()) +
+						": " + reset(colorize));
 					if (field.getType().equals(LongAdderFormatter.class)) {
 						stream.println(formatter.format(((Long) longAdderFormatterSum.
-								invoke(field.get(this)))/divisor));
+								invoke(fieldValue)) / divisor));
 					} else if (field.getType().equals(StatsCollector.class)) {
 						Function<Long, Long> transformer = l-> l / divisor;
-						stream.println((String) statsCollectorToString.invoke(field.get(this), transformer));
-					} else if (field.getType().equals(MultiCounter.class)) {
-						stream.println((String) multiCounterToString.invoke(field.get(this)));
-					} else if (field.getType().equals(Histogram.class)) {
-						stream.println((String) histogramToString.invoke(field.get(this)));
-					} else if (field.getType().equals(DoubleAdder.class)) {
-						stream.println((String) doubleAdderToString.invoke(field.get(this)));
+						stream.println((String) statsCollectorToString.invoke(fieldValue, transformer));
 					} else {
-						stream.println(field.get(this).toString());
+						stream.println(fieldValue.toString());
 					}
 				} catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
 					throw new RuntimeException(e);
+				} catch (ConcurrentModificationException e) {
+					cme = e;
 				} finally {
 					if (annotation != null && annotation.color().equals("greenBackground")) {
 						stream.print(reset(colorize));
@@ -806,17 +839,16 @@ public class AnalysisStats implements Serializable, Actualizable {
 				}
 			}
 		}
+		if (cme != null) {
+			throw cme;
+		}
 	}
 
-	private static final Method longAdderFormatterSum, statsCollectorToString, multiCounterToString, histogramToString,
-	doubleAdderToString, turnOnMethod, turnOffMethod;
+	private static final Method longAdderFormatterSum, statsCollectorToString, turnOnMethod, turnOffMethod;
 	static {
 		try {
 			longAdderFormatterSum = LongAdder.class.getDeclaredMethod("sum");
 			statsCollectorToString = StatsCollector.class.getDeclaredMethod("toString", Function.class);
-			multiCounterToString = MultiCounter.class.getDeclaredMethod("toString");
-			histogramToString = Histogram.class.getDeclaredMethod("toString");
-			doubleAdderToString = DoubleAdder.class.getDeclaredMethod("toString");
 			turnOnMethod = SwitchableStats.class.getDeclaredMethod("turnOn");
 			turnOffMethod = SwitchableStats.class.getDeclaredMethod("turnOff");
 		} catch (NoSuchMethodException | SecurityException e) {
@@ -827,7 +859,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	public void setOutputLevel(OutputLevel level) {
 		this.outputLevel = level;
-		
+
 		for (Field field : AnalysisStats.class.getDeclaredFields()) {
 			if (!SwitchableStats.class.isAssignableFrom(field.getType())) {
 				continue;
@@ -841,12 +873,12 @@ public class AnalysisStats implements Serializable, Actualizable {
 				if (annotation.outputLevel().compareTo(outputLevel) <= 0) {
 					turnOnMethod.invoke(field.get(this));
 				} else {
-					turnOffMethod.invoke(field.get(this));				
+					turnOffMethod.invoke(field.get(this));
 				}
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 				throw new RuntimeException(e);
 			}
-		} 
+		}
 	}
 
 	public void traceField(String fieldName, String prefix) throws NoSuchFieldException,
@@ -875,5 +907,5 @@ public class AnalysisStats implements Serializable, Actualizable {
 			};
 		}
 	}
-	
+
 }

@@ -22,19 +22,22 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.jdo.annotations.PersistenceCapable;
+
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 
+@PersistenceCapable
 public final class LocationExaminationResults implements Serializable {
 	private static final long serialVersionUID = -2966237959317593137L;
 
 	@JsonIgnore //Already listed in LocationAnalysis
-	Collection<CandidateSequence> analyzedCandidateSequences;
+	transient Collection<CandidateSequenceI> analyzedCandidateSequences;
 	int nGoodOrDubiousDuplexes = 0;
 	int nGoodDuplexesIgnoringDisag = 0;
 	int nGoodDuplexes = 0;
@@ -45,7 +48,7 @@ public final class LocationExaminationResults implements Serializable {
 		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable
 	int disagQ2Coverage = 0;
 	@JsonIgnore
-	final @NonNull Collection<@NonNull ComparablePair<String, String>>
+	final transient @NonNull Collection<@NonNull ComparablePair<String, String>>
 		rawMismatchesQ2 = new ArrayList<>(),
 		rawDeletionsQ2 = new ArrayList<>(),
 		rawInsertionsQ2 = new ArrayList<>();
@@ -57,5 +60,5 @@ public final class LocationExaminationResults implements Serializable {
 	//To assert that an instance is not concurrently modified by
 	//multiple threads
 	@JsonIgnore
-	final AtomicInteger threadCount = new AtomicInteger();
+	final transient AtomicInteger threadCount = new AtomicInteger();
 }

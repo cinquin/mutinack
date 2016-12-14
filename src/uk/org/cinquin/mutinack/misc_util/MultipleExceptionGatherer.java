@@ -27,7 +27,12 @@ import org.eclipse.jdt.annotation.Nullable;
 public class MultipleExceptionGatherer {
 	List<Throwable> exceptions = new ArrayList<>();
 
-	public void tryAdd(Runnable r) {
+	@FunctionalInterface
+	public interface ThrowingRunnable {
+		void run() throws Exception;
+	}
+
+	public void tryAdd(ThrowingRunnable r) {
 		try {
 			r.run();
 		} catch (Exception e) {

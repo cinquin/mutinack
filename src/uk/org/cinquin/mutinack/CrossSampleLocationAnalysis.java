@@ -2,19 +2,20 @@ package uk.org.cinquin.mutinack;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
+
+import javax.jdo.annotations.PersistenceCapable;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.final_annotation.Final;
 
+@PersistenceCapable
 public class CrossSampleLocationAnalysis implements Serializable {
 	private static final long serialVersionUID = 8408952788062841827L;
 
-	public final SequenceLocation location;
+	public @Final SequenceLocation location;
 	public boolean randomlySelected;
 	public boolean lowTopAlleleFreq;
 	public int candidateCount;
@@ -22,9 +23,7 @@ public class CrossSampleLocationAnalysis implements Serializable {
 	boolean oneSampleNoWt;
 	boolean noWt;
 
-	final List<Integer> nDuplexesUniqueQ2MutationCandidate = new ArrayList<>();
-
-	final Map<String, CandidateSequence> candidates = new HashMap<>();
+	@Final List<Integer> nDuplexesUniqueQ2MutationCandidate = new ArrayList<>();
 
 	public CrossSampleLocationAnalysis(@NonNull SequenceLocation location) {
 		this.location = location;

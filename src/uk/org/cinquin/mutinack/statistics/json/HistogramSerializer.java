@@ -36,6 +36,7 @@ public class HistogramSerializer extends JsonSerializer<@NonNull Histogram> {
 	public void serialize(@NonNull Histogram value, JsonGenerator gen,
 			SerializerProvider serializers) throws IOException {
         gen.writeStartObject();
+        value.actualize();
         gen.writeStringField("nEntries", value.nEntries);
         gen.writeStringField("average", value.average);
         gen.writeStringField("median", value.median);

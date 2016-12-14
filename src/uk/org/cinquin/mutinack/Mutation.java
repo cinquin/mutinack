@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,7 +30,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.json.ByteArrayStringSerializer;
 
 public final class Mutation implements Comparable<Mutation>, Serializable {
-	
+
 	private static final long serialVersionUID = 6679657529214343514L;
 	public final MutationType mutationType;
 	private final byte wildtype;
@@ -45,7 +45,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		this.mutationSequence = mutationSequence;
 		this.setTemplateStrand(templateStrand);
 	}
-	
+
 	static byte complement (byte b) {
 		switch (b) {
 			case 'A': return 'T';
@@ -59,11 +59,11 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			case 'n': return 'n';
 			case 'N': return 'N';
 			case 0 : return 0;
-			default : throw new AssertionFailedException("Cannot complement " + 
+			default : throw new AssertionFailedException("Cannot complement " +
 					new String(new byte[] {b}));
 		}
 	}
-	
+
 	public static @NonNull String reverseComplement(@NonNull String s) {
 		byte [] bytes = s.getBytes();
 		byte [] rcBytes = new byte[bytes.length];
@@ -95,7 +95,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 				isTemplateStrand());
 		return c;
 	}
-	
+
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
@@ -123,7 +123,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			return false;
 		return true;
 	}
-	
+
 	public byte[] getSequence() {
 		if (mutationType.isWildtype()) {
 			return new byte[] {wildtype};
@@ -131,13 +131,13 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			return mutationSequence;
 		}
 	}
-	
+
 	public Mutation(CandidateSequenceI c) {
 		mutationType = c.getMutationType();
 		wildtype = c.getWildtypeSequence();
 		mutationSequence = c.getSequence();
 	}
-	
+
 	private String mutationSequenceString () {
 		if (mutationSequence == null) {
 			return "";
@@ -145,20 +145,29 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			return new String(mutationSequence);
 		}
 	}
-	
+
 	@Override
 	public String toString() {
+		return toString(false);
+	}
+
+	public String toString(boolean longForm) {
 		switch(mutationType) {
-		case WILDTYPE:
-			return "wt " + new String(new byte[] {wildtype});
-		case DELETION:
-			return "del " + mutationSequenceString();
-		case INSERTION:
-			return "ins " + mutationSequenceString();
-		case SUBSTITUTION:
-			return "subst " + mutationSequenceString();
-		default : throw new AssertionFailedException();
+			case WILDTYPE:
+				return "wt " + new String(new byte[] {wildtype});
+			case DELETION:
+				return "del " + mutationSequenceString();
+			case INSERTION:
+				return "ins " + mutationSequenceString();
+			case SUBSTITUTION:
+				return "subst " + (longForm ? (new String(new byte[] {wildtype}) + "->") : "") +
+					mutationSequenceString();
+			default : throw new AssertionFailedException();
 		}
+	}
+
+	public String toLongString() {
+		return toString(true);
 	}
 
 	@Override
@@ -184,4 +193,5 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	public void setTemplateStrand(Optional<Boolean> templateStrand) {
 		this.templateStrand = templateStrand.orElse(null);
 	}
+
 }

@@ -1,10 +1,10 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 public class CandidateDuplexEval {
-	public CandidateDuplexEval(CandidateSequence candidateSequence) {
+	public CandidateDuplexEval(CandidateSequenceI candidateSequence) {
 		this.candidate = candidateSequence;
 	}
-	public final CandidateSequence candidate;
+	public final CandidateSequenceI candidate;
 	public int count = 0;
 	public int maxDistanceToLigSite = -1;
 }

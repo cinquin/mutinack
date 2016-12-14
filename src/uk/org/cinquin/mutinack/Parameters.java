@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import javax.jdo.annotations.Column;
+import javax.jdo.annotations.NotPersistent;
+import javax.jdo.annotations.PersistenceCapable;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -51,6 +56,7 @@ import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 
+@PersistenceCapable
 public final class Parameters implements Serializable, Cloneable {
 
 	public void validate() {
@@ -87,7 +93,7 @@ public final class Parameters implements Serializable, Cloneable {
 					+ candidateQ2Criterion);
 		}
 
-		final Set<String> parametersToExplore = new HashSet<>();
+		checkNoDuplicates();
 
 		for (String p: exploreParameters) {
 			String [] split = p.split(":");
@@ -96,10 +102,6 @@ public final class Parameters implements Serializable, Cloneable {
 					"name:min:max:step, but " + (split.length - 1) + " columns found in " + p);
 			}
 			final String paramName = split[0];
-			if (!parametersToExplore.add(paramName)) {
-				throw new IllegalArgumentException("Can specify each argument at most once in exploreParameters, " +
-					"but " + paramName + "is specified more than once");
-			}
 			final Field f;
 			try {
 				f = Parameters.class.getDeclaredField(paramName);
@@ -119,6 +121,38 @@ public final class Parameters implements Serializable, Cloneable {
 			}
 			if (!(value instanceof Integer) && !(value instanceof Float)) {
 				throw new IllegalArgumentException("Parameter " + paramName + " is not a number");
+			}
+		}
+	}
+
+	private void checkNoDuplicates() {
+		iterateFields((field, obj) -> {
+			if (field.getAnnotation(NoDuplicates.class) == null || obj == null) {
+				return;
+			}
+			@SuppressWarnings("unchecked")
+			Collection<Object> col = (Collection<Object>) obj;
+			final Set<Object> set = new HashSet<>();
+			for (Object o: col) {
+				if (!set.add(o)) {
+					throw new IllegalArgumentException("Can specify each argument at most once for " + field.getName() +
+						" but " + o + "is specified more than once");
+				}
+			}
+		});
+	}
+
+	@FunctionalInterface
+	private static interface ThrowingFieldValueBiConsumer {
+		void accept(Field field, Object fieldValue) throws IllegalArgumentException, IllegalAccessException;
+	}
+
+	private void iterateFields(ThrowingFieldValueBiConsumer consumer) {
+		for (Field field: Parameters.class.getDeclaredFields()) {
+			try {
+				consumer.accept(field, field.get(this));
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -160,10 +194,26 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-suppressStderrOutput", description = "Only partially implemented so far", required = false)
 	public boolean suppressStderrOutput = false;
 
+	@Parameter(names = "-runBatchName", description = "User-defined string to identify batch to which this run belongs",
+		required = false)
+	public String runBatchName = "";
+
+	@Parameter(names = "-outputToDatabaseURL", description = "Formatted e.g. as jdbc:postgresql://localhost/mutinack_test_db",
+		required = false)
+	public String outputToDatabaseURL = "jdbc:postgresql://localhost/mutinack_test_db";
+
+	@Parameter(names = "-outputToDatabaseUserName", description = "",
+		required = false)
+	public String outputToDatabaseUserName = "testuser3";
+
+	@Parameter(names = "-outputToDatabaseUserPassword", description = "",
+		required = false)
+	public @NotPersistent String outputToDatabaseUserPassword = "testpassword34";
+
 	@FilePath
 	@Parameter(names = "-outputJSONTo", description = "Path to which JSON-formatted output should be written",
 		required = false)
-	public String outputJSONTo = "";
+	public @Column(length = 1_000) String outputJSONTo = "";
 
 	@Parameter(names = "-outputDuplexDetails", description = "For each reported mutation, give list of its reads and duplexes", required = false)
 	public boolean outputDuplexDetails = false;
@@ -192,6 +242,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public int processingChunk = 160;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-inputReads", description = "Input BAM read file, sorted and with an index; repeat as many times as there are samples", required = true)
 	public List<@NonNull String> inputReads = new ArrayList<>();
 
@@ -200,10 +251,12 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean lenientSamValidation = true;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-originalReadFile1", description = "Fastq-formatted raw read data", required = false, hidden = true)
 	public List<@NonNull String> originalReadFile1 = new ArrayList<>();
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-originalReadFile2", description = "Fastq-formatted raw read data", required = false, hidden = true)
 	public List<@NonNull String> originalReadFile2 = new ArrayList<>();
 
@@ -221,6 +274,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean randomizeStrand = false;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-intersectAlignment", description = "List of BAM files with which alignments in inputReads must agree; each file must be sorted", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> intersectAlignment = new ArrayList<>();
 
@@ -230,10 +284,14 @@ public final class Parameters implements Serializable, Cloneable {
 	@FilePath
 	@Parameter(names = "-referenceGenome", description = "Reference genome in FASTA format; index file must be present",
 		required = true)
-	public String referenceGenome = "";
+	public @Column(length = 1_000) String referenceGenome = "";
+
+	@Parameter(names = "-referenceGenomeShortName", description = "e.g. ce10, hg19, etc.", required = true)
+	public String referenceGenomeShortName = "";
 
 	@Parameter(names = "-contigNamesToProcess", description =
 			"Reads not mapped to any of these contigs will be ignored")
+	@NoDuplicates
 	@NonNull List<@NonNull String> contigNamesToProcess =
 		Arrays.asList("chrI", "chrII", "chrIII", "chrIV", "chrV", "chrX", "chrM");
 
@@ -254,6 +312,7 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-traceField", description = "Output each position at which" +
 		" specified statistic is incremented; formatted as sampleName:statisticName", required = false)
+	@NoDuplicates
 	public List<String> traceFields = new ArrayList<>();
 
 	@Parameter(names = "-contigStatsBinLength", description = "Length of bin to use for statistics that" +
@@ -422,6 +481,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean requireMatchInAlignmentEnd = false;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> saveFilteredReadsTo = new ArrayList<>();
 
@@ -429,6 +489,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean collapseFilteredReads = false;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-bamReadsWithBarcodeField", description = "Unimplemented; BAM/SAM file saved from previous run with barcodes stored as attributes", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> bamReadsWithBarcodeField = new ArrayList<>();
 
@@ -450,24 +511,26 @@ public final class Parameters implements Serializable, Cloneable {
 	 * Output section
 	 */
 
+	@NoDuplicates
 	@Parameter(names = "-sampleName", description = "Used to name samples in output file; can be repeated as many times as there are inputReads", required = false)
 	List<@NonNull String> sampleNames = new ArrayList<>();
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
 	public List<@NonNull String> forceOutputAtPositionsFile = new ArrayList<>();
 
 	@Parameter(names = "-forceOutputAtPositions", description = "Detailed information is reported for positions given as ranges", required = false,
 		converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
-	public List<@NonNull String> forceOutputAtPositions = new ArrayList<>();
+	public @NoDuplicates List<@NonNull String> forceOutputAtPositions = new ArrayList<>();
 
 	@FilePath
 	@Parameter(names = "-annotateMutationsInFile", description = "TODO", required = false)
-	public String annotateMutationsInFile = null;
+	public @Column(length = 1_000) String annotateMutationsInFile = null;
 
 	@FilePath
 	@Parameter(names = "-annotateMutationsOutputFile", description = "TODO", required = false)
-	public String annotateMutationsOutputFile = null;
+	public @Column(length = 1_000) String annotateMutationsOutputFile = null;
 
 	@Parameter(names = "-randomOutputRate", description = "Randomly choose genome positions at this rate to include in output", required = false)
 	public float randomOutputRate = 0;
@@ -476,11 +539,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags;" +
 		" note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold (it is" +
 		" relatively rare but possible for a read to be omitted even though it counts toward coverage).", required = false)
-	public String outputAlignmentFile = null;
+	public @Column(length = 1_000) String outputAlignmentFile = null;
 
 	@FilePath
 	@Parameter(names = "-discardedReadFile", description = "Write discarded reads to BAM file specified by parameter", required = false, hidden = hideInProgressParameters)
-	public String discardedReadFile = null;
+	public @Column(length = 1_000) String discardedReadFile = null;
 
 	@Parameter(names = "-logReadIssuesInOutputBam", description = "Use custom fields in output BAM to give reasons why duplexes as a whole or individual bases did not reach maximum quality", required = false, arity = 1)
 	public boolean logReadIssuesInOutputBam = true;
@@ -492,50 +555,56 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean outputTopBottomDisagreementBED = true;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-reportStatsForBED", description = "Report number of observations that fall within" +
 		" the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForBED = new ArrayList<>();
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-reportStatsForNotBED", description = "Report number of observations that do *not* fall within" +
 		" the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForNotBED = new ArrayList<>();
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-excludeRegionsInBED", description = "Positions covered by this BED file will be completely ignored in the analysis", required = false)
 	public List<@NonNull String> excludeRegionsInBED = new ArrayList<>();
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-repetiveRegionBED", description = "If specified, used for stats (mutant|wt)Q2CandidateQ1Q2DCoverage[Non]Repetitive", required = false)
 	public List<@NonNull String> repetiveRegionBED = new ArrayList<>();
 
 	@FilePath
 	@Parameter(names = "-bedDisagreementOrienter", description = "Gene orientation read from this file" +
 		" is used to orient top/bottom strand disagreements with respect to transcribed strand", required = false)
-	public String bedDisagreementOrienter = null;
+	public @Column(length = 1_000) String bedDisagreementOrienter = null;
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-reportBreakdownForBED", description = "Report number of observations that fall within" +
 		" each of the regions defined by BED file whose path follows", required = false)
 	public List<@NonNull String> reportBreakdownForBED = new ArrayList<>();
 
 	@FilePathList
+	@NoDuplicates
 	@Parameter(names = "-saveBEDBreakdownTo", description = "Path for saving of BED region counts; argument " +
 		" list must match that given to -reportBreakdownForBED", required = false)
 	public List<@NonNull String> saveBEDBreakdownTo = new ArrayList<>();
 
 	@FilePath
 	@Parameter(names = "-bedFeatureSuppInfoFile", description = "Read genome annotation supplementary info, used in output of counter with BED feature breakdown")
-	public String bedFeatureSuppInfoFile = null;
+	public @Column(length = 1_000) String bedFeatureSuppInfoFile = null;
 
 	@FilePath
 	@Parameter(names = "-refSeqToOfficialGeneName", description = "Tab separated text file with RefSeq ID, tab, and official gene name and any other useful info; " +
 		"counts will be reported both by RefSeq ID and official gene name")
-	public String refSeqToOfficialGeneName = null;
+	public @Column(length = 1_000) String refSeqToOfficialGeneName = null;
 
 	@FilePath
 	@Parameter(names = "-auxOutputFileBaseName", description = "Base name of files to which to record mutations, disagreements between top and bottom strands, etc.", required = false)
-	public String auxOutputFileBaseName = null;
+	public @Column(length = 1_000) String auxOutputFileBaseName = null;
 
 	@Parameter(names = "-rnaSeq", description = "Ignore deletions and turn off checks that do not make sense for RNAseq data", required = false)
 	public boolean rnaSeq = false;
@@ -557,15 +626,15 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@FilePath
 	@Parameter(names = "-workingDirectory", help = true, description = "Evaluate parameter file paths using specified directory as workind directory", required = false, hidden = hideAdvancedParameters)
-	public String workingDirectory = null;
+	public @Column(length = 1_000) String workingDirectory = null;
 
 	@FilePath
 	@Parameter(names = "-referenceOutput", description = "Path to reference output to be used for functional tests", required = false, hidden = hideAdvancedParameters)
-	public String referenceOutput = null;
+	public @Column(length = 1_000) String referenceOutput = null;
 
 	@FilePath
 	@Parameter(names = "-recordRunsTo", description = "Get server to output a record of all runs it processed, to be replayed for functional tests", required = false, hidden = hideAdvancedParameters)
-	public String recordRunsTo = null;
+	public @Column(length = 1_000) String recordRunsTo = null;
 
 	@Parameter(names = "-runName", description = "Name of run to be used in conjunction with -recordRunsTo", required = false, hidden = hideAdvancedParameters)
 	public String runName = null;
@@ -580,7 +649,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public String keysFile = "mutinack_public_selfsigned.jks";
 
 	@Parameter(names = "-exploreParameter", description = "", required = false, hidden = true)
-	public List<String> exploreParameters = new ArrayList<>();
+	public @NoDuplicates List<String> exploreParameters = new ArrayList<>();
 
 	@Parameter(names = "-cartesianProductOfExploredParameters", description = "", required = false, hidden = true, arity = 1)
 	public boolean cartesianProductOfExploredParameters = true;
@@ -598,6 +667,9 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface OnlyUsedOnAdvance {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	private @interface NoDuplicates {}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface FilePath {}
@@ -622,38 +694,26 @@ public final class Parameters implements Serializable, Cloneable {
 	}
 
 	public void transformFilePaths(Function<String, String> transformer) {
-		for (Field field: Parameters.class.getDeclaredFields()) {
-			try {
-				if (field.getAnnotation(FilePath.class) != null) {
-					Object fieldValue = field.get(this);
-					if (fieldValue == null) {
-						continue;
-					}
-					Assert.isTrue(fieldValue instanceof String, "Field %s not string", field);
-					String path = (String) fieldValue;
-					String transformed = transformer.apply(path);
-					field.set(this, transformed);
-				} else if (field.getAnnotation(FilePathList.class) != null) {
-					Object fieldValue = field.get(this);
-					if (fieldValue == null) {
-						continue;
-					}
-					Assert.isTrue(fieldValue instanceof List, "Field %s not list", field);
-					@SuppressWarnings("unchecked")
-					List<String> paths = (List<String>) fieldValue;
-					for (int i = 0; i < paths.size(); i++) {
-						String path = paths.get(i);
-						String transformed = transformer.apply(path);
-						paths.set(i, transformed);
-					}
-				} else {
-					continue;
-				}
-			} catch (IllegalArgumentException | IllegalAccessException |
-					SecurityException e) {
-				throw new RuntimeException(e);
+		iterateFields((field, fieldValue) -> {
+			if (fieldValue == null) {
+				return;
 			}
-		}
+			if (field.getAnnotation(FilePath.class) != null) {
+				Assert.isTrue(fieldValue instanceof String, "Field %s not string", field);
+				String path = (String) fieldValue;
+				String transformed = transformer.apply(path);
+				field.set(this, transformed);
+			} else if (field.getAnnotation(FilePathList.class) != null) {
+				Assert.isTrue(fieldValue instanceof List, "Field %s not list", field);
+				@SuppressWarnings("unchecked")
+				List<String> paths = (List<String>) fieldValue;
+				for (int i = 0; i < paths.size(); i++) {
+					String path = paths.get(i);
+					String transformed = transformer.apply(path);
+					paths.set(i, transformed);
+				}
+			}
+		});
 	}
 
 	/**
@@ -676,6 +736,14 @@ public final class Parameters implements Serializable, Cloneable {
 	@JsonIgnore
 	private static final Parameters defaultValues = new Parameters();
 
+	private static final Set<String> fieldsToIgnore = new HashSet<>();
+	static {
+		fieldsToIgnore.add("$jacocoData");
+		fieldsToIgnore.add("dnFieldFlags");
+		fieldsToIgnore.add("dnFieldTypes");
+		fieldsToIgnore.add("dnFieldNames");
+	}
+
 	@Override
 	public String toString() {
 		String defaultValuesString = "";
@@ -684,7 +752,7 @@ public final class Parameters implements Serializable, Cloneable {
 			try {
 				if (field.getAnnotation(HideInToString.class) != null)
 					continue;
-				if (field.getName().equals("$jacocoData")) {
+				if (fieldsToIgnore.contains(field.getName())) {
 					continue;
 				}
 				Object fieldValue = field.get(this);

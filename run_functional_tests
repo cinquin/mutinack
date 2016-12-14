@@ -7,6 +7,9 @@ if [ "$uname" = FreeBSD ]; then
 else
 	MAKE=make
 fi
+
+rm mutinack.jar && ant jar_enhanced
+
 if [ "$uname" = FreeBSD -o "$uname" = Darwin ]; then
        TIME=time
 else

@@ -165,6 +165,17 @@ by editing the code.
 Under FreeBSD or Mac OS X, press control-T (or `kill -INFO` the process)
 to see a progress update on the standard error stream.
 
+**Mutinack output**
+JSON-formatted mutation detections and statistics are output to a file
+specified by the `-outputJSONTo` parameter. These outputs can also be
+parsed from tab-delimited columns in the standard output stream and
+auxiliary files specified as arguments.
+
+Functionality to store outputs in a database is partially implemented
+(partially tested with PostgreSQL; the functionality relies on Java
+Data Objects and the DataNucleus implementation, and it should thus
+be straightforward to send the output to other database systems).
+
 **Distributed computing**
 
 Mutinack can use Java's Remote Method Invocation to run server and

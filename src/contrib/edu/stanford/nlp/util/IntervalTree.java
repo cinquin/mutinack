@@ -17,7 +17,7 @@ import java.util.TreeMap;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-import uk.org.cinquin.mutinack.misc_util.ResizingArrayQueue;
+import uk.org.cinquin.mutinack.misc_util.collections.ResizingArrayQueue;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 /**

@@ -61,11 +61,11 @@ import contrib.edu.stanford.nlp.util.HasInterval;
 import contrib.edu.stanford.nlp.util.Interval;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDuplexEval;
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.Quality;
@@ -78,6 +78,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.statistics.Histogram;
 
 /**
  * Equality and hashcode ignore list of reads assigned to duplex, quality, and roughLocation,
@@ -472,7 +473,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				final int distance4 = param.requireMatchInAlignmentEnd && duplex1.rightAlignmentStart != null && duplex2.rightAlignmentStart != null ?
 						duplex1.rightAlignmentStart.position - duplex2.rightAlignmentStart.position : 0;
 
-				if (	duplex1.distanceTo(duplex2) <= param.alignmentPositionMismatchAllowed &&
+				if (duplex1.distanceTo(duplex2) <= param.alignmentPositionMismatchAllowed &&
 						Math.abs(distance1) <= param.alignmentPositionMismatchAllowed &&
 						Math.abs(distance2) <= param.alignmentPositionMismatchAllowed &&
 						Math.abs(distance3) <= param.alignmentPositionMismatchAllowed &&
@@ -547,7 +548,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public void examineAtLoc(@NonNull SequenceLocation location,
 		LocationExaminationResults result,
-		@NonNull THashSet<@NonNull CandidateSequence> candidateSet,
+		@NonNull THashSet<@NonNull CandidateSequenceI> candidateSet,
 		@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 		@NonNull CandidateCounter topCounter,
 		@NonNull CandidateCounter bottomCounter,
@@ -572,7 +573,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@SuppressWarnings({"null", "ReferenceEquality"})
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull THashSet<@NonNull CandidateSequence> candidateSet,
+			@NonNull THashSet<@NonNull CandidateSequenceI> candidateSet,
 			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
@@ -759,7 +760,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		if (bottom != null && top != null) {
 			if (thresholds2Met) {
-				//localQuality = min(localQuality, GOOD);
+				//Nothing to do
 			} else if (thresholds1Met) {
 				dq.addUnique(CONSENSUS_Q1, DUBIOUS);
 				stats.nPosDuplexWithLackOfStrandConsensus2.increment(location);
@@ -815,18 +816,64 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		final DuplexDisagreement duplexDisagreementQ2;
 		final boolean disagreement = bothStrandsPresent &&
-			(!Arrays.equals(bottom.candidate.getSequence(), top.candidate.getSequence()) ||
-				!bottom.candidate.getMutationType().equals(top.candidate.getMutationType()));
+			!bottom.candidate.equals(top.candidate);
 
-		if (disagreement) {
+		if (!disagreement) {
+			duplexDisagreementQ2 = null;
+		} else {
 			dq.addUnique(DISAGREEMENT, ATROCIOUS);
 			issues.add(location + " DSG");
 
-			if (highEnoughQualForQ2Disagreement && noHiddenCandidateAndBSP) {
-				final Mutation m1 = new Mutation(top.candidate);
-				final Mutation m2 = new Mutation(bottom.candidate);
+			final Mutation m1 = new Mutation(top.candidate);
+			final Mutation m2 = new Mutation(bottom.candidate);
+			final boolean noWildtype = !m1.mutationType.isWildtype() && !m2.mutationType.isWildtype();
+			final Mutation actualMutant = (!m1.mutationType.isWildtype()) ? m1 : m2;
+			final Mutation wildtype = (actualMutant == m1) ? m2 : m1;
 
-				if (!m1.mutationType.isWildtype() && !m2.mutationType.isWildtype()) {
+			final CandidateSequenceI mutantCandidate;
+			final CandidateDuplexEval mutantEval;
+			if (actualMutant == m1) {
+				mutantCandidate = top.candidate;
+				mutantEval = top;
+			} else {
+				mutantCandidate = bottom.candidate;
+				mutantEval = bottom;
+			}
+
+			final boolean reverseComplementDisag =
+				topStrandIsNegative ?
+						mutantCandidate == top.candidate
+					:
+						mutantCandidate == bottom.candidate;
+
+			if (analyzer.codingStrandTester != null) {
+				Optional<Boolean> negativeCodingStrand =
+						analyzer.codingStrandTester.getNegativeStrand(location);
+				actualMutant.setTemplateStrand(negativeCodingStrand.map(
+						b ->  b == reverseComplementDisag ? false : true));
+			}
+
+			if (noHiddenCandidateAndBSP && !noWildtype && mutantEval.count > 1) {
+				final int mutConsensus, wtConsensus;
+				if (m1.mutationType.isWildtype()) {
+					wtConsensus = (int) (100f * top.count / nTopStrandsWithCandidate);
+					mutConsensus = (int) (100f * bottom.count / nBottomStrandsWithCandidate);
+				} else {
+					mutConsensus = (int) (100f * top.count / nTopStrandsWithCandidate);
+					wtConsensus = (int) (100f * bottom.count / nBottomStrandsWithCandidate);
+				}
+				stats.disagMutConsensus.computeIfAbsent(
+					reverseComplementDisag ? actualMutant.reverseComplement() : actualMutant,
+						key -> new Histogram(100)).insert(mutConsensus);
+				stats.disagWtConsensus.computeIfAbsent(
+					reverseComplementDisag ? wildtype : wildtype.reverseComplement(),
+						key -> new Histogram(100)).insert(wtConsensus);
+			}
+
+			if (!highEnoughQualForQ2Disagreement || !noHiddenCandidateAndBSP) {
+				duplexDisagreementQ2 = null;
+			} else {
+				if (noWildtype) {
 					//If there is no natural ordering for the disagreement pair, sort
 					//it by alphabetical order (instead of wt sequence, mutated sequence)
 					final byte nonNullTop =
@@ -852,29 +899,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 					duplexDisagreementQ2.probCollision = probAtLeastOneCollision;
 				} else {
-					final Mutation actualMutant = (!m1.mutationType.isWildtype()) ? m1 : m2;
-					final Mutation wildtype = (actualMutant == m1) ? m2 : m1;
-
-					final CandidateSequence mutantCandidate;
-					if (actualMutant == m1) {
-						mutantCandidate = top.candidate;
-					} else {
-						mutantCandidate = bottom.candidate;
-					}
-
-					final boolean reverseComplementDisag =
-						topStrandIsNegative ?
-								mutantCandidate == top.candidate
-							:
-								mutantCandidate == bottom.candidate;
-
-					if (analyzer.codingStrandTester != null) {
-						Optional<Boolean> negativeCodingStrand =
-								analyzer.codingStrandTester.getNegativeStrand(location);
-						actualMutant.setTemplateStrand(negativeCodingStrand.map(
-								b ->  b == reverseComplementDisag ? false : true));
-					}
-
 					duplexDisagreementQ2 = reverseComplementDisag ?
 						new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true, GOOD)
 					:
@@ -902,13 +926,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 				}//End case with one wildtype candidate
 			}//End highEnoughQualForQ2Disagreement
-			else {
-				duplexDisagreementQ2 = null;
-			}
 		}//End candidate for disagreement
-		else {
-			duplexDisagreementQ2 = null;
-		}
+
 		Assert.isFalse(duplexDisagreementQ2 != null &&
 				dq.getValueIgnoring(assaysToIgnoreForDisagreementQuality).lowerThan(GOOD),
 			() -> dq.toString());
@@ -919,9 +938,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		localAndGlobalQuality = dq;
 
-		final boolean atrocious = dq.getValue().atMost(ATROCIOUS);
-
 		//Now remove support given to non-consensus candidate mutations by this duplex
+		final boolean atrocious = dq.getValue().atMost(ATROCIOUS);
 		candidateSet.forEach(candidate -> {
 			Assert.isFalse(top == null && bottom == null);
 			if (!atrocious &&
@@ -930,7 +948,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				return true;
 			}
 
-			final @NonNull TObjectIntHashMap<ExtendedSAMRecord> reads =
+			final @NonNull TObjectIntMap<ExtendedSAMRecord> reads =
 				candidate.getMutableConcurringReads();
 
 			final int noEntryValue = reads.getNoEntryValue();
@@ -942,7 +960,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				if (candidate.removeConcurringRead(r) != noEntryValue) {
 					nRemoved++;
 				}
-				Assert.isFalse(reads.contains(r));
+				Assert.isFalse(reads.containsKey(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
 			}
 			for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
@@ -950,7 +968,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				if (candidate.removeConcurringRead(r) != noEntryValue) {
 					nRemoved++;
 				}
-				Assert.isFalse(reads.contains(r));
+				Assert.isFalse(reads.containsKey(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
 			}
 

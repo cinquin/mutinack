@@ -16,23 +16,25 @@ public class GetReadStats {
 		Predicate<SAMRecord> filter) {
 			Histogram result = new Histogram(1_000);
 			int nScanned = 0;
-			while (nScanned++ < nToScan && it.hasNext()) {
+			while (nScanned < nToScan && it.hasNext()) {
 				SAMRecord r = it.next();
 				if (!filter.test(r)) {
 					continue;
 				}
 				result.insert(Math.abs(r.getInferredInsertSize()));
+				nScanned++;
 			}
 			return result;
 	}
 
 	public static @NonNull Histogram getApproximateReadInsertSize(
-			File bamFile, int maxInsertSize) {
+			File bamFile, int maxInsertSize, int minMappingQualityQ2) {
 		final Histogram h;
 		try (SAMFileReader tempReader = new SAMFileReader(bamFile)) {
 			h = GetReadStats.getInsertSizeHist(tempReader.iterator(), 500_000,
 				r -> r.getInferredInsertSize() != 0 &&
-							Math.abs(r.getInferredInsertSize()) < maxInsertSize);
+						r.getMappingQuality() >= minMappingQualityQ2 &&
+						Math.abs(r.getInferredInsertSize()) < maxInsertSize);
 			Assert.isTrue(h.size() == 0 || h.get(0).sum() == 0);
 		} catch (Exception e) {
 			throw new RuntimeException("Error computing insert size distribution from file "

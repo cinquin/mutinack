@@ -47,6 +47,7 @@
   <uptodate property="jar.notRequired" targetfile="mutinack.jar">
     <srcfiles refid="to-jar-files"/>
   </uptodate>
+  <target name="jar_enhanced" depends="build,datanucleus_enhance,jar"/>
   <target name="jar" depends="insert-git-info,build,unjar_dependencies" description="Generate the distribution" unless="jar.notRequired">
     <property name="builder.name" value=""/>
     <property name="version.num" value="0.99"/>
@@ -59,6 +60,7 @@
       <attribute name="Implementation-Version" value="${version.num}-b${build.number}"/>
       <attribute name="Built-Date" value="${TODAY}"/>
       <attribute name="Main-Class" value="uk.org.cinquin.mutinack.Mutinack"/>
+      <attribute name="Class-Path" value="datanucleus-core-5.0.7-SNAPSHOT.jar datanucleus-rdbms-5.0.6-SNAPSHOT.jar datanucleus-api-jdo-5.0.6-SNAPSHOT.jar javax.jdo-3.2.0-m7-SNAPSHOT.jar javax.persistence-2.2.0-m2-SNAPSHOT.jar jdo-api-3.1.jar postgresql-9.4.1212.jar"/>
       <attribute name="Git-version" value="${repository.version}"/>
     </manifest>
     <jar jarfile="mutinack.jar" manifest="MANIFEST.MF">
@@ -148,5 +150,15 @@
       <fileset dir="lib_unjarred"> <exclude name="**/.DS_Store"/> <exclude name="**/*.RSA"/> <exclude name="**/*.DSA"/> <exclude name="**/*.SF"/> <include name="**/*.class"/> <include name="log4j.properties"/></fileset>
     </jar>
   </target>
+ <target name="datanucleus_enhance" depends="" description="DataNucleus enhancement">
+  <path id="datanucleus.path"> <pathelement location="lib_build_run_test/datanucleus-core-5.0.7-SNAPSHOT.jar"/> </path>
+   <taskdef name="datanucleusenhancer" classpathref="datanucleus.path"
+               classname="org.datanucleus.enhancer.EnhancerTask" />
+
+   <datanucleusenhancer classpathref="SequenceAnalysis.classpath"
+       dir="bin/uk/org/cinquin" failonerror="true" verbose="true">
+       <jvmarg line=""/>
+ </datanucleusenhancer>
+ </target>
 
 </project>

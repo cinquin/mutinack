@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -18,30 +18,42 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.io.Serializable;
 
+import javax.jdo.annotations.Discriminator;
+import javax.jdo.annotations.DiscriminatorStrategy;
+import javax.jdo.annotations.Inheritance;
+import javax.jdo.annotations.InheritanceStrategy;
+import javax.jdo.annotations.NotPersistent;
+import javax.jdo.annotations.PersistenceCapable;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 
 /**
  * Equality test does not include sequence itself, just its span in the reference genome.
  * @author olivier
  *
  */
+@PersistenceCapable
+@Discriminator(strategy = DiscriminatorStrategy.CLASS_NAME)
+@Inheritance(strategy = InheritanceStrategy.NEW_TABLE)
 public final class CandidateDeletion extends CandidateSequence implements Serializable {
-	
 	private static final long serialVersionUID = 3708709622820371707L;
-	private final @NonNull SequenceLocation deletionStart, deletionEnd;
-	
+
+	private @NotPersistent @Final @NonNull SequenceLocation deletionStart, deletionEnd;
+
 	@Override
 	public final String toString() {
 		String result = "deletion at " + getLocation() + " spanning " + deletionStart + "--" + deletionEnd + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
 		return result;
 	}
-	
+
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
@@ -73,6 +85,7 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 			@NonNull SequenceLocation deletionStart, @NonNull SequenceLocation deletionEnd) {
 		super(subAnalyzer, MutationType.DELETION, sequence, location, initialConcurringRead,
 			initialLigationSiteD);
+		Assert.isTrue(deletionStart.contigIndex == deletionEnd.contigIndex);
 		this.deletionStart = deletionStart;
 		this.deletionEnd = deletionEnd;
 	}

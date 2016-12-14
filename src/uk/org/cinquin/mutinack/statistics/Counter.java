@@ -55,9 +55,9 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
 	@JsonIgnore
-	protected final MutinackGroup groupSettings;
+	transient protected final MutinackGroup groupSettings;
 	@JsonIgnore
-	private List<SerializableFunction<Object, Object>> nameProcessors;
+	transient private List<SerializableFunction<Object, Object>> nameProcessors;
 
 	@SuppressWarnings("unchecked")
 	private static final Comparator<? super Map.Entry<Object, Object>>

@@ -22,10 +22,13 @@ import java.util.Objects;
 import org.eclipse.jdt.annotation.NonNull;
 
 //Adapted from http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
-public class ComparablePair<A extends Comparable<A>, B extends Comparable<B> > extends Pair<A,B>
+public class ComparablePair<A extends Comparable<A>, B extends Comparable<B>> extends Pair<A,B>
 	implements Comparable<ComparablePair<A,B>>, Serializable {
 
 	private static final long serialVersionUID = -2800696832250328844L;
+
+	protected ComparablePair() {
+	}
 
 	public ComparablePair(@NonNull A first, B second) {
     	super(first, second);

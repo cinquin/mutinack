@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import uk.org.cinquin.mutinack.statistics.json.HistogramSerializer;
 
-@JsonSerialize(using=HistogramSerializer.class)
+@JsonSerialize(using = HistogramSerializer.class)
 public class Histogram extends ArrayList<LongAdderFormatter>
 		implements SwitchableStats, Serializable, Actualizable {
 	@JsonIgnore
@@ -75,25 +75,34 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 				(index == size - 1 ? " (UNDERESTIMATE)" : "");
 	}
 
-	public double @NonNull[] toProbabilityArray() {
-		final double @NonNull[] result = new double[maxSize - 1];
-		long nEntries0 = 0;
+	public double @NonNull[] toProbabilityArray(boolean smoothen) {
+		final double @NonNull[] result = new double[maxSize];
+
 		for (int i = size() - 1; i >= 0; i--) {
-			nEntries0 += get(i).sum();
+			result[i] = get(i).sum();
 		}
 
-		final double nEntriesInverse = 1d / nEntries0;
+		if (smoothen) {
+			smoothen(result);
+		}
+
+		double resultSum = 0;
 		for (int i = 0; i < result.length; i++) {
-			result[i] = (size() <= i ? 0 : get(i).sum()) * nEntriesInverse;
+			resultSum += result[i];
+		}
+
+		final double sumInverse = 1d / resultSum;
+		for (int i = 0; i < result.length; i++) {
+			result[i] *= sumInverse;
 		}
 		return result;
 	}
 
-	public void insert (int value) {
+	public void insert(int value) {
 		if (!on)
 			return;
 		sum.add(value);
-		value = Math.min(value, maxSize);
+		value = Math.min(value, maxSize - 1);
 		if (size() < value + 1) {
 			synchronized(this) {
 				while (size() < value + 1) {
@@ -150,5 +159,51 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 		average = DoubleAdderFormatter.formatDouble(sum.sum() / nEntries0);
 		median = DoubleAdderFormatter.formatDouble(median0);
 		notes = index == size - 1 ? " (UNDERESTIMATE)" : "";
+	}
+
+	private static int indexOfMax(double[] a) {
+		double max = -Double.MAX_VALUE;
+		int result = -1;
+		for (int i = a.length - 1; i >= 0; i--) {
+			if (a[i] > max) {
+				max = a[i];
+				result = i;
+			}
+		}
+		return result;
+	}
+
+	private final static double exponentialSmoothingAlphaHigh = 0.5;
+	private final static double exponentialSmoothingAlphaLow = 0.2;
+
+	private static void smoothen(double [] a, final int startIndex, double startValue, final int increment) {
+		int position = startIndex;
+		double smoothened = startValue;
+		boolean seenLowValue = false;
+		double currentAlpha = exponentialSmoothingAlphaHigh;
+		while (position >= 0 && position < a.length) {
+			final double valueAtPosition = a[position];
+			if (!seenLowValue && valueAtPosition < 50) {
+				seenLowValue = true;
+				currentAlpha = exponentialSmoothingAlphaLow;
+			}
+			smoothened = currentAlpha * valueAtPosition +
+				(1 - currentAlpha) * smoothened;
+				a[position] = smoothened;
+			position += increment;
+		}
+	}
+
+	private static void smoothen(double [] a) {
+		int maxIndex = indexOfMax(a);
+		double localAverage = 0;
+		int nPoints = 0;
+		for (int i = Math.max(0, maxIndex - 3); i < Math.min(a.length - 1, maxIndex + 3); i++) {
+			nPoints++;
+			localAverage += a[i];
+		}
+		localAverage /= nPoints;
+		smoothen(a, maxIndex, localAverage, 1);
+		smoothen(a, maxIndex, localAverage, -1);
 	}
 }

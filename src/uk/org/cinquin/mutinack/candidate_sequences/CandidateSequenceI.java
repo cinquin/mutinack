@@ -18,6 +18,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -29,6 +30,7 @@ import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.LocationExaminationResults;
+import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Parameters;
@@ -100,4 +102,32 @@ public interface CandidateSequenceI extends Serializable {
 	int getNegativeStrandCount();
 	void incrementPositiveStrandCount(int i);
 	void incrementNegativeStrandCount(int i);
+	void restoreConcurringReads();
+	boolean isHidden();
+	int removeConcurringRead(@NonNull ExtendedSAMRecord r);
+	void setMedianPhredAtPosition(byte positionMedianPhred);
+	void setProbCollision(float probAtLeastOneCollision);
+	void setnWrongPairs(int count);
+	int getnWrongPairs();
+	@NonNull Map<DuplexRead, DetailedQualities<DuplexAssay>> getIssues();
+	void resetLigSiteDistances();
+	void acceptLigSiteDistance(int maxDistanceToLigSite);
+	void setnGoodDuplexesIgnoringDisag(int size);
+	int getnGoodDuplexesIgnoringDisag();
+	Mutation getMutation();
+	int getnDuplexesSisterArm();
+	void setnDuplexesSisterArm(int nDuplexesSisterArm);
+	void setInsertSize(int insertSize);
+	void setPositionInRead(int readPosition);
+	void setReadEL(int effectiveReadLength);
+	void setReadName(@NonNull String fullName);
+	void setReadAlignmentStart(int refAlignmentStart);
+	void setMateReadAlignmentStart(int mateRefAlignmentStart);
+	void setReadAlignmentEnd(int refAlignmentEnd);
+	void setMateReadAlignmentEnd(int mateRefAlignmentEnd);
+	void setRefPositionOfMateLigationSite(int refPositionOfMateLigationSite);
+	void setInsertSizeNoBarcodeAccounting(boolean b);
+	void setHidden(boolean b);
+	void addBasePhredQualityScore(byte b);
+
 }

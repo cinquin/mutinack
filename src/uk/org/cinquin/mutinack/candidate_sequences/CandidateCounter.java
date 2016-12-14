@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,17 +29,17 @@ import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
-	private final @NonNull THashSet<CandidateSequence> candidates;
+	private final @NonNull THashSet<CandidateSequenceI> candidates;
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
-	public final @NonNull THashMap<@NonNull CandidateSequence, @NonNull CandidateDuplexEval>
+	public final @NonNull THashMap<@NonNull CandidateSequenceI, @NonNull CandidateDuplexEval>
 		candidateCounts;
 	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
-	
+
 	public long nPhreds, sumPhreds;
 
-	public CandidateCounter(@NonNull THashSet<CandidateSequence> candidates,
+	public CandidateCounter(@NonNull THashSet<CandidateSequenceI> candidates,
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
@@ -51,11 +51,11 @@ public final class CandidateCounter {
 		keptRecords.clear();
 		candidateCounts.clear();
 	}
-	
+
 	public void compute() {
 		reset();
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
-			if (keptRecords.size() > 0 || candidateCounts.size() > 0) {
+			if (!keptRecords.isEmpty() || !candidateCounts.isEmpty()) {
 				throw new AssertionFailedException();
 			}
 		}
@@ -92,7 +92,7 @@ public final class CandidateCounter {
 		}//End loop over candidates
 		);
 	}
-	
+
 	public void setRecords(@NonNull List<@NonNull ExtendedSAMRecord> records) {
 		this.records = records;
 	}

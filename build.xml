@@ -65,6 +65,13 @@
         <pathelement location="lib/rmiio-2.1.3-SNAPSHOT.jar"/>
         <pathelement location="${jmh.jar}"/>
         <pathelement location="${jmh-generator-annprocess.jar}"/>
+        <pathelement location="lib_build_run_test/jdo-api-3.1.jar"/>
+        <pathelement location="lib_build_run_test/javax.jdo-3.2.0-m7-SNAPSHOT.jar"/>
+        <pathelement location="lib_build_run_test/javax.persistence-2.2.0-m2-SNAPSHOT.jar"/>
+        <pathelement location="lib_build_run_test/datanucleus-api-jdo-5.0.6-SNAPSHOT.jar"/>
+        <pathelement location="lib_build_run_test/datanucleus-core-5.0.7-SNAPSHOT.jar"/>
+        <pathelement location="lib_build_run_test/datanucleus-rdbms-5.0.6-SNAPSHOT.jar"/>
+        <pathelement location="lib_build_run_test/final_annotation.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -89,6 +96,18 @@
     <path id="errorprone">
         <fileset dir="lib_build_run_test" includes="error_prone_ant*.jar"/>
     </path>
+    <path id="final-annotation-processor">
+        <fileset dir="." includes="final_annotation_processor.jar"/>
+        <path refid="SequenceAnalysis.classpath"/>
+    </path>
+    <target depends="init" name="build-with-final-fields">
+       <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+           <compilerarg value="-XDignore.symbol.file"/>
+           <src path="src"/>
+           <include name="uk/org/cinquin/**/*.java"/>
+           <classpath refid="final-annotation-processor"/>
+        </javac>
+    </target>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
@@ -177,6 +196,13 @@
                 <junit fork="yes" printsummary="withOutAndErr">
                     <formatter type="xml"/>
                     <test name="uk.org.cinquin.mutinack.tests.TestEqualsHashcodeContracts" todir="${junit.output.dir}"/>
+                    <classpath refid="SequenceAnalysis.classpath"/>
+                </junit>
+            </jacoco:coverage>
+            <jacoco:coverage destfile="target/jacoco.exec">
+                <junit fork="yes" printsummary="withOutAndErr">
+                    <formatter type="xml"/>
+                    <test name="uk.org.cinquin.mutinack.tests.TestEqualsHashcodeContractsParametrized" todir="${junit.output.dir}"/>
                     <classpath refid="SequenceAnalysis.classpath"/>
                 </junit>
             </jacoco:coverage>

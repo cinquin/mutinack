@@ -1,4 +1,4 @@
-package uk.org.cinquin.mutinack.misc_util;
+package uk.org.cinquin.mutinack.misc_util.collections;
 
 import java.util.Collection;
 

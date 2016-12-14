@@ -9,9 +9,12 @@ export BASEDIR := $(shell echo `pwd`)
 endif
 JACOCO := -javaagent:jacoco.jar=destfile=$(BASEDIR)/../target/jacoco.exec
 JVM_OPTIONS = -XX:-OmitStackTraceInFastThrow -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3
-SUBMIT_TO_SERVER = -submitToServer localhost/mutinackTesting$(nailgun_port)
+MUTINACK_OPTIONS = -outputToDatabaseURL \"\"
+#MUTINACK_OPTIONS = -outputToDatabaseURL "jdbc:postgresql://localhost/mutinack_test_db"
 nailgun_port ?= 2113
-PATH_TO_NG := $(BASEDIR)/ng --nailgun-port $(nailgun_port)
+SUBMIT_TO_SERVER = -submitToServer localhost/mutinackTesting$(nailgun_port)
+JAVA_LAUNCH := $(BASEDIR)/ng --nailgun-port $(nailgun_port) uk.org.cinquin.mutinack.Mutinack
+#JAVA_LAUNCH := java -jar mutinack.jar
 
 GIT := false
 #Uncomment the line below to allow failed functional tests to be marked in the git repository and
@@ -26,7 +29,7 @@ all: passed_message
 
 DEBUG_ATTACH =  
 #Uncomment the line below to remotely debug
-#DEBUG_ATTACH = $(shell echo -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`)
+#DEBUG_ATTACH = $(shell echo -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`)
 
 ifndef COSTLY_ASSERTIONS_OPTION
 export COSTLY_ASSERTIONS_OPTION = -enableCostlyAssertions true
@@ -135,7 +138,7 @@ clean_check:
 	find . -name 'run.out.check' -delete
 
 clean_jars:
-	find . -mindepth 2 -name 'mutinack.jar' -delete -or -name 'jacoco.jar' -delete
+	find . -mindepth 2 -name '*.jar' -delete
 
 clean_FAILED:
 	find . -mindepth 2 -name 'FAILED' -delete
@@ -152,6 +155,12 @@ clean_hardlinks: clean_jars
 
 %/jacoco.jar:
 	@ln -f ../lib_build_run_test/org.jacoco.agent-0.7.5.201505241946-runtime.jar $@
+	@ln -f ../lib_build_run_test/datanucleus-rdbms-5.0.6-SNAPSHOT.jar $*/datanucleus-rdbms-5.0.6-SNAPSHOT.jar
+	@ln -f ../lib_build_run_test/datanucleus-core-5.0.7-SNAPSHOT.jar $*/datanucleus-core-5.0.7-SNAPSHOT.jar
+	@ln -f ../lib_build_run_test/datanucleus-api-jdo-5.0.6-SNAPSHOT.jar $*/datanucleus-api-jdo-5.0.6-SNAPSHOT.jar
+	@ln -f ../lib_build_run_test/javax.jdo-3.2.0-m7-SNAPSHOT.jar $*/javax.jdo-3.2.0-m7-SNAPSHOT.jar
+	@ln -f ../lib_build_run_test/javax.persistence-2.2.0-m2-SNAPSHOT.jar $*/javax.persistence-2.2.0-m2-SNAPSHOT.jar
+	@ln -f ../lib_build_run_test/jdo-api-3.1.jar $*/jdo-api-3.1.jar
 
 %/logback.xml:
 	@ln -f logback.xml $@
@@ -180,7 +189,7 @@ ref.fa.info:
 %/run.out: %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
-	@(cd $* && $(PATH_TO_NG) uk.org.cinquin.mutinack.Mutinack $(COSTLY_ASSERTIONS_OPTION) -noStatusMessages -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt))  > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
+	@(cd $* && $(JAVA_LAUNCH) $(COSTLY_ASSERTIONS_OPTION) $(MUTINACK_OPTIONS) -noStatusMessages -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt))  > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
 
 AVOID_STUPID_RULE_SIDE_EFFECT = $(MAKE)
 

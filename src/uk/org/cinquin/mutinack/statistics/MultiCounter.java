@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,28 +26,34 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Serialized;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import gnu.trove.map.hash.THashMap;
+import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.SerializableSupplier;
+
+@PersistenceCapable
 public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizable {
-	
+
 	@JsonIgnore
 	private static final long serialVersionUID = 8621583719293625759L;
 
 	@JsonIgnore
 	protected boolean on = true;
-	
+
 	@JsonIgnore
-	private final @Nullable SerializableSupplier<@NonNull ICounter<T>> factory1;
+	private final transient @Nullable SerializableSupplier<@NonNull ICounter<T>> factory1;
 	@JsonIgnore
-	private final @Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2;
+	private final transient @Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2;
 	private final THashMap<String, Pair<SerializablePredicate<SequenceLocation>, ICounter<T>>>
 		counters = new THashMap<>();
 	private final THashMap<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>>
@@ -57,32 +63,38 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 
 	@JsonIgnore
 	private static final @NonNull SerializablePredicate<SequenceLocation> yes = l -> true;
-		
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static final Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
-		byKeySorter = (e, f) -> ((Comparable) e.getKey()).compareTo(f.getKey());
+
+	@SuppressWarnings("rawtypes")
+	private interface SerializableComparator extends
+		Comparator<Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>, Serializable {
+	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static final Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
+	private static final SerializableComparator
+		byKeySorter = (e, f) -> ((Comparable) e.getKey()).compareTo(f.getKey());
+
+	@SuppressWarnings({ "unchecked" })
+	private static final SerializableComparator
 		byValueSorter = (e, f) -> {
-			int result = 
+			int result =
 					- e.getValue().snd.compareTo(f.getValue().snd);
 			if (result == 0) {
 				result = e.getKey().compareTo(f.getKey());
 			}
 			return result;
 		};
-	
+
 	@JsonIgnore
 	@SuppressWarnings("rawtypes")
-	private final transient Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>> 
+	@Serialized
+	private @Final Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
 		printingSorter;
-	
+
 	public MultiCounter(@Nullable SerializableSupplier<@NonNull ICounter<T>> factory1,
 			@Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2) {
 		this(factory1, factory2, false);
 	}
-	
+
 	public MultiCounter(@Nullable SerializableSupplier<@NonNull ICounter<T>> factory1,
 			@Nullable SerializableSupplier<@NonNull ICounterSeqLoc> factory2, boolean sortByValue) {
 		if (sortByValue) {
@@ -94,7 +106,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		this.factory2 = factory2;
 		addPredicate("All", yes);
 	}
-	
+
 	public Map<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>> getSeqLocCounters() {
 		return seqLocCounters;
 	}
@@ -108,7 +120,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			seqLocCounters.put(name, new Pair<>(predicate, factory2.get()));
 		}
 	}
-	
+
 	public void addPredicate(String name,
 			@NonNull SerializablePredicate<SequenceLocation> predicate,
 			ICounterSeqLoc counter) {
@@ -120,7 +132,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		if (on)
 			accept(loc, 1d);
 	}
-	
+
 	@Override
 	public void accept(@NonNull SequenceLocation loc, double d) {
 		if (!on) {
@@ -134,20 +146,20 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			return true;
 		});
 	}
-	
+
 	public void accept(@NonNull SequenceLocation loc, @NonNull T t, double d) {
 		if (!on) {
 			return;
 		}
 		adderForTotal.add(d);
-		
+
 		seqLocCounters.forEachValue(c -> {
 			if (c.fst.test(loc)) {
 				c.snd.accept(loc, d);
 			}
 			return true;
 		});
-		
+
 		counters.forEachValue(c -> {
 			if (c.fst.test(loc)) {
 				c.snd.accept(t, d);
@@ -155,12 +167,12 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			return true;
 		});
 	}
-	
+
 	public void accept(@NonNull SequenceLocation loc, @NonNull T t) {
 		if (on)
 			accept(loc, t, 1d);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public String toString() {
@@ -181,11 +193,11 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		}
 		return b.toString();
 	}
-	
+
 	public long sum() {
 		return (long) adderForTotal.sum();
 	}
-	
+
 	@Override
 	public double totalSum() {
 		return adderForTotal.sum();
@@ -196,7 +208,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		if (on)
 			accept(loc, (double) l);
 	}
-	
+
 	public double getSum(String predicateName) {
 		if (counters.containsKey(predicateName)) {
 			return counters.get(predicateName).getSnd().sum();
@@ -206,15 +218,15 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			return Double.NaN;
 		}
 	}
-	
+
 	public Set<String> getCounterNames() {
-		Set<String> result = new HashSet<>(counters.keySet().size() + 
+		Set<String> result = new HashSet<>(counters.keySet().size() +
 				seqLocCounters.keySet().size());
 		result.addAll(counters.keySet());
 		result.addAll(seqLocCounters.keySet());
 		return result;
 	}
-	
+
 	@Override
 	public @NonNull Map<Object, @NonNull Object> getCounts() {
 		throw new RuntimeException("Not implemented");
@@ -229,7 +241,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	public void turnOn() {
 		on = true;
 	}
-	
+
 	@Override
 	public boolean isOn() {
 		return on;
@@ -239,12 +251,12 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	public int compareTo(Object o) {
 		return Double.compare(totalSum(), ((ICounterSeqLoc) o).totalSum());
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
 		throw new RuntimeException("Unimplemented");
 	}
-	
+
 	@Override
 	public int hashCode() {
 		throw new RuntimeException("Unimplemented");
@@ -256,5 +268,5 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			stream()).map(p -> p.snd).filter(o -> o instanceof Actualizable).
 			forEach(a -> ((Actualizable) a).actualize());
 	}
-	
+
 }

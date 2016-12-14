@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,32 +22,100 @@ import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringTokenizer;
+
+import javax.annotation.concurrent.Immutable;
+import javax.jdo.annotations.PersistenceCapable;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
+@PersistenceCapable//(identityType = IdentityType.APPLICATION, objectIdClass = SequenceLocation.PK.class)
+@Immutable
 public final class SequenceLocation implements Comparable<SequenceLocation>, Serializable {
-	
-	public final int contigIndex;
-	public final @NonNull String contigName;
-	public final int position;
-	public final boolean plusHalf;
+
+	public @Final int contigIndex;
+	public @Final @NonNull String contigName;
+	public @Final int position;
+	public @Final boolean plusHalf;
+	public @Final String referenceGenome = "N/A";
+
+	//Unused for now, until potential data store uniqueness and performance issues are resolved
+	public static class PK implements Serializable {
+		private static final long serialVersionUID = 4701545116982926026L;
+
+		public int contigIndex;
+		public int position;
+		public boolean plusHalf;
+		public String referenceGenome;
+
+		public PK() {
+		}
+
+		public PK(String s) {
+			StringTokenizer token = new StringTokenizer(s, "\t");
+			contigIndex = Integer.parseInt(token.nextToken());
+			position = Integer.parseInt(token.nextToken());
+			plusHalf = Boolean.parseBoolean(token.nextToken());
+			referenceGenome = token.nextToken();
+		}
+
+		@Override
+		public String toString() {
+			return contigIndex + "\t" + position + "\t" + plusHalf + "\t" + referenceGenome;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + contigIndex;
+			result = prime * result + (plusHalf ? 1231 : 1237);
+			result = prime * result + position;
+			result = prime * result + ((referenceGenome == null) ? 0 : referenceGenome.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			PK other = (PK) obj;
+			if (contigIndex != other.contigIndex)
+				return false;
+			if (plusHalf != other.plusHalf)
+				return false;
+			if (position != other.position)
+				return false;
+			if (referenceGenome == null) {
+				if (other.referenceGenome != null)
+					return false;
+			} else if (!referenceGenome.equals(other.referenceGenome))
+				return false;
+			return true;
+		}
+	}
 
 	@JsonIgnore
 	private final int hash;
-	
+
 	private static final long serialVersionUID = -8294857765048137986L;
 
 	@Override
 	public final int hashCode() {
 		return hash;
 	}
-	
+
 	private int computeHash() {
 		final int prime = 31;
 		int result = 1;
@@ -68,6 +136,9 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		if (!(obj instanceof SequenceLocation))
 			return false;
 		SequenceLocation other = (SequenceLocation) obj;
+		if (!referenceGenomesEqual(other)) {
+			return false;
+		}
 		if (position != other.position)
 			return false;
 		if (contigIndex != other.contigIndex)
@@ -77,21 +148,21 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 		return true;
 	}
-	
+
 	public SequenceLocation(int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
 		Assert.isFalse(contigIndex < 0);
 		this.contigName = contigName;
 		this.contigIndex = contigIndex;
 		this.position = position;
 		this.plusHalf = plusHalf;
-		
+
 		this.hash = computeHash();
 	}
-	
+
 	public SequenceLocation(int contigIndex, List<String> nameMap, int position, boolean plusHalf) {
 		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, plusHalf);
 	}
-	
+
 	public SequenceLocation(int contigIndex, @NonNull String contigName, int position) {
 		this(contigIndex, contigName, position, false);
 	}
@@ -99,7 +170,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	public SequenceLocation(int contigIndex, List<String> nameMap, int position) {
 		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, false);
 	}
-	
+
 	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
 			int position) {
 		final int contigIndex1;
@@ -114,14 +185,14 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		this.position = position;
 		this.plusHalf = false;
 		this.contigName = contigName;
-		
+
 		this.hash = computeHash();
 	}
-	
+
 	public @NonNull SequenceLocation add(int offset) {
 		return new SequenceLocation(contigIndex, contigName, position + offset, plusHalf);
 	}
-	
+
 	/*
 	public SequenceLocation(SAMRecord rec) {
 		this(rec.getReferenceIndex() , rec.getReferenceName(), rec.getAlignmentStart());
@@ -133,11 +204,11 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 				nf.get().format(position + 1) +
 				(plusHalf ? ".5" : "");//Internal indexing starts at 0
 	}
-	
+
 	public @NonNull String getContigName() {
 		return contigName;
 	}
-	
+
 	private static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
 		@Override
 		protected NumberFormat initialValue() {
@@ -145,8 +216,27 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 	};
 
+	private boolean referenceGenomesEqual(SequenceLocation other) {
+		if (referenceGenome == null) {
+			if (other.referenceGenome != null) {
+				return false;
+			}
+		} else if (!referenceGenome.equals(other.referenceGenome)) {
+			return false;
+		}
+		return true;
+	}
+
+	private void checkSameReferenceGenome(SequenceLocation o) {
+		if (!referenceGenomesEqual(o)) {
+			throw new IllegalArgumentException("Comparing locations on different genomes: " +
+				referenceGenome + " and " + o.referenceGenome);
+		}
+	}
+
 	@Override
 	public final int compareTo(SequenceLocation o) {
+		checkSameReferenceGenome(o);
 		int contigCompare = Integer.compare(this.contigIndex, o.contigIndex);
 		if (contigCompare != 0) {
 			return contigCompare;
@@ -161,16 +251,18 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	}
 
 	public @Nullable Integer distanceTo(@NonNull SequenceLocation location) {
+		checkSameReferenceGenome(location);
 		if (contigIndex != location.contigIndex) {
 			return null;
 		} else {
 			return this.position - location.position;
 		}
 	}
-	
+
 	public int distanceOnSameContig(@NonNull SequenceLocation location) {
+		checkSameReferenceGenome(location);
 		if (contigIndex != location.contigIndex) {
-			throw new IllegalArgumentException("Different contigs " + location.contigIndex + 
+			throw new IllegalArgumentException("Different contigs " + location.contigIndex +
 					" and " + contigIndex);
 		} else {
 			return this.position - location.position;

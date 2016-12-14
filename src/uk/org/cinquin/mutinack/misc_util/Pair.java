@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,18 +20,28 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Collection;
 
+import javax.annotation.concurrent.Immutable;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
+import uk.org.cinquin.final_annotation.Final;
+
 //Adapted from http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
+@Immutable
 public class Pair<A,B> implements Serializable {
 
 	private static final long serialVersionUID = -1873509799696495621L;
-	@JsonIgnore public A fst;
-	@JsonUnwrapped public B snd;
+	@JsonIgnore @Final public A fst;
+	@JsonUnwrapped @Final public B snd;
+
+	protected Pair() {
+		fst = null;
+		snd = null;
+	}
 
 	public Pair(@NonNull A first, @Nullable B second) {
 		super();
@@ -73,18 +83,10 @@ public class Pair<A,B> implements Serializable {
 		return fst;
 	}
 
-	public void setFst(@NonNull A first) {
-		this.fst = first;
-	}
-
 	public B getSnd() {
 		return snd;
 	}
 
-	public void setSnd(B second) {
-		this.snd = second;
-	}
-    
 	public A[] firstAsArray(Collection<Pair<A,B>> col, Class<?> clazz){
 		@SuppressWarnings("unchecked")
 		A[] result=(A[]) Array.newInstance(clazz,col.size());
