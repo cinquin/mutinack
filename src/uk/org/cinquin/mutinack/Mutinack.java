@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -189,7 +190,6 @@ public class Mutinack implements Actualizable {
 
 	final MutinackGroup groupSettings;
 	final @NonNull Parameters param;
-	final Collection<GenomeFeatureTester> excludeBEDs;
 	public final @NonNull String name;
 	long timeStartProcessing;
 	private final @NonNull List<SubAnalyzer> subAnalyzers = new ArrayList<>();
@@ -228,19 +228,18 @@ public class Mutinack implements Actualizable {
 			}).min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
 	final double @Nullable[] insertSizeProbSmooth;
-	final double @Nullable[] insertSizeProbRaw;
+	private final double @Nullable[] insertSizeProbRaw;
 	final @NonNull Collection<File> intersectAlignmentFiles;
 	final @NonNull
 	public Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
 	@Nullable GenomeFeatureTester codingStrandTester;
 	final byte @NonNull[] constantBarcode;
-	final int unclippedBarcodeLength;
 	final int maxNDuplexes;
 	public @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
 	private String finalOutputBaseName;
 	public boolean notifiedUnpairedReads = false;
 
-	public Mutinack(
+	private Mutinack(
 			MutinackGroup groupSettings,
 			Parameters param,
 			@NonNull String name,
@@ -248,7 +247,7 @@ public class Mutinack implements Actualizable {
 			@NonNull PrintStream out,
 			@Nullable OutputStreamWriter mutationAnnotationWriter,
 			@Nullable Histogram approximateReadInsertSize,
-			byte @NonNull[] constantBarcode,
+			byte @NonNull [] constantBarcode,
 			@NonNull List<File> intersectAlignmentFiles,
 			boolean logReadIssuesInOutputBam,
 			@NonNull OutputLevel outputLevel,
@@ -270,16 +269,14 @@ public class Mutinack implements Actualizable {
 		//Make sure reference tests can be substituted for equality tests;
 		//the analyzer's constant barcode needs to come from the interning map
 		this.constantBarcode = Util.getInternedCB(constantBarcode);
-		this.unclippedBarcodeLength = 0;
 
 		this.intersectAlignmentFiles = intersectAlignmentFiles;
 
-		this.excludeBEDs = excludeBEDs;
 		this.maxNDuplexes = maxNDuplexes;
 
 		List<String> statsNames = Arrays.asList("main_stats", "ins_stats");
 
-		if (param.exploreParameters.size() == 0) {
+		if (param.exploreParameters.isEmpty()) {
 			for (String statsName: statsNames) {
 				stats.add(createStats(statsName, param, out, out, mutationAnnotationWriter,
 					mutationAnnotationWriter, outputLevel));
@@ -435,7 +432,7 @@ public class Mutinack implements Actualizable {
 		}
 
 		if (param.parallelizationFactor != 1 &&
-				param.contigByContigParallelization.size() > 0) {
+				!param.contigByContigParallelization.isEmpty()) {
 			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
 				+ "contigByContigParallelization at the same time");
 		}
@@ -991,7 +988,7 @@ public class Mutinack implements Actualizable {
 				}
 
 				final Set<String> outputPaths = new HashSet<>();
-				int index = 0;
+				int index;
 				for (index = 0; index < param.reportBreakdownForBED.size(); index++) {
 					try {
 						final File f = new File(param.reportBreakdownForBED.get(index));
@@ -1237,7 +1234,7 @@ public class Mutinack implements Actualizable {
 					//some threads may be secondary to the primary exception
 					//but may still be examined before the primary exception
 					for (Future<?> f: futures) {
-						gatherer.tryAdd(() -> f.get());
+						gatherer.tryAdd(f::get);
 					}
 
 					gatherer.throwIfPresent();
@@ -1326,7 +1323,7 @@ public class Mutinack implements Actualizable {
 								allCoverage.entrySet().stream().map(entry ->
 								new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue())).
 								collect(Collectors.toList());
-						sortedEntries.sort((o1, o2) -> o1.getKey().compareTo(o2.getKey()));
+						sortedEntries.sort(Comparator.comparing(Entry::getKey));
 
 						writer.write("RefseqID\t" + (analyzer.name + "_avn\t") + (analyzer.name + "_95thpn\t")
 								+ (analyzer.name + "_80thpn\n"));
@@ -1358,7 +1355,7 @@ public class Mutinack implements Actualizable {
 	private static int getContigParallelizationFactor(int contigIndex, Parameters param) {
 		List<Integer> factorList = param.contigByContigParallelization;
 		final int result;
-		if (factorList.size() > 0) {
+		if (!factorList.isEmpty()) {
 			result = factorList.get(Math.min(factorList.size() - 1, contigIndex));
 		} else {
 			result = param.parallelizationFactor;
@@ -1376,7 +1373,7 @@ public class Mutinack implements Actualizable {
 				collect(Collectors.toList());
 		analyzers.forEach(Actualizable::actualize);
 		analyzers.stream().flatMap(a -> a.subAnalyzers.stream()).
-			filter(sa -> sa != null).
+			filter(Objects::nonNull).
 			map(sa -> sa.stats).
 			forEach(stats -> stats.mutinackVersions.add(mutinackVersion));
 		return root;
@@ -1461,12 +1458,12 @@ public class Mutinack implements Actualizable {
 		}
 
 		if (mutationAnnotationWriter != null) {
-			gatherer.tryAdd(() -> mutationAnnotationWriter.close());
+			gatherer.tryAdd(mutationAnnotationWriter::close);
 		}
 
 		for (Mutinack analyzer: analyzers) {
 			if (analyzer != null) {
-				gatherer.tryAdd(() -> analyzer.closeOutputs());
+				gatherer.tryAdd(analyzer::closeOutputs);
 			}
 		}
 
@@ -1485,7 +1482,7 @@ public class Mutinack implements Actualizable {
 	private void closeOutputs() {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		for (Closeable c: itemsToClose) {
-			gatherer.tryAdd(() -> c.close());
+			gatherer.tryAdd(c::close);
 		}
 
 		stats.forEach(s -> gatherer.tryAdd(() -> {
@@ -1566,15 +1563,12 @@ public class Mutinack implements Actualizable {
 		});//End forEach stats
 	}
 
-	public static final ThreadLocal<NumberFormat> mutationRateFormatter
-		= new ThreadLocal<NumberFormat>() {
-			@Override
-			protected NumberFormat initialValue() {
-				DecimalFormat f = new DecimalFormat("0.###E0");
-				DoubleAdderFormatter.setNanAndInfSymbols(f);
-				return f;
-			}
-		};
+	private static final ThreadLocal<NumberFormat> mutationRateFormatter
+		= ThreadLocal.withInitial(() -> {
+			DecimalFormat f = new DecimalFormat("0.###E0");
+			DoubleAdderFormatter.setNanAndInfSymbols(f);
+			return f;
+		});
 
 	@Override
 	public String toString() {

@@ -65,22 +65,18 @@ public final class SimpleCounter<T> {
 	}
 
 	public void put(T t, int value) {
-		SettableInteger v = map.get(t);
-		if (v == null) {
-			v = new SettableInteger(0);
-			map.put(t, v);
-		}
+		SettableInteger v = map.computeIfAbsent(t, k -> new SettableInteger(0));
 		v.addAndGet(value);
 	}
 
-	public static final byte[] BASES = new byte[] {'A', 'C', 'G', 'N', 'T', 'a', 'c', 'g', 'n', 't'};
+	private static final byte[] BASES = {'A', 'C', 'G', 'N', 'T', 'a', 'c', 'g', 'n', 't'};
 	static {
 		for (int i = 0; i < BASES.length; i++) {
 			BASES[i] = (byte) (BASES[i] - 'A');
 		}
 	}
 
-	public static final int BASES_SPAN = 't' - 'A' + 1;
+	private static final int BASES_SPAN = 't' - 'A' + 1;
 
 	public static byte @NonNull[] getBarcodeConsensus(Stream<byte[]> records,
 			int barcodeLength) {

@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -221,8 +222,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		}
 
 		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs = 
-				bedFileIntervals.entrySet().stream().sorted((a, b) ->
-							a.getKey().compareTo(b.getKey())).collect(Collectors.toList());
+				bedFileIntervals.entrySet().stream().sorted(Comparator.comparing(Entry::getKey)).collect(Collectors.toList());
 
 		//NB For this to work the contig IDs used in the test function must match
 		//alphabetical order of contig names

@@ -209,12 +209,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		return contigName;
 	}
 
-	private static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
-		@Override
-		protected NumberFormat initialValue() {
-			return new DecimalFormat("00,000,000");
-		}
-	};
+	private static final ThreadLocal<NumberFormat> nf = ThreadLocal.withInitial(() -> new DecimalFormat("00,000,000"));
 
 	private boolean referenceGenomesEqual(SequenceLocation other) {
 		if (referenceGenome == null) {

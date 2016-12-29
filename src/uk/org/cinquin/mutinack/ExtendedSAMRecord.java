@@ -260,7 +260,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 	
 	private static final byte @NonNull[] EMPTY_BARCODE = new byte [0];
-	private static final byte @NonNull[] DUMMY_BARCODE = new byte [] {'N', 'N', 'N'};
+	private static final byte @NonNull[] DUMMY_BARCODE = {'N', 'N', 'N'};
 
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull MutinackGroup groupSettings,
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,

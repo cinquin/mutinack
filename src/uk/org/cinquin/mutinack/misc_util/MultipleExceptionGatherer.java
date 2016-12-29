@@ -25,7 +25,7 @@ import java.util.List;
 import org.eclipse.jdt.annotation.Nullable;
 
 public class MultipleExceptionGatherer {
-	List<Throwable> exceptions = new ArrayList<>();
+	private List<Throwable> exceptions = new ArrayList<>();
 
 	@FunctionalInterface
 	public interface ThrowingRunnable {
@@ -49,7 +49,7 @@ public class MultipleExceptionGatherer {
 	public void throwIfPresent() {
 		if (exceptions.size() > 1) {
 			throw new MultipleExceptions(exceptions);
-		} else if (exceptions.size() > 0) {
+		} else if (!exceptions.isEmpty()) {
 			throw new RuntimeException(exceptions.get(0));
 		}
 	}

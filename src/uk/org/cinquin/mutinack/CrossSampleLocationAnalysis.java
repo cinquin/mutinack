@@ -45,7 +45,7 @@ public class CrossSampleLocationAnalysis implements Serializable {
 			result.append("!");
 		}
 
-		if (nDuplexesUniqueQ2MutationCandidate.size() > 0) {
+		if (!nDuplexesUniqueQ2MutationCandidate.isEmpty()) {
 			result.append("*").
 				append(nDuplexesUniqueQ2MutationCandidate.stream().map(String::valueOf).
 					collect(Collectors.joining("_")));

@@ -491,12 +491,12 @@ public class ReadLoader {
 		//analysisChunk.subAnalyzers.clear();
 	}
 
-	static void switchPair(SAMRecord r) {
+	private static void switchPair(SAMRecord r) {
 		r.setFirstOfPairFlag(!r.getFirstOfPairFlag());
 		r.setSecondOfPairFlag(!r.getSecondOfPairFlag());
 	}
 
-	static final boolean shouldLog(Level level) {
+	static boolean shouldLog(Level level) {
 		return logger.isEnabled(level);
 	}
 

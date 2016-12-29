@@ -35,7 +35,7 @@ public class GetReadStats {
 				r -> r.getInferredInsertSize() != 0 &&
 						r.getMappingQuality() >= minMappingQualityQ2 &&
 						Math.abs(r.getInferredInsertSize()) < maxInsertSize);
-			Assert.isTrue(h.size() == 0 || h.get(0).sum() == 0);
+			Assert.isTrue(h.isEmpty() || h.get(0).sum() == 0);
 		} catch (Exception e) {
 			throw new RuntimeException("Error computing insert size distribution from file "
 				+ bamFile.getAbsolutePath(), e);

@@ -38,14 +38,11 @@ public final class DoubleAdderFormatter extends DoubleAdder
 		return formatDouble(dsum);
 	}
 	
-	public static final ThreadLocal<NumberFormat> nf = new ThreadLocal<NumberFormat>() {
-		@Override
-		protected NumberFormat initialValue() {
-			NumberFormat f = NumberFormat.getInstance();
-			setNanAndInfSymbols(f);
-			return f;
-		}
-	};
+	public static final ThreadLocal<NumberFormat> nf = ThreadLocal.withInitial(() -> {
+		NumberFormat f = NumberFormat.getInstance();
+		setNanAndInfSymbols(f);
+		return f;
+	});
 	
 	public static boolean setNanAndInfSymbols(NumberFormat f) {
 		 if (f instanceof DecimalFormat) {

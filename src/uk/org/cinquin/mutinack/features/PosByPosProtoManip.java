@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -156,7 +157,7 @@ public class PosByPosProtoManip {
 		commander.addObject(argValues);
 		commander.parse(args);
 		
-		if (argValues.mainParam.size() == 0) {
+		if (argValues.mainParam.isEmpty()) {
 			throw new IllegalArgumentException("No main command found in arguments " +
 					Arrays.toString(args));
 		} else if (argValues.mainParam.size() > 1) {
@@ -220,7 +221,7 @@ public class PosByPosProtoManip {
 			}
 			final int initialI;
 			if (!startAtContigs.contains(contigName)) {
-				if (startAtContigs.size() > 0) {
+				if (!startAtContigs.isEmpty()) {
 					continue;
 				}
 				initialI = 0;
@@ -312,8 +313,8 @@ public class PosByPosProtoManip {
 		}
 		
 		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs = 
-				bedFileIntervals.entrySet().stream().sorted((a, b) ->
-							a.getKey().compareTo(b.getKey())).collect(Collectors.toList());
+				bedFileIntervals.entrySet().stream().sorted(
+					Comparator.comparing(Entry::getKey)).collect(Collectors.toList());
 
 		final List<IntervalTree<GenomeInterval>> contigTrees = new ArrayList<>();
 		//NB For this to work the contig IDs used in the test function must match
@@ -371,7 +372,7 @@ public class PosByPosProtoManip {
 		int nPos = 0;
 
 		final GenomeFeatureTester reader;
-		if (argValues.domainBedFile.length() > 0) {
+		if (!argValues.domainBedFile.isEmpty()) {
 			try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 				GenomeFeatureTester reader0 = new BedReader(contigNames0,
 						new BufferedReader(fileReader),
@@ -398,7 +399,7 @@ public class PosByPosProtoManip {
 				}
 				final int initialI;
 				if (!startAtContigs.contains(contigName)) {
-					if (startAtContigs.size() > 0) {
+					if (!startAtContigs.isEmpty()) {
 						continue;
 					}
 					initialI = 0;
@@ -425,7 +426,7 @@ public class PosByPosProtoManip {
 				}
 			}
 			System.err.print("Iterated over " + nPos + " positions");
-			if (startAtContigs.size() > 0) {
+			if (!startAtContigs.isEmpty()) {
 				System.err.println(" in contigs " + startAtContigs);
 			} else {
 				System.err.println();
@@ -493,7 +494,7 @@ public class PosByPosProtoManip {
 			}
 		}
 		
-		Set<String> contigNames0 = inputs.get(0).getContigNumbersList().stream().map((contigNumbers) -> contigNumbers.getContigName()).
+		Set<String> contigNames0 = inputs.get(0).getContigNumbersList().stream().map(ContigNumbers::getContigName).
 			collect(Collectors.toSet());
 		for (int i = 1; i < inputs.size(); i++) {
 			Set<String> contigNames1 = inputs.get(i).getContigNumbersList().stream().map(ContigNumbers::getContigName).
@@ -602,7 +603,7 @@ public class PosByPosProtoManip {
 				final String contigName = cnl.getContigName();
 				final int initialI;
 				if (!startAtContigs.contains(contigName)) {
-					if (startAtContigs.size() > 0) {
+					if (!startAtContigs.isEmpty()) {
 						continue;
 					}
 					initialI = 0;

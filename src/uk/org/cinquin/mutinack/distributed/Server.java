@@ -131,7 +131,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	}
 
-	public static String getDefaultHostName() {
+	private static String getDefaultHostName() {
 		String result;
 		try {
 			result = InetAddress.getLocalHost().getCanonicalHostName();
@@ -200,7 +200,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		Signals.registerSignalProcessor("INFO", s -> dumpRecordedRuns());
 		Signals.registerSignalProcessor("INFO", s -> {
 			System.err.println(
-				runningJobs.size() == 0 ?
+				runningJobs.isEmpty() ?
 					"No jobs running"
 				:
 					runningJobs.values().stream().map(Job::toString).
@@ -312,7 +312,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			throw new IllegalArgumentException("Job " + job + " from client " + clientID +
 				" already marked as completed");
 		}
-		boolean cancelled = false;
+		boolean cancelled;
 		do {
 			job.cancelled = false;
 			if (runningJobs.put(job, job) != null) {
@@ -373,7 +373,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		return uuid;
 	}
 
-	public static @NonNull String fillInDefaultRMIPath(@Nullable String hostNameOrFullPath) {
+	private static @NonNull String fillInDefaultRMIPath(@Nullable String hostNameOrFullPath) {
 		if (hostNameOrFullPath == null || hostNameOrFullPath.equals("")) {
 			return getDefaultHostName() + "/mutinack";
 		}

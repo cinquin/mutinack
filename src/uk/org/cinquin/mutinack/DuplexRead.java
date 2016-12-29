@@ -96,16 +96,17 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
 	public final @NonNull List<@NonNull ExtendedSAMRecord> topStrandRecords = new ArrayList<>(100),
 			bottomStrandRecords = new ArrayList<>(100);
-	public int totalNRecords = -1;
+	private int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
 	//Only used for debugging
 	boolean invalid = false;
 	public int nReadsWrongPair = 0;
-	public int maxInsertSize = -1, minInsertSize = -1;
+	public int maxInsertSize = -1;
+	private int minInsertSize = -1;
 	public double probAtLeastOneCollision = -1;
 	public boolean missingStrand = false;
-	public Boolean topStrandIsNegative;//Use Boolean just to make sure an NPE is generated
+	private Boolean topStrandIsNegative;//Use Boolean just to make sure an NPE is generated
 	//if property is accessed before it has been computed
 
 	/**
@@ -121,7 +122,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 	int position0;
 	private int position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
-	public final boolean leftBarcodeNegativeStrand, rightBarcodeNegativeStrand;
+	private final boolean leftBarcodeNegativeStrand;
+	private final boolean rightBarcodeNegativeStrand;
 
 	public DuplexRead(MutinackGroup groupSettings, Parameters param, byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
 			boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
@@ -138,7 +140,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 					new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
 			allDuplexRecords.addAll(topStrandRecords);
 			allDuplexRecords.addAll(bottomStrandRecords);
-			allDuplexRecords.stream().forEach(r -> {
+			allDuplexRecords.forEach(r -> {
 				if (!r.duplexLeft()) {
 					if (!basesEqual(rightBarcode, r.variableBarcode, true, 0)) {
 						throw new AssertionFailedException("Unequal barcodes: " +
@@ -343,7 +345,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			leftAlignmentEnd + ", " + rightAlignmentEnd + ", " + new String(leftBarcode) + "-" +
 			new String(rightBarcode) + ", " + " Q" + minQuality +
 			(localAndGlobalQuality == null ? "" : (" " + localAndGlobalQuality.getQualities().
-				min((e1, e2) -> e1.getValue().compareTo(e2.getValue())).map(Entry::getKey).map(
+				min(Comparator.comparing(Entry::getValue)).map(Entry::getKey).map(
 					Enum::toString).orElse("") + " ")) +
 			"->" + maxQuality + topStrandRecords.toString() + " " +
 			bottomStrandRecords.toString();
@@ -930,7 +932,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		Assert.isFalse(duplexDisagreementQ2 != null &&
 				dq.getValueIgnoring(assaysToIgnoreForDisagreementQuality).lowerThan(GOOD),
-			() -> dq.toString());
+			dq::toString);
 
 		if (duplexDisagreementQ2 != null) {
 			result.disagreements.addAt(duplexDisagreementQ2, this);

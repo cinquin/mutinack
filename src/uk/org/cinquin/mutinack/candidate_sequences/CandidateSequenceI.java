@@ -96,8 +96,8 @@ public interface CandidateSequenceI extends Serializable {
 	void setInsertSizeAtPos10thP(int insertSizeAtPos10thP);
 	int getInsertSizeAtPos90thP();
 	void setInsertSizeAtPos90thP(int insertSizeAtPos90thP);
-	public Serializable getPreexistingDetection();
-	public void setPreexistingDetection(Serializable preexistingDetection);
+	Serializable getPreexistingDetection();
+	void setPreexistingDetection(Serializable preexistingDetection);
 	int getPositiveStrandCount();
 	int getNegativeStrandCount();
 	void incrementPositiveStrandCount(int i);

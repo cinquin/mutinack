@@ -33,8 +33,8 @@ import gnu.trove.procedure.TObjectProcedure;
 
 public final class SingletonObjectIntMap<T> implements TObjectIntMap<T> {
 
-	final @NonNull T obj;
-	final int value;
+	private final @NonNull T obj;
+	private final int value;
 	
 	public SingletonObjectIntMap(@NonNull T initialConcurringRead,
 			int initialLigationSiteD) {

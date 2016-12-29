@@ -35,7 +35,7 @@ public class DebugLogControl {
 
 	public static boolean COSTLY_ASSERTIONS = true;
 
-	public static final boolean shouldLog(Level level, Logger logger) {
+	public static boolean shouldLog(Level level, Logger logger) {
 		return logger.isEnabled(level);
 	}
 

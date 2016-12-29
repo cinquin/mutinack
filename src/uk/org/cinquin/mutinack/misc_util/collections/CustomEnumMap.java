@@ -777,7 +777,7 @@ public class CustomEnumMap<K extends Enum<K>, V> extends LocalAbstractMap<K, V>
     @Override
 		@SuppressWarnings("unchecked")
     public CustomEnumMap<K, V> clone() {
-        CustomEnumMap<K, V> result = null;
+        CustomEnumMap<K, V> result;
         try {
             result = (CustomEnumMap<K, V>) super.clone();
         } catch(CloneNotSupportedException e) {

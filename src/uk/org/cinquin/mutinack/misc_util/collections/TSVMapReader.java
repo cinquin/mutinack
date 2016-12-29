@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.misc_util.collections;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,9 +46,7 @@ public class TSVMapReader {
 			lines.forEachOrdered(l -> {
 				@NonNull String[] components = l.split("\t");
 				List<String> suppInfo = new ArrayList<>();
-				for (int i = 2; i < components.length; i++) {
-					suppInfo.add(components[i]);
-				}
+				suppInfo.addAll(Arrays.asList(components).subList(2, components.length));
 				Pair<Set<String>, Set<String>> entry = tempMap.get(components[0]);
 				if (entry != null) {
 					entry.fst.add(components[1]);
@@ -69,7 +68,7 @@ public class TSVMapReader {
 		for (Entry<String, Pair<Set<String>, Set<String>>> e: tempMap.entrySet()) {
 			Set<String> geneNames = e.getValue().fst;
 			final String name;
-			Assert.isFalse(geneNames.size() == 0);
+			Assert.isFalse(geneNames.isEmpty());
 			name = geneNames.stream().collect(Collectors.joining("="));
 			result.put(e.getKey(), name + "\t" + e.getValue().snd);
 		}

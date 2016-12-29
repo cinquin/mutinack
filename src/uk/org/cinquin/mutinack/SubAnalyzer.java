@@ -175,12 +175,9 @@ public final class SubAnalyzer {
 	private CandidateSequenceI insertCandidateAtPosition(@NonNull CandidateSequenceI candidate,
 			@NonNull SequenceLocation location) {
 
-		THashSet<CandidateSequenceI> candidates = candidateSequences.get(location);
-		if (candidates == null) {//No need for synchronization since we should not be
-			//concurrently inserting two candidates in the same position
-			candidates = new THashSet<>();
-			candidateSequences.put(location, candidates);
-		}
+		//No need for synchronization since we should not be
+		//concurrently inserting two candidates in the same position
+		THashSet<CandidateSequenceI> candidates = candidateSequences.computeIfAbsent(location, k -> new THashSet<>());
 		CandidateSequenceI candidateMapValue = candidates.get(candidate);
 		if (candidateMapValue == null) {
 			boolean added = candidates.add(candidate);
@@ -1090,7 +1087,7 @@ public final class SubAnalyzer {
 						throw new AssertionFailedException();
 					}
 					return d;
-				}).filter(d -> d != null).collect(uniqueValueCollector());//Collect *unique* duplexes
+				}).filter(Objects::nonNull).collect(uniqueValueCollector());//Collect *unique* duplexes
 			for (CandidateSequenceI c2: candidateSet) {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 					c.getMutableConcurringReads().keySet()));
@@ -1138,8 +1135,6 @@ public final class SubAnalyzer {
 
 	/**
 	 *
-	 * @param rec
-	 * @param ref
 	 * @return the furthest position in the contig covered by the read
 	 */
 	int processRead(@NonNull SequenceLocation location,

@@ -125,7 +125,6 @@ public class Worker {
 			final String workerID = workerIDBase + loopIndex;
 			Job job;
 			while (!terminate.get()) {
-				job = null;
 				SignalProcessor infoSignalHandlerWaiting = signal -> {
 					System.err.println("Worker " + workerID + " waiting for job from " +
 						cleanedUpName);

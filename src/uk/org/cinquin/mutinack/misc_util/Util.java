@@ -313,7 +313,7 @@ public class Util {
 					throw new RuntimeException("Read " + readNameHandle[0] +
 							" was found twice in file " + file.getName());
 				}
-				if (processingQueue.size() == 0) { //May have reached the end point
+				if (processingQueue.isEmpty()) { //May have reached the end point
 					synchronized(rawReads) {
 						rawReads.notifyAll();
 					}
@@ -392,7 +392,7 @@ public class Util {
 	//Keep separate maps for variable and constant barcodes so we can have stats for each
 	public static final ConcurrentMap<ByteArray, ByteArray> internedVariableBarcodes =
 		new ConcurrentHashMap<>(200);
-	public static final ConcurrentMap<ByteArray, ByteArray> internedConstantBarcodes =
+	private static final ConcurrentMap<ByteArray, ByteArray> internedConstantBarcodes =
 		new ConcurrentHashMap<>(200);
 
 	private static byte @NonNull[] getInternedArray(byte @NonNull[] array,
@@ -411,21 +411,13 @@ public class Util {
 		return getInternedArray(barcode, internedConstantBarcodes);
 	}
 
-	public static final ThreadLocal<NumberFormat> shortLengthFloatFormatter = new ThreadLocal<NumberFormat>() {
-		@Override
-		protected NumberFormat initialValue(){
-			return new DecimalFormat("0.00");
-		}
-	};
+	public static final ThreadLocal<NumberFormat> shortLengthFloatFormatter = ThreadLocal.withInitial(() -> new DecimalFormat("0.00"));
 
-	public static final ThreadLocal<NumberFormat> mediumLengthFloatFormatter = new ThreadLocal<NumberFormat>() {
-		@Override
-		protected NumberFormat initialValue(){
-			DecimalFormat f = new DecimalFormat("0.0000");
-			DoubleAdderFormatter.setNanAndInfSymbols(f);
-			return f;
-		}
-	};
+	public static final ThreadLocal<NumberFormat> mediumLengthFloatFormatter = ThreadLocal.withInitial(() -> {
+		DecimalFormat f = new DecimalFormat("0.0000");
+		DoubleAdderFormatter.setNanAndInfSymbols(f);
+		return f;
+	});
 
 	/* getPairOrientation below adapted from net.sf.samtools
 	 * The MIT License

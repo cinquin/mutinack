@@ -271,7 +271,7 @@ public class BenchmarkGetBarcodeConsensus {
 		return Util.getInternedVB(consensus);
 	}
 
-	public byte[] BASES = new byte[] {'A', 'C', 'G', 'N', 'T', 'a', 'c', 'g', 'n', 't'};
+	public byte[] BASES = {'A', 'C', 'G', 'N', 'T', 'a', 'c', 'g', 'n', 't'};
 	{
 		for (int i = 0; i < BASES.length; i++) {
 			BASES[i] = (byte) (BASES[i] - 'A');

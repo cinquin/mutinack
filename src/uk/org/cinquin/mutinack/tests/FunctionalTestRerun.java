@@ -86,16 +86,16 @@ public class FunctionalTestRerun {
 			{null});
 	
 	@org.junit.runners.Parameterized.Parameters(name = "{0}-{1}-{2}")
-    public static Iterable<Object[]> data() {
-    	List<String> param2List = false ? dontForceDuplexKeepTypes : listDuplexKeepTypes ;
-    	List<Object[]> result = testArguments.keySet().stream().flatMap(s -> param2List.
-    			stream().map(duplex -> new Object [] {s, duplex, true})).
-        		collect(Collectors.toList());
-    	if (result.size() > 0) {
-    		result.get(0)[2] = false;
-    	}
-    	return result;
-    }
+	public static Iterable<Object[]> data() {
+		List<String> param2List = false ? dontForceDuplexKeepTypes : listDuplexKeepTypes ;
+		List<Object[]> result = testArguments.keySet().stream().flatMap(s -> param2List.
+				stream().map(duplex -> new Object [] {s, duplex, true})).
+				collect(Collectors.toList());
+		if (!result.isEmpty()) {
+			result.get(0)[2] = false;
+		}
+		return result;
+	}
 
 	@Parameter(0)
 	public String testName;

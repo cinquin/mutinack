@@ -34,7 +34,7 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	private static final long serialVersionUID = -1557536590861199764L;
 	
 	@JsonIgnore
-	public final int maxSize;
+	private final int maxSize;
 
 	public String nEntries;
 	public String average;

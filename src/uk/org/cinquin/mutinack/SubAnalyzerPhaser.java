@@ -36,6 +36,7 @@ import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -443,7 +444,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final List<CandidateSequenceI> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.stream().
 			filter(c -> !c.isHidden()).
-			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
 			collect(Collectors.toList());
 
 		final List<CandidateSequenceI> allCandidatesIncludingDisag = locationExamResults.stream().
@@ -452,18 +453,18 @@ public class SubAnalyzerPhaser extends Phaser {
 			filter(c -> c.getQuality().getValue().greaterThan(POOR) ||
 				c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)).
 			filter(c -> !c.isHidden()).
-			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
 			collect(Collectors.toList());
 
 		final List<CandidateSequenceI> distinctQ1Q2Candidates = allQ1Q2Candidates.stream().distinct().
 			//Sorting might not be necessary
-			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
 			collect(Collectors.toList());
 
 		final List<CandidateSequenceI> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
 			stream().distinct().
 			//Sorting might not be necessary
-			sorted((a,b) -> a.getMutationType().compareTo(b.getMutationType())).
+			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
 			collect(Collectors.toList());
 
 		final List<DuplexDisagreement> allQ2DuplexDisagreements =
@@ -477,7 +478,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		csla.randomlySelected = randomlySelected;
 		csla.lowTopAlleleFreq = lowTopAlleleFreq;
-		if (!distinctQ1Q2Candidates.stream().anyMatch(c -> c.getMutationType().isWildtype())) {
+		if (distinctQ1Q2Candidates.stream().noneMatch(c -> c.getMutationType().isWildtype())) {
 			csla.noWt = true;
 		}
 
@@ -569,8 +570,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			boolean oneSampleNoWt = false;
 			for (LocationExaminationResults results: locationExamResults) {
-				if (!results.analyzedCandidateSequences.stream().
-						anyMatch(c -> c.getMutationType().isWildtype() && c.getnGoodOrDubiousDuplexes() > 0)) {
+				if (results.analyzedCandidateSequences.stream().
+						noneMatch(c -> c.getMutationType().isWildtype() && c.getnGoodOrDubiousDuplexes() > 0)) {
 					oneSampleNoWt = true;
 					break;
 				}
@@ -1002,7 +1003,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		});
 	}
 
-	private static final boolean shouldLog(Level level) {
+	private static boolean shouldLog(Level level) {
 		return logger.isEnabled(level);
 	}
 

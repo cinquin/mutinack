@@ -22,10 +22,10 @@ public class SettableLong implements Serializable {
 
 	private static final long serialVersionUID = 8580008588332408546L;
 
-	public long value;
+	private long value;
 	private boolean initialized;
 
-	public SettableLong (int value) {
+	public SettableLong(int value) {
 		initialized = true;
 		this.value = value;
 	}
