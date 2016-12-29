@@ -166,6 +166,7 @@ Under FreeBSD or Mac OS X, press control-T (or `kill -INFO` the process)
 to see a progress update on the standard error stream.
 
 **Mutinack output**
+
 JSON-formatted mutation detections and statistics are output to a file
 specified by the `-outputJSONTo` parameter. These outputs can also be
 parsed from tab-delimited columns in the standard output stream and
