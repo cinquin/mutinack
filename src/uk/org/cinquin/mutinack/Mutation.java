@@ -91,9 +91,8 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		} else {
 			cMutSeq = null;
 		}
-		Mutation c = new Mutation(mutationType, complement(wildtype), /* XXX */ false, cMutSeq,
+		return new Mutation(mutationType, complement(wildtype), /* XXX */ false, cMutSeq,
 				isTemplateStrand());
-		return c;
 	}
 
 	@Override

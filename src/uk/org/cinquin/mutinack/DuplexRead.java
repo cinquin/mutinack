@@ -126,8 +126,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private final boolean leftBarcodeNegativeStrand;
 	private final boolean rightBarcodeNegativeStrand;
 
-	public DuplexRead(MutinackGroup groupSettings, Parameters param, byte @NonNull[] leftBarcode, byte @NonNull[] rightBarcode,
-			boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
+	public DuplexRead(MutinackGroup groupSettings, byte @NonNull [] leftBarcode, byte @NonNull [] rightBarcode,
+					  boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
 		this.groupSettings = groupSettings;
 		this.leftBarcode = leftBarcode;
 		this.rightBarcode = rightBarcode;
@@ -1028,7 +1028,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 	}
 
-	public void analyzeForStats(AnalysisStats stats, final int maxAverageBasesClipped) {
+	void analyzeForStats(AnalysisStats stats, final int maxAverageBasesClipped) {
 		Assert.isFalse(invalid);
 
 		stats.duplexTotalRecords.insert(totalNRecords);

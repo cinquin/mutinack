@@ -418,8 +418,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 	
 	public int getInsertSize() {
-		int inferredInsertSize = record.getInferredInsertSize();
-		return inferredInsertSize;
+		return record.getInferredInsertSize();
 	}
 	
 	public ExtendedSAMRecord getMate() {

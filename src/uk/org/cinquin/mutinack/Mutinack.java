@@ -253,9 +253,7 @@ public class Mutinack implements Actualizable, Closeable {
 			@Nullable Histogram approximateReadInsertSize,
 			byte @NonNull [] constantBarcode,
 			@NonNull List<File> intersectAlignmentFiles,
-			boolean logReadIssuesInOutputBam,
 			@NonNull OutputLevel outputLevel,
-			List<GenomeFeatureTester> excludeBEDs,
 			int maxNDuplexes) {
 
 		this.groupSettings = groupSettings;
@@ -282,7 +280,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 		if (param.exploreParameters.isEmpty()) {
 			for (String statsName: statsNames) {
-				stats.add(createStats(statsName, param, out, out, mutationAnnotationWriter,
+				stats.add(createStats(statsName, param, out,
 					mutationAnnotationWriter, outputLevel));
 			}
 		} else {
@@ -290,7 +288,7 @@ public class Mutinack implements Actualizable, Closeable {
 				statsNames = Arrays.asList("main_stats");
 			}
 			final BiConsumer<String, Parameters> consumer = (statsName, p) ->
-				stats.add(createStats(statsName, p, out, out, mutationAnnotationWriter,
+				stats.add(createStats(statsName, p, out,
 					mutationAnnotationWriter, outputLevel));
 			recursiveParameterFill(consumer, 0, param.exploreParameters, statsNames, param,
 				param.cartesianProductOfExploredParameters);
@@ -379,8 +377,6 @@ public class Mutinack implements Actualizable, Closeable {
 			String statsName,
 			Parameters param1,
 			PrintStream out,
-			PrintStream detectionOutputStream,
-			OutputStreamWriter annotationOutputStream,
 			OutputStreamWriter mutationAnnotationWriter,
 			OutputLevel outputLevel) {
 		AnalysisStats stat = new AnalysisStats(statsName, param1, statsName.equals("ins_stats"),
@@ -828,9 +824,7 @@ public class Mutinack implements Actualizable, Closeable {
 					null,
 				nonNullify(param.constantBarcode.getBytes()),
 				intersectFiles,
-				param.logReadIssuesInOutputBam && param.outputAlignmentFile != null,
 				outputLevel,
-				excludeBEDs,
 				maxNDuplexes);
 			analyzers.set(i, analyzer);
 
@@ -1208,15 +1202,14 @@ public class Mutinack implements Actualizable, Closeable {
 				analysisChunk.groupSettings = groupSettings;
 
 				analyzers.forEach(a -> {
-					final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a),
-						out);
+					final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a));
 					a.subAnalyzers.add(subAnalyzer);
 					analysisChunk.subAnalyzers.add(subAnalyzer);
 				});
 
 				final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
 					analysisChunk,
-					alignmentWriter, mutationAnnotationWriter, groupSettings.forceOutputAtLocations,
+					alignmentWriter, groupSettings.forceOutputAtLocations,
 					dubiousOrGoodDuplexCovInAllInputs,
 					goodDuplexCovInAllInputs,
 					contigNames.get(contigIndex), contigIndex,

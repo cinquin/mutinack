@@ -40,7 +40,6 @@ import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSER
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector.uniqueValueCollector;
 
-import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,7 +151,7 @@ public final class SubAnalyzer {
 	}
 
 
-	SubAnalyzer(@NonNull Mutinack analyzer, PrintStream out) {
+	SubAnalyzer(@NonNull Mutinack analyzer) {
 		this.analyzer = analyzer;
 		this.param = analyzer.param;
 		useHashMap = param.alignmentPositionMismatchAllowed == 0;
@@ -491,8 +490,8 @@ public final class SubAnalyzer {
 
 		if (!foundDuplexRead) {
 			final DuplexRead duplexRead = matchToLeft ?
-					new DuplexRead(analyzer.groupSettings, param, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
-					new DuplexRead(analyzer.groupSettings, param, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
+					new DuplexRead(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
+					new DuplexRead(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 			if (matchToLeft) {
 				duplexRead.setPositions(
 						rExtended.getUnclippedStart(),

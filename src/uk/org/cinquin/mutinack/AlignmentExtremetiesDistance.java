@@ -26,7 +26,7 @@ final class AlignmentExtremetiesDistance {
 	public final @NonNull DuplexRead temp;
 	
 	public AlignmentExtremetiesDistance(MutinackGroup groupSettings, Parameters param) {
-		temp = new DuplexRead(groupSettings, param, emptyBarcode, emptyBarcode, false, false);
+		temp = new DuplexRead(groupSettings, emptyBarcode, emptyBarcode, false, false);
 	}
 
 	public void set(ExtendedSAMRecord r) {

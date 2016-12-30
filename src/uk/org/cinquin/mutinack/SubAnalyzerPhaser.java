@@ -109,7 +109,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	public SubAnalyzerPhaser(Parameters param,
 							 AnalysisChunk analysisChunk,
 							 SAMFileWriter alignmentWriter,
-							 OutputStreamWriter mutationAnnotationWriter,
 							 Map<SequenceLocation, Boolean> forceOutputAtLocations,
 							 Histogram dubiousOrGoodDuplexCovInAllInputs,
 							 Histogram goodDuplexCovInAllInputs,
@@ -199,7 +198,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 					try {
 						if (!param.rnaSeq) {
-							onAdvance1(position, location);
+							onAdvance1(location);
 						}
 						lastProcessedPosition.set(position);
 						if (readsToWrite != null) {
@@ -313,7 +312,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	}//End onAdvance
 
 	private void onAdvance1(
-			final int position,
 			final @NonNull SequenceLocation location
 		) throws IOException {
 
@@ -624,9 +622,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					toAnnotateList = mutationsToAnnotate.get(fullLocation);
 
 				if (toAnnotateList != null) {
-					Iterator<@NonNull Pair<@NonNull Mutation, @NonNull String>> it = toAnnotateList.iterator();
-					while (it.hasNext()) {
-						final Pair<@NonNull Mutation, @NonNull String> toAnnotate = it.next();
+					for (Pair<Mutation, String> toAnnotate : toAnnotateList) {
 						final Mutation mut;
 						if ((mut = toAnnotate.fst).mutationType.
 								equals(matchingSACandidate.getMutationType()) &&
