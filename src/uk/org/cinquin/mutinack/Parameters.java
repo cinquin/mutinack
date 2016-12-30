@@ -272,6 +272,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-randomizeMates", description = "Randomize first/second of pair; WARNING: this will lead to incorrect top/bottom strand grouping")
 	public boolean randomizeMates = false;
 
+	@OnlyUsedOnAdvance
 	@Parameter(names = "-randomizeStrand", description = "Randomize read mapping to top or bottom strand, preserving for each duplex" +
 		" the number in the top strand and the number in the bottom strand; WARNING: this will lead to incorrect mutation and disagreement detection")
 	public boolean randomizeStrand = false;
