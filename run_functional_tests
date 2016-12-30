@@ -33,7 +33,7 @@ BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 N_PARALLEL_JOBS=2
 
 #NailGun server seems to require a kill -9 to exit
-trap 'code=$?; processes="$server_pid $nailgun_server_pid $worker_pids"; ([ "$processes" != "  " ] && kill -9 $processes 2>/dev/null ) || true; exit $code' INT QUIT TERM EXIT
+trap 'code=$?; ([ "$server_pid" != "" ] && kill $server_pid 2>/dev/null ); processes="$nailgun_server_pid $worker_pids"; ([ "$processes" != "  " ] && kill -9 $processes 2>/dev/null ) || true; exit $code' INT QUIT TERM EXIT
 
 nailgun_port=`./getAvailablePort.py 2113`
 export nailgun_port
