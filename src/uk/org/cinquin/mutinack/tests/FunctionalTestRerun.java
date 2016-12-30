@@ -45,11 +45,11 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.MutinackGroup;
-import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 import uk.org.cinquin.mutinack.misc_util.exceptions.FunctionalTestFailed;
+import uk.org.cinquin.mutinack.output.RunResult;
 
 /**
  * The "recordedFunctionalTestRuns.bin" file must have been created prior to running
@@ -61,10 +61,10 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.FunctionalTestFailed;
  */
 @RunWith(Parameterized.class)
 public class FunctionalTestRerun {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(FileCache.class);
 
-	public static Map<String, Parameters> testParams;
+	public static Map<String, RunResult> testRuns;
 	private static final String pathToRecordedTests = "recordedFunctionalTestRuns.bin";
 	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 
@@ -73,23 +73,26 @@ public class FunctionalTestRerun {
 			byte [] bytes = new byte [(int) new File(pathToRecordedTests).length()];
 			dataIS.readFully(bytes);
 			@SuppressWarnings("unchecked")
-			Map<String, Parameters> testParams0 = (Map<String, Parameters>) conf.asObject(bytes);
-			testParams = testParams0;
+			Map<String, RunResult> testRuns0 = (Map<String, RunResult>) conf.asObject(bytes);
+			testRuns = testRuns0;
 		} catch (IOException e) {
 			logger.error("Problem reading data from " + new File(pathToRecordedTests).getAbsolutePath(), e);
 		}
 	}
-	
+
 	private static final List<String> listDuplexKeepTypes = Arrays.asList("DuplexHashMapKeeper",
 			/*"DuplexITKeeper",*/ "DuplexArrayListKeeper", null);
-	
+
 	private static final List<String> dontForceDuplexKeepTypes = Arrays.asList(new String []
 			{null});
-	
+
 	@org.junit.runners.Parameterized.Parameters(name = "{0}-{1}-{2}")
 	public static Iterable<Object[]> data() {
 		List<String> param2List = false ? dontForceDuplexKeepTypes : listDuplexKeepTypes ;
-		List<Object[]> result = testParams.keySet().stream().flatMap(s -> param2List.
+		List<Object[]> result = testRuns.keySet().stream().
+				filter(s -> !s.contains("illegal")).//TODO Deal separately with runs that should fail
+				//For now, just skip them
+				flatMap(s -> param2List.
 				stream().map(duplex -> new Object [] {s, duplex, true})).
 				collect(Collectors.toList());
 		if (!result.isEmpty()) {
@@ -100,38 +103,38 @@ public class FunctionalTestRerun {
 
 	@Parameter(0)
 	public String testName;
-	
+
 	@Parameter(1)
 	public String duplexKeeperType;
-	
+
 	@Parameter(2)
 	public boolean suppressAlignmentOutput;
-	
-	Parameters param;
-	
+
+	RunResult run;
+
 	private static final int nColumnsToCheck = 14;
-	
+
 	@Test
 	public void test() throws InterruptedException, IOException {
-		if (param == null) {
-			param = testParams.get(testName);
+		if (run == null) {
+			run = testRuns.get(testName);
 			//TODO Switch to throwing TestRunFailure
-			Assert.isNonNull(param, "Could not find parameters for test %s within %s",
+			Assert.isNonNull(run, "Could not find parameters for test %s within %s",
 						testName, 
-						testParams.keySet().stream().collect(Collectors.joining("\t")));
-			Assert.isNonNull(param.referenceOutput,
+						testRuns.keySet().stream().collect(Collectors.joining("\t")));
+			Assert.isNonNull(run.parameters.referenceOutput,
 					"No reference output specified for test GenericTest");
-			Assert.isTrue(new File(param.referenceOutput).exists(),
-					"File %s does not exist", new File(param.referenceOutput).getAbsolutePath());
-			param.terminateImmediatelyUponError = false;
+			Assert.isTrue(new File(run.parameters.referenceOutput).exists(),
+					"File %s does not exist", new File(run.parameters.referenceOutput).getAbsolutePath());
+			run.parameters.terminateImmediatelyUponError = false;
 			if (suppressAlignmentOutput) {
-				param.outputAlignmentFile = null;
+				run.parameters.outputAlignmentFile = null;
 			}
 		}
-		
-		Path referenceOutputPath = Paths.get(param.referenceOutput);
+
+		Path referenceOutputPath = Paths.get(run.parameters.referenceOutput);
 		String auxOutputFileBaseName = Files.createTempDirectory("functional_test_").toString();
-		param.auxOutputFileBaseName = auxOutputFileBaseName + "/";
+		run.parameters.auxOutputFileBaseName = auxOutputFileBaseName + "/";
 
 		try {
 			try (ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -144,7 +147,7 @@ public class FunctionalTestRerun {
 				//Only one test should run at a time, so it's OK to use a static variable
 				try {
 					MutinackGroup.forceKeeperType = duplexKeeperType;
-					Mutinack.realMain1(param, outPS, errPS);
+					Mutinack.realMain1(run.parameters, outPS, errPS);
 				} finally {
 					MutinackGroup.forceKeeperType = null;
 				}
@@ -179,7 +182,7 @@ public class FunctionalTestRerun {
 			FileUtils.deleteDirectory(new File(auxOutputFileBaseName));
 		}
 	}
-	
+
 	private static void checkOutput(String output, Stream<String> linesToLookFor) {
 		linesToLookFor.forEach((final String line) -> {
 			String[] split = line.split("\t");
