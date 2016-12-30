@@ -246,6 +246,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-inputReads", description = "Input BAM read file, sorted and with an index; repeat as many times as there are samples", required = true)
 	public List<@NonNull String> inputReads = new ArrayList<>();
 
+	@Parameter(names = "-computeHashForBAMSmallerThanInGB", description = "A simple hash will be computed for all input BAM files whose size is below specified threshold (in GB)", required = false)
+	public float computeHashForBAMSmallerThanInGB = 0.5f;
+
 	@Parameter(names = "-lenientSamValidation",description = "Passed to Picard; seems at least sometimes necessary for" +
 		" alignments produced by BWA", required = false)
 	public boolean lenientSamValidation = true;

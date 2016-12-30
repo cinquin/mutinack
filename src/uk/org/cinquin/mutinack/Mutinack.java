@@ -116,6 +116,7 @@ import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.BAMUtil;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.GetReadStats;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
@@ -291,9 +292,16 @@ public class Mutinack implements Actualizable {
 			recursiveParameterFill(consumer, 0, param.exploreParameters, statsNames, param,
 				param.cartesianProductOfExploredParameters);
 		}
+
+		final String inputHash = (inputBam.length() > param.computeHashForBAMSmallerThanInGB * Math.pow(1024,3)) ?
+				"too big"
+			:
+				BAMUtil.getHash(inputBam);
+
 		stats.forEach(stat -> {
 			stat.approximateReadInsertSize = insertSizeProbSmooth;
 			stat.approximateReadInsertSizeRaw = insertSizeProbRaw;
+			stat.inputBAMHashes.put(inputBam.getPath(), inputHash);
 		});
 		this.startDate = new Date();
 	}

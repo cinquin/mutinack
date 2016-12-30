@@ -35,6 +35,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	OutputLevel outputLevel;
 	final MutinackGroup groupSettings;
 	@Final @Persistent Set<String> mutinackVersions = new HashSet<>();
+	@Final @Persistent Map<String, String> inputBAMHashes = new HashMap<>();
 	@Final @Persistent Parameters analysisParameters;
 	@Final @Persistent boolean forInsertions;
 	//Changed to Map instead of ConcurrentMap to please datanucleus
