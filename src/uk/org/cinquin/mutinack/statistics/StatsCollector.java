@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Util;
-import uk.org.cinquin.mutinack.statistics.json.StatsCollectorSerializer;
+import uk.org.cinquin.mutinack.output.json.StatsCollectorSerializer;
 
 @JsonSerialize(using=StatsCollectorSerializer.class)
 public class StatsCollector implements Serializable, Traceable, Actualizable {

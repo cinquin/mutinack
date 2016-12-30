@@ -15,11 +15,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack.statistics.json;
+package uk.org.cinquin.mutinack.output.json;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -27,25 +25,17 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
-import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.LongAdderFormatter;
 
-public class HistogramSerializer extends JsonSerializer<@NonNull Histogram> {
+public class LongAdderFormatterSerializer
+	extends JsonSerializer<@NonNull LongAdderFormatter> {
 
 	@Override
-	public void serialize(@NonNull Histogram value, JsonGenerator gen,
-			SerializerProvider serializers) throws IOException {
-        gen.writeStartObject();
-        value.actualize();
-        gen.writeStringField("nEntries", value.nEntries);
-        gen.writeStringField("average", value.average);
-        gen.writeStringField("median", value.median);
-        if (!gen.canOmitFields() || (value.notes != null && !value.notes.isEmpty())) {
-        	gen.writeStringField("nEntries", value.nEntries);
-        }
-        List<Long> values = new ArrayList<>();
-        value.stream().map(LongAdderFormatter::sum).forEachOrdered(values::add);
-        gen.writeObjectField("values", values);
-        gen.writeEndObject();
+	public void serialize(@NonNull LongAdderFormatter laf, JsonGenerator jgen,
+			SerializerProvider arg2) throws IOException {
+		jgen.writeStartObject();
+		jgen.writeStringField("sum", laf.sum);
+		jgen.writeEndObject();
 	}
+
 }

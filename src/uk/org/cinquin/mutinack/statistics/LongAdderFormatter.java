@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import uk.org.cinquin.mutinack.statistics.json.LongAdderFormatterSerializer;
+import uk.org.cinquin.mutinack.output.json.LongAdderFormatterSerializer;
 
 @JsonSerialize(using=LongAdderFormatterSerializer.class)
 public final class LongAdderFormatter extends LongAdder implements Serializable,

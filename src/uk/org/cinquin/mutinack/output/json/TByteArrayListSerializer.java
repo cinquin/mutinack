@@ -1,4 +1,4 @@
-package uk.org.cinquin.mutinack.statistics.json;
+package uk.org.cinquin.mutinack.output.json;
 
 import java.io.IOException;
 import java.util.ArrayList;

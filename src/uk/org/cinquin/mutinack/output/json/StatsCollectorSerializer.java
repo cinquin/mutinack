@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack.statistics.json;
+package uk.org.cinquin.mutinack.output.json;
 
 import java.io.IOException;
 import java.util.ArrayList;

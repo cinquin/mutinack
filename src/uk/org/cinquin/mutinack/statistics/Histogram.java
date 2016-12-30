@@ -24,7 +24,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import uk.org.cinquin.mutinack.statistics.json.HistogramSerializer;
+import uk.org.cinquin.mutinack.output.json.HistogramSerializer;
 
 @JsonSerialize(using = HistogramSerializer.class)
 public class Histogram extends ArrayList<LongAdderFormatter>

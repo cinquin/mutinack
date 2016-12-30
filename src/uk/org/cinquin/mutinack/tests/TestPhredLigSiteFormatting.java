@@ -33,16 +33,16 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.output.json.DoubleAdderFormatterSerializer;
+import uk.org.cinquin.mutinack.output.json.HistogramSerializer;
+import uk.org.cinquin.mutinack.output.json.LongAdderFormatterSerializer;
+import uk.org.cinquin.mutinack.output.json.StatsCollectorSerializer;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocation;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.LongAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.MultiCounter;
 import uk.org.cinquin.mutinack.statistics.StatsCollector;
-import uk.org.cinquin.mutinack.statistics.json.DoubleAdderFormatterSerializer;
-import uk.org.cinquin.mutinack.statistics.json.HistogramSerializer;
-import uk.org.cinquin.mutinack.statistics.json.LongAdderFormatterSerializer;
-import uk.org.cinquin.mutinack.statistics.json.StatsCollectorSerializer;
 
 public class TestPhredLigSiteFormatting {
 

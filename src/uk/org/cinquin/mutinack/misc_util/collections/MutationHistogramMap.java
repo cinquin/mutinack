@@ -5,8 +5,8 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import uk.org.cinquin.mutinack.Mutation;
+import uk.org.cinquin.mutinack.output.json.MutationHistogramMapSerializer;
 import uk.org.cinquin.mutinack.statistics.Histogram;
-import uk.org.cinquin.mutinack.statistics.json.MutationHistogramMapSerializer;
 
 @JsonSerialize(using = MutationHistogramMapSerializer.class)
 public class MutationHistogramMap extends ActualizableConcurrentHashMap<Mutation, Histogram> {

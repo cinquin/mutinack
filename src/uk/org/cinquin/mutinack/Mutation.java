@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-import uk.org.cinquin.mutinack.statistics.json.ByteArrayStringSerializer;
+import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
 
 public final class Mutation implements Comparable<Mutation>, Serializable {
 

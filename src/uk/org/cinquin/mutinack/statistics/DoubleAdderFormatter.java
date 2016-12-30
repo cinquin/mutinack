@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.DoubleAdder;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import uk.org.cinquin.mutinack.statistics.json.DoubleAdderFormatterSerializer;
+import uk.org.cinquin.mutinack.output.json.DoubleAdderFormatterSerializer;
 
 @JsonSerialize(using=DoubleAdderFormatterSerializer.class)
 public final class DoubleAdderFormatter extends DoubleAdder

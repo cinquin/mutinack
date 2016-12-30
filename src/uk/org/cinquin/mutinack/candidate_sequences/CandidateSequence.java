@@ -45,6 +45,9 @@ import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
+import uk.org.cinquin.mutinack.output.json.ByteStringSerializer;
+import uk.org.cinquin.mutinack.output.json.TByteArrayListSerializer;
 import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
@@ -58,9 +61,6 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
-import uk.org.cinquin.mutinack.statistics.json.ByteArrayStringSerializer;
-import uk.org.cinquin.mutinack.statistics.json.ByteStringSerializer;
-import uk.org.cinquin.mutinack.statistics.json.TByteArrayListSerializer;
 
 
 /**
