@@ -83,4 +83,59 @@ public final class DoubleAdderFormatter extends DoubleAdder
 		sum = toString();
 	}
 
+	//Following copied from parent class in JDK
+	/**
+	 * Serialization proxy, used to avoid reference to the non-public
+	 * Striped64 superclass in serialized forms.
+	 * @serial include
+	 */
+	private static class SerializationProxy implements Serializable {
+		private static final long serialVersionUID = 7249069246863182397L;
+
+		/**
+		 * The current value returned by sum().
+		 * @serial
+		 */
+		private final double value;
+
+		SerializationProxy(DoubleAdderFormatter a) {
+			value = a.sum();
+		}
+
+		/**
+		 * Return a {@code LongAdder} object with initial state
+		 * held by this proxy.
+		 *
+		 * @return a {@code LongAdder} object with initial state
+		 * held by this proxy.
+		 */
+		private Object readResolve() {
+			DoubleAdder a = new DoubleAdderFormatter();
+			a.add(value);
+			return a;
+		}
+	}
+
+	/**
+	 * Returns a
+	 * <a href="../../../../serialized-form.html#java.util.concurrent.atomic.LongAdder.SerializationProxy">
+	 * SerializationProxy</a>
+	 * representing the state of this instance.
+	 *
+	 * @return a {@link SerializationProxy}
+	 * representing the state of this instance
+	 */
+	private Object writeReplace() {
+		return new SerializationProxy(this);
+	}
+
+	/**
+	 * @param s the stream
+	 * @throws java.io.InvalidObjectException always
+	 */
+	@SuppressWarnings("static-method")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.InvalidObjectException {
+		throw new java.io.InvalidObjectException("Proxy required");
+	}
 }
