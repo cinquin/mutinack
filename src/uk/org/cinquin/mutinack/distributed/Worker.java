@@ -200,8 +200,12 @@ public class Worker {
 							//from the server what happened, and then stop the worker
 							throw die;
 						}
+						Throwable t = null;
+						if (param.enableCostlyAssertions && (t = Util.getSerializationThrowable(job)) != null) {
+							throw t;
+						}
 					} catch (Throwable t) {
-						if (!Util.isSerializable(t)) {
+						if (Util.getSerializationThrowable(t) != null) {
 							t = new RuntimeException("Unserializable exception " +
 								t.toString());
 						}

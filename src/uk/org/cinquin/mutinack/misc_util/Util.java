@@ -515,16 +515,21 @@ public class Util {
 		return indexMap;
 	}
 
-	public static boolean isSerializable(Object o) {
-		NullOutputStream os = NullOutputStream.NULL_OUTPUT_STREAM;
+	public static @Nullable Throwable getSerializationThrowable(Object o) {
+		//NullOutputStream os = NullOutputStream.NULL_OUTPUT_STREAM;
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
-			try(ObjectOutputStream out = new ObjectOutputStream(os)) {
+			try(ObjectOutputStream out = new ObjectOutputStream(bos)) {
 				out.writeObject(o);
 			}
-		} catch (Exception e) {
-			return false;
+			try(ObjectInputStream in = new ObjectInputStream(
+					new ByteArrayInputStream(bos.toByteArray()))) {
+				in.readObject();
+			}
+		} catch (Throwable e) {
+			return e;
 		}
-		return true;
+		return null;
 	}
 
 	public static void writePID(@NonNull String path) {
