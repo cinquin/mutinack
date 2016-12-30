@@ -852,7 +852,7 @@ public final class Parameters implements Serializable, Cloneable {
 	 * Obtains JCommander arguments in order of appearance rather than sorted
 	 * by name (which is the case with a plain usage() call in JCommander 1.18).
 	 * @param jc JCommander object.
-	 * @param jcParams class with JCommander parameters (and nothing else!).
+	 * @param paramClass class with JCommander parameters (and nothing else!).
 	 * @param out string builder to write to.
 	 * @throws SecurityException
 	 * @throws NoSuchFieldException
