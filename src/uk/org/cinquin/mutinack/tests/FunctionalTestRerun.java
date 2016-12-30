@@ -63,7 +63,7 @@ public class FunctionalTestRerun {
 	
 	private static final Logger logger = LoggerFactory.getLogger(FileCache.class);
 
-	public static Map<String, Parameters> testArguments;
+	public static Map<String, Parameters> testParams;
 	private static final String pathToRecordedTests = "recordedFunctionalTestRuns.bin";
 	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 
@@ -72,8 +72,8 @@ public class FunctionalTestRerun {
 			byte [] bytes = new byte [(int) new File(pathToRecordedTests).length()];
 			dataIS.readFully(bytes);
 			@SuppressWarnings("unchecked")
-			Map<String, Parameters> testArgs = (Map<String, Parameters>) conf.asObject(bytes);
-			testArguments = testArgs;
+			Map<String, Parameters> testParams0 = (Map<String, Parameters>) conf.asObject(bytes);
+			testParams = testParams0;
 		} catch (IOException e) {
 			logger.error("Problem reading data from " + new File(pathToRecordedTests).getAbsolutePath(), e);
 		}
@@ -88,7 +88,7 @@ public class FunctionalTestRerun {
 	@org.junit.runners.Parameterized.Parameters(name = "{0}-{1}-{2}")
 	public static Iterable<Object[]> data() {
 		List<String> param2List = false ? dontForceDuplexKeepTypes : listDuplexKeepTypes ;
-		List<Object[]> result = testArguments.keySet().stream().flatMap(s -> param2List.
+		List<Object[]> result = testParams.keySet().stream().flatMap(s -> param2List.
 				stream().map(duplex -> new Object [] {s, duplex, true})).
 				collect(Collectors.toList());
 		if (!result.isEmpty()) {
@@ -113,11 +113,11 @@ public class FunctionalTestRerun {
 	@Test
 	public void test() throws InterruptedException, IOException {
 		if (param == null) {
-			param = testArguments.get(testName);
+			param = testParams.get(testName);
 			//TODO Switch to throwing TestRunFailure
 			Assert.isNonNull(param, "Could not find parameters for test %s within %s",
 						testName, 
-						testArguments.keySet().stream().collect(Collectors.joining("\t")));
+						testParams.keySet().stream().collect(Collectors.joining("\t")));
 			Assert.isNonNull(param.referenceOutput,
 					"No reference output specified for test GenericTest");
 			Assert.isTrue(new File(param.referenceOutput).exists(),
