@@ -91,4 +91,9 @@ public class MapOfLists<K, V> implements Serializable, Iterable<Entry<K, List<V>
 		return new IterableAdapter<>(map.keySet().iterator());
 	}
 
+	@Override
+	public String toString() {
+		return map.toString();
+	}
+
 }
