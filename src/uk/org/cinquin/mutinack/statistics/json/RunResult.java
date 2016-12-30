@@ -27,7 +27,7 @@ import javax.jdo.annotations.Persistent;
 import uk.org.cinquin.mutinack.Parameters;
 
 @PersistenceCapable
-public class JsonRoot implements Serializable {
+public class RunResult implements Serializable {
 	private static final long serialVersionUID = -5856926265963435703L;
 
 	public @Persistent @Column(length = 10_000) String mutinackVersion;

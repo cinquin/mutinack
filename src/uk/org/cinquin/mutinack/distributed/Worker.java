@@ -193,7 +193,7 @@ public class Worker {
 
 					try {
 						int parameterHashCode = job.parameters.hashCode();
-						Mutinack.realMain1(job.parameters, outPS, errPS);
+						job.result.output = Mutinack.realMain1(job.parameters, outPS, errPS);
 						if (parameterHashCode != job.parameters.hashCode()) {
 							die = new AssertionFailedException("Parameters modified by worker");
 							//Send the result back to the server so that one could figure out

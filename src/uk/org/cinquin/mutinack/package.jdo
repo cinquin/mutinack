@@ -20,7 +20,7 @@
     </package>
 
     <package name="uk.org.cinquin.mutinack.statistics.json">
-        <class name="JsonRoot"/>
+        <class name="RunResult"/>
         <class name="ParedDownMutinack"/>
     </package>
 </jdo>

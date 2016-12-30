@@ -117,6 +117,9 @@ import uk.org.cinquin.mutinack.features.PosByPosNumbersPB;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.BAMUtil;
+import uk.org.cinquin.mutinack.misc_util.CloseableCloser;
+import uk.org.cinquin.mutinack.misc_util.CloseableListWrapper;
+import uk.org.cinquin.mutinack.misc_util.CloseableWrapper;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.GetReadStats;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
@@ -140,11 +143,11 @@ import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.ICounter;
 import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
-import uk.org.cinquin.mutinack.statistics.json.JsonRoot;
 import uk.org.cinquin.mutinack.statistics.json.ParedDownMutinack;
+import uk.org.cinquin.mutinack.statistics.json.RunResult;
 import uk.org.cinquin.parfor.ParFor;
 
-public class Mutinack implements Actualizable {
+public class Mutinack implements Actualizable, Closeable {
 
 	static ConcurrentHashMap<String, SettableLong> objectAllocations =
 		new ConcurrentHashMap<>(1000);
@@ -498,7 +501,7 @@ public class Mutinack implements Actualizable {
 	private static boolean versionChecked = false;
 
 	@SuppressWarnings("resource")
-	public static void realMain1(Parameters param, PrintStream out, PrintStream err)
+	public static RunResult realMain1(Parameters param, PrintStream out, PrintStream err)
 			throws InterruptedException, IOException {
 
 		Thread.interrupted();//XXX The actual problem needs to be fixed upstream
@@ -542,821 +545,844 @@ public class Mutinack implements Actualizable {
 			}
 		}
 
-		SAMFileWriter alignmentWriter = null;
-		OutputStreamWriter mutationAnnotationWriter = null;
-		SignalProcessor infoSignalHandler = null;
 		final MutinackGroup groupSettings = new MutinackGroup();
 		groupSettings.registerInterruptSignalProcessor();
 		param.group = groupSettings;
 
-		try {
-			final SAMFileWriter alignmentWriter0;
-			if (param.outputAlignmentFile != null) {
-				SAMFileWriterFactory factory = new SAMFileWriterFactory();
-				SAMFileHeader header = new SAMFileHeader();
-				factory.setCreateIndex(true);
-				header.setSortOrder(param.sortOutputAlignmentFile ?
-						contrib.net.sf.samtools.SAMFileHeader.SortOrder.coordinate
-						: contrib.net.sf.samtools.SAMFileHeader.SortOrder.unsorted);
-				if (param.sortOutputAlignmentFile) {
-					factory.setMaxRecordsInRam(10_000);
-				}
-				final File inputBam = new File(param.inputReads.get(0));
+		try (CloseableCloser closeableCloser = new CloseableCloser()) {
+			closeableCloser.add(groupSettings);
+			closeableCloser.add(new CloseableListWrapper<>(analyzers));
+			realMain2(param, groupSettings, analyzers, out, err, closeableCloser);
+		}
 
-				try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
-					final SAMFileHeader inputHeader = tempReader.getFileHeader();
-					header.setSequenceDictionary(inputHeader.getSequenceDictionary());
-					List<SAMProgramRecord> programs = new ArrayList<>(inputHeader.getProgramRecords());
-					SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
-					//documentation somewhere of what programGroupId should be??
-					mutinackRecord.setProgramName("Mutinack");
-					mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
-					mutinackRecord.setCommandLine(param.toString());
-					programs.add(mutinackRecord);
-					header.setProgramRecords(programs);
-				}
-				alignmentWriter = factory.
-						makeBAMWriter(header, false, new File(param.outputAlignmentFile), 0);
+		return getRunResult(param, analyzers);
+	}
+
+	@SuppressWarnings("resource")
+	private static void realMain2(
+			final Parameters param,
+			final MutinackGroup groupSettings,
+			final List<Mutinack> analyzers,
+			final PrintStream out,
+			final PrintStream err,
+			final CloseableCloser closeableCloser) throws IOException, InterruptedException {
+
+		final SAMFileWriter alignmentWriter;
+		if (param.outputAlignmentFile == null) {
+			alignmentWriter = null;
+		} else {
+			SAMFileWriterFactory factory = new SAMFileWriterFactory();
+			SAMFileHeader header = new SAMFileHeader();
+			factory.setCreateIndex(true);
+			header.setSortOrder(param.sortOutputAlignmentFile ?
+				contrib.net.sf.samtools.SAMFileHeader.SortOrder.coordinate
+				: contrib.net.sf.samtools.SAMFileHeader.SortOrder.unsorted);
+			if (param.sortOutputAlignmentFile) {
+				factory.setMaxRecordsInRam(10_000);
 			}
-			alignmentWriter0 = alignmentWriter;
+			final File inputBam = new File(param.inputReads.get(0));
 
-			if (param.annotateMutationsOutputFile != null) {
-				mutationAnnotationWriter = new FileWriter(param.annotateMutationsOutputFile);
-			} else {
-				if (param.annotateMutationsInFile != null) {
-					throw new IllegalArgumentException("Annotating of mutation in file " +
-						param.annotateMutationsInFile + " was requested but no output was specified " +
-						"with annotateMutationsOutputFile argument");
-				}
+			try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
+				final SAMFileHeader inputHeader = tempReader.getFileHeader();
+				header.setSequenceDictionary(inputHeader.getSequenceDictionary());
+				List<SAMProgramRecord> programs = new ArrayList<>(inputHeader.getProgramRecords());
+				SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
+				//documentation somewhere of what programGroupId should be??
+				mutinackRecord.setProgramName("Mutinack");
+				mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
+				mutinackRecord.setCommandLine(param.toString());
+				programs.add(mutinackRecord);
+				header.setProgramRecords(programs);
 			}
+			alignmentWriter = factory.
+				makeBAMWriter(header, false, new File(param.outputAlignmentFile), 0);
+		}
+		closeableCloser.add(new CloseableWrapper<>(alignmentWriter, SAMFileWriter::close));
 
-			final @NonNull List<@NonNull String> contigNames;
-			final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes;
-			final @NonNull List<@NonNull String> contigNamesToProcess;
+		final OutputStreamWriter mutationAnnotationWriter;
+		if (param.annotateMutationsOutputFile != null) {
+			mutationAnnotationWriter = new FileWriter(param.annotateMutationsOutputFile);
+		} else {
+			mutationAnnotationWriter = null;
+			if (param.annotateMutationsInFile != null) {
+				throw new IllegalArgumentException("Annotating of mutation in file " +
+					param.annotateMutationsInFile + " was requested but no output was specified " +
+					"with annotateMutationsOutputFile argument");
+			}
+		}
+		closeableCloser.add(mutationAnnotationWriter);
 
-			if (param.readContigsFromFile) {
-				final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 =
-					new HashMap<>(
-						StaticStuffToAvoidMutating.loadContigsFromFile(param.referenceGenome));
+		final @NonNull List<@NonNull String> contigNames;
+		final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes;
+		final @NonNull List<@NonNull String> contigNamesToProcess;
 
-				try (SAMFileReader tempReader = new SAMFileReader(
-						new File(param.inputReads.get(0)))) {
-					final List<String> sequenceNames = tempReader.getFileHeader().
-						getSequenceDictionary().getSequences().stream().
-						map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList());
+		if (param.readContigsFromFile) {
+			final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 =
+				new HashMap<>(
+					StaticStuffToAvoidMutating.loadContigsFromFile(param.referenceGenome));
 
-					contigSizes0.entrySet().removeIf(e -> {
+			try (SAMFileReader tempReader = new SAMFileReader(
+				new File(param.inputReads.get(0)))) {
+				final List<String> sequenceNames = tempReader.getFileHeader().
+					getSequenceDictionary().getSequences().stream().
+					map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList());
+
+				contigSizes0.entrySet().removeIf(e -> {
 						if (!sequenceNames.contains(e.getKey())) {
 							printUserMustSeeMessage("Reference sequence " + e.getKey() + " not present in sample header; ignoring");
 							return true;
 						}
 						return false;
 					}
-					);
-				}
-				contigSizes = Collections.unmodifiableMap(contigSizes0);
-				List<@NonNull String> contigNames0 = new ArrayList<>(contigSizes0.keySet());
-				contigNames0.sort(null);
-				contigNames = Collections.unmodifiableList(contigNames0);
-				contigNamesToProcess = contigNames;
-			} else if (!param.contigNamesToProcess.equals(new Parameters().contigNamesToProcess)) {
-				throw new IllegalArgumentException("Contig names specified both in file and as " +
-						"command line argument; pick only one method");
-			} else {
-				contigNames = param.contigNamesToProcess;
-				contigSizes = Collections.emptyMap();
-				contigNamesToProcess = param.contigNamesToProcess;
+				);
 			}
+			contigSizes = Collections.unmodifiableMap(contigSizes0);
+			List<@NonNull String> contigNames0 = new ArrayList<>(contigSizes0.keySet());
+			contigNames0.sort(null);
+			contigNames = Collections.unmodifiableList(contigNames0);
+			contigNamesToProcess = contigNames;
+		} else if (!param.contigNamesToProcess.equals(new Parameters().contigNamesToProcess)) {
+			throw new IllegalArgumentException("Contig names specified both in file and as " +
+				"command line argument; pick only one method");
+		} else {
+			contigNames = param.contigNamesToProcess;
+			contigSizes = Collections.emptyMap();
+			contigNamesToProcess = param.contigNamesToProcess;
+		}
 
-			for (int i = 0; i < contigNames.size(); i++) {
-				groupSettings.indexContigNameReverseMap.put(contigNames.get(i), i);
+		for (int i = 0; i < contigNames.size(); i++) {
+			groupSettings.indexContigNameReverseMap.put(contigNames.get(i), i);
+		}
+		groupSettings.setContigNames(contigNames);
+		groupSettings.setContigSizes(contigSizes);
+
+		StaticStuffToAvoidMutating.loadContigs(param.referenceGenome,
+			contigNames);
+
+		groupSettings.forceOutputAtLocations.clear();
+
+		Util.parseListLocations(param.forceOutputAtPositions,
+			groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
+			if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
+				Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
+					" in list of forced output positions"));
 			}
-			groupSettings.setContigNames(contigNames);
-			groupSettings.setContigSizes(contigSizes);
+		});
 
-			StaticStuffToAvoidMutating.loadContigs(param.referenceGenome,
-				contigNames);
-
-			groupSettings.forceOutputAtLocations.clear();
-
-			Util.parseListLocations(param.forceOutputAtPositions,
-				groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
-					if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
-						Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
-							" in list of forced output positions"));
+		for (String forceOutputFilePath: param.forceOutputAtPositionsFile) {
+			try(Stream<String> lines = Files.lines(Paths.get(forceOutputFilePath))) {
+				lines.forEach(l -> {
+					for (String loc: l.split(" ")) {
+						try {
+							if (loc.isEmpty()) {
+								continue;
+							}
+							int columnPosition = loc.indexOf(":");
+							final @NonNull String contig = loc.substring(0, columnPosition);
+							final String pos = loc.substring(columnPosition + 1);
+							double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
+							final int contigIndex = contigNames.indexOf(contig);
+							if (contigIndex < 0) {
+								throw new IllegalArgumentException("Unknown contig " + contig + "; known contigs are " +
+									contigNames);
+							}
+							final SequenceLocation parsedLocation = new SequenceLocation(contigIndex, contig,
+								(int) Math.floor(position), position - Math.floor(position) > 0);
+							if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
+								Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
+									" in list of forced output positions"));
+							}
+						} catch (Exception e) {
+							throw new RuntimeException("Error parsing " + loc + " in file " + forceOutputFilePath, e);
+						}
 					}
 				});
-
-			for (String forceOutputFilePath: param.forceOutputAtPositionsFile) {
-				try(Stream<String> lines = Files.lines(Paths.get(forceOutputFilePath))) {
-					lines.forEach(l -> {
-						for (String loc: l.split(" ")) {
-							try {
-								if ("".equals(loc)) {
-									continue;
-								}
-								int columnPosition = loc.indexOf(":");
-								final @NonNull String contig = loc.substring(0, columnPosition);
-								final String pos = loc.substring(columnPosition + 1);
-								double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
-								final int contigIndex = contigNames.indexOf(contig);
-								if (contigIndex < 0) {
-									throw new IllegalArgumentException("Unknown contig " + contig + "; known contigs are " +
-										contigNames);
-								}
-								final SequenceLocation parsedLocation = new SequenceLocation(contigIndex, contig,
-										(int) Math.floor(position), position - Math.floor(position) > 0);
-								if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
-									Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
-											" in list of forced output positions"));
-								}
-							} catch (Exception e) {
-								throw new RuntimeException("Error parsing " + loc + " in file " + forceOutputFilePath, e);
-							}
-						}
-					});
-				}
 			}
+		}
 
-			if (param.randomOutputRate != 0) {
-				if (!param.readContigsFromFile) {
-					throw new IllegalArgumentException("Option randomOutputRate "
-						+ "requires readContigsFromFiles");
-				}
-				int randomLocs = 0;
-				for (Entry<@NonNull String, Integer> c: contigSizes.entrySet()) {
-					for (int i = 0; i < param.randomOutputRate * c.getValue(); i++) {
-						@SuppressWarnings("null")
-						SequenceLocation l = new SequenceLocation(
-							groupSettings.indexContigNameReverseMap.get(c.getKey()),
-							c.getKey(), (int) (Math.random() * (c.getValue() - 1)));
-						if (groupSettings.forceOutputAtLocations.put(l, true) == null) {
-							randomLocs++;
-						}
+		if (param.randomOutputRate != 0) {
+			if (!param.readContigsFromFile) {
+				throw new IllegalArgumentException("Option randomOutputRate "
+					+ "requires readContigsFromFiles");
+			}
+			int randomLocs = 0;
+			for (Entry<@NonNull String, Integer> c: contigSizes.entrySet()) {
+				for (int i = 0; i < param.randomOutputRate * c.getValue(); i++) {
+					@SuppressWarnings("null")
+					SequenceLocation l = new SequenceLocation(
+						groupSettings.indexContigNameReverseMap.get(c.getKey()),
+						c.getKey(), (int) (Math.random() * (c.getValue() - 1)));
+					if (groupSettings.forceOutputAtLocations.put(l, true) == null) {
+						randomLocs++;
 					}
 				}
-				Util.printUserMustSeeMessage("Added " + randomLocs + " random output positions");
 			}
+			Util.printUserMustSeeMessage("Added " + randomLocs + " random output positions");
+		}
+		@SuppressWarnings("null")
+		@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
+		out.println("Forcing output at locations " +
+			Util.truncateString(forceOutputString));
+
+		out.println(String.join("\t", outputHeader));
+
+		//Used to ensure that different analyzers do not use same output files
+		final Set<String> sampleNames = new HashSet<>();
+
+		if (param.minMappingQIntersect.size() != param.intersectAlignment.size()) {
+			throw new IllegalArgumentException(
+				"Lists given in minMappingQIntersect and intersectAlignment must have same length");
+		}
+
+		Pair<List<String>, List<Integer>> parsedPositions =
+			Util.parseListPositions(param.startAtPositions, true, "startAtPosition");
+		final List<String> startAtContigs = parsedPositions.fst;
+		final List<Integer> startAtPositions = parsedPositions.snd;
+
+		Pair<List<String>, List<Integer>> parsedPositions2 =
+			Util.parseListPositions(param.stopAtPositions, true, "stopAtPosition");
+		final List<String> truncateAtContigs = parsedPositions2.fst;
+		final List<Integer> truncateAtPositions = parsedPositions2.snd;
+
+		Util.checkPositionsOrdering(parsedPositions, parsedPositions2);
+
+		final List<GenomeFeatureTester> excludeBEDs = new ArrayList<>();
+		for (String bed: param.excludeRegionsInBED) {
+			try {
+				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
+					groupSettings.getContigNames(), bed, false);
+				excludeBEDs.add(reader);
+			} catch (Exception e) {
+				throw new RuntimeException("Problem with BED file " + bed, e);
+			}
+		}
+
+		final List<BedReader> repetitiveBEDs = new ArrayList<>();
+		for (String bed: param.repetiveRegionBED) {
+			try {
+				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
+					groupSettings.getContigNames(), bed, false);
+				repetitiveBEDs.add(reader);
+			} catch (Exception e) {
+				throw new RuntimeException("Problem with BED file " + bed, e);
+			}
+		}
+
+		final @Nullable OutputStreamWriter mutationWriterCopy = mutationAnnotationWriter;
+
+		IntStream.range(0, param.inputReads.size()).parallel().forEach(i -> {
+			final String inputReads = param.inputReads.get(i);
+			final File inputBam = new File(inputReads);
+
+			final @NonNull String name;
+
+			if (param.sampleNames.size() >= i + 1) {
+				name = param.sampleNames.get(i);
+			} else {
+				name = inputBam.getName();
+			}
+
+			synchronized (sampleNames) {
+				if (!sampleNames.add(name)) {
+					throw new RuntimeException("Two or more analyzers trying to use the same name " +
+						name + "; please give samples unique names");
+				}
+			}
+
+			final List<File> intersectFiles = new ArrayList<>();
+			final int nIntersectFiles = param.intersectAlignment.size();
+			final int nIntersectFilesPerAnalyzer = nIntersectFiles / param.inputReads.size();
+			for (int k = i * nIntersectFilesPerAnalyzer ; k < (i+1) * nIntersectFilesPerAnalyzer ; k++) {
+				File f = new File(param.intersectAlignment.get(k));
+				intersectFiles.add(f);
+				out.println("Intersecting " + inputBam.getAbsolutePath() + " with " +
+					f.getAbsolutePath());
+			}
+
+			groupSettings.PROCESSING_CHUNK = param.processingChunk;
+			groupSettings.INTERVAL_SLOP = param.alignmentPositionMismatchAllowed;
+			groupSettings.BIN_SIZE = param.contigStatsBinLength;
+			groupSettings.terminateImmediatelyUponError =
+				param.terminateImmediatelyUponError;
+
+			groupSettings.setBarcodePositions(0, param.variableBarcodeLength - 1,
+				3, 5);
+
+			final int maxNDuplexes = param.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
+				param.maxNDuplexes.get(i);
+
+			final OutputLevel[] d = OutputLevel.values();
 			@SuppressWarnings("null")
-			@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
-			out.println("Forcing output at locations " +
-					Util.truncateString(forceOutputString));
+			final @NonNull OutputLevel outputLevel = d[param.verbosity];
 
-			out.println(String.join("\t", outputHeader));
+			final Mutinack analyzer = new Mutinack(
+				groupSettings,
+				param,
+				name,
+				inputBam,
+				out,
+				mutationWriterCopy,
+				param.variableBarcodeLength == 0 ?
+					GetReadStats.getApproximateReadInsertSize(inputBam, param.maxInsertSize, param.minMappingQualityQ2)
+					:
+					null,
+				nonNullify(param.constantBarcode.getBytes()),
+				intersectFiles,
+				param.logReadIssuesInOutputBam && param.outputAlignmentFile != null,
+				outputLevel,
+				excludeBEDs,
+				maxNDuplexes);
+			analyzers.set(i, analyzer);
 
-			//Used to ensure that different analyzers do not use same output files
-			final Set<String> sampleNames = new HashSet<>();
+			analyzer.finalOutputBaseName = (param.auxOutputFileBaseName != null ?
+				(param.auxOutputFileBaseName) : "") +
+				name;
 
-			if (param.minMappingQIntersect.size() != param.intersectAlignment.size()) {
-				throw new IllegalArgumentException(
-					"Lists given in minMappingQIntersect and intersectAlignment must have same length");
-			}
-
-			Pair<List<String>, List<Integer>> parsedPositions =
-					Util.parseListPositions(param.startAtPositions, true, "startAtPosition");
-			final List<String> startAtContigs = parsedPositions.fst;
-			final List<Integer> startAtPositions = parsedPositions.snd;
-
-			Pair<List<String>, List<Integer>> parsedPositions2 =
-					Util.parseListPositions(param.stopAtPositions, true, "stopAtPosition");
-			final List<String> truncateAtContigs = parsedPositions2.fst;
-			final List<Integer> truncateAtPositions = parsedPositions2.snd;
-
-			Util.checkPositionsOrdering(parsedPositions, parsedPositions2);
-
-			final List<GenomeFeatureTester> excludeBEDs = new ArrayList<>();
-			for (String bed: param.excludeRegionsInBED) {
-				try {
-					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							groupSettings.getContigNames(), bed, false);
-					excludeBEDs.add(reader);
-				} catch (Exception e) {
-					throw new RuntimeException("Problem with BED file " + bed, e);
-				}
-			}
-
-			final List<BedReader> repetitiveBEDs = new ArrayList<>();
-			for (String bed: param.repetiveRegionBED) {
-				try {
-					final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-							groupSettings.getContigNames(), bed, false);
-					repetitiveBEDs.add(reader);
-				} catch (Exception e) {
-					throw new RuntimeException("Problem with BED file " + bed, e);
-				}
-			}
-
-			final @Nullable OutputStreamWriter mutationWriterCopy = mutationAnnotationWriter;
-
-			IntStream.range(0, param.inputReads.size()).parallel().forEach(i -> {
-				final String inputReads = param.inputReads.get(i);
-				final File inputBam = new File(inputReads);
-
-				final @NonNull String name;
-
-				if (param.sampleNames.size() >= i + 1) {
-					name = param.sampleNames.get(i);
-				} else {
-					name = inputBam.getName();
-				}
-
-				synchronized (sampleNames) {
-					if (!sampleNames.add(name)) {
-						throw new RuntimeException("Two or more analyzers trying to use the same name " +
-								name + "; please give samples unique names");
-					}
-				}
-
-				final List<File> intersectFiles = new ArrayList<>();
-				final int nIntersectFiles = param.intersectAlignment.size();
-				final int nIntersectFilesPerAnalyzer = nIntersectFiles / param.inputReads.size();
-				for (int k = i * nIntersectFilesPerAnalyzer ; k < (i+1) * nIntersectFilesPerAnalyzer ; k++) {
-					File f = new File(param.intersectAlignment.get(k));
-					intersectFiles.add(f);
-					out.println("Intersecting " + inputBam.getAbsolutePath() + " with " +
-							f.getAbsolutePath());
-				}
-
-				groupSettings.PROCESSING_CHUNK = param.processingChunk;
-				groupSettings.INTERVAL_SLOP = param.alignmentPositionMismatchAllowed;
-				groupSettings.BIN_SIZE = param.contigStatsBinLength;
-				groupSettings.terminateImmediatelyUponError =
-						param.terminateImmediatelyUponError;
-
-				groupSettings.setBarcodePositions(0, param.variableBarcodeLength - 1,
-						3, 5);
-
-				final int maxNDuplexes = param.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
-					param.maxNDuplexes.get(i);
-
-				final OutputLevel[] d = OutputLevel.values();
-				@SuppressWarnings("null")
-				final @NonNull OutputLevel outputLevel = d[param.verbosity];
-
-				final Mutinack analyzer = new Mutinack(
-						groupSettings,
-						param,
-						name,
-						inputBam,
-						out,
-						mutationWriterCopy,
-						param.variableBarcodeLength == 0 ?
-								GetReadStats.getApproximateReadInsertSize(inputBam, param.maxInsertSize, param.minMappingQualityQ2)
-							:
-								null,
-						nonNullify(param.constantBarcode.getBytes()),
-						intersectFiles,
-						param.logReadIssuesInOutputBam && param.outputAlignmentFile != null,
-						outputLevel,
-						excludeBEDs,
-						maxNDuplexes);
-				analyzers.set(i, analyzer);
-
-				analyzer.finalOutputBaseName = (param.auxOutputFileBaseName != null ?
-						(param.auxOutputFileBaseName) : "") +
-						name;
-
-				if (param.outputTopBottomDisagreementBED) {
-					final String tbdNameMain = analyzer.finalOutputBaseName + "_top_bottom_disag_";
-					final String tbdNameNoWt = analyzer.finalOutputBaseName + "_top_bottom_disag_no_wt_";
-					analyzer.stats.forEach(s -> {
-						final String pathMain = tbdNameMain + s.getName() + ".bed";
-						try {
-							s.topBottomDisagreementWriter = new FileWriter(pathMain);
-							analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
-						} catch (IOException e) {
-							handleOutputException(pathMain, e, param);
-						}
-						final String pathNoWt = tbdNameNoWt + s.getName() + ".bed";
-						try {
-							s.noWtDisagreementWriter = new FileWriter(pathNoWt);
-							analyzer.itemsToClose.add(s.noWtDisagreementWriter);
-						} catch (IOException e) {
-							handleOutputException(pathNoWt, e, param);
-						}
-					});
-				}
-
-				final String mutName = analyzer.finalOutputBaseName + "_mutations_";
+			if (param.outputTopBottomDisagreementBED) {
+				final String tbdNameMain = analyzer.finalOutputBaseName + "_top_bottom_disag_";
+				final String tbdNameNoWt = analyzer.finalOutputBaseName + "_top_bottom_disag_no_wt_";
 				analyzer.stats.forEach(s -> {
-					final String path = mutName + s.getName() + ".bed";
+					final String pathMain = tbdNameMain + s.getName() + ".bed";
 					try {
-						s.mutationBEDWriter = new FileWriter(path);
-						analyzer.itemsToClose.add(s.mutationBEDWriter);
+						s.topBottomDisagreementWriter = new FileWriter(pathMain);
+						analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
+					} catch (IOException e) {
+						handleOutputException(pathMain, e, param);
+					}
+					final String pathNoWt = tbdNameNoWt + s.getName() + ".bed";
+					try {
+						s.noWtDisagreementWriter = new FileWriter(pathNoWt);
+						analyzer.itemsToClose.add(s.noWtDisagreementWriter);
+					} catch (IOException e) {
+						handleOutputException(pathNoWt, e, param);
+					}
+				});
+			}
+
+			final String mutName = analyzer.finalOutputBaseName + "_mutations_";
+			analyzer.stats.forEach(s -> {
+				final String path = mutName + s.getName() + ".bed";
+				try {
+					s.mutationBEDWriter = new FileWriter(path);
+					analyzer.itemsToClose.add(s.mutationBEDWriter);
+				} catch (IOException e) {
+					handleOutputException(path, e, param);
+				}
+			});
+
+			if (param.outputCoverageProto) {
+				analyzer.stats.forEach(s -> {
+					s.positionByPositionCoverage = new HashMap<>();
+					if (contigSizes.isEmpty()) {
+						throw new IllegalArgumentException("Need contig sizes for outputCoverageProto; " +
+							"set readContigsFromFile option");
+					}
+					contigSizes.forEach((k,v) -> s.positionByPositionCoverage.put(k, new int [v]));
+					Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
+					builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
+					builder.setGeneratingProgramArgs(param.toString());
+					builder.setSampleName(analyzer.finalOutputBaseName + "_" +
+						s.getName() + "_" + name + "_pos_by_pos_coverage");
+					s.positionByPositionCoverageProtobuilder = builder;
+				});
+			}
+
+			if (param.outputCoverageBed) {
+				final String coverageName = analyzer.finalOutputBaseName + "_coverage_";
+				analyzer.stats.forEach(s -> {
+					final String path = coverageName + s.getName() + ".bed";
+					try {
+						s.coverageBEDWriter = new FileWriter(path);
+						analyzer.itemsToClose.add(s.coverageBEDWriter);
 					} catch (IOException e) {
 						handleOutputException(path, e, param);
 					}
 				});
+			}
 
-				if (param.outputCoverageProto) {
-					analyzer.stats.forEach(s -> {
-						s.positionByPositionCoverage = new HashMap<>();
-						if (contigSizes.isEmpty()) {
-							throw new IllegalArgumentException("Need contig sizes for outputCoverageProto; " +
-									"set readContigsFromFile option");
-						}
-						contigSizes.forEach((k,v) -> s.positionByPositionCoverage.put(k, new int [v]));
-						Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
-						builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
-						builder.setGeneratingProgramArgs(param.toString());
-						builder.setSampleName(analyzer.finalOutputBaseName + "_" +
-								s.getName() + "_" + name + "_pos_by_pos_coverage");
-						s.positionByPositionCoverageProtobuilder = builder;
-					});
+			for (int contigIndex = 0; contigIndex < contigNamesToProcess.size(); contigIndex++) {
+				final int finalContigIndex = contigIndex;
+				final SerializablePredicate<SequenceLocation> p =
+					l -> l.contigIndex == finalContigIndex;
+				final String contigName = contigNamesToProcess.get(contigIndex);
+				analyzer.stats.forEach(s -> {
+					s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
+					s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
+					s.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
+					s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(contigName, p);
+					s.codingStrandSubstQ2.addPredicate(contigName, p);
+					s.templateStrandSubstQ2.addPredicate(contigName, p);
+					s.codingStrandDelQ2.addPredicate(contigName, p);
+					s.templateStrandDelQ2.addPredicate(contigName, p);
+					s.codingStrandInsQ2.addPredicate(contigName, p);
+					s.templateStrandInsQ2.addPredicate(contigName, p);
+				});
+			}
+
+			if (param.bedDisagreementOrienter != null) {
+				try {
+					analyzer.codingStrandTester = BedReader.getCachedBedFileReader(param.bedDisagreementOrienter, ".cached",
+						groupSettings.getContigNames(), "", false);
+				} catch (Exception e) {
+					throw new RuntimeException("Problem with BED file " +
+						param.bedDisagreementOrienter, e);
 				}
+			}
 
-				if (param.outputCoverageBed) {
-					final String coverageName = analyzer.finalOutputBaseName + "_coverage_";
+			final Set<String> bedFileNames = new HashSet<>();
+
+			for (String fileName: param.reportStatsForBED) {
+				try {
+					if (!bedFileNames.add(fileName)) {
+						throw new IllegalArgumentException("Bed file " + fileName + " specified multiple times");
+					}
+					final File f = new File(fileName);
+					final String filterName = f.getName();
+					final @NonNull GenomeFeatureTester filter =
+						BedReader.getCachedBedFileReader(fileName, ".cached",
+							groupSettings.getContigNames(), filterName, false);
+					final BedComplement notFilter = new BedComplement(filter);
+					final String notFilterName = "NOT " + f.getName();
+					analyzer.filtersForCandidateReporting.put(filterName, filter);
+
 					analyzer.stats.forEach(s -> {
-						final String path = coverageName + s.getName() + ".bed";
+						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
+						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
+						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
+						s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
+						s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
+						s.codingStrandSubstQ2.addPredicate(filterName, filter);
+						s.templateStrandSubstQ2.addPredicate(filterName, filter);
+						s.codingStrandDelQ2.addPredicate(filterName, filter);
+						s.templateStrandDelQ2.addPredicate(filterName, filter);
+						s.codingStrandInsQ2.addPredicate(filterName, filter);
+						s.templateStrandInsQ2.addPredicate(filterName, filter);
+
+						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
+						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
+						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
+						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
+						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(notFilterName, notFilter);
+						s.nPosCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
+						s.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
+						s.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
+						s.topBottomInsDisagreementsQ2.addPredicate(notFilterName, notFilter);
+						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(notFilterName, notFilter);
+						s.codingStrandSubstQ2.addPredicate(notFilterName, notFilter);
+						s.templateStrandSubstQ2.addPredicate(notFilterName, notFilter);
+						s.codingStrandDelQ2.addPredicate(notFilterName, notFilter);
+						s.templateStrandDelQ2.addPredicate(notFilterName, notFilter);
+						s.codingStrandInsQ2.addPredicate(notFilterName, notFilter);
+						s.templateStrandInsQ2.addPredicate(notFilterName, notFilter);
+						analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
+					});
+				} catch (Exception e) {
+					throw new RuntimeException("Problem with BED file " + fileName, e);
+				}
+			}
+
+			for (String fileName: param.reportStatsForNotBED) {
+				try {
+					final File f = new File(fileName);
+					final String filterName = "NOT " + f.getName();
+					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
+						groupSettings.getContigNames(), filterName, false);
+					final BedComplement filter = new BedComplement(filter0);
+					analyzer.stats.forEach(s -> {
+						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
+						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
+						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
+						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
+						s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
+						s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
+						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
+					});
+
+					analyzer.filtersForCandidateReporting.put(filterName, filter);
+				} catch (Exception e) {
+					throw new RuntimeException("Problem with BED file " + fileName, e);
+				}
+			}
+
+			if (param.reportBreakdownForBED.size() != param.saveBEDBreakdownTo.size()) {
+				throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
+					"-saveBEDBreakdownTo must appear same number of times");
+			}
+
+			final Set<String> outputPaths = new HashSet<>();
+			int index;
+			for (index = 0; index < param.reportBreakdownForBED.size(); index++) {
+				try {
+					final File f = new File(param.reportBreakdownForBED.get(index));
+					final BedReader filter = new BedReader(groupSettings.getContigNames(),
+						new BufferedReader(new FileReader(f)), f.getName(),
+						param.bedFeatureSuppInfoFile == null ? null :
+							new BufferedReader(new FileReader(param.bedFeatureSuppInfoFile)), false);
+					int index0 = index;
+					analyzer.stats.forEach(s -> {
+						CounterWithBedFeatureBreakdown counter;
 						try {
-							s.coverageBEDWriter = new FileWriter(path);
-							analyzer.itemsToClose.add(s.coverageBEDWriter);
-						} catch (IOException e) {
-							handleOutputException(path, e, param);
-						}
-					});
-				}
-
-				for (int contigIndex = 0; contigIndex < contigNamesToProcess.size(); contigIndex++) {
-					final int finalContigIndex = contigIndex;
-					final SerializablePredicate<SequenceLocation> p =
-							l -> l.contigIndex == finalContigIndex;
-					final String contigName = contigNamesToProcess.get(contigIndex);
-					analyzer.stats.forEach(s -> {
-						s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
-						s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
-						s.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
-						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(contigName, p);
-						s.codingStrandSubstQ2.addPredicate(contigName, p);
-						s.templateStrandSubstQ2.addPredicate(contigName, p);
-						s.codingStrandDelQ2.addPredicate(contigName, p);
-						s.templateStrandDelQ2.addPredicate(contigName, p);
-						s.codingStrandInsQ2.addPredicate(contigName, p);
-						s.templateStrandInsQ2.addPredicate(contigName, p);
-					});
-				}
-
-				if (param.bedDisagreementOrienter != null) {
-					try {
-						analyzer.codingStrandTester = BedReader.getCachedBedFileReader(param.bedDisagreementOrienter, ".cached",
-								groupSettings.getContigNames(), "", false);
-					} catch (Exception e) {
-						throw new RuntimeException("Problem with BED file " +
-								param.bedDisagreementOrienter, e);
-					}
-				}
-
-				final Set<String> bedFileNames = new HashSet<>();
-
-				for (String fileName: param.reportStatsForBED) {
-					try {
-						if (!bedFileNames.add(fileName)) {
-							throw new IllegalArgumentException("Bed file " + fileName + " specified multiple times");
-						}
-						final File f = new File(fileName);
-						final String filterName = f.getName();
-						final @NonNull GenomeFeatureTester filter =
-							BedReader.getCachedBedFileReader(fileName, ".cached",
-								groupSettings.getContigNames(), filterName, false);
-						final BedComplement notFilter = new BedComplement(filter);
-						final String notFilterName = "NOT " + f.getName();
-						analyzer.filtersForCandidateReporting.put(filterName, filter);
-
-						analyzer.stats.forEach(s -> {
-							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-							s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
-							s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
-							s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
-							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
-							s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
-							s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
-							s.codingStrandSubstQ2.addPredicate(filterName, filter);
-							s.templateStrandSubstQ2.addPredicate(filterName, filter);
-							s.codingStrandDelQ2.addPredicate(filterName, filter);
-							s.templateStrandDelQ2.addPredicate(filterName, filter);
-							s.codingStrandInsQ2.addPredicate(filterName, filter);
-							s.templateStrandInsQ2.addPredicate(filterName, filter);
-
-							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
-							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
-							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
-							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
-							s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(notFilterName, notFilter);
-							s.nPosCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
-							s.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
-							s.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
-							s.topBottomInsDisagreementsQ2.addPredicate(notFilterName, notFilter);
-							s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(notFilterName, notFilter);
-							s.codingStrandSubstQ2.addPredicate(notFilterName, notFilter);
-							s.templateStrandSubstQ2.addPredicate(notFilterName, notFilter);
-							s.codingStrandDelQ2.addPredicate(notFilterName, notFilter);
-							s.templateStrandDelQ2.addPredicate(notFilterName, notFilter);
-							s.codingStrandInsQ2.addPredicate(notFilterName, notFilter);
-							s.templateStrandInsQ2.addPredicate(notFilterName, notFilter);
-							analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
-						});
-					} catch (Exception e) {
-						throw new RuntimeException("Problem with BED file " + fileName, e);
-					}
-				}
-
-				for (String fileName: param.reportStatsForNotBED) {
-					try {
-						final File f = new File(fileName);
-						final String filterName = "NOT " + f.getName();
-						final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-								groupSettings.getContigNames(), filterName, false);
-						final BedComplement filter = new BedComplement(filter0);
-						analyzer.stats.forEach(s -> {
-							s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-							s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-							s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-							s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
-							s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
-							s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
-							s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
-							s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
-							s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
-						});
-
-						analyzer.filtersForCandidateReporting.put(filterName, filter);
-					} catch (Exception e) {
-						throw new RuntimeException("Problem with BED file " + fileName, e);
-					}
-				}
-
-				if (param.reportBreakdownForBED.size() != param.saveBEDBreakdownTo.size()) {
-					throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
-							"-saveBEDBreakdownTo must appear same number of times");
-				}
-
-				final Set<String> outputPaths = new HashSet<>();
-				int index;
-				for (index = 0; index < param.reportBreakdownForBED.size(); index++) {
-					try {
-						final File f = new File(param.reportBreakdownForBED.get(index));
-						final BedReader filter = new BedReader(groupSettings.getContigNames(),
-								new BufferedReader(new FileReader(f)), f.getName(),
-								param.bedFeatureSuppInfoFile == null ? null :
-									new BufferedReader(new FileReader(param.bedFeatureSuppInfoFile)), false);
-						int index0 = index;
-						analyzer.stats.forEach(s -> {
-							CounterWithBedFeatureBreakdown counter;
-							try {
+							if (param.refSeqToOfficialGeneName == null) {
 								counter = new CounterWithBedFeatureBreakdown(filter,
-										param.refSeqToOfficialGeneName == null ?
-												null :
-													TSVMapReader.getMap(new BufferedReader(
-															new FileReader(param.refSeqToOfficialGeneName))),
-													groupSettings);
-							} catch (Exception e) {
-								throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
+									null,
+									groupSettings);
+							} else {
+								try (BufferedReader refSeqToOfficial = new BufferedReader(
+									new FileReader(param.refSeqToOfficialGeneName))) {
+								counter = new CounterWithBedFeatureBreakdown(filter,
+									TSVMapReader.getMap(refSeqToOfficial),
+									groupSettings);
+								}
 							}
+						} catch (Exception e) {
+							throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
+						}
 
-							String outputPath = param.saveBEDBreakdownTo.get(index0) + s.getName();
-							if (!outputPaths.add(outputPath)) {
-								throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
-										" specified multiple times");
-							}
-							counter.setOutputFile(new File(outputPath + "_nPosDuplex.bed"));
-							s.nPosDuplex.addPredicate(f.getName(), filter, counter);
-							for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
-								for (IntervalData<GenomeInterval> loc: locs) {
-									for (GenomeInterval interval : loc.getData()) {
-										counter.accept(interval.getStartLocation(), 0);
-										if (NONTRIVIAL_ASSERTIONS && !counter.getCounter().getCounts().containsKey(interval)) {
-											throw new AssertionFailedException("Failed to add " + interval + "; matches were " +
-													counter.getBedFeatures().apply(interval.getStartLocation()));
-										}
+						String outputPath = param.saveBEDBreakdownTo.get(index0) + s.getName();
+						if (!outputPaths.add(outputPath)) {
+							throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
+								" specified multiple times");
+						}
+						counter.setOutputFile(new File(outputPath + "_nPosDuplex.bed"));
+						s.nPosDuplex.addPredicate(f.getName(), filter, counter);
+						for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
+							for (IntervalData<GenomeInterval> loc: locs) {
+								for (GenomeInterval interval : loc.getData()) {
+									counter.accept(interval.getStartLocation(), 0);
+									if (NONTRIVIAL_ASSERTIONS && !counter.getCounter().getCounts().containsKey(interval)) {
+										throw new AssertionFailedException("Failed to add " + interval + "; matches were " +
+											counter.getBedFeatures().apply(interval.getStartLocation()));
 									}
 								}
 							}
-							counter.setNormalizedOutput(true);
-							counter.setAnalyzerName(name);
-
-							counter = new CounterWithBedFeatureBreakdown(filter, null, groupSettings);
-							counter.setOutputFile(new File(param.saveBEDBreakdownTo.get(index0) + s.getName() +
-									"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
-							s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
-						});
-					} catch (Exception e) {
-						throw new RuntimeException("Problem setting up BED file " + param.reportBreakdownForBED.get(index), e);
-					}
-				}
-			});//End parallel loop over analyzers
-
-			groupSettings.mutationsToAnnotate.clear();
-			if (param.annotateMutationsInFile != null) {
-				Set<String> unknownSampleNames = new TreeSet<>();
-				groupSettings.mutationsToAnnotate.putAll(MutationListReader.readMutationList(
-					param.annotateMutationsInFile, param.annotateMutationsInFile, contigNames,
-					sampleNames, unknownSampleNames));
-				if (!unknownSampleNames.isEmpty()) {
-						Util.printUserMustSeeMessage("Warning: unrecognized sample names in annotateMutationsInFile " +
-							unknownSampleNames);
-				}
-			}
-
-			for (String s: param.traceFields) {
-				try {
-					String[] split = s.split(":");
-					String analyzerName = split[0];
-					if (!sampleNames.contains(analyzerName)) {
-						throw new IllegalArgumentException("Unrecognized sample name " +
-							analyzerName);
-					}
-				} catch (Exception e) {
-					throw new RuntimeException("Problem with traceField " + s, e);
-				}
-			}
-
-			if (param.lenientSamValidation) {
-				SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.LENIENT);
-			}
-
-			final List<Phaser> phasers = new ArrayList<>();
-
-			final Histogram dubiousOrGoodDuplexCovInAllInputs = new Histogram(500);
-			final Histogram goodDuplexCovInAllInputs = new Histogram(500);
-
-			infoSignalHandler = signal -> {
-				final PrintStream printStream = (signal == null) ? out : err;
-				for (Mutinack analyzer: analyzers) {
-					analyzer.printStatus(printStream, signal != null);
-				}
-				printStream.flush();
-
-				if (signal != null) {
-					synchronized(groupSettings.statusUpdateTasks) {
-						for (BiConsumer<PrintStream, Integer> update: groupSettings.statusUpdateTasks) {
-							update.accept(System.err, 0);
 						}
-					}
-				} else {
-					//TODO Print short status?
+						counter.setNormalizedOutput(true);
+						counter.setAnalyzerName(name);
+
+						counter = new CounterWithBedFeatureBreakdown(filter, null, groupSettings);
+						counter.setOutputFile(new File(param.saveBEDBreakdownTo.get(index0) + s.getName() +
+							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
+						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
+					});
+				} catch (Exception e) {
+					throw new RuntimeException("Problem setting up BED file " + param.reportBreakdownForBED.get(index), e);
 				}
+			}
+		});//End parallel loop over analyzers
 
-				printStream.println(blueF(signal != null) +
-						"Minimal Q1 or Q2 duplex coverage across all inputs: " +
-						reset(signal != null) + dubiousOrGoodDuplexCovInAllInputs);
-				printStream.println(blueF(signal != null) +
-						"Minimal Q2 duplex coverage across all inputs: " +
-						reset(signal != null) + goodDuplexCovInAllInputs);
-				printStream.println(ManagementFactory.getMemoryPoolMXBeans().stream().map(m -> {
-					return m.getName() + ": " + m.getUsage().toString();
-				}).collect(Collectors.joining(",")));
+		groupSettings.mutationsToAnnotate.clear();
+		if (param.annotateMutationsInFile != null) {
+			Set<String> unknownSampleNames = new TreeSet<>();
+			groupSettings.mutationsToAnnotate.putAll(MutationListReader.readMutationList(
+				param.annotateMutationsInFile, param.annotateMutationsInFile, contigNames,
+				sampleNames, unknownSampleNames));
+			if (!unknownSampleNames.isEmpty()) {
+				Util.printUserMustSeeMessage("Warning: unrecognized sample names in annotateMutationsInFile " +
+					unknownSampleNames);
+			}
+		}
 
-				outputJSON(param, analyzers);
-				outputToDatabase(param, analyzers);
-			};
-			Signals.registerSignalProcessor("INFO", infoSignalHandler);
+		for (String s: param.traceFields) {
+			try {
+				String[] split = s.split(":");
+				String analyzerName = split[0];
+				if (!sampleNames.contains(analyzerName)) {
+					throw new IllegalArgumentException("Unrecognized sample name " +
+						analyzerName);
+				}
+			} catch (Exception e) {
+				throw new RuntimeException("Problem with traceField " + s, e);
+			}
+		}
 
-			statusLogger.info("Starting sequence analysis");
+		if (param.lenientSamValidation) {
+			SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.LENIENT);
+		}
 
-			final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
+		final List<Phaser> phasers = new ArrayList<>();
 
-			int nParameterSets = -1;
-			for (Mutinack m: analyzers) {
-				int n = m.stats.size();
-				if (nParameterSets == -1) {
-					nParameterSets = n;
-				} else if (n != nParameterSets) {
-					throw new AssertionFailedException("Analyzer " + m.name + " has " + n +
-						" parameter sets instead of " + nParameterSets);
+		final Histogram dubiousOrGoodDuplexCovInAllInputs = new Histogram(500);
+		final Histogram goodDuplexCovInAllInputs = new Histogram(500);
+
+		SignalProcessor infoSignalHandler = signal -> {
+			final PrintStream printStream = (signal == null) ? out : err;
+			for (Mutinack analyzer: analyzers) {
+				analyzer.printStatus(printStream, signal != null);
+			}
+			printStream.flush();
+
+			if (signal != null) {
+				synchronized(groupSettings.statusUpdateTasks) {
+					for (BiConsumer<PrintStream, Integer> update: groupSettings.statusUpdateTasks) {
+						update.accept(System.err, 0);
+					}
+				}
+			} else {
+				//TODO Print short status?
+			}
+
+			printStream.println(blueF(signal != null) +
+				"Minimal Q1 or Q2 duplex coverage across all inputs: " +
+				reset(signal != null) + dubiousOrGoodDuplexCovInAllInputs);
+			printStream.println(blueF(signal != null) +
+				"Minimal Q2 duplex coverage across all inputs: " +
+				reset(signal != null) + goodDuplexCovInAllInputs);
+			printStream.println(ManagementFactory.getMemoryPoolMXBeans().stream().map(m -> {
+				return m.getName() + ": " + m.getUsage().toString();
+			}).collect(Collectors.joining(",")));
+
+			outputJSON(param, analyzers);
+			outputToDatabase(param, analyzers);
+		};
+		Signals.registerSignalProcessor("INFO", infoSignalHandler);
+		closeableCloser.add(new CloseableWrapper<>(infoSignalHandler,
+			sh -> Signals.removeSignalProcessor("INFO", infoSignalHandler)));
+
+		statusLogger.info("Starting sequence analysis");
+
+		final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
+
+		int nParameterSets = -1;
+		for (Mutinack m: analyzers) {
+			int n = m.stats.size();
+			if (nParameterSets == -1) {
+				nParameterSets = n;
+			} else if (n != nParameterSets) {
+				throw new AssertionFailedException("Analyzer " + m.name + " has " + n +
+					" parameter sets instead of " + nParameterSets);
+			}
+		}
+
+		for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
+			final int contigIndex = contigIndex0;
+
+			final int startContigAtPosition;
+			final int terminateContigAtPosition;
+			{
+				final String contigName = contigNames.get(contigIndex);
+				int idx = truncateAtContigs.indexOf(contigName);
+				if (idx > -1) {
+					terminateContigAtPosition = truncateAtPositions.get(idx);
+				} else {
+					terminateContigAtPosition =
+						Objects.requireNonNull(contigSizes.get(contigName)) - 1;
+				}
+				idx = startAtContigs.indexOf(contigNames.get(contigIndex));
+				if (idx > -1) {
+					startContigAtPosition = startAtPositions.get(idx);
+				} else {
+					startContigAtPosition = 0;
 				}
 			}
 
-			for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
-				final int contigIndex = contigIndex0;
+			final int contigParallelizationFactor = getContigParallelizationFactor(
+				contigIndex, param);
+			List<AnalysisChunk> contigAnalysisChunks = new ArrayList<>();
+			analysisChunks.add(contigAnalysisChunks);
 
-				final int startContigAtPosition;
-				final int terminateContigAtPosition;
-				{
-					final String contigName = contigNames.get(contigIndex);
-					int idx = truncateAtContigs.indexOf(contigName);
-					if (idx > -1) {
-						terminateContigAtPosition = truncateAtPositions.get(idx);
-					} else {
-							terminateContigAtPosition =
-								Objects.requireNonNull(contigSizes.get(contigName)) - 1;
-					}
-					idx = startAtContigs.indexOf(contigNames.get(contigIndex));
-					if (idx > -1) {
-						startContigAtPosition = startAtPositions.get(idx);
-					} else {
-							startContigAtPosition = 0;
-					}
+			final int subAnalyzerSpan = (terminateContigAtPosition - startContigAtPosition + 1) /
+				contigParallelizationFactor;
+			for (int p = 0; p < contigParallelizationFactor; p++) {
+				final AnalysisChunk analysisChunk = new AnalysisChunk(
+					Objects.requireNonNull(contigNames.get(contigIndex)), nParameterSets);
+				contigAnalysisChunks.add(analysisChunk);
+
+				final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
+				final int terminateAtPosition = (p == contigParallelizationFactor - 1) ?
+					terminateContigAtPosition
+					: startSubAt + subAnalyzerSpan - 1;
+
+				analysisChunk.contig = contigIndex;
+				analysisChunk.startAtPosition = startSubAt;
+				analysisChunk.terminateAtPosition = terminateAtPosition;
+				analysisChunk.pauseAtPosition = new SettableInteger();
+				analysisChunk.lastProcessedPosition = new SettableInteger();
+				analysisChunk.groupSettings = groupSettings;
+
+				analyzers.forEach(a -> {
+					final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a),
+						out);
+					a.subAnalyzers.add(subAnalyzer);
+					analysisChunk.subAnalyzers.add(subAnalyzer);
+				});
+
+				final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
+					analysisChunk,
+					alignmentWriter, mutationAnnotationWriter, groupSettings.forceOutputAtLocations,
+					dubiousOrGoodDuplexCovInAllInputs,
+					goodDuplexCovInAllInputs,
+					contigNames.get(contigIndex), contigIndex,
+					excludeBEDs, repetitiveBEDs,
+					groupSettings.PROCESSING_CHUNK);
+				analysisChunk.phaser = phaser;
+				phaser.bulkRegister(analyzers.size());
+				phasers.add(phaser);
+			}//End parallelization loop over analysisChunks
+		}//End loop over contig index
+
+		final int endIndex = contigNames.size() - 1;
+		if (contigThreadPool == null) {
+			synchronized(Mutinack.class) {
+				if (contigThreadPool == null) {
+					contigThreadPool = Executors.newFixedThreadPool(param.maxParallelContigs,
+						new NamedPoolThreadFactory("main_contig_thread_"));
 				}
+			}
+		}
+		final ParFor parFor = new ParFor(0, endIndex, null, contigThreadPool, true);
+		parFor.setName("contig loop");
+
+		for (int worker = 0; worker < parFor.getNThreads(); worker++)
+			parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
 
 				final int contigParallelizationFactor = getContigParallelizationFactor(
 					contigIndex, param);
-				List<AnalysisChunk> contigAnalysisChunks = new ArrayList<>();
-				analysisChunks.add(contigAnalysisChunks);
 
-				final int subAnalyzerSpan = (terminateContigAtPosition - startContigAtPosition + 1) /
-					contigParallelizationFactor;
-				for (int p = 0; p < contigParallelizationFactor; p++) {
-					final AnalysisChunk analysisChunk = new AnalysisChunk(
-						Objects.requireNonNull(contigNames.get(contigIndex)), nParameterSets);
-					contigAnalysisChunks.add(analysisChunk);
+				final List<Future<?>> futures = new ArrayList<>();
+				int analyzerIndex = -1;
 
-					final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
-					final int terminateAtPosition = (p == contigParallelizationFactor - 1) ?
-							terminateContigAtPosition
-							: startSubAt + subAnalyzerSpan - 1;
-
-					analysisChunk.contig = contigIndex;
-					analysisChunk.startAtPosition = startSubAt;
-					analysisChunk.terminateAtPosition = terminateAtPosition;
-					analysisChunk.pauseAtPosition = new SettableInteger();
-					analysisChunk.lastProcessedPosition = new SettableInteger();
-					analysisChunk.groupSettings = groupSettings;
-
-					analyzers.forEach(a -> {
-						final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a),
-							out);
-						a.subAnalyzers.add(subAnalyzer);
-						analysisChunk.subAnalyzers.add(subAnalyzer);
-					});
-
-					final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
-							analysisChunk,
-							alignmentWriter, mutationAnnotationWriter, groupSettings.forceOutputAtLocations,
-							dubiousOrGoodDuplexCovInAllInputs,
-							goodDuplexCovInAllInputs,
-							contigNames.get(contigIndex), contigIndex,
-							excludeBEDs, repetitiveBEDs,
-							groupSettings.PROCESSING_CHUNK);
-					analysisChunk.phaser = phaser;
-					phaser.bulkRegister(analyzers.size());
-					phasers.add(phaser);
-				}//End parallelization loop over analysisChunks
-			}//End loop over contig index
-
-			final int endIndex = contigNames.size() - 1;
-			if (contigThreadPool == null) {
-				synchronized(Mutinack.class) {
-					if (contigThreadPool == null) {
-						contigThreadPool = Executors.newFixedThreadPool(param.maxParallelContigs,
-							new NamedPoolThreadFactory("main_contig_thread_"));
-					}
-				}
-			}
-			final ParFor parFor = new ParFor(0, endIndex, null, contigThreadPool, true);
-			parFor.setName("contig loop");
-
-			for (int worker = 0; worker < parFor.getNThreads(); worker++)
-				parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
-
-					final int contigParallelizationFactor = getContigParallelizationFactor(
-						contigIndex, param);
-
-					final List<Future<?>> futures = new ArrayList<>();
-					int analyzerIndex = -1;
-
-					for (Mutinack analyzer: analyzers) {
-						analyzerIndex++;
-
-						for (int p = 0; p < contigParallelizationFactor; p++) {
-							final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex).
-								get(p);
-							final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
-
-							Runnable r = () -> ReadLoader.load(analyzer, analyzer.param, groupSettings,
-																		subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
-																		contigNames,
-                                    contigIndex, alignmentWriter0,
-                                    StaticStuffToAvoidMutating::getContigSequence);
-							futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
-						}//End loop over parallelization factor
-					}//End loop over analyzers
-
-					MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
-
-					//Catch all the exceptions because the exceptions thrown by
-					//some threads may be secondary to the primary exception
-					//but may still be examined before the primary exception
-					for (Future<?> f: futures) {
-						gatherer.tryAdd(f::get);
-					}
-
-					gatherer.throwIfPresent();
+				for (Mutinack analyzer: analyzers) {
+					analyzerIndex++;
 
 					for (int p = 0; p < contigParallelizationFactor; p++) {
 						final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex).
 							get(p);
-						Assert.noException(
-							() -> analysisChunk.subAnalyzers.forEach(sa -> {
-								sa.checkAllDone();
-								analyzers.forEach(a -> {
-									boolean found = false;
-									for (int i = 0; i < a.subAnalyzers.size(); i++) {
-										if (a.subAnalyzers.get(i) == sa) {
-											Assert.isFalse(found);
-											a.subAnalyzers.set(i, null);
-											found = true;
-										}
+						final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
+
+						Runnable r = () -> ReadLoader.load(analyzer, analyzer.param, groupSettings,
+							subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
+							contigNames,
+							contigIndex, alignmentWriter,
+							StaticStuffToAvoidMutating::getContigSequence);
+						futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
+					}//End loop over parallelization factor
+				}//End loop over analyzers
+
+				MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
+
+				//Catch all the exceptions because the exceptions thrown by
+				//some threads may be secondary to the primary exception
+				//but may still be examined before the primary exception
+				for (Future<?> f: futures) {
+					gatherer.tryAdd(f::get);
+				}
+
+				gatherer.throwIfPresent();
+
+				for (int p = 0; p < contigParallelizationFactor; p++) {
+					final AnalysisChunk analysisChunk = analysisChunks.get(contigIndex).
+						get(p);
+					Assert.noException(
+						() -> analysisChunk.subAnalyzers.forEach(sa -> {
+							sa.checkAllDone();
+							analyzers.forEach(a -> {
+								boolean found = false;
+								for (int i = 0; i < a.subAnalyzers.size(); i++) {
+									if (a.subAnalyzers.get(i) == sa) {
+										Assert.isFalse(found);
+										a.subAnalyzers.set(i, null);
+										found = true;
 									}
-								});
-							}));
-					}
+								}
+							});
+						}));
+				}
 
-					return null;
-				});//End Parfor loop over contigs
+				return null;
+			});//End Parfor loop over contigs
 
-			parFor.run(true);
+		parFor.run(true);
 
-			if (groupSettings.terminateAnalysis) {
-				analyzers.forEach(a -> a.stats.forEach(s -> s.analysisTruncated = true));
-			}
+		if (groupSettings.terminateAnalysis) {
+			analyzers.forEach(a -> a.stats.forEach(s -> s.analysisTruncated = true));
+		}
 
-			infoSignalHandler.handle(null);
-			if (!param.noStatusMessages) {
-				Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name
-						+ " at " + ((int) a.processingThroughput()) + " records / s").
-						collect(Collectors.joining(", ")) + " completed on host " +
-						StaticStuffToAvoidMutating.hostName +
-						" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()) +
-						" (elapsed time " +
-						(System.nanoTime() - analyzers.get(0).timeStartProcessing) / 1_000_000_000d +
-						" s)");
-				ManagementFactory.getGarbageCollectorMXBeans().forEach(gc -> {
-					Util.printUserMustSeeMessage(gc.getName() + " (" +
-						Arrays.toString(gc.getMemoryPoolNames()) + "): " + gc.getCollectionCount() +
-						" " + gc.getCollectionTime());
-				});
-			}
+		infoSignalHandler.handle(null);
+		if (!param.noStatusMessages) {
+			Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name
+				+ " at " + ((int) a.processingThroughput()) + " records / s").
+				collect(Collectors.joining(", ")) + " completed on host " +
+				StaticStuffToAvoidMutating.hostName +
+				" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()) +
+				" (elapsed time " +
+				(System.nanoTime() - analyzers.get(0).timeStartProcessing) / 1_000_000_000d +
+				" s)");
+			ManagementFactory.getGarbageCollectorMXBeans().forEach(gc -> {
+				Util.printUserMustSeeMessage(gc.getName() + " (" +
+					Arrays.toString(gc.getMemoryPoolNames()) + "): " + gc.getCollectionCount() +
+					" " + gc.getCollectionTime());
+			});
+		}
 
-			if (param.readContigsFromFile) {//Probably reference transcriptome; TODO need to
-				//devise a better way of figuring this out
-				for (Mutinack analyzer: analyzers) {
-					final ICounterSeqLoc counter =
-							Objects.requireNonNull(
-									analyzer.stats.get(0).nPosDuplex.getSeqLocCounters().get("All")).snd;
-					final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
-					final Map<String, Double> allCoverage = new THashMap<>();
+		if (param.readContigsFromFile) {//Probably reference transcriptome; TODO need to
+			//devise a better way of figuring this out
+			for (Mutinack analyzer: analyzers) {
+				final ICounterSeqLoc counter =
+					Objects.requireNonNull(
+						analyzer.stats.get(0).nPosDuplex.getSeqLocCounters().get("All")).snd;
+				final @NonNull Map<Object, @NonNull Object> m = counter.getCounts();
+				final Map<String, Double> allCoverage = new THashMap<>();
 
-					for (Entry<String, Integer> e: contigSizes.entrySet()) {
-						//TODO Need to design a better API to retrieve the counts
-						ICounter<?> c = ((ICounter<?>) m.get(
-								groupSettings.indexContigNameReverseMap.get(e.getKey())));
-						final double d;
-						if (c == null) {
+				for (Entry<String, Integer> e: contigSizes.entrySet()) {
+					//TODO Need to design a better API to retrieve the counts
+					ICounter<?> c = ((ICounter<?>) m.get(
+						groupSettings.indexContigNameReverseMap.get(e.getKey())));
+					final double d;
+					if (c == null) {
+						d = 0;
+					} else {
+						Object o = c.getCounts().get(0);
+						if (o == null) {
 							d = 0;
 						} else {
-							Object o = c.getCounts().get(0);
-							if (o == null) {
-								d = 0;
-							} else {
-								d = ((DoubleAdder) o).sum();
-							}
+							d = ((DoubleAdder) o).sum();
 						}
-						allCoverage.put(e.getKey(), d / e.getValue());
 					}
-
-					final double averageCoverage = allCoverage.values().stream().mapToDouble(o -> o).average().orElse(Double.NaN);
-					final List<Double> allValues = allCoverage.values().stream().sorted().collect(Collectors.toList());
-					final int nElements = allValues.size();
-					final double percentileCoverage80 = nElements == 0 ? Double.NaN : allValues.get((int) (nElements * 0.8));
-					final double percentileCoverage95 = nElements == 0 ? Double.NaN : allValues.get((int) (nElements * 0.95));
-
-					try (Writer writer = new BufferedWriter(new OutputStreamWriter(
-							new FileOutputStream(analyzer.finalOutputBaseName + "_coverage.txt"), "utf-8"))) {
-						List<Entry<String, Double>> sortedEntries =
-								allCoverage.entrySet().stream().map(entry ->
-								new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue())).
-								collect(Collectors.toList());
-						sortedEntries.sort(Comparator.comparing(Entry::getKey));
-
-						writer.write("RefseqID\t" + (analyzer.name + "_avn\t") + (analyzer.name + "_95thpn\t")
-								+ (analyzer.name + "_80thpn\n"));
-
-						for (Entry<String, Double> e: sortedEntries) {
-							writer.write(e.getKey() + "\t" + (e.getValue() / averageCoverage) + "\t" +
-									(e.getValue() / percentileCoverage95) + "\t" + (e.getValue() / percentileCoverage80) + "\n");
-						}
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
+					allCoverage.put(e.getKey(), d / e.getValue());
 				}
-			}//End if readContigsFromFile
 
-			if (mutationAnnotationWriter != null) {//Unnecessary test, performed to suppress null warning
-				for (@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
-						groupSettings.mutationsToAnnotate.values()) {
-					for (Pair<@NonNull Mutation, @NonNull String> leftBehind: leftBehindList) {
-						mutationAnnotationWriter.append(leftBehind.snd + "\tNOT FOUND\n");
+				final double averageCoverage = allCoverage.values().stream().mapToDouble(o -> o).average().orElse(Double.NaN);
+				final List<Double> allValues = allCoverage.values().stream().sorted().collect(Collectors.toList());
+				final int nElements = allValues.size();
+				final double percentileCoverage80 = nElements == 0 ? Double.NaN : allValues.get((int) (nElements * 0.8));
+				final double percentileCoverage95 = nElements == 0 ? Double.NaN : allValues.get((int) (nElements * 0.95));
+
+				try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream(analyzer.finalOutputBaseName + "_coverage.txt"), "utf-8"))) {
+					List<Entry<String, Double>> sortedEntries =
+						allCoverage.entrySet().stream().map(entry ->
+							new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue())).
+							collect(Collectors.toList());
+					sortedEntries.sort(Comparator.comparing(Entry::getKey));
+
+					writer.write("RefseqID\t" + (analyzer.name + "_avn\t") + (analyzer.name + "_95thpn\t")
+						+ (analyzer.name + "_80thpn\n"));
+
+					for (Entry<String, Double> e: sortedEntries) {
+						writer.write(e.getKey() + "\t" + (e.getValue() / averageCoverage) + "\t" +
+							(e.getValue() / percentileCoverage95) + "\t" + (e.getValue() / percentileCoverage80) + "\n");
 					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
 			}
+		}//End if readContigsFromFile
 
-		} finally {
-			close(alignmentWriter, mutationAnnotationWriter, analyzers, infoSignalHandler, groupSettings);
+		if (mutationAnnotationWriter != null) {//Unnecessary test, performed to suppress null warning
+			for (@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>> leftBehindList:
+				groupSettings.mutationsToAnnotate.values()) {
+				for (Pair<@NonNull Mutation, @NonNull String> leftBehind: leftBehindList) {
+					mutationAnnotationWriter.append(leftBehind.snd + "\tNOT FOUND\n");
+				}
+			}
 		}
 	}
 
@@ -1371,8 +1397,8 @@ public class Mutinack implements Actualizable {
 		return result;
 	}
 
-	private static JsonRoot getJsonRoot(Parameters param, Collection<Mutinack> analyzers) {
-		JsonRoot root = new JsonRoot();
+	private static RunResult getRunResult(Parameters param, Collection<Mutinack> analyzers) {
+		RunResult root = new RunResult();
 		final String mutinackVersion = GitCommitInfo.getGitCommit();
 		root.mutinackVersion = mutinackVersion;
 		root.parameters = param;
@@ -1397,7 +1423,7 @@ public class Mutinack implements Actualizable {
 					.withSetterVisibility(JsonAutoDetect.Visibility.NONE)
 					.withCreatorVisibility(JsonAutoDetect.Visibility.NONE)
 					.withIsGetterVisibility(JsonAutoDetect.Visibility.NONE));
-			JsonRoot root = getJsonRoot(param, analyzers);
+			RunResult root = getRunResult(param, analyzers);
 			try {
 				mapper.writerWithDefaultPrettyPrinter().writeValue(
 						new File(param.outputJSONTo), root);
@@ -1428,7 +1454,7 @@ public class Mutinack implements Actualizable {
 		if (param.outputToDatabaseURL.isEmpty()) {
 			return;
 		}
-		JsonRoot root = getJsonRoot(param, analyzers);
+		RunResult root = getRunResult(param, analyzers);
 		runWithOneAutoCreateRetry(autoCreate -> {
 			PersistenceManagerFactory pmf = PMF.getPMF(param, autoCreate);
 			try {
@@ -1454,40 +1480,8 @@ public class Mutinack implements Actualizable {
 		});
 	}
 
-	private static void close(SAMFileWriter alignmentWriter,
-			OutputStreamWriter mutationAnnotationWriter,
-			List<Mutinack> analyzers,
-			SignalProcessor infoSignalHandler,
-			MutinackGroup groupSettings) {
-		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
-
-		if (alignmentWriter != null) {
-			gatherer.tryAdd(alignmentWriter::close);
-		}
-
-		if (mutationAnnotationWriter != null) {
-			gatherer.tryAdd(mutationAnnotationWriter::close);
-		}
-
-		for (Mutinack analyzer: analyzers) {
-			if (analyzer != null) {
-				gatherer.tryAdd(analyzer::closeOutputs);
-			}
-		}
-
-		//gatherer.tryAdd(PoolController::shutdown);
-
-		if (infoSignalHandler != null) {
-			gatherer.tryAdd(() ->
-				Signals.removeSignalProcessor("INFO", infoSignalHandler));
-		}
-
-		gatherer.tryAdd(groupSettings::close);
-
-		gatherer.throwIfPresent();
-	}
-
-	private void closeOutputs() {
+	@Override
+	public void close() {
 		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		for (Closeable c: itemsToClose) {
 			gatherer.tryAdd(c::close);

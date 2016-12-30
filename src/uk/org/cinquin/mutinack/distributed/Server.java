@@ -50,11 +50,11 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.nustaq.serialization.FSTConfiguration;
 
-import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
+import uk.org.cinquin.mutinack.statistics.json.RunResult;
 
 public class Server extends UnicastRemoteObject implements RemoteMethods {
 
@@ -67,7 +67,7 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	private final String uuid = UUID.randomUUID().toString();
 	private final Map<Job, Job> runningJobs = new ConcurrentHashMap<>();
 	private final String recordRunsTo;
-	private final Map<String, Parameters> recordedRuns;
+	private final Map<String, RunResult> recordedRuns;
 	private final BlockingQueue<Job> queue = new LinkedBlockingQueue<>();
 	private final boolean silent;
 
@@ -320,13 +320,6 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			}
 			queue.put(job);
 
-			if (recordedRuns != null) {
-				recordedRuns.put(job.parameters.runName, job.parameters);
-				if (!silent) {
-					System.err.println("Recorded job " + job.parameters.runName);
-				}
-			}
-
 			synchronized(job) {
 				while (!job.completed) {
 					job.wait(PING_INTERVAL_SECONDS * 1_000L);
@@ -343,6 +336,13 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 			}
 			cancelled = job.cancelled;
 		} while (cancelled);
+
+		if (recordedRuns != null) {
+			recordedRuns.put(job.parameters.runName, job.result.output);
+			if (!silent) {
+				System.err.println("Recorded job " + job.parameters.runName);
+			}
+		}
 
 		job.timeReturnedToSubmitter = System.nanoTime();
 		//System.err.println("RETURNING " + job.result.output);

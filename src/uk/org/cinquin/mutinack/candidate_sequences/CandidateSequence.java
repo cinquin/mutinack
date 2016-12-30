@@ -737,6 +737,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return sampleName;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public @NonNull String toOutputString(Parameters param, LocationExaminationResults examResults) {
 		StringBuilder result = new StringBuilder();
