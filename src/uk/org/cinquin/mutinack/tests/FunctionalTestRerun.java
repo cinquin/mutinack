@@ -48,6 +48,7 @@ import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
+import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 import uk.org.cinquin.mutinack.misc_util.exceptions.FunctionalTestFailed;
 
 /**
@@ -137,6 +138,8 @@ public class FunctionalTestRerun {
 					ByteArrayOutputStream errStream = new ByteArrayOutputStream()) {
 				PrintStream outPS = new PrintStream(outStream);
 				PrintStream errPS = new PrintStream(errStream);
+
+				StaticStuffToAvoidMutating.instantiateThreadPools(64);
 
 				//Only one test should run at a time, so it's OK to use a static variable
 				try {
