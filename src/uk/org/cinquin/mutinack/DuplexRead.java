@@ -78,6 +78,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
 /**

@@ -94,6 +94,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 public final class SubAnalyzer {

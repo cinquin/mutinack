@@ -4,9 +4,6 @@
     "http://java.sun.com/dtd/jdo_2_0.dtd">
 <jdo>
     <package name="uk.org.cinquin.mutinack">
-        <class name="LocationExaminationResults"/>
-        <class name="LocationAnalysis"/>
-        <class name="CrossSampleLocationAnalysis"/>
         <class name="Parameters"/>
         <class name="AnalysisStats"/>
         <class name="DuplexDisagreement"/>
@@ -19,8 +16,11 @@
         <class name="CandidateDeletion"/>
     </package>
 
-    <package name="uk.org.cinquin.mutinack.statistics.json">
+    <package name="uk.org.cinquin.mutinack.output">
         <class name="RunResult"/>
         <class name="ParedDownMutinack"/>
+        <class name="LocationExaminationResults"/>
+        <class name="LocationAnalysis"/>
+        <class name="CrossSampleLocationAnalysis"/>
     </package>
 </jdo>

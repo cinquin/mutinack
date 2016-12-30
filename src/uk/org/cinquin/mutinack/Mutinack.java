@@ -143,8 +143,8 @@ import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.ICounter;
 import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
-import uk.org.cinquin.mutinack.statistics.json.ParedDownMutinack;
-import uk.org.cinquin.mutinack.statistics.json.RunResult;
+import uk.org.cinquin.mutinack.output.ParedDownMutinack;
+import uk.org.cinquin.mutinack.output.RunResult;
 import uk.org.cinquin.parfor.ParFor;
 
 public class Mutinack implements Actualizable, Closeable {

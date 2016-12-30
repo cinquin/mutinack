@@ -44,7 +44,7 @@ import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
-import uk.org.cinquin.mutinack.LocationExaminationResults;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;

@@ -74,6 +74,9 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.output.CrossSampleLocationAnalysis;
+import uk.org.cinquin.mutinack.output.LocationAnalysis;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
 public class SubAnalyzerPhaser extends Phaser {

@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack.statistics.json;
+package uk.org.cinquin.mutinack.output;
 
 import java.io.Serializable;
 import java.util.Date;

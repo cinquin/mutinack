@@ -1,4 +1,4 @@
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.output;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -10,6 +10,7 @@ import javax.jdo.annotations.PersistenceCapable;
 import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.final_annotation.Final;
+import uk.org.cinquin.mutinack.SequenceLocation;
 
 @PersistenceCapable
 public class CrossSampleLocationAnalysis implements Serializable {
@@ -19,11 +20,12 @@ public class CrossSampleLocationAnalysis implements Serializable {
 	public boolean randomlySelected;
 	public boolean lowTopAlleleFreq;
 	public int candidateCount;
-	boolean twoOrMoreSamplesWithSameQ2MutationCandidate;
-	boolean oneSampleNoWt;
-	boolean noWt;
+	public boolean twoOrMoreSamplesWithSameQ2MutationCandidate;
+	public boolean oneSampleNoWt;
+	public boolean noWt;
 
-	@Final List<Integer> nDuplexesUniqueQ2MutationCandidate = new ArrayList<>();
+	@Final
+	public List<Integer> nDuplexesUniqueQ2MutationCandidate = new ArrayList<>();
 
 	public CrossSampleLocationAnalysis(@NonNull SequenceLocation location) {
 		this.location = location;

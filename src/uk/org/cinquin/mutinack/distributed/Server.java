@@ -54,7 +54,7 @@ import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
-import uk.org.cinquin.mutinack.statistics.json.RunResult;
+import uk.org.cinquin.mutinack.output.RunResult;
 
 public class Server extends UnicastRemoteObject implements RemoteMethods {
 

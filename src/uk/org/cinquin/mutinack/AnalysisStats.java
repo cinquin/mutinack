@@ -63,6 +63,7 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MutationHistogramMap;
+import uk.org.cinquin.mutinack.output.LocationAnalysis;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnlyReportAll;
