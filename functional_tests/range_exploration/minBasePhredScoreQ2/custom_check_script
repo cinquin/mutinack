@@ -1,9 +1,28 @@
 #!/usr/bin/env bash
 set -e
 set -o pipefail
-./jq --slurp --raw-output 'map(.samples) | .[] | map(.stats) | flatten | map(select(.analysisParameters.minBasePhredScoreQ2 == 24)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true)) | map({name} + {candidates: .detections["chrX:11,857,476"]})' stats.json > filtered.json
-#echo '[{"blah": 0}]' >> filtered.json
-./jq --slurp --raw-output 'map(.samples) | .[] | map(.stats) | flatten | map(select(.analysisParameters.minBasePhredScoreQ2 == 25)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map({name} + {candidates: .detections["chrX:11,857,476"]})' ../../test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_25_substitution_detection/stats.json > filtered_no_range_exploration.json
+
+#Compare JSONS in files whose paths are given by two arguments passed to the function
+#If the contents differ, print a diff to stdout and save it to file "error"
 #See http://stackoverflow.com/questions/31930041/using-jq-or-alternative-command-line-tools-to-diff-json-files/31935351
-same_outputs=`./jq --argfile a filtered.json --argfile b filtered_no_range_exploration.json  -n 'def post_recurse(f): def r: (f | select(. != null) | r), .; r; def post_recurse: post_recurse(.[]?); ($a | (post_recurse | arrays) |= sort) as $a | ($b | (post_recurse | arrays) |= sort) as $b | $a == $b'`
-[[ ${same_outputs} == "true" ]] && touch run.out.check custom_check || ((diff -u  <(./jq -S . filtered.json) <(./jq -S . filtered_no_range_exploration.json) | tee error) && false)
+compare_jsons () {
+  same=`./jq --argfile a $1 --argfile b $2 -n 'def post_recurse(f): def r: (f | select(. != null) | r), .; r; def post_recurse: post_recurse(.[]?); ($a | (post_recurse | arrays) |= sort) as $a | ($b| (post_recurse | arrays) |= sort) as $b | $a == $b'`
+  [[ ${same} == "true" ]] || ((diff -u  <(./jq -S . $1 ) <(./jq -S . $2) | tee error) && false)
+}
+
+extract_json() {
+  ./jq --slurp --raw-output "map(.samples) | .[] | map(.stats) | flatten | $1 | map({name} + {candidates: .detections[\"chrX:11,857,476\"]})" $2 > $3
+}
+
+extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 24)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
+#Uncomment line below to check that error is generated if JSON objects differ
+#echo '[{"blah": 0}]' >> filtered.json
+extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 25))" ../../test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_25_substitution_detection/stats.json filtered_no_range_exploration.json
+compare_jsons filtered.json filtered_no_range_exploration.json
+
+extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 29)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
+#echo '[{"blah": 0}]' >> filtered.json
+extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 30))" ../../test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_30_no_detection/stats.json filtered_no_range_exploration.json
+compare_jsons filtered.json filtered_no_range_exploration.json
+
+touch run.out.check custom_check
