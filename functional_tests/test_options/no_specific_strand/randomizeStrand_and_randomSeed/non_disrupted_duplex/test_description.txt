@@ -1,0 +1,2 @@
+Test that randomSeed enables reproducible duplex randomization. With the particular seed used and the current Mutinack and JDK Collections::shuffle implementation, the reads are actually assigned to the correct strand; the deletion disagreement is thus still detected. This test is implementation dependent; the seed might need to be adjusted if implementation changes.
+See also sister test in ../disrupted_duplex
