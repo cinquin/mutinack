@@ -316,43 +316,50 @@ public class Mutinack implements Actualizable, Closeable {
 		final String paramToExplore = split[0];
 		final Number min, max;
 		final int nSteps;
-		try {
-			min = Util.parseNumber(split[1]);
-			max = Util.parseNumber(split[2]);
-			if (split.length == 4) {
-				nSteps = Integer.parseInt(split[3]);
-			} else if (split.length == 3) {
-				nSteps = max.intValue() - min.intValue() + 1;
-			} else
-				throw new AssertionFailedException();
-		} catch (RuntimeException e) {
-			throw new RuntimeException(errorMessagePrefix, e);
+		final Object val = param.getFieldValue(paramToExplore);
+
+		final List<Object> values = new ArrayList<>();
+
+		if (val instanceof Boolean) {
+			values.add(true);
+			values.add(false);
+		} else {
+			try {
+				min = Util.parseNumber(split[1]);
+				max = Util.parseNumber(split[2]);
+				if (split.length == 4) {
+					nSteps = Integer.parseInt(split[3]);
+				} else if (split.length == 3) {
+					nSteps = max.intValue() - min.intValue() + 1;
+				} else
+					throw new AssertionFailedException();
+			} catch (RuntimeException e) {
+				throw new RuntimeException(errorMessagePrefix, e);
+			}
+			if (val instanceof Integer) {
+				checkInteger(min, errorMessagePrefix);
+				checkInteger(max, errorMessagePrefix);
+			}
+			for (double step = 0; step < nSteps; step++) {
+				final double value = min.doubleValue() + (max.doubleValue() - min.doubleValue()) *
+					step / nSteps;
+				values.add(value);
+			}
 		}
 
-		checkInteger(nSteps, errorMessagePrefix);
-		Object val = param.getFieldValue(paramToExplore);
-		if (val instanceof Integer) {
-			checkInteger(min, errorMessagePrefix);
-			checkInteger(max, errorMessagePrefix);
-		}
-
-		for (double step = 0; step < nSteps; step++) {
+		for (Object value: values) {
 			Parameters clone = param.clone();
 			clone.exploreParameters = Collections.emptyList();
 			clone.distinctParameters = new HashMap<>();
 			clone.distinctParameters.putAll(param.distinctParameters);
-			final double value = min.doubleValue() + (max.doubleValue() - min.doubleValue()) *
-				step / nSteps;
-			Number numberValue;
-			if (clone.isParameterInteger(paramToExplore, Integer.class) ||
-				clone.isParameterInteger(paramToExplore, Long.class))
-				numberValue = (int) Math.round(value);
-			else
-				numberValue = value;
-			if (clone.distinctParameters.put(paramToExplore, numberValue) != null) {
+
+			if (clone.isParameterInstanceOf(paramToExplore, Integer.class) ||
+				clone.isParameterInstanceOf(paramToExplore, Long.class))
+				value = (int) Math.round((Double) value);
+			if (clone.distinctParameters.put(paramToExplore, value) != null) {
 				throw new AssertionFailedException();
 			}
-			clone.setNumericalFieldValue(paramToExplore, numberValue);
+			clone.setFieldValue(paramToExplore, value);
 			if (index == exploreParameters.size() - 1 || !cartesian) {
 				for (String stat: statsNames) {
 					consumer.accept(stat, clone);

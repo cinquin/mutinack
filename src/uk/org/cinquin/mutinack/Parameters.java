@@ -97,9 +97,9 @@ public final class Parameters implements Serializable, Cloneable {
 
 		for (String p: exploreParameters) {
 			String [] split = p.split(":");
-			if (split.length != 4 && split.length != 3) {
+			if (split.length != 4 && split.length != 3 && split.length != 1) {
 				throw new IllegalArgumentException("exploreParameters argument should be formatted as " +
-					"name:min:max:step, but " + (split.length - 1) + " columns found in " + p);
+					"name:min:max[:step] or name, but " + (split.length - 1) + " columns found in " + p);
 			}
 			final String paramName = split[0];
 			final Field f;
@@ -119,8 +119,8 @@ public final class Parameters implements Serializable, Cloneable {
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
-			if (!(value instanceof Integer) && !(value instanceof Float)) {
-				throw new IllegalArgumentException("Parameter " + paramName + " is not a number");
+			if (!(value instanceof Integer) && !(value instanceof Float) && !(value instanceof Boolean)) {
+				throw new IllegalArgumentException("Parameter " + paramName + " is not a number or boolean");
 			}
 		}
 	}
@@ -161,7 +161,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@JsonIgnore
 	public transient MutinackGroup group;
 
-	public Map<String, Number> distinctParameters = new HashMap<>();
+	public Map<String, Object> distinctParameters = new HashMap<>();
 
 	public static final long serialVersionUID = 1L;
 	@JsonIgnore
@@ -794,7 +794,7 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 	}
 
-	public boolean isParameterInteger(String name, Class<?> clazz) {
+	public boolean isParameterInstanceOf(String name, Class<?> clazz) {
 		Field f;
 		try {
 			f = Parameters.class.getDeclaredField(name);
@@ -804,15 +804,19 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 	}
 
-	public void setNumericalFieldValue(String name, Number value) {
+	public void setFieldValue(String name, Object value) {
 		try {
 			Field f = Parameters.class.getDeclaredField(name);
 			if (f.get(this) instanceof Integer) {
-				f.set(this, value.intValue());
+				f.set(this, ((Number) value).intValue());
 			} else if (f.get(this) instanceof Float) {
-				f.set(this, value.floatValue());
+				f.set(this, ((Number) value).floatValue());
+			} else if (f.get(this) instanceof Boolean) {
+				f.set(this, ((Boolean) value));
 			} else
-				throw new AssertionFailedException();
+				throw new IllegalArgumentException("Field " + name + " is not Integer, Float, or Boolean");
+		} catch (ClassCastException e) {
+			throw new RuntimeException("Class of " + " value " + " does not match field " + name, e);
 		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException |
 				IllegalAccessException e) {
 			throw new RuntimeException(e);
