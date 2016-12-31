@@ -1,0 +1,3 @@
+Cursory test that a run performed as part of parameter exploration produces results that match those of a run with a single parameter set.
+This also serves as a cursory test of JSON output generation.
+TODO: perform a more systematic check of the output for all parameter combinations.
