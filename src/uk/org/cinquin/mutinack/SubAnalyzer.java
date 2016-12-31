@@ -111,7 +111,7 @@ public final class SubAnalyzer {
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
 			new THashMap<>(10_000, 0.1f);
 	private final AtomicInteger threadCount = new AtomicInteger();
-	private final Random random = new Random();//TODO seed with argValues.randomSeed
+	private final Random random;
 
 	private static final @NonNull Set<DuplexAssay>
 		assaysToIgnoreForDisagreementQuality
@@ -155,6 +155,7 @@ public final class SubAnalyzer {
 		this.analyzer = analyzer;
 		this.param = analyzer.param;
 		useHashMap = param.alignmentPositionMismatchAllowed == 0;
+		random = new Random(param.randomSeed);
 	}
 
 	private boolean meetsQ2Thresholds(@NonNull ExtendedSAMRecord extendedRec) {
