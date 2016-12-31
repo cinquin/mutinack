@@ -144,14 +144,17 @@ clean_FAILED:
 	find . -mindepth 2 -name 'FAILED' -delete
 
 clean_hardlinks: clean_jars
-	find . -mindepth 2 '(' -name ref.fa -delete -or -name ref.fa.fai -delete -or -name logback.xml -delete -or -name Makefile_aux_output_check -delete -or -name grep_lines_in_file -delete ')'
+	find . -mindepth 2 '(' -name jq -delete -or -name ref.fa -delete -or -name ref.fa.fai -delete -or -name logback.xml -delete -or -name Makefile_aux_output_check -delete -or -name grep_lines_in_file -delete ')'
 
 #Create hardlinks to the master files present in the root functional_tests directory.
 #Symbolic links lead to undesirable complications, and independent copies lead to
 #undesirable I/O and disk space usage.
-.PRECIOUS: %/mutinack.jar %/ref.fa %/ref.fa.fai %/ref.fa.info %/logback.xml %/jacoco.jar %/grep_lines_in_file %/Makefile_aux_output_check
+.PRECIOUS: %/mutinack.jar %/ref.fa %/ref.fa.fai %/ref.fa.info %/logback.xml %/jacoco.jar %/grep_lines_in_file %/Makefile_aux_output_check %/jq
 %/mutinack.jar:
 	@ln -f mutinack.jar $@
+
+%/jq:
+	@ln -f ../jq/jq $@
 
 %/jacoco.jar:
 	@ln -f ../lib_build_run_test/org.jacoco.agent-0.7.5.201505241946-runtime.jar $@
@@ -197,4 +200,6 @@ AVOID_STUPID_RULE_SIDE_EFFECT = $(MAKE)
 %/run.out.check: %/run.out %/Makefile_aux_output_check %/grep_lines_in_file %/expected_output.txt
 	@((./grep_lines_in_file $*/run.out < $*/expected_output.txt > $@) && (cd $*/ && $(AVOID_STUPID_RULE_SIDE_EFFECT) -s -j1 -f Makefile_aux_output_check 2>/dev/null)) && ($(GIT) rm -f $*/FAILED > /dev/null 2>&1 || rm -f $*/FAILED) || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
 
+%/run.out.check: %/run.out %/Makefile_aux_output_check %/custom_check_script %/jq test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_25_substitution_detection/run.out
+	@(cd $*/ && $(AVOID_STUPID_RULE_SIDE_EFFECT) -s -j1 -f Makefile_aux_output_check 2>/dev/null) && ($(GIT) rm -f $*/FAILED > /dev/null 2>&1 || rm -f $*/FAILED) || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
 

@@ -1,8 +1,13 @@
 
 FILES = $(shell find . -name 'expected_*' -not -name 'expected_output.txt' -not -name 'run.out' | sed -e 's/expected_//g' | sed -e 's/$$/.check/g')
+FILES2 = $(shell find . -name 'custom_check_script' | sed -e 's/custom_check_script/run.out.check/g')
 
-all: $(FILES)
+all: $(FILES) $(FILES2)
 
 .DELETE_ON_ERROR:
 %.check: expected_%
 	./grep_lines_in_file $* < expected_$* > $@
+
+.DELETE_ON_ERROR:
+custom_check run.out.check: custom_check_script
+	./custom_check_script
