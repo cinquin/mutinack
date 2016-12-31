@@ -1014,6 +1014,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 			return;
 		}
 		List<@NonNull ExtendedSAMRecord> shuffled = new ArrayList<>();
+		final int topSize = topStrandRecords.size();
+		final int bottomSize = bottomStrandRecords.size();
 		shuffled.addAll(topStrandRecords);
 		shuffled.addAll(bottomStrandRecords);
 		Collections.shuffle(shuffled, random);
@@ -1026,6 +1028,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 		for (int i = shuffled.size() - 1; i >= nTop; i--) {
 			bottomStrandRecords.add(shuffled.get(i));
 		}
+		Assert.isTrue(topStrandRecords.size() == topSize);
+		Assert.isTrue(bottomStrandRecords.size() == bottomSize);
 	}
 
 	void analyzeForStats(AnalysisStats stats, final int maxAverageBasesClipped) {
