@@ -99,7 +99,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final @NonNull String contigName;
 	private final int PROCESSING_CHUNK;
 
-	private final ConcurrentHashMap<String, SAMRecord> readsToWrite;
+	private final ConcurrentHashMap<String, @NonNull SAMRecord> readsToWrite;
 	private final SAMFileWriter outputAlignment;
 	private final int nSubAnalyzers;
 
@@ -156,31 +156,36 @@ public class SubAnalyzerPhaser extends Phaser {
 		final boolean returnValue;
 		boolean completedNormally = false;
 		try {
-			for (int i = 0; i < nSubAnalyzers; i++) {
-				SubAnalyzer sub = analysisChunk.subAnalyzers.get(i);
-				if (NONTRIVIAL_ASSERTIONS && nIterations > 1 && sub.candidateSequences.containsKey(
-						new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get()))) {
-					throw new AssertionFailedException();
-				}
-				sub.load();
-			}
-
 			final int saveLastProcessedPosition = lastProcessedPosition.get();
-			outer:
-			for (int position = saveLastProcessedPosition + 1;
-					position <= Math.min(pauseAt.get(), analysisChunk.terminateAtPosition)  &&
-					!groupSettings.terminateAnalysis; position ++) {
-				for (int statsIndex = 0; statsIndex < analysisChunk.nParameterSets; statsIndex++) {
-					Boolean insertion = null;
-					for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
-						subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
-						subAnalyzer.param = Objects.requireNonNull(subAnalyzer.stats.analysisParameters);
-						if (insertion == null) {
-							insertion = subAnalyzer.stats.forInsertions;
-						} else {
-							Assert.isTrue(subAnalyzer.stats.forInsertions == insertion);
-						}
+
+			for (int statsIndex = 0; statsIndex < analysisChunk.nParameterSets; statsIndex++) {
+				Boolean insertion = null;
+				for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
+					subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
+					subAnalyzer.param = Objects.requireNonNull(subAnalyzer.stats.analysisParameters);
+					if (insertion == null) {
+						insertion = subAnalyzer.stats.forInsertions;
+					} else {
+						Assert.isTrue(subAnalyzer.stats.forInsertions == insertion);
 					}
+				}
+
+				lastProcessedPosition.set(saveLastProcessedPosition);
+				for (int i = 0; i < nSubAnalyzers; i++) {
+					SubAnalyzer sub = analysisChunk.subAnalyzers.get(i);
+					if (NONTRIVIAL_ASSERTIONS && nIterations > 1 && sub.candidateSequences.containsKey(
+							new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get()))) {
+						throw new AssertionFailedException();
+					}
+					if (statsIndex == 0 || !sub.stats.canSkipDuplexLoading) {
+						sub.load();
+					}
+				}
+
+				outer:
+				for (int position = saveLastProcessedPosition + 1;
+						position <= Math.min(pauseAt.get(), analysisChunk.terminateAtPosition)  &&
+						!groupSettings.terminateAnalysis; position ++) {
 
 					final @NonNull SequenceLocation location =
 						new SequenceLocation(contigIndex, contigName, position,
@@ -190,7 +195,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						if (tester.test(location)) {
 							analysisChunk.subAnalyzers/*.parallelStream()*/.
 								forEach(sa -> {sa.candidateSequences.remove(location);
-										sa.stats.nPosExcluded.add(location, 1);});
+									sa.stats.nPosExcluded.add(location, 1);});
 							lastProcessedPosition.set(position);
 							continue outer;
 						}
@@ -430,7 +435,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final List<BedReader> repetitiveBEDs,
 			final AnalysisChunk analysisChunk,
 			final ConcurrentMap<Pair<SequenceLocation, String>,
-				@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate
+			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate
 		) throws IOException {
 
 		//Refilter also allowing Q1 candidates to compare output of different
@@ -865,9 +870,11 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			try {
 				@SuppressWarnings("resource")
-				@Nullable
-				final OutputStreamWriter tpdw = d.hasAWtStrand ? stats.topBottomDisagreementWriter
-					: stats.noWtDisagreementWriter;
+				@Nullable final OutputStreamWriter tpdw =
+					d.hasAWtStrand ?
+						stats.topBottomDisagreementWriter
+					:
+						stats.noWtDisagreementWriter;
 				if (tpdw != null) {
 					tpdw.append(location.getContigName() + "\t" +
 							(location.position + 1) + "\t" + (location.position + 1) + "\t" +

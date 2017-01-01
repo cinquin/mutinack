@@ -67,17 +67,10 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.jdo.JDODataStoreException;
-import javax.jdo.PersistenceManager;
-import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Transaction;
-
-import org.datanucleus.store.rdbms.exceptions.MissingTableException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -105,7 +98,7 @@ import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.database.PMF;
+import uk.org.cinquin.mutinack.database.DatabaseOutput;
 import uk.org.cinquin.mutinack.distributed.Server;
 import uk.org.cinquin.mutinack.distributed.Submitter;
 import uk.org.cinquin.mutinack.distributed.Worker;
@@ -123,6 +116,7 @@ import uk.org.cinquin.mutinack.misc_util.CloseableWrapper;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.GetReadStats;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
 import uk.org.cinquin.mutinack.misc_util.Pair;
@@ -294,6 +288,8 @@ public class Mutinack implements Actualizable, Closeable {
 				param.cartesianProductOfExploredParameters);
 		}
 
+		sortStatsListByDuplexLoadParams(stats);
+
 		final String inputHash = (inputBam.length() > param.computeHashForBAMSmallerThanInGB * Math.pow(1024,3)) ?
 				"too big"
 			:
@@ -307,8 +303,30 @@ public class Mutinack implements Actualizable, Closeable {
 		this.startDate = new Date();
 	}
 
-	private static void recursiveParameterFill(BiConsumer<String, Parameters> consumer,
-			int index, List<String> exploreParameters, List<String> statsNames, Parameters param,
+	private static void sortStatsListByDuplexLoadParams(List<AnalysisStats> list) {
+		Map<Map<String, Object>, List<AnalysisStats>> groupedByDGParams = list.stream().
+			collect(Collectors.groupingBy(stats -> stats.analysisParameters.
+				distinctParameters.entrySet().stream().
+					filter(e -> Parameters.isUsedAtDuplexGrouping(e.getKey())).
+					collect(Collectors.toMap(Entry::getKey, Entry::getValue))));
+		list.clear();
+		Handle<Boolean> canSkipReload = new Handle<>(true);
+		groupedByDGParams.forEach((param, l) -> {
+			l.sort(Comparator.comparing(AnalysisStats::getName));
+			l.forEach(stats -> {
+				stats.canSkipDuplexLoading = canSkipReload.get();
+				list.add(stats);
+				canSkipReload.set(true);
+			});
+			canSkipReload.set(false);
+		});
+	}
+
+	private static void recursiveParameterFill(
+			BiConsumer<String, Parameters> consumer,
+			int index, List<String> exploreParameters,
+			List<String> statsNames,
+			Parameters param,
 			boolean cartesian) {
 		final String s = exploreParameters.get(index);
 		final String errorMessagePrefix = "Could not parse exploreParameter argument " + s;
@@ -362,7 +380,9 @@ public class Mutinack implements Actualizable, Closeable {
 			clone.setFieldValue(paramToExplore, value);
 			if (index == exploreParameters.size() - 1 || !cartesian) {
 				for (String stat: statsNames) {
-					consumer.accept(stat, clone);
+					String extra = clone.distinctParameters.entrySet().stream().
+						map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining(", "));
+					consumer.accept(stat + ": " + extra, clone);
 				}
 			} else if (cartesian) {
 				recursiveParameterFill(consumer, index + 1, exploreParameters, statsNames, clone, cartesian);
@@ -386,7 +406,7 @@ public class Mutinack implements Actualizable, Closeable {
 			PrintStream out,
 			OutputStreamWriter mutationAnnotationWriter,
 			OutputLevel outputLevel) {
-		AnalysisStats stat = new AnalysisStats(statsName, param1, statsName.equals("ins_stats"),
+		AnalysisStats stat = new AnalysisStats(statsName, param1, statsName.contains("ins_stats"),
 			Objects.requireNonNull(groupSettings), param1.reportCoverageAtAllPositions);
 		stat.detectionOutputStream = out;
 		stat.annotationOutputStream = mutationAnnotationWriter;
@@ -1141,7 +1161,9 @@ public class Mutinack implements Actualizable, Closeable {
 			}).collect(Collectors.joining(",")));
 
 			outputJSON(param, analyzers);
-			outputToDatabase(param, analyzers);
+			if (!param.outputToDatabaseURL.isEmpty()) {
+				DatabaseOutput.outputToDatabase(param, analyzers);
+			}
 		};
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);
 		closeableCloser.add(new CloseableWrapper<>(infoSignalHandler,
@@ -1397,7 +1419,7 @@ public class Mutinack implements Actualizable, Closeable {
 		return result;
 	}
 
-	private static RunResult getRunResult(Parameters param, Collection<Mutinack> analyzers) {
+	public static RunResult getRunResult(Parameters param, Collection<Mutinack> analyzers) {
 		RunResult root = new RunResult();
 		final String mutinackVersion = GitCommitInfo.getGitCommit();
 		root.mutinackVersion = mutinackVersion;
@@ -1431,53 +1453,6 @@ public class Mutinack implements Actualizable, Closeable {
 				throw new RuntimeException(e);
 			}
 		}
-	}
-
-	private static void runWithOneAutoCreateRetry(Consumer<Boolean> r) {
-		boolean autoCreate = true;//Set to false to try first without autoCreate
-		boolean exception = true;
-		while (exception) {
-			try {
-				r.accept(autoCreate);
-				exception = false;
-			} catch (MissingTableException | JDODataStoreException e) {
-				if (autoCreate) {
-					throw e;
-				} else {
-					autoCreate = true;
-				}
-			}
-		}
-	}
-
-	private static void outputToDatabase(Parameters param, Collection<Mutinack> analyzers) {
-		if (param.outputToDatabaseURL.isEmpty()) {
-			return;
-		}
-		RunResult root = getRunResult(param, analyzers);
-		runWithOneAutoCreateRetry(autoCreate -> {
-			PersistenceManagerFactory pmf = PMF.getPMF(param, autoCreate);
-			try {
-				PersistenceManager persistenceManager = pmf.getPersistenceManager();
-				final Transaction t = persistenceManager.currentTransaction();
-				t.setOptimistic(false);
-				t.setSerializeRead(true);
-				t.setRestoreValues(false);
-				t.begin();
-				try {
-					persistenceManager.makePersistent(root);
-					t.commit();
-				} finally {
-					if (t.isActive()) {
-						t.rollback();
-					} else {
-						persistenceManager.detachCopy(root);
-					}
-				}
-			} finally {
-				pmf.close();
-			}
-		});
 	}
 
 	@Override

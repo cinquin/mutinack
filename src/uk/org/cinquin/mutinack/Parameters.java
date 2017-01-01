@@ -53,7 +53,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
-import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 
 @PersistenceCapable
@@ -110,8 +109,12 @@ public final class Parameters implements Serializable, Cloneable {
 			} catch (SecurityException e) {
 				throw new RuntimeException(e);
 			}
-			if (f.getAnnotation(OnlyUsedOnAdvance.class) == null) {
-				throw new IllegalArgumentException("Parameter " + paramName + " does not support exploration");
+			if (f.getAnnotation(OnlyUsedAfterDuplexGrouping.class) == null &&
+					f.getAnnotation(UsedAtDuplexGrouping.class) == null) {
+				throw new IllegalArgumentException("Parameter " + paramName + " does not explicitly support exploration");
+			}
+			if (computeRawMismatches && f.getAnnotation(ExplorationIncompatibleWithRawMismatches.class) != null) {
+				throw new IllegalArgumentException("Please turn computeRawMismatches off to explore " + paramName);
 			}
 			final Object value;
 			try {
@@ -140,6 +143,15 @@ public final class Parameters implements Serializable, Cloneable {
 				}
 			}
 		});
+	}
+
+	public static boolean isUsedAtDuplexGrouping(String key) {
+		try {
+			Field f = Parameters.class.getDeclaredField(key);
+			return f.getAnnotation(UsedAtDuplexGrouping.class) != null;
+		} catch (NoSuchFieldException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@FunctionalInterface
@@ -272,7 +284,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-randomizeMates", description = "Randomize first/second of pair; WARNING: this will lead to incorrect top/bottom strand grouping")
 	public boolean randomizeMates = false;
 
-	@OnlyUsedOnAdvance
+	@UsedAtDuplexGrouping
 	@Parameter(names = "-randomizeStrand", description = "Randomize read mapping to top or bottom strand, preserving for each duplex" +
 		" the number in the top strand and the number in the bottom strand; WARNING: this will lead to incorrect mutation and disagreement detection")
 	public boolean randomizeStrand = false;
@@ -332,30 +344,31 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-minMappingQualityQ2", description = "Reads whose mapping quality is below this" +
 		" threshold are not used to propose Q2 mutation candidates", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
+	@ExplorationIncompatibleWithRawMismatches
 	public int minMappingQualityQ2 = 50;
 
 	@Parameter(names = "-minReadsPerStrandQ1", description = "Duplexes that have fewer reads for the" +
 		" original top and bottom strands are ignored when calling substitutions or indels", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minReadsPerStrandQ1 = 0;
 
 	@Parameter(names = "-minReadsPerStrandQ2", description = "Only duplexes that have at least this number of reads" +
 		" for original top and bottom strands can contribute Q2 candidates", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minReadsPerStrandQ2 = 3;
 
 	@Parameter(names = "-minReadsPerDuplexQ2", description = "Only duplexes that have at least this total number of reads" +
 		" (irrespective of whether they come from the original top and bottom strands) can contribute Q2 candidates", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minReadsPerDuplexQ2 = 3;
 
 	@Parameter(names = "-candidateQ2Criterion", description = "Must be one of 1Q2Duplex, NQ1Duplexes", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public String candidateQ2Criterion = "1Q2Duplex";
 
 	@Parameter(names = "-minQ1Duplexes", description = "Allow mutation candidate to be Q2 when it has at least this many Q1 duplexes", required = false, hidden = true)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minQ1Duplexes = Integer.MAX_VALUE;
 
 	/*@Parameter(names = "-promoteNSingleStrands", description = "Not yet functional, and probably never will be - Promote duplex that has just 1 original strand but at least this many reads to Q1", required = false, hidden = true)
@@ -366,12 +379,12 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-minConsensusThresholdQ1", description = "Lenient value for minimum fraction of reads from the same" +
 		" original strand that define a consensus (must be > 0.5)", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public float minConsensusThresholdQ1 = 0.51f;
 
 	@Parameter(names = "-minConsensusThresholdQ2", description = "Strict value for minimum fraction of reads from the same" +
 		" original strand that define a consensus (must be > 0.5)", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public float minConsensusThresholdQ2 = 0.95f;
 
 	@Parameter(names = "-disagreementConsensusThreshold", description = "NOT YET IMPLEMENTED; Disagreements are only reported if for each strand" +
@@ -380,15 +393,15 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-minReadsPerStrandForDisagreement", description = "Minimal number of reads" +
 		" for original top and bottom strands to examine duplex for disagreement between these strands", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minReadsPerStrandForDisagreement = 0;
 
 	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement in the same sample or in sister sample caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public boolean Q2DisagCapsMatchingMutationQuality = true;
 
-	@Parameter(names = "-computeRawDisagreements", description = "Compute disagreements between raw reads and reference sequence", arity = 1, required = false)
-	public boolean computeRawDisagreements = true;
+	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
+	public boolean computeRawMismatches = true;
 
 	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value divided by 10 are reported and marked with a % sign", required = false)
 	public int topAlleleFreqReport = 3;
@@ -399,13 +412,16 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose Q2 mutation candidates",
 		required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
+	@ExplorationIncompatibleWithRawMismatches
 	public int minBasePhredScoreQ2 = 30;
 
 	@Parameter(names = "-ignoreFirstNBasesQ1", description = "Bases that occur within this many bases of read start are discarded", required = false)
 	public int ignoreFirstNBasesQ1 = 4;
 
 	@Parameter(names = "-ignoreFirstNBasesQ2", description = "Bases that occur within this many bases of read start are not used to propose Q2 mutation candidates", required = false)
+	@OnlyUsedAfterDuplexGrouping
+	@ExplorationIncompatibleWithRawMismatches
 	public int ignoreFirstNBasesQ2 = 35;
 
 	@Parameter(names = "-ignoreLastNBases", description = "Potential mutations that occur within this many bases of read end are ignored", required = false)
@@ -415,7 +431,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public int minReadMedianPhredScore = 0;
 
 	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose Q2 mutation candidates", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minMedianPhredQualityAtPosition = 0;
 
 	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose Q2 mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold", required = false)
@@ -423,12 +439,13 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-maxAverageBasesClipped", description = "Duplexes whose mean number of clipped bases is above this threshold are not used to propose Q2 mutation candidates",
 		required = false)
-	@OnlyUsedOnAdvance
+	@UsedAtDuplexGrouping
+	@ExplorationIncompatibleWithRawMismatches
 	public int maxAverageBasesClipped = 15;
 
 	@Parameter(names = "-maxAverageClippingOfAllCoveringDuplexes", description = "Positions whose average covering duplex average number of clipped bases is above this threshold are not used to propose Q2 mutation candidates",
 		required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int maxAverageClippingOfAllCoveringDuplexes = 999;
 
 	@Parameter(names = "-maxNDuplexes", description = "Positions whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates",
@@ -451,15 +468,15 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean ignoreTandemRFPairs = false;
 
 	@Parameter(names = "-minNumberDuplexesSisterArm", description = "Min number of duplexes in sister arm to call a candidate mutation unique; adjust this number to deal with heterozygous mutations", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minNumberDuplexesSisterArm = 10;
 
 	@Parameter(names = "-minQ2DuplexesToCallMutation", description = "Min number of Q2 duplexes to call mutation (condition set by minQ1Q2DuplexesToCallMutation must also be met)", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minQ2DuplexesToCallMutation = 1;
 
 	@Parameter(names = "-minQ1Q2DuplexesToCallMutation", description = "Min number of Q1 or Q2 duplexes to call mutation (condition set by minQ2DuplexesToCallMutation must also be met)", required = false)
-	@OnlyUsedOnAdvance
+	@OnlyUsedAfterDuplexGrouping
 	public int minQ1Q2DuplexesToCallMutation = 1;
 
 	@Parameter(names = "-acceptNInBarCode", description = "If true, an N read within the barcode is" +
@@ -670,7 +687,13 @@ public final class Parameters implements Serializable, Cloneable {
 	public @interface HideInToString {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface OnlyUsedOnAdvance {}
+	public @interface OnlyUsedAfterDuplexGrouping {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface ExplorationIncompatibleWithRawMismatches {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface UsedAtDuplexGrouping {}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface NoDuplicates {}
@@ -754,6 +777,7 @@ public final class Parameters implements Serializable, Cloneable {
 		String nonDefaultValuesString = "";
 		for (Field field: Parameters.class.getDeclaredFields()) {
 			try {
+				field.setAccessible(true);
 				if (field.getAnnotation(HideInToString.class) != null)
 					continue;
 				if (fieldsToIgnore.contains(field.getName())) {
@@ -812,7 +836,7 @@ public final class Parameters implements Serializable, Cloneable {
 			} else if (f.get(this) instanceof Float) {
 				f.set(this, ((Number) value).floatValue());
 			} else if (f.get(this) instanceof Boolean) {
-				f.set(this, ((Boolean) value));
+				f.set(this, value);
 			} else
 				throw new IllegalArgumentException("Field " + name + " is not Integer, Float, or Boolean");
 		} catch (ClassCastException e) {
@@ -960,7 +984,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((bedFeatureSuppInfoFile == null) ? 0 : bedFeatureSuppInfoFile.hashCode());
 		result = prime * result + ((candidateQ2Criterion == null) ? 0 : candidateQ2Criterion.hashCode());
 		result = prime * result + (collapseFilteredReads ? 1231 : 1237);
-		result = prime * result + (computeRawDisagreements ? 1231 : 1237);
+		result = prime * result + (computeRawMismatches ? 1231 : 1237);
 		result = prime * result + constantBarcode.hashCode();
 		result = prime * result + ((contigByContigParallelization == null) ? 0 : contigByContigParallelization.hashCode());
 		result = prime * result + contigNamesToProcess.hashCode();
@@ -1125,7 +1149,7 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (collapseFilteredReads != other.collapseFilteredReads)
 			return false;
-		if (computeRawDisagreements != other.computeRawDisagreements)
+		if (computeRawMismatches != other.computeRawMismatches)
 			return false;
 		if (!constantBarcode.equals(other.constantBarcode))
 			return false;

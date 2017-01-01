@@ -206,7 +206,7 @@ public final class SubAnalyzer {
 		}
 	}
 
-	public void checkAllDone() {
+	void checkAllDone() {
 		if (!candidateSequences.isEmpty()) {
 			final SettableInteger nLeftBehind = new SettableInteger(-1);
 			candidateSequences.forEach((k,v) -> {
@@ -1352,7 +1352,7 @@ public final class SubAnalyzer {
 						candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
 						candidate.setInsertSizeNoBarcodeAccounting(false);
 
-						if (param.computeRawDisagreements) {
+						if (param.computeRawMismatches) {
 							final byte wildType = readBases[readEndOfPreviousAlignment];
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 								new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
@@ -1471,7 +1471,7 @@ public final class SubAnalyzer {
 						readLocalCandidates.add(candidate, location);
 						extendedRec.nReferenceDisagreements++;
 
-						if (notRnaSeq && param.computeRawDisagreements) {
+						if (notRnaSeq && param.computeRawMismatches) {
 							@SuppressWarnings("null")
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 								new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
@@ -1616,7 +1616,7 @@ public final class SubAnalyzer {
 					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
 						logger.warn("Recording Phred score multiple times at same position " + location);
 					}
-					if (param.computeRawDisagreements && insertCandidateAtRegularPosition) {
+					if (param.computeRawMismatches && insertCandidateAtRegularPosition) {
 						final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 							new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
 								byteMap.get(Mutation.complement(mutation))) :

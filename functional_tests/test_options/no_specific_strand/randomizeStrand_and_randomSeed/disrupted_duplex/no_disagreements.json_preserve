@@ -1,19 +1,10 @@
 [
   {
-    "name": "main_stats",
+    "name": "main_stats: randomizeStrand=true",
     "candidates": []
   },
   {
-    "name": "ins_stats",
-    "candidates": null
-  },
-  {
-    "name": "main_stats",
+    "name": "main_stats: randomizeStrand=true",
     "candidates": []
-  },
-  {
-    "name": "ins_stats",
-    "candidates": null
   }
 ]
-

@@ -200,6 +200,6 @@ AVOID_STUPID_RULE_SIDE_EFFECT = $(MAKE)
 %/run.out.check: %/run.out %/Makefile_aux_output_check %/grep_lines_in_file %/expected_output.txt
 	@((./grep_lines_in_file $*/run.out < $*/expected_output.txt > $@) && (cd $*/ && $(AVOID_STUPID_RULE_SIDE_EFFECT) -s -j1 -f Makefile_aux_output_check 2>/dev/null)) && ($(GIT) rm -f $*/FAILED > /dev/null 2>&1 || rm -f $*/FAILED) || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false ) 
 
-%/run.out.check: %/run.out %/Makefile_aux_output_check %/custom_check_script %/jq test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_25_substitution_detection/run.out
+%/run.out.check: %/run.out %/Makefile_aux_output_check %/custom_check_script %/jq test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_25_substitution_detection/run.out test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_30_no_detection/run.out
 	@(cd $*/ && $(AVOID_STUPID_RULE_SIDE_EFFECT) -s -j1 -f Makefile_aux_output_check 2>/dev/null) && ($(GIT) rm -f $*/FAILED > /dev/null 2>&1 || rm -f $*/FAILED) || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
 

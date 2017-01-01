@@ -1,0 +1,22 @@
+[
+  {
+    "name": "main_stats: randomizeStrand=false",
+    "candidates": [
+      {
+        "mutationType": "DELETION",
+        "wildtype": 0,
+        "mutationSequence": {
+          "value": "G"
+        },
+        "templateStrand": true,
+        "hasAWtStrand": true,
+        "quality": "GOOD",
+        "probCollision": -1
+      }
+    ]
+  },
+  {
+    "name": "main_stats: randomizeStrand=false",
+    "candidates": []
+  }
+]

@@ -11,13 +11,16 @@ compare_jsons () {
 }
 
 extract_json() {
-  ./jq --slurp --raw-output "map(.samples) | .[] | map(.stats) | flatten | $1 | map({name} + {candidates: .detections[\"chrX:11,857,476\"]})" $2 > $3
+  ./jq --slurp --raw-output "map(.samples) | .[] | map(.stats) | flatten | $1 | map({name: .name | .[0:9]} + {candidates: .detections[\"chrX:11,857,476\"]})" $2 > $3
 }
 
 extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 24)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
 #Uncomment line below to check that error is generated if JSON objects differ
 #echo '[{"blah": 0}]' >> filtered.json
 extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 25))" ../../test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_25_substitution_detection/stats.json filtered_no_range_exploration.json
+compare_jsons filtered.json filtered_no_range_exploration.json
+
+extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 24)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == false))" stats.json filtered.json
 compare_jsons filtered.json filtered_no_range_exploration.json
 
 extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 29)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
