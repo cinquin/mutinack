@@ -5,15 +5,16 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Created by olivier on 12/29/16.
  */
 public class CloseableListWrapper<T extends Closeable> implements Closeable {
-	private final List<T> list;
+	private final @NonNull List<@Nullable T> list;
 
-	public CloseableListWrapper(@Nullable List<T> list) {
+	public CloseableListWrapper(@Nullable List<@Nullable T> list) {
 		if (list != null) {
 			this.list = list;
 		} else {
@@ -23,12 +24,13 @@ public class CloseableListWrapper<T extends Closeable> implements Closeable {
 
 	@Override
 	public void close() throws IOException {
+		MultipleExceptionGatherer gatherer = new MultipleExceptionGatherer();
 		list.forEach(t -> {
-			try {
-				t.close();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+			if (t == null) {
+				return;
 			}
+			gatherer.tryAdd(t::close);
 		});
+		gatherer.throwIfPresent();
 	}
 }

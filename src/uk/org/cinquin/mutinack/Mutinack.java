@@ -130,6 +130,8 @@ import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.ByteArray;
 import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.output.ParedDownMutinack;
+import uk.org.cinquin.mutinack.output.RunResult;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -137,8 +139,6 @@ import uk.org.cinquin.mutinack.statistics.Histogram;
 import uk.org.cinquin.mutinack.statistics.ICounter;
 import uk.org.cinquin.mutinack.statistics.ICounterSeqLoc;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
-import uk.org.cinquin.mutinack.output.ParedDownMutinack;
-import uk.org.cinquin.mutinack.output.RunResult;
 import uk.org.cinquin.parfor.ParFor;
 
 public class Mutinack implements Actualizable, Closeable {
@@ -555,7 +555,7 @@ public class Mutinack implements Actualizable, Closeable {
 				(DebugLogControl.NONTRIVIAL_ASSERTIONS ?
 				"on" : "off"));
 
-		final List<Mutinack> analyzers = new ArrayList<>();
+		final List<@Nullable Mutinack> analyzers = new ArrayList<>();
 
 		for (int i = 0; i < param.inputReads.size(); i++) {
 			analyzers.add(null);
