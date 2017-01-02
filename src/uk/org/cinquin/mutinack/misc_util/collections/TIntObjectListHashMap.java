@@ -29,7 +29,6 @@ import uk.org.cinquin.mutinack.misc_util.IterableAdapter;
 
 public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 
-	@SuppressWarnings("null")
 	public @NonNull List<V> getList(int i) {
 		List<V> l = get(i);
 		if (l != null) {
