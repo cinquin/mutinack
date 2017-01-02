@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1507,43 +1508,51 @@ public class Mutinack implements Actualizable, Closeable {
 
 	private void printStatus(PrintStream stream, boolean colorize) {
 		stats.forEach(s -> {
-			actualize();
-			stream.println();
-			stream.println(greenB(colorize) + "Statistics " + s.getName() + " for " + inputBam.getAbsolutePath() + reset(colorize));
-
-			s.print(stream, colorize);
-
-			stream.println(blueF(colorize) + "Average Phred score: " + reset(colorize) +
-					DoubleAdderFormatter.formatDouble(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
-
-			if (s.outputLevel.compareTo(OutputLevel.VERBOSE) >= 0) {
-				stream.println(blueF(colorize) + "Top 100 barcode hits in cache: " + reset(colorize) +
-						internedVariableBarcodes.values().stream().sorted((ba, bb) -> - Long.compare(ba.nHits.sum(), bb.nHits.sum())).
-						limit(100).map(ByteArray::toString).collect(Collectors.toList()));
+			try {
+				printStats(s, stream, colorize);
+			} catch (ConcurrentModificationException e) {
+				stream.println(e);
 			}
+		});
+	}
 
-			stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) +
-					((int) processingThroughput()) + " records / s");
+	private void printStats(AnalysisStats s, PrintStream stream, boolean colorize) {
+		actualize();
+		stream.println();
+		stream.println(greenB(colorize) + "Statistics " + s.getName() + " for " + inputBam.getAbsolutePath() + reset(colorize));
 
-			if (!objectAllocations.isEmpty()) {
-				stream.println(objectAllocations);
-				objectAllocations.forEachValue(10, sl -> sl.set(0));
+		s.print(stream, colorize);
+
+		stream.println(blueF(colorize) + "Average Phred score: " + reset(colorize) +
+			DoubleAdderFormatter.formatDouble(s.phredSumProcessedbases.sum() / s.nProcessedBases.sum()));
+
+		if (s.outputLevel.compareTo(OutputLevel.VERBOSE) >= 0) {
+			stream.println(blueF(colorize) + "Top 100 barcode hits in cache: " + reset(colorize) +
+				internedVariableBarcodes.values().stream().sorted((ba, bb) -> - Long.compare(ba.nHits.sum(), bb.nHits.sum())).
+					limit(100).map(ByteArray::toString).collect(Collectors.toList()));
+		}
+
+		stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) +
+			((int) processingThroughput()) + " records / s");
+
+		if (!objectAllocations.isEmpty()) {
+			stream.println(objectAllocations);
+			objectAllocations.forEachValue(10, sl -> sl.set(0));
+		}
+
+		for (String counter: s.nPosCandidatesForUniqueMutation.getCounterNames()) {
+			final double mutationRate = s.nPosCandidatesForUniqueMutation.getSum(counter) /
+				s.nPosDuplexQualityQ2OthersQ1Q2.getSum(counter);
+			final String mutationRateString;
+			if (mutationRate > 1E-3 || mutationRate == 0) {
+				mutationRateString = DoubleAdderFormatter.formatDouble(mutationRate);
+			} else {
+				NumberFormat mrFormatter = mutationRateFormatter.get();
+				mutationRateString = mrFormatter.format(mutationRate);
 			}
-
-			for (String counter: s.nPosCandidatesForUniqueMutation.getCounterNames()) {
-				final double mutationRate = s.nPosCandidatesForUniqueMutation.getSum(counter) /
-						s.nPosDuplexQualityQ2OthersQ1Q2.getSum(counter);
-				final String mutationRateString;
-				if (mutationRate > 1E-3 || mutationRate == 0) {
-					mutationRateString = DoubleAdderFormatter.formatDouble(mutationRate);
-				} else {
-					NumberFormat mrFormatter = mutationRateFormatter.get();
-					mutationRateString = mrFormatter.format(mutationRate);
-				}
-				stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) +
-						mutationRateString);
-			}
-		});//End forEach stats
+			stream.println(greenB(colorize) + "Mutation rate for " + counter + ": " + reset(colorize) +
+				mutationRateString);
+		}
 	}
 
 	private static final ThreadLocal<NumberFormat> mutationRateFormatter
