@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -728,13 +729,14 @@ public class Mutinack implements Actualizable, Closeable {
 				throw new IllegalArgumentException("Option randomOutputRate "
 					+ "requires readContigsFromFiles");
 			}
+			Random random = new Random(param.randomSeed);
 			int randomLocs = 0;
 			for (Entry<@NonNull String, Integer> c: contigSizes.entrySet()) {
 				for (int i = 0; i < param.randomOutputRate * c.getValue(); i++) {
 					@SuppressWarnings("null")
 					SequenceLocation l = new SequenceLocation(
 						groupSettings.indexContigNameReverseMap.get(c.getKey()),
-						c.getKey(), (int) (Math.random() * (c.getValue() - 1)));
+						c.getKey(), (int) (random.nextDouble() * (c.getValue() - 1)));
 					if (groupSettings.forceOutputAtLocations.put(l, true) == null) {
 						randomLocs++;
 					}
