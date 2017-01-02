@@ -99,7 +99,7 @@ import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.mutinack.database.DatabaseOutput;
+import uk.org.cinquin.mutinack.database.DatabaseOutput0;
 import uk.org.cinquin.mutinack.distributed.Server;
 import uk.org.cinquin.mutinack.distributed.Submitter;
 import uk.org.cinquin.mutinack.distributed.Worker;
@@ -1164,7 +1164,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 			outputJSON(param, analyzers);
 			if (!param.outputToDatabaseURL.isEmpty()) {
-				DatabaseOutput.outputToDatabase(param, analyzers);
+				DatabaseOutput0.outputToDatabase(param, analyzers);
 			}
 		};
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);
