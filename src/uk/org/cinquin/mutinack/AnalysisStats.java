@@ -96,7 +96,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public transient OutputStreamWriter annotationOutputStream;
 	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter,
 		mutationBEDWriter, coverageBEDWriter;
-	public transient boolean canSkipDuplexLoading = false;
+	public boolean canSkipDuplexLoading = false;
 
 	public AnalysisStats(@NonNull String name,
 			@NonNull Parameters param,
