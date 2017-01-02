@@ -73,6 +73,7 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TByteObjectMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -103,7 +104,7 @@ public final class SubAnalyzer {
 	@NonNull Parameters param;
 	AnalysisStats stats;
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);
-	final @NonNull Map<SequenceLocation, THashSet<CandidateSequenceI>> candidateSequences =
+	final @NonNull TMap<SequenceLocation, THashSet<CandidateSequenceI>> candidateSequences =
 			new THashMap<>(1_000);
 	int truncateProcessingAt = Integer.MAX_VALUE;
 	int startProcessingAt = 0;

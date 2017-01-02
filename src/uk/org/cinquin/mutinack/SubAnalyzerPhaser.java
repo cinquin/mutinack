@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -59,7 +58,6 @@ import contrib.net.sf.samtools.SAMRecord;
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
-import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.candidate_sequences.Quality;
@@ -194,8 +192,10 @@ public class SubAnalyzerPhaser extends Phaser {
 					for (GenomeFeatureTester tester: excludeBEDs) {
 						if (tester.test(location)) {
 							analysisChunk.subAnalyzers/*.parallelStream()*/.
-								forEach(sa -> {sa.candidateSequences.remove(location);
-									sa.stats.nPosExcluded.add(location, 1);});
+								forEach(sa -> {
+									sa.candidateSequences.remove(location);
+									sa.stats.nPosExcluded.add(location, 1);
+								});
 							lastProcessedPosition.set(position);
 							continue outer;
 						}
@@ -221,30 +221,23 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 
-				for (int position = saveLastProcessedPosition + 1; position <= lastProcessedPosition.get();
-						position ++) {
-					subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, contigName, position));
-					subAnalyzer.candidateSequences.remove(new SequenceLocation(contigIndex, contigName, position, true));
-				}
+				final int localLastProcessedPosition = lastProcessedPosition.get();
+				subAnalyzer.candidateSequences.retainEntries((key, value) -> {
+					return key.position > localLastProcessedPosition;
+				});
+
 				if (shouldLog(TRACE)) {
 					logger.trace("SubAnalyzer " + analysisChunk + " completed " + (saveLastProcessedPosition + 1) + " to " + lastProcessedPosition.get());
 				}
 
-				final Iterator<ExtendedSAMRecord> iterator = subAnalyzer.extSAMCache.values().iterator();
 				final int localPauseAt = pauseAt.get();
 				final int maxInsertSize = param.maxInsertSize;
 				if (param.rnaSeq) {
-					while (iterator.hasNext()) {
-						if (iterator.next().getAlignmentEnd() + maxInsertSize <= localPauseAt) {
-							iterator.remove();
-						}
-					}
+					subAnalyzer.extSAMCache.retainEntries((key, val) ->
+						val.getAlignmentEnd() + maxInsertSize > localPauseAt);
 				} else {
-					while (iterator.hasNext()) {
-						if (iterator.next().getAlignmentStart() + maxInsertSize <= localPauseAt) {
-							iterator.remove();
-						}
-					}
+					subAnalyzer.extSAMCache.retainEntries((key, val) ->
+						val.getAlignmentStart() + maxInsertSize > localPauseAt);
 				}
 				subAnalyzer.extSAMCache.compact();
 			});//End loop over subAnalyzers
@@ -260,19 +253,15 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			if (nIterations < 2) {
 				nIterations++;
+				final SequenceLocation lowerBound =
+					new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get());
 				analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
-					Iterator<Entry<SequenceLocation, THashSet<CandidateSequenceI>>> it =
-							subAnalyzer.candidateSequences.entrySet().iterator();
-					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName, lastProcessedPosition.get());
-					while (it.hasNext()) {
-						Entry<SequenceLocation, THashSet<CandidateSequenceI>> v = it.next();
-						Assert.isTrue(v.getKey().contigIndex == contigIndex,
-								"Problem with contig indices, " + v.getKey() + " " + v.getKey().contigIndex +
+					subAnalyzer.candidateSequences.retainEntries((key, val) -> {
+						Assert.isTrue(key.contigIndex == contigIndex,
+							"Problem with contig indices, " + key + " " + key.contigIndex +
 								" " + contigIndex);
-						if (v.getKey().compareTo(lowerBound) < 0) {
-							it.remove();
-						}
-					}
+						return key.compareTo(lowerBound) >= 0;
+					});
 				});
 			}
 
