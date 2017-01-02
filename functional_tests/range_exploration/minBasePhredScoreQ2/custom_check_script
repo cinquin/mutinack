@@ -23,7 +23,7 @@ compare_jsons filtered.json filtered_no_range_exploration.json
 extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 24)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == false))" stats.json filtered.json
 compare_jsons filtered.json filtered_no_range_exploration.json
 
-extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 29)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
+extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 28)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
 #echo '[{"blah": 0}]' >> filtered.json
 extract_json "map(select(.analysisParameters.minBasePhredScoreQ2 == 30))" ../../test_options/positive_strand/minBasePhredScoreQ2/test_Q2_score_27_criteria_30_no_detection/stats.json filtered_no_range_exploration.json
 compare_jsons filtered.json filtered_no_range_exploration.json

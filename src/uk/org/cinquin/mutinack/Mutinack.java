@@ -334,7 +334,7 @@ public class Mutinack implements Actualizable, Closeable {
 		final String[] split = s.split(":");
 		final String paramToExplore = split[0];
 		final Number min, max;
-		final int nSteps;
+		final int nValues;
 		final Object val = param.getFieldValue(paramToExplore);
 
 		final List<Object> values = new ArrayList<>();
@@ -347,9 +347,9 @@ public class Mutinack implements Actualizable, Closeable {
 				min = Util.parseNumber(split[1]);
 				max = Util.parseNumber(split[2]);
 				if (split.length == 4) {
-					nSteps = Integer.parseInt(split[3]);
+					nValues = Integer.parseInt(split[3]);
 				} else if (split.length == 3) {
-					nSteps = max.intValue() - min.intValue() + 1;
+					nValues = max.intValue() - min.intValue() + 1;
 				} else
 					throw new AssertionFailedException();
 			} catch (RuntimeException e) {
@@ -359,9 +359,13 @@ public class Mutinack implements Actualizable, Closeable {
 				checkInteger(min, errorMessagePrefix);
 				checkInteger(max, errorMessagePrefix);
 			}
-			for (double step = 0; step < nSteps; step++) {
+			values.add(min.doubleValue());
+			for (double step = 1; step < nValues; step++) {
 				final double value = min.doubleValue() + (max.doubleValue() - min.doubleValue()) *
-					step / nSteps;
+					step / (nValues - 1);
+				if (val instanceof Integer || val instanceof Long) {
+					Assert.isFalse(values.contains(Math.round(value)), "Inserting " + value + " twice");
+				}
 				values.add(value);
 			}
 		}
