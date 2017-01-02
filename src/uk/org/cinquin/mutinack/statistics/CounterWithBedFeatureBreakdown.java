@@ -51,6 +51,9 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 
 	private static final long serialVersionUID = 9168551060568948486L;
 
+	private static final ThreadLocal<NumberFormat> formatterTL =
+		ThreadLocal.withInitial(() -> new DecimalFormat("0.###E0"));
+
 	@JsonIgnore
 	protected boolean on = true;
 
@@ -100,8 +103,6 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 			accept(loc, 1d);
 	}
 
-	private final NumberFormat formatter = new DecimalFormat("0.###E0");
-
 	private String getStats() {
 		if (counter.getCounts().isEmpty()) {
 			return "";
@@ -112,7 +113,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 				sorted().toArray();
 		result.append("median = ").append(DoubleAdderFormatter.
 				formatDouble(coverage[coverage.length/2])).append("; mean = ");
-		result.append(formatter.format(
+		result.append(formatterTL.get().format(
 				counter.getCounts().entrySet().stream().mapToDouble(e ->
 					((DoubleAdderFormatter) e.getValue()).sum()).average().getAsDouble()));
 		result.append("\n");
