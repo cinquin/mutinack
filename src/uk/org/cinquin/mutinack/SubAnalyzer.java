@@ -72,7 +72,6 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TByteObjectMap;
-import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.THashMap;
@@ -365,16 +364,11 @@ public final class SubAnalyzer {
 		}
 
 		//Group duplexes by alignment start (or equivalent)
-		TIntObjectMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
+		TIntObjectHashMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
 			(1_000, 0.5f, -999);
 		cleanedUpDuplexes.getIterable().forEach(dr -> {
-			//TODO Would be nice to add a computeIfAbsentMethod
-			List<DuplexRead> list = duplexPositions.get(dr.position0);
-			if (list == null) {
-				list = new ArrayList<>();
-				List<DuplexRead> previous = duplexPositions.put(dr.position0, list);
-				Assert.isNull(previous);
-			}
+			List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.position0,
+				() -> new ArrayList<>());
 			list.add(dr);
 		});
 
@@ -819,7 +813,8 @@ public final class SubAnalyzer {
 			candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
 
 			candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
-				map(r -> r.duplexRead).filter(d -> {
+				map(r -> r.duplexRead).
+				filter(d -> {
 					boolean nonNull = d != null;
 					if (nonNull && d.invalid) {
 						throw new AssertionFailedException();

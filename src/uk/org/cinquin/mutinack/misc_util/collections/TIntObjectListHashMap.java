@@ -39,7 +39,7 @@ public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 	}
 
 	public boolean add(int i, V v) {
-		return putIfAbsent(i, () -> new ArrayList<>(100)).add(v);
+		return computeIfAbsent(i, () -> new ArrayList<>(100)).add(v);
 	}
 
 	public @NonNull Iterable<V> getIterable() {

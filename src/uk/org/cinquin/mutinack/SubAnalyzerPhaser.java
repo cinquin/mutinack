@@ -327,7 +327,10 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		@SuppressWarnings("null")
 		final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap =
-			Collections.unmodifiableMap(locationExamResultsMap0);
+			param.enableCostlyAssertions ?
+				Collections.unmodifiableMap(locationExamResultsMap0)
+			:
+				locationExamResultsMap0;
 
 		final Collection<@NonNull LocationExaminationResults> locationExamResults =
 			locationExamResultsMap.values();

@@ -79,9 +79,8 @@ public final class CandidateCounter {
 					if (!keptRecords.add(r)) {
 						throw new AssertionFailedException();
 					}
-					final CandidateDuplexEval eval = candidateCounts.computeIfAbsent(candidate, c -> {
-						return new CandidateDuplexEval(candidate);
-					});
+					final CandidateDuplexEval eval = candidateCounts.computeIfAbsent(candidate,
+						key -> new CandidateDuplexEval(candidate));
 					eval.count++;
 					if (ligSiteDistance > eval.maxDistanceToLigSite) {
 						eval.maxDistanceToLigSite = ligSiteDistance;
