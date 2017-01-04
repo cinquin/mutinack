@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,8 +81,9 @@ public class FunctionalTestRerun {
 		}
 	}
 
-	private static final List<String> listDuplexKeepTypes = Arrays.asList("DuplexHashMapKeeper",
-			/*"DuplexITKeeper",*/ "DuplexArrayListKeeper", null);
+	private static final List<String> listDuplexKeepTypes = //Arrays.asList("DuplexHashMapKeeper",
+	//		/*"DuplexITKeeper",*/ "DuplexArrayListKeeper", null);
+		Collections.singletonList(null);
 
 	private static final List<String> dontForceDuplexKeepTypes = Arrays.asList(new String []
 			{null});
@@ -120,16 +122,25 @@ public class FunctionalTestRerun {
 			run = testRuns.get(testName);
 			//TODO Switch to throwing TestRunFailure
 			Assert.isNonNull(run, "Could not find parameters for test %s within %s",
-						testName, 
-						testRuns.keySet().stream().collect(Collectors.joining("\t")));
+				testName,
+				testRuns.keySet().stream().collect(Collectors.joining("\t")));
 			Assert.isNonNull(run.parameters.referenceOutput,
-					"No reference output specified for test GenericTest");
-			Assert.isTrue(new File(run.parameters.referenceOutput).exists(),
-					"File %s does not exist", new File(run.parameters.referenceOutput).getAbsolutePath());
+				"No reference output specified for test GenericTest");
 			run.parameters.terminateImmediatelyUponError = false;
 			if (suppressAlignmentOutput) {
 				run.parameters.outputAlignmentFile = null;
 			}
+		}
+
+		String referenceOutputDirectory = new File(run.parameters.referenceOutput).getParent();
+
+		final boolean useCustomScript;
+		if (new File(referenceOutputDirectory + "/custom_check_script").exists()) {
+			useCustomScript = true;
+		} else {
+			useCustomScript = false;
+			Assert.isTrue(new File(run.parameters.referenceOutput).exists(),
+				"File %s does not exist", new File(run.parameters.referenceOutput).getAbsolutePath());
 		}
 
 		Path referenceOutputPath = Paths.get(run.parameters.referenceOutput);
@@ -152,27 +163,40 @@ public class FunctionalTestRerun {
 					MutinackGroup.forceKeeperType = null;
 				}
 
-				final String out = outStream.toString();
-				try(Stream<String> referenceOutputLines = Files.lines(referenceOutputPath)) {
-					checkOutput(out, referenceOutputLines);
+				if (useCustomScript) {
+					ProcessBuilder pb = new ProcessBuilder("./custom_check_script").
+						directory(new File(referenceOutputDirectory)).redirectErrorStream(true);
+					Process process = pb.start();
+					DataInputStream processOutput = new DataInputStream(process.getInputStream());
+					process.waitFor();
+					if (process.exitValue() != 0) {
+						byte[] processBytes = new byte[processOutput.available()];
+						processOutput.readFully(processBytes);
+						throw new FunctionalTestFailed(testName + "\n" + new String(processBytes));
+					}
+					return;
+				} else {
+					final String out = outStream.toString();
+					try (Stream<String> referenceOutputLines = Files.lines(referenceOutputPath)) {
+						checkOutput(out, referenceOutputLines);
+					}
 				}
 			}
 
 			File baseOutputDir = referenceOutputPath.getParent().toFile();
-
 			for (String expectedOutputBaseName: baseOutputDir.list((file, name) -> name.startsWith("expected_")
 					&& !name.equals("expected_run.out") && !name.equals("expected_output.txt"))) {
 				File actualOutputFile = new File(auxOutputFileBaseName + "/" +
 					expectedOutputBaseName.replace("expected_", ""));
 				if (!actualOutputFile.exists()) {
 					throw new FunctionalTestFailed("Output file " +
-							actualOutputFile.getAbsolutePath() +
-							" was not created");
+						actualOutputFile.getAbsolutePath() +
+						" was not created");
 				}
 				//Files.lines needs to be explicitly closed, or else the
 				//underlying file does not get closed (apparently even
 				//after the stream gets read to the end)
-				try(Stream<String> linesToLookFor = Files.lines(Paths.get(baseOutputDir.getAbsolutePath() +
+				try (Stream<String> linesToLookFor = Files.lines(Paths.get(baseOutputDir.getAbsolutePath() +
 						"/" + expectedOutputBaseName))) {
 					checkOutput(FileUtils.readFileToString(actualOutputFile),
 						linesToLookFor);
@@ -203,8 +227,7 @@ public class FunctionalTestRerun {
 					subset = split[0];
 				}
 				final StringBuilder suppMessage = new StringBuilder("\n");
-				try (final BufferedReader reader = new BufferedReader(
-						new StringReader(output))) {
+				try (final BufferedReader reader = new BufferedReader(new StringReader(output))) {
 						String outLine;
 						while((outLine = reader.readLine()) != null) {
 							if (outLine.indexOf(subset) > -1) {
@@ -217,7 +240,7 @@ public class FunctionalTestRerun {
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
-				throw new FunctionalTestFailed("Could not find " + line + 
+				throw new FunctionalTestFailed("Could not find " + line +
 						suppMessage);
 			}
 		});
