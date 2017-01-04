@@ -1,0 +1,1 @@
+Compares a number of output statistics to a fixed snapshot (based for convenience on test test_options/no_specific_strand/randomizeStrand_and_randomSeed). Each output was not validated independently. The reference snapshot might need to be adjusted as the program evolves.
