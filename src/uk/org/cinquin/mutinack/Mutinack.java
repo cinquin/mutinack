@@ -194,7 +194,7 @@ public class Mutinack implements Actualizable, Closeable {
 	long timeStartProcessing;
 	private final @NonNull List<SubAnalyzer> subAnalyzers = new ArrayList<>();
 	final @NonNull File inputBam;
-	final ObjectPool<SAMFileReader> readerPool = new PoolSettings<> (
+	final PoolSettings<SAMFileReader> poolSettings = new PoolSettings<> (
 			new PoolableObjectBase<SAMFileReader>() {
 
 				@Override
@@ -225,7 +225,10 @@ public class Mutinack implements Actualizable, Closeable {
 				public void destroy(SAMFileReader t) {
 					t.close();
 				}
-			}).min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
+			});
+
+	final ObjectPool<SAMFileReader> readerPool =
+		poolSettings.min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
 	final double @Nullable[] insertSizeProbSmooth;
 	private final double @Nullable[] insertSizeProbRaw;
@@ -1468,6 +1471,8 @@ public class Mutinack implements Actualizable, Closeable {
 		for (Closeable c: itemsToClose) {
 			gatherer.tryAdd(c::close);
 		}
+
+		gatherer.tryAdd(() -> PoolSettings.removePoolSetting(poolSettings));
 
 		stats.forEach(s -> gatherer.tryAdd(() -> {
 			if (s.positionByPositionCoverage != null) {

@@ -70,7 +70,7 @@ ${MAKE} clean
 
 for target in all_failed all
 do
-	for assertions in "-enableCostlyAssertions true"
+	for assertions in "-enableCostlyAssertions true" "-enableCostlyAssertions false"
 	do
 		if [ "$target" = "all" ]
 		then
