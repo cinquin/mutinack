@@ -115,7 +115,7 @@ public final class SubAnalyzer {
 
 	private static final @NonNull Set<DuplexAssay>
 		assaysToIgnoreForDisagreementQuality
-		= Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(DISAGREEMENT))),
+		= Collections.unmodifiableSet(EnumSet.copyOf(Collections.singletonList(DISAGREEMENT))),
 
 		assaysToIgnoreForDuplexNStrands
 		= Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(N_READS_PER_STRAND, MISSING_STRAND)));
@@ -368,7 +368,7 @@ public final class SubAnalyzer {
 			(1_000, 0.5f, -999);
 		cleanedUpDuplexes.getIterable().forEach(dr -> {
 			List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.position0,
-				() -> new ArrayList<>());
+				(Supplier<List<DuplexRead>>) ArrayList::new);
 			list.add(dr);
 		});
 
@@ -729,30 +729,28 @@ public final class SubAnalyzer {
 		}
 
 		if (DebugLogControl.COSTLY_ASSERTIONS) {
-			Assert.noException(() -> {
-				duplexReads.forEach(duplexRead -> {
-					for (int i = duplexRead.topStrandRecords.size() - 1; i >= 0; --i) {
-						ExtendedSAMRecord r = duplexRead.topStrandRecords.get(i);
-						if (r.duplexRead != duplexRead) {
-							throw new AssertionFailedException();
-						}
-						if (duplexRead.bottomStrandRecords.contains(r)) {
-							throw new AssertionFailedException();
-						}
+			Assert.noException(() -> duplexReads.forEach(duplexRead -> {
+				for (int i = duplexRead.topStrandRecords.size() - 1; i >= 0; --i) {
+					ExtendedSAMRecord r = duplexRead.topStrandRecords.get(i);
+					if (r.duplexRead != duplexRead) {
+						throw new AssertionFailedException();
 					}
+					if (duplexRead.bottomStrandRecords.contains(r)) {
+						throw new AssertionFailedException();
+					}
+				}
 
-					for (int i = duplexRead.bottomStrandRecords.size() - 1; i >= 0; --i) {
-						ExtendedSAMRecord r = duplexRead.bottomStrandRecords.get(i);
-						if (r.duplexRead != duplexRead) {
-							throw new AssertionFailedException();
-						}
-						if (duplexRead.topStrandRecords.contains(r)) {
-							throw new AssertionFailedException();
-						}
+				for (int i = duplexRead.bottomStrandRecords.size() - 1; i >= 0; --i) {
+					ExtendedSAMRecord r = duplexRead.bottomStrandRecords.get(i);
+					if (r.duplexRead != duplexRead) {
+						throw new AssertionFailedException();
 					}
-					return true;
-				});
-			});
+					if (duplexRead.topStrandRecords.contains(r)) {
+						throw new AssertionFailedException();
+					}
+				}
+				return true;
+			}));
 		}
 
 		Quality maxQuality = MINIMUM;

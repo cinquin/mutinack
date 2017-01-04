@@ -222,9 +222,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 
 				final int localLastProcessedPosition = lastProcessedPosition.get();
-				subAnalyzer.candidateSequences.retainEntries((key, value) -> {
-					return key.position > localLastProcessedPosition;
-				});
+				subAnalyzer.candidateSequences.retainEntries((key, value) ->
+					key.position > localLastProcessedPosition);
 
 				if (shouldLog(TRACE)) {
 					logger.trace("SubAnalyzer " + analysisChunk + " completed " + (saveLastProcessedPosition + 1) + " to " + lastProcessedPosition.get());

@@ -233,8 +233,7 @@ public class Mutinack implements Actualizable, Closeable {
 	final double @Nullable[] insertSizeProbSmooth;
 	private final double @Nullable[] insertSizeProbRaw;
 	final @NonNull Collection<File> intersectAlignmentFiles;
-	final @NonNull
-	public Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
+	final @NonNull public Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
 	@Nullable GenomeFeatureTester codingStrandTester;
 	final byte @NonNull[] constantBarcode;
 	final int maxNDuplexes;
@@ -1166,9 +1165,10 @@ public class Mutinack implements Actualizable, Closeable {
 			printStream.println(blueF(signal != null) +
 				"Minimal Q2 duplex coverage across all inputs: " +
 				reset(signal != null) + goodDuplexCovInAllInputs);
-			printStream.println(ManagementFactory.getMemoryPoolMXBeans().stream().map(m -> {
-				return m.getName() + ": " + m.getUsage().toString();
-			}).collect(Collectors.joining(",")));
+			printStream.println(ManagementFactory.getMemoryPoolMXBeans().
+				stream().
+				map(m -> m.getName() + ": " + m.getUsage().toString()).
+				collect(Collectors.joining(",")));
 
 			outputJSON(param, analyzers);
 			if (!param.outputToDatabaseURL.isEmpty()) {
@@ -1347,11 +1347,10 @@ public class Mutinack implements Actualizable, Closeable {
 				" (elapsed time " +
 				(System.nanoTime() - analyzers.get(0).timeStartProcessing) / 1_000_000_000d +
 				" s)");
-			ManagementFactory.getGarbageCollectorMXBeans().forEach(gc -> {
+			ManagementFactory.getGarbageCollectorMXBeans().forEach(gc ->
 				Util.printUserMustSeeMessage(gc.getName() + " (" +
 					Arrays.toString(gc.getMemoryPoolNames()) + "): " + gc.getCollectionCount() +
-					" " + gc.getCollectionTime());
-			});
+					" " + gc.getCollectionTime()));
 		}
 
 		if (param.readContigsFromFile) {//Probably reference transcriptome; TODO need to
