@@ -1236,7 +1236,7 @@ public final class SubAnalyzer {
 				refEndOfPreviousAlignment,
 				readEndOfPreviousAlignment,
 				returnValue);
-		}//End alignment block loop
+		}
 
 		readLocalCandidates.build().forEach((k, v) -> insertCandidateAtPosition(v, k));
 
