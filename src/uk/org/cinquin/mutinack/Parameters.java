@@ -787,6 +787,8 @@ public final class Parameters implements Serializable, Cloneable {
 					continue;
 				}
 				Object fieldValue = field.get(this);
+				Assert.isFalse(fieldValue instanceof Parameters);//Avoid infinite
+				//recursion and StackOverflowError during mutation testing
 				Object fieldDefaultValue = field.get(defaultValues);
 				String stringValue;
 				if (fieldValue == null)
