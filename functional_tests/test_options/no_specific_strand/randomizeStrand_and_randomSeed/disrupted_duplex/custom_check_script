@@ -14,12 +14,12 @@ extract_json() {
   ./jq --slurp --raw-output "map(.samples) | .[] | map(.stats) | flatten $1 | map({name} + {candidates: .detections[\"chrX:11,857,475\"].disagreements})" $2 > $3
 }
 
-extract_json "| map(select(.analysisParameters.randomizeStrand == true))" stats.json filtered.json
+extract_json "| map(select(.analysisParameters.randomizeStrand == true))" ${1}stats.json ${1}filtered.json
 #Uncomment line below to check that error is generated if JSON objects differ
 #echo '[{"blah": 0}]' >> filtered.json
-compare_jsons filtered.json no_disagreements.json_preserve
+compare_jsons ${1}filtered.json no_disagreements.json_preserve
 
-extract_json "| map(select(.analysisParameters.randomizeStrand == false))" stats.json filtered.json
-compare_jsons filtered.json deletion_disagreement.json_preserve
+extract_json "| map(select(.analysisParameters.randomizeStrand == false))" ${1}stats.json ${1}filtered.json
+compare_jsons ${1}filtered.json deletion_disagreement.json_preserve
 
 touch run.out.check custom_check

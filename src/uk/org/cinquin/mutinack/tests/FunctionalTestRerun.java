@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -147,6 +148,9 @@ public class FunctionalTestRerun {
 		String auxOutputFileBaseName = Files.createTempDirectory("functional_test_").toString();
 		run.parameters.auxOutputFileBaseName = auxOutputFileBaseName + "/";
 
+		run.parameters.jsonFilePathExtraPrefix = ManagementFactory.getRuntimeMXBean().getName() +
+			this.hashCode();
+
 		try {
 			try (ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 					ByteArrayOutputStream errStream = new ByteArrayOutputStream()) {
@@ -164,7 +168,8 @@ public class FunctionalTestRerun {
 				}
 
 				if (useCustomScript) {
-					ProcessBuilder pb = new ProcessBuilder("./custom_check_script").
+					ProcessBuilder pb = new ProcessBuilder("./custom_check_script",
+							run.parameters.jsonFilePathExtraPrefix).
 						directory(new File(referenceOutputDirectory)).redirectErrorStream(true);
 					Process process = pb.start();
 					DataInputStream processOutput = new DataInputStream(process.getInputStream());
@@ -204,6 +209,13 @@ public class FunctionalTestRerun {
 			}
 		} finally {
 			FileUtils.deleteDirectory(new File(auxOutputFileBaseName));
+			String prefix = run.parameters.jsonFilePathExtraPrefix;
+			if (!prefix.isEmpty()) {
+				for (File f: referenceOutputPath.getParent().toFile().listFiles(
+						(dir, name) -> name.startsWith(run.parameters.jsonFilePathExtraPrefix))) {
+					f.delete();
+				}
+			}
 		}
 	}
 

@@ -627,6 +627,8 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-auxOutputFileBaseName", description = "Base name of files to which to record mutations, disagreements between top and bottom strands, etc.", required = false)
 	public @Column(length = 1_000) String auxOutputFileBaseName = null;
 
+	public String jsonFilePathExtraPrefix = "";
+
 	@Parameter(names = "-rnaSeq", description = "Ignore deletions and turn off checks that do not make sense for RNAseq data", required = false)
 	public boolean rnaSeq = false;
 
