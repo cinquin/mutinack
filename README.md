@@ -39,8 +39,8 @@ former are available as Ant target `junitreport`, and the latter can be
 run using the `run_functional_tests` script in the base directory. Both
 sets of tests are run automatically as part of continuous integration
 builds. Each of the ~350 functional tests takes a relatively large
-amount of time to complete because of initialization costs, but the
-tests are run in parallel; the number of simultaneous jobs should be
+amount of time to complete in part because of initialization costs, but
+the tests are run in parallel; the number of simultaneous jobs should be
 adjusted to match machine architecture using the `N_PARALLEL_JOBS` knob
 in the `run_functional_tests` script. Functional tests further rely on
 Nailgun (provided as a Git submodule) to avoid JVM startup costs and to
@@ -56,26 +56,39 @@ produce a report).
 
 The project is set up for [mutation
 testing](https://en.wikipedia.org/wiki/Mutation_testing) (these are
-mutations in code, not to be confused with mutations in DNA) using a
-[customized version](https://github.com/cinquin/pitest) of
-[PIT](http://pitest.org). This analysis identifies parts of the code
-that are sufficiently well constrained and covered by tests for changes
+mutations in code, not to be confused with mutations in DNA), using a
+[custom version](https://github.com/cinquin/pitest) of
+[PIT](http://pitest.org), enhanced to provide more details of how tests
+kill mutations and to be more robust against various errors such as
+memory exhaustion. This analysis identifies parts of the code that are
+sufficiently well constrained and covered by tests for changes
 introduced as code "mutations" to cause functional or unit tests to
 fail. Since the analysis is computationally costly, pre-computed
 mutation testing results have been made available
-[here](http://cinquin.org.uk/static/mutation_testing/) in HTML format.
-Note that as it is the analysis produces a number of false positives
-(i.e. mutations that that are not caught by tests, highlighted in red in
-the HTML output) for various reasons (e.g. because the mutated code
-improved performance without changing Mutinack's output, because it
-implemented internal sanity checks that also did not affect Mutinack's
-output, or because there is more than one way to achieve the exact same
-result). Note also that for now the tests do not aim to be exhaustive;
-they focus on the critical parts of the algorithm and of the output,
-rather than on all the functionality that is useful but that is not high
-priority to specifically test. The analysis can be run with `ant
-mutationCoverage` (run time is up to 1 day on a 64-core machine,
-depending on the mutators used).
+[here](http://cinquin.org.uk/static/mutation_testing/index.html) in HTML
+format (last update: January 2017). Note that as it is the analysis
+produces a number of false positives (i.e. mutations that that are not
+caught by tests, highlighted in red in the HTML output) for various
+reasons (e.g. because the mutated code improved performance without
+changing Mutinack's output, because it implemented internal sanity
+checks that also did not affect Mutinack's output, because explicit
+variable initialization to a default value is technically not required
+although it is useful to denote programmer intent, or because there is
+more than one way to achieve the exact same result). Note also that for
+now the tests do not aim to be exhaustive; they focus on the critical
+parts of the algorithm and of the output, rather than on all the
+functionality that is useful but that is not high priority to
+specifically test. The analysis can be run with `ant mutationCoverage`
+(run time is up to 1 day on a 64-core machine, depending on the mutators
+used). Two kinds of mutation testing analyses are provided: [one with a
+test](http://cinquin.org.uk/static/mutation_testing/index.html) that
+compares a large subset of Mutinack's output to a precomputed snapshot,
+which highlights mutations that have a detectable effect on the output
+even if that effect is not explicitly tested for correctness, and [one
+that does not include that "catch-all"
+test](http://cinquin.org.uk/static/mutation_testing/
+without_catch_a_lot_test/index.html) but that still achieves comparable
+mutation coverage.
 
 The project is compiled with Google's "Error Prone" static analyzer,
 comes with Ant and Maven targets to run Findbugs, which is pre-packaged
