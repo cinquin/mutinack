@@ -814,8 +814,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private static void registerOutputDisagreements(
 			final LocationExaminationResults examResults,
 			final AnalysisStats stats,
-			final @NonNull SequenceLocation location
-		) {
+			final @NonNull SequenceLocation location) {
 		for (@NonNull ComparablePair<String, String> var: examResults.rawMismatchesQ2) {
 			stats.rawMismatchesQ2.accept(location, var);
 		}
@@ -898,27 +897,33 @@ public class SubAnalyzerPhaser extends Phaser {
 				continue;
 			}
 
-			if (mutant.mutationType == SUBSTITUTION) {
-				stats.topBottomSubstDisagreementsQ2.accept(location, d);
-				mutant.isTemplateStrand().ifPresent(b -> {
-					if (b)
-						stats.templateStrandSubstQ2.accept(location, d);
-					else
-						stats.codingStrandSubstQ2.accept(location, d);});
-			} else if (mutant.mutationType == DELETION) {
-				stats.topBottomDelDisagreementsQ2.accept(location, d);
-				mutant.isTemplateStrand().ifPresent(b -> {
-					if (b)
-						stats.templateStrandDelQ2.accept(location, d);
-					else
-						stats.codingStrandDelQ2.accept(location, d);});
-			} else if (mutant.mutationType == INSERTION) {
-				stats.topBottomInsDisagreementsQ2.accept(location, d);
-				mutant.isTemplateStrand().ifPresent(b -> {
-					if (b)
-						stats.templateStrandInsQ2.accept(location, d);
-					else stats.codingStrandInsQ2.accept(location, d);
-				});
+			switch(mutant.mutationType) {
+				case SUBSTITUTION:
+					stats.topBottomSubstDisagreementsQ2.accept(location, d);
+					mutant.isTemplateStrand().ifPresent(b -> {
+						if (b)
+							stats.templateStrandSubstQ2.accept(location, d);
+						else
+							stats.codingStrandSubstQ2.accept(location, d);});
+					break;
+				case DELETION:
+					stats.topBottomDelDisagreementsQ2.accept(location, d);
+					mutant.isTemplateStrand().ifPresent(b -> {
+						if (b)
+							stats.templateStrandDelQ2.accept(location, d);
+						else
+							stats.codingStrandDelQ2.accept(location, d);});
+					break;
+				case INSERTION:
+					stats.topBottomInsDisagreementsQ2.accept(location, d);
+					mutant.isTemplateStrand().ifPresent(b -> {
+						if (b)
+							stats.templateStrandInsQ2.accept(location, d);
+						else stats.codingStrandInsQ2.accept(location, d);
+					});
+					break;
+				default:
+					throw new AssertionFailedException();
 			}
 		}
 	}
