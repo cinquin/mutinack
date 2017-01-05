@@ -14,6 +14,24 @@
         "probCollision": -1
       }
     ],
+    "nProcessedBases": {
+      "total": "1,602",
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1602
+      ]
+    },
+    "nMateOutOfReach": {
+      "total": "0",
+      "values": []
+    },
+    "nDuplexesWithStats": 2,
+    "nDuplexesNoStats": 0,
     "phredAndLigSiteDistance": {
       "counters": {
         "All": {
@@ -393,640 +411,640 @@
       "counters": {
         "chrII_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_007": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -1048,320 +1066,320 @@
         },
         "chrIV_bin_007": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -1371,40 +1389,40 @@
         },
         "All": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -1414,880 +1432,880 @@
         },
         "chrIII_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_008": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_009": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_007": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -2836,40 +2854,40 @@
         },
         "All": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -2902,40 +2920,40 @@
         },
         "All": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -5099,6 +5117,24 @@
   {
     "name": "main_stats: randomizeStrand=false",
     "candidates": [],
+    "nProcessedBases": {
+      "total": "7,483",
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7483
+      ]
+    },
+    "nMateOutOfReach": {
+      "total": "0",
+      "values": []
+    },
+    "nDuplexesWithStats": 10,
+    "nDuplexesNoStats": 0,
     "phredAndLigSiteDistance": {
       "counters": {
         "All": {
@@ -5525,640 +5561,640 @@
       "counters": {
         "chrII_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_007": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrX_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -6180,320 +6216,320 @@
         },
         "chrIV_bin_007": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIV_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -6503,40 +6539,40 @@
         },
         "All": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -6546,880 +6582,880 @@
         },
         "chrIII_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrIII_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrI_bin_000": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_008": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_009": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrV_bin_007": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_006": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_005": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_004": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_003": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_002": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
         },
         "chrII_bin_001": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -7942,40 +7978,40 @@
         },
         "All": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
@@ -8008,40 +8044,40 @@
         },
         "All": {
           "map": {
-            "(wt G, subst A)": {
-              "sum": "0"
-            },
-            "(wt G, subst T)": {
-              "sum": "0"
-            },
-            "(wt C, subst G)": {
-              "sum": "0"
-            },
-            "(wt T, subst A)": {
-              "sum": "0"
-            },
-            "(wt A, subst G)": {
+            "(wt T, subst C)": {
               "sum": "0"
             },
             "(wt C, subst T)": {
               "sum": "0"
             },
-            "(wt A, subst C)": {
+            "(wt A, subst G)": {
               "sum": "0"
             },
-            "(wt A, subst T)": {
-              "sum": "0"
-            },
-            "(wt T, subst C)": {
+            "(wt G, subst A)": {
               "sum": "0"
             },
             "(wt T, subst G)": {
               "sum": "0"
             },
+            "(wt A, subst C)": {
+              "sum": "0"
+            },
             "(wt G, subst C)": {
               "sum": "0"
             },
+            "(wt C, subst G)": {
+              "sum": "0"
+            },
+            "(wt A, subst T)": {
+              "sum": "0"
+            },
             "(wt C, subst A)": {
+              "sum": "0"
+            },
+            "(wt T, subst A)": {
+              "sum": "0"
+            },
+            "(wt G, subst T)": {
               "sum": "0"
             }
           }
