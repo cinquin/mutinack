@@ -23,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -790,12 +791,20 @@ public final class Parameters implements Serializable, Cloneable {
 				String stringValue;
 				if (fieldValue == null)
 					stringValue = field.getName() + " = null";
-				else
-					stringValue = field.getName() + " = " + fieldValue.getClass().getMethod("toString").invoke
+				else {
+					Method toStringMethod = fieldValue.getClass().getMethod("toString");
+					toStringMethod.setAccessible(true);
+					stringValue = field.getName() + " = " + toStringMethod.invoke
 						(fieldValue);
-				boolean fieldHasDefaultValue = fieldValue == null ? fieldDefaultValue == null :
-					Boolean.TRUE.equals(fieldValue.getClass().getMethod("equals",Object.class).invoke
-						(fieldValue, fieldDefaultValue));
+				}
+				final boolean fieldHasDefaultValue;
+				if (fieldValue == null) {
+					fieldHasDefaultValue = fieldDefaultValue == null;
+				} else {
+					Method equalsMethod = fieldValue.getClass().getMethod("equals", Object.class);
+					equalsMethod.setAccessible(true);
+					fieldHasDefaultValue = (Boolean) equalsMethod.invoke(fieldValue, fieldDefaultValue);
+				}
 				if (fieldHasDefaultValue) {
 					defaultValuesString += "Default parameter value: " + stringValue + "\n";
 				} else {
