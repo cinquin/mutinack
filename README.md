@@ -84,11 +84,10 @@ used). Two kinds of mutation testing analyses are provided: [one with a
 test](http://cinquin.org.uk/static/mutation_testing/index.html) that
 compares a large subset of Mutinack's output to a precomputed snapshot,
 which highlights mutations that have a detectable effect on the output
-even if that effect is not explicitly tested for correctness, and [one
-that does not include that "catch-all"
-test](http://cinquin.org.uk/static/mutation_testing/
-without_catch_a_lot_test/index.html) but that still achieves comparable
-mutation coverage.
+even if that effect is not explicitly tested for correctness, and
+[one that does not include that "catch-all"
+test](http://cinquin.org.uk/static/mutation_testing/without\_catch\_a\_lot\_test/index.html)
+but that still achieves comparable mutation coverage.
 
 The project is compiled with Google's "Error Prone" static analyzer,
 comes with Ant and Maven targets to run Findbugs, which is pre-packaged
