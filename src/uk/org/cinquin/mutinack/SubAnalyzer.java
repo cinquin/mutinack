@@ -101,7 +101,7 @@ public final class SubAnalyzer {
 
 	public final @NonNull Mutinack analyzer;
 	@NonNull Parameters param;
-	AnalysisStats stats;
+	@NonNull AnalysisStats stats;
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);
 	final @NonNull TMap<SequenceLocation, THashSet<CandidateSequenceI>> candidateSequences =
 			new THashMap<>(1_000);

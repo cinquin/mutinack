@@ -81,12 +81,10 @@ public class ReadLoader {
 
 		final SettableInteger lastProcessable = subAnalyzer.lastProcessablePosition;
 		final int startAt = analysisChunk.startAtPosition;
-		final SettableInteger pauseAt = analysisChunk.pauseAtPosition;
-		final SettableInteger lastProcessedPosition = analysisChunk.lastProcessedPosition;
 
 		lastProcessable.set(startAt - 1);
-		lastProcessedPosition.set(startAt - 1);
-		pauseAt.set(lastProcessable.get() + PROCESSING_CHUNK);
+		analysisChunk.lastProcessedPosition = startAt - 1;
+		analysisChunk.pauseAtPosition = lastProcessable.get() + PROCESSING_CHUNK;
 
 		final boolean needRandom = param.dropReadProbability > 0 ||
 			param.randomizeMates;
@@ -115,9 +113,9 @@ public class ReadLoader {
 				stream.println("Analyzer " + analyzer.name +
 						" contig " + contigName +
 						" range: " + (analysisChunk.startAtPosition + "-" + analysisChunk.terminateAtPosition) +
-						"; pauseAtPosition: " + formatter.format(pauseAt.get()) +
-						"; lastProcessedPosition: " + formatter.format(lastProcessedPosition.get()) + "; " +
-						formatter.format(100f * (lastProcessedPosition.get() - analysisChunk.startAtPosition) /
+						"; pauseAtPosition: " + formatter.format(analysisChunk.pauseAtPosition) +
+						"; lastProcessedPosition: " + formatter.format(analysisChunk.lastProcessedPosition) + "; " +
+						formatter.format(100f * (analysisChunk.lastProcessedPosition - analysisChunk.startAtPosition) /
 								(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
 						);
 			};
@@ -389,10 +387,10 @@ public class ReadLoader {
 
 						//Use phaser here and go by specific positions rather than
 						//actually processed records
-						if (finishUp || lastProcessable.get() >= pauseAt.get() + maxInsertSize) {
+						if (finishUp || lastProcessable.get() >= analysisChunk.pauseAtPosition + maxInsertSize) {
 							if (ENABLE_TRACE && shouldLog(TRACE)) {
 								logger.trace("Member of phaser " + phaser + " reached " + lastProcessable +
-										"; pauseAtPosition is " + pauseAt.get());
+										"; pauseAtPosition is " + analysisChunk.pauseAtPosition);
 							}
 
 							/**
@@ -402,7 +400,7 @@ public class ReadLoader {
 							 */
 							Iterator<Pair<ExtendedSAMRecord, @NonNull ReferenceSequence>> it =
 									readsToProcess.values().iterator();
-							final int localPauseAt = pauseAt.get();
+							final int localPauseAt = analysisChunk.pauseAtPosition;
 							while (it.hasNext()) {
 								Pair<ExtendedSAMRecord, @NonNull ReferenceSequence> rec = it.next();
 								final ExtendedSAMRecord read = rec.fst;
@@ -428,9 +426,9 @@ public class ReadLoader {
 				}//End iterator try block
 
 				logger.trace("Member of phaser " + phaser + " reached final " + lastProcessable +
-						"; pauseAtPosition is " + pauseAt.get());
+						"; pauseAtPosition is " + analysisChunk.pauseAtPosition);
 
-				if (lastProcessedPosition.get() < truncateAtPosition) {
+				if (analysisChunk.lastProcessedPosition < truncateAtPosition) {
 					readsToProcess.forEach((k, v) -> {
 						final SequenceLocation location = new SequenceLocation(contigIndex, contigName,
 							v.fst.record.getAlignmentStart());

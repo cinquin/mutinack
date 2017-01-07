@@ -123,7 +123,6 @@ import uk.org.cinquin.mutinack.misc_util.MultipleExceptionGatherer;
 import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
-import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SettableLong;
 import uk.org.cinquin.mutinack.misc_util.Signals;
 import uk.org.cinquin.mutinack.misc_util.Signals.SignalProcessor;
@@ -778,7 +777,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 		Util.checkPositionsOrdering(parsedPositions, parsedPositions2);
 
-		final List<GenomeFeatureTester> excludeBEDs = new ArrayList<>();
+		final @NonNull List<@NonNull GenomeFeatureTester> excludeBEDs = new ArrayList<>();
 		for (String bed: param.excludeRegionsInBED) {
 			try {
 				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
@@ -789,7 +788,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 		}
 
-		final List<BedReader> repetitiveBEDs = new ArrayList<>();
+		final @NonNull List<@NonNull BedReader> repetitiveBEDs = new ArrayList<>();
 		for (String bed: param.repetiveRegionBED) {
 			try {
 				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
@@ -1139,8 +1138,8 @@ public class Mutinack implements Actualizable, Closeable {
 
 		final List<Phaser> phasers = new ArrayList<>();
 
-		final Histogram dubiousOrGoodDuplexCovInAllInputs = new Histogram(500);
-		final Histogram goodDuplexCovInAllInputs = new Histogram(500);
+		final @NonNull Histogram dubiousOrGoodDuplexCovInAllInputs = new Histogram(500);
+		final @NonNull Histogram goodDuplexCovInAllInputs = new Histogram(500);
 
 		SignalProcessor infoSignalHandler = signal -> {
 			final PrintStream printStream = (signal == null) ? out : err;
@@ -1225,7 +1224,7 @@ public class Mutinack implements Actualizable, Closeable {
 				contigParallelizationFactor;
 			for (int p = 0; p < contigParallelizationFactor; p++) {
 				final AnalysisChunk analysisChunk = new AnalysisChunk(
-					Objects.requireNonNull(contigNames.get(contigIndex)), nParameterSets);
+					Objects.requireNonNull(contigNames.get(contigIndex)), nParameterSets, groupSettings);
 				contigAnalysisChunks.add(analysisChunk);
 
 				final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
@@ -1236,9 +1235,6 @@ public class Mutinack implements Actualizable, Closeable {
 				analysisChunk.contig = contigIndex;
 				analysisChunk.startAtPosition = startSubAt;
 				analysisChunk.terminateAtPosition = terminateAtPosition;
-				analysisChunk.pauseAtPosition = new SettableInteger();
-				analysisChunk.lastProcessedPosition = new SettableInteger();
-				analysisChunk.groupSettings = groupSettings;
 
 				analyzers.forEach(a -> {
 					final SubAnalyzer subAnalyzer = new SubAnalyzer(Objects.requireNonNull(a));

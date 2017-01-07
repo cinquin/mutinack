@@ -65,9 +65,9 @@ public class MutinackGroup implements Closeable, Serializable {
 		statusUpdateTasks = new ArrayList<>();
 	private List<@NonNull String> contigNames;
 	private Map<@NonNull String, @NonNull Integer> contigSizes;
-	public final Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
-	public final Map<SequenceLocation, Boolean> forceOutputAtLocations = new HashMap<>();
-	public final ConcurrentMap<Pair<SequenceLocation, String>,
+	public final @NonNull Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
+	public final @NonNull Map<@NonNull SequenceLocation, @NonNull Boolean> forceOutputAtLocations = new HashMap<>();
+	public final @NonNull ConcurrentMap<Pair<SequenceLocation, String>,
 		@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>>
 		mutationsToAnnotate = new ConcurrentHashMap<>(5_000);
 	public int PROCESSING_CHUNK;

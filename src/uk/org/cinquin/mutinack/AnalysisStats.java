@@ -88,7 +88,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@Final @Persistent Set<String> mutinackVersions = new HashSet<>();
 	@Final @Persistent
 	public Map<String, String> inputBAMHashes = new HashMap<>();
-	@Final @Persistent Parameters analysisParameters;
+	@Final @Persistent @NonNull Parameters analysisParameters;
 	@Final @Persistent boolean forInsertions;
 	//Changed to Map instead of ConcurrentMap to please datanucleus
 	@Final @Persistent @Join Map<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();

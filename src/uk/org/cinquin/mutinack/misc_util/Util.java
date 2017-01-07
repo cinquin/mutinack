@@ -109,7 +109,7 @@ public class Util {
 		}
 	}
 
-	public static List<SequenceLocation> parseListLocations(List<String> l,
+	public static @NonNull List<@NonNull SequenceLocation> parseListLocations(List<String> l,
 			Map<String, Integer> indexContigNameReverseMap) {
 		return l.stream().flatMap
 			(s -> {

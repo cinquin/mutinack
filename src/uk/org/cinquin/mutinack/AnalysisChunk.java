@@ -22,23 +22,22 @@ import java.util.concurrent.Phaser;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import uk.org.cinquin.mutinack.misc_util.SettableInteger;
-
 public class AnalysisChunk {
 	int contig;
 	@NonNull final String contigName;
 	int startAtPosition;
 	int terminateAtPosition;
-	SettableInteger pauseAtPosition;
-	SettableInteger lastProcessedPosition;
+	int pauseAtPosition;
+	int lastProcessedPosition;
 	Phaser phaser;
 	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
-	public MutinackGroup groupSettings;
+	public @NonNull MutinackGroup groupSettings;
 	public final int nParameterSets;
 
-	public AnalysisChunk(@NonNull String contigName, int nParameterSets) {
+	public AnalysisChunk(@NonNull String contigName, int nParameterSets, @NonNull MutinackGroup groupSettings) {
 		this.contigName = contigName;
 		this.nParameterSets = nParameterSets;
+		this.groupSettings = groupSettings;
 	}
 
 	@Override
