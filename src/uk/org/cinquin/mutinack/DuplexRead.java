@@ -801,13 +801,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		final boolean enoughReadsForQ2Disag =
 			bottom != null &&
-			bottom.count >= param.minReadsPerStrandForDisagreement &&
 			top != null &&
+			bottom.count >= param.minReadsPerStrandForDisagreement &&
 			top.count >= param.minReadsPerStrandForDisagreement;
 
 		final boolean highEnoughQualForQ2Disagreement =
-			dq.getValue().atLeast(GOOD) &&
-			enoughReadsForQ2Disag;
+			enoughReadsForQ2Disag &&
+			dq.getValue().atLeast(GOOD);
 
 		final boolean noHiddenCandidateAndBSP = bothStrandsPresent &&
 			!top.candidate.isHidden() &&
