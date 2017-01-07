@@ -1438,6 +1438,7 @@ public class Mutinack implements Actualizable, Closeable {
 		analyzers.stream().flatMap(a -> a.subAnalyzers.stream()).
 			filter(Objects::nonNull).
 			map(sa -> sa.stats).
+			filter(Objects::nonNull).
 			forEach(stats -> stats.mutinackVersions.add(mutinackVersion));
 		return root;
 	}
