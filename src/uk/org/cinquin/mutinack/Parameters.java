@@ -59,7 +59,19 @@ import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 @PersistenceCapable
 public final class Parameters implements Serializable, Cloneable {
 
+	public void automaticAdjustments() {
+		if (outputAlignmentFile == null) {
+			logReadIssuesInOutputBam = false;
+		}
+	}
+
 	public void validate() {
+		if (parallelizationFactor != 1 &&
+			!contigByContigParallelization.isEmpty()) {
+			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
+				+ "contigByContigParallelization at the same time");
+		}
+
 		if (ignoreFirstNBasesQ2 < ignoreFirstNBasesQ1) {
 			throw new IllegalArgumentException("Parameter ignoreFirstNBasesQ2 must be greater than ignoreFirstNBasesQ1");
 		}

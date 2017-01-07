@@ -253,8 +253,9 @@ public class Mutinack implements Actualizable, Closeable {
 			@NonNull OutputLevel outputLevel,
 			int maxNDuplexes) {
 
+		param.validate();//This is redundant with validation performed in realMain0, but it
+		//kept here in case a worker and server are out of sync
 		this.groupSettings = groupSettings;
-		param.validate();
 		this.param = param;
 		this.name = name;
 		this.inputBam = inputBam;
@@ -468,14 +469,11 @@ public class Mutinack implements Actualizable, Closeable {
 		commander.addObject(param);
 		commander.parse(args);
 
+		param.automaticAdjustments();
+		param.validate();
+
 		if (param.timeoutSeconds != 0) {
 			Server.PING_INTERVAL_SECONDS = 1 + param.timeoutSeconds / 3;
-		}
-
-		if (param.parallelizationFactor != 1 &&
-				!param.contigByContigParallelization.isEmpty()) {
-			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
-				+ "contigByContigParallelization at the same time");
 		}
 
 		StaticStuffToAvoidMutating.instantiateThreadPools(param.maxThreadsPerPool);
