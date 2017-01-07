@@ -75,9 +75,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public boolean duplexAlreadyVisitedForStats = false;
 
 	private final @NonNull MutinackGroup groupSettings;
-			
+
 	public static @NonNull String getReadFullName(SAMRecord rec) {
-		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2"))/*.intern()*/;
+		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2")) +
+			(rec.getSupplementaryAlignmentFlag() ? "--suppl" : ""))/*.intern()*/;
 	}
 
 	public @NonNull String getFullName() {
@@ -88,7 +89,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public final int hashCode() {
 		return hashCode;
 	}
-	
+
 	@Override
 	public final boolean equals(Object obj) {
 		if (this == obj) {
@@ -99,16 +100,16 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 		return name.equals(((ExtendedSAMRecord) obj).name);
 	}
-	
+
 	private void computeNClipped() {
 		final int readLength = record.getReadLength();
 		final int adapterClipped = readLength - effectiveLength;
-		
+
 		int nClippedLeft = (!getReadNegativeStrandFlag() ? 
-				
+
 						/* positive strand */
 						getAlignmentStart() - getUnclippedStart() :
-								
+
 						/* negative strand */
 						/* Note: getMateAlignmentEnd will return Integer.MAX_INT if mate not loaded*/
 						(getAlignmentStart() <= getMateAlignmentStart() ?
@@ -116,29 +117,29 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 							0 :
 							getAlignmentStart() - getUnclippedStart() - adapterClipped));
 		nClippedLeft = Math.max(0, nClippedLeft);
-		
+
 		int nClippedRight =	getReadNegativeStrandFlag() ? 
-				
+
 						/* negative strand */
 						getUnclippedEnd() - getAlignmentEnd() :
-								
+
 						/* positive strand */
 						(getAlignmentEnd() >= getMateAlignmentEnd() ? 
 							/* adapter run through, causes clipping we should ignore */
 							0 :
 							getUnclippedEnd() - getAlignmentEnd() - adapterClipped);
 		nClippedRight = Math.max(0, nClippedRight);
-		
+
 		nClipped = nClippedLeft + nClippedRight;	
 	}
-	
+
 	public int getnClipped() {
 		if (nClipped == -1) {
 			computeNClipped();
 		}
 		return nClipped;
 	}
-	
+
 	public void resetnClipped() {
 		nClipped = -1;
 	}
@@ -155,16 +156,16 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.location = location;
 		hashCode = fullName.hashCode();
 		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1"))/*.intern()*/;
-		
+
 		final int readLength = rec.getReadLength();
-		
+
 		//Find effective end of read, i.e. first position that is not an 'N' (the trimming
 		//step run prior to mutation detection might shorten reads that ran into the
 		//adapter because the insert was shorter than read length, by transforming all
 		//bases that should be ignored to an N)
 		@SuppressWarnings("hiding")
 		int effectiveLength = readLength;
-		
+
 		final byte[] read = record.getReadBases();
 		final byte[] baseQualities = record.getBaseQualities();
 
@@ -217,13 +218,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		qualities.sort();
 		medianPhred = qualities.get(qualities.size() / 2);
 		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
-		
-               Assert.isTrue(rec.getUnclippedEnd() - 1 >= getAlignmentEnd(),
-                       (Supplier<Object>) () -> "" + (rec.getUnclippedEnd() - 1),
-                       (Supplier<Object>) this::toString,
-                       "Unclipped end is %s for read %s");
-               Assert.isTrue(rec.getAlignmentStart() - 1 >= getUnclippedStart());
-		
+
+		Assert.isTrue(rec.getUnclippedEnd() - 1 >= getAlignmentEnd(),
+			(Supplier<Object>) () -> "" + (rec.getUnclippedEnd() - 1),
+			(Supplier<Object>) this::toString,
+			"Unclipped end is %s for read %s");
+		Assert.isTrue(rec.getAlignmentStart() - 1 >= getUnclippedStart());
+
 		final @NonNull String fullBarcodeString;
 		String bcAttr = (String) record.getAttribute("BC");
 		if (groupSettings.getVariableBarcodeEnd() > 0) {
@@ -258,7 +259,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
 	}
-	
+
 	private static final byte @NonNull[] EMPTY_BARCODE = new byte [0];
 	private static final byte @NonNull[] DUMMY_BARCODE = {'N', 'N', 'N'};
 
@@ -268,7 +269,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/,
 				groupSettings, analyzer, location, extSAMCache);
 	}
-	
+
 	public byte @NonNull[] getMateVariableBarcode() {
 		if (mateVariableBarcode == null ||
 				mateVariableBarcode == groupSettings.getNs()) {
@@ -281,7 +282,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 		return Objects.requireNonNull(mateVariableBarcode);
 	}
-		
+
 	@Override
 	public String toString() {
 		return name + ": " + "startNoBC: " + getAlignmentStart() +
@@ -301,7 +302,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		throw new RuntimeException("Unimplemented");
 		//return interval;
 	}
-	
+
 	public int referencePositionToReadPosition(int refPosition) {
 		if (refPosition <= getAlignmentStart()) {
 			return refPosition - getUnclippedStart();
@@ -327,23 +328,23 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				nBasesAligned += blockLength;
 			}
 			//Ignoring clipping at end of read		
-			
+
 			ceIndex++;
 		}
-		
+
 		if (nBasesAligned == nBasesToAlign) {
 			return nReadBasesProcessed;
 		} else {
 			return nReadBasesProcessed + (nBasesToAlign - nBasesAligned);
 		}
 	}
-	
+
 	private static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
-		
+
 	public int tooCloseToBarcode(int readPosition, int ignoreFirstNBases) {
-		
+
 		final boolean readOnNegativeStrand = getReadNegativeStrandFlag();
-		
+
 		final int distance0;
 
 		if (readOnNegativeStrand) {
@@ -351,7 +352,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		} else {
 			distance0 = ignoreFirstNBases - readPosition;
 		}
-				
+
 		//Now check if position is too close to other adapter barcode ligation site,
 		//or on the wrong side of it
 		final int refPositionOfMateLigationSite = getRefPositionOfMateLigationSite();
@@ -385,10 +386,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 						readPosition - (effectiveLength - ignoreFirstNBases - 1);
 			}
 		}
-		
+
 		return Math.max(distance0, distance1);
 	}
-	
+
 	public int getRefPositionOfMateLigationSite() {
 		return getReadNegativeStrandFlag() ?
 			getMateUnclippedStart() :
@@ -400,7 +401,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		Assert.isFalse(referenceStart < 0);
 		return referenceStart;
 	}
-	
+
 	public int getRefAlignmentEnd() {
 		int referenceEnd = getAlignmentEnd();
 		Assert.isFalse(referenceEnd < 0, () -> "Negative alignment end in read " + this);
@@ -411,21 +412,21 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		checkMate();
 		return mate == null ? NO_MATE_POSITION : nonNullify(mate).getRefAlignmentStart();
 	}
-	
+
 	public int getMateRefAlignmentEnd() {
 		checkMate();
 		return mate == null ? NO_MATE_POSITION : nonNullify(mate).getRefAlignmentEnd();
 	}
-	
+
 	public int getInsertSize() {
 		return record.getInferredInsertSize();
 	}
-	
+
 	public ExtendedSAMRecord getMate() {
 		checkMate();
 		return mate;
 	}
-		
+
 	public boolean formsWrongPair() {
 		if (formsWrongPair == null) {
 			formsWrongPair = record.getReadPairedFlag() && (
@@ -441,35 +442,35 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public boolean getReadNegativeStrandFlag() {
 		return record.getReadNegativeStrandFlag();
 	}
-	
+
 	public boolean getReadPositiveStrand() {
 		return !record.getReadNegativeStrandFlag();
 	}
-	
+
 	private void checkMate() {
 		if (mate == null) {
 			mate = extSAMCache.get(mateName);
 		}
 	}
-	
+
 	/** Indexing starts at 0
 	 */
 	public int getAlignmentStart() {
 		return record.getAlignmentStart() - 1;
 	}
-	
+
 	/** Indexing starts at 0
 	 */
 	public int getUnclippedStart() {
 		return record.getUnclippedStart() - 1;
 	}
-	
+
 	/** Indexing starts at 0
 	 */
 	public int getMateAlignmentStart() {
 		return record.getMateAlignmentStart() - 1;
 	}
-	
+
 	/** Indexing starts at 0
 	 */
 	public int getAlignmentEnd() {
@@ -487,7 +488,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 		return nonNullify(mate).getAlignmentEnd();
 	}
-	
+
 	public int getMateUnclippedEnd() {
 		checkMate();
 		if (mate == null) {
@@ -499,7 +500,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public int getUnclippedEnd() {
 		return record.getUnclippedEnd() - 1;
 	}
-	
+
 	public int getMateUnclippedStart() {
 		checkMate();
 		if (mate == null) {
@@ -520,7 +521,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 		return true;
 	}
-	
+
 	boolean duplexLeft() {
 		return formsWrongPair() ?
 				getAlignmentStart() <= getMateAlignmentStart()
