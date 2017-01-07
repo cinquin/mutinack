@@ -111,7 +111,7 @@ public final class Parameters implements Serializable, Cloneable {
 			String [] split = p.split(":");
 			if (split.length != 4 && split.length != 3 && split.length != 1) {
 				throw new IllegalArgumentException("exploreParameters argument should be formatted as " +
-					"name:min:max[:step] or name, but " + (split.length - 1) + " columns found in " + p);
+					"name:min:max[:n_steps] or name, but " + (split.length - 1) + " columns found in " + p);
 			}
 			final String paramName = split[0];
 			final Field f;
@@ -687,7 +687,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-keysFile", description = "Location of .jks file for RMI SSL encryption", required = false, hidden = hideAdvancedParameters)
 	public String keysFile = "mutinack_public_selfsigned.jks";
 
-	@Parameter(names = "-exploreParameter", description = "", required = false, hidden = true)
+	@Parameter(names = "-exploreParameter", description = "Perform mutation detection separately for each parameter value specified as name:min:max[:n_steps]", required = false, hidden = true)
 	public @NoDuplicates List<String> exploreParameters = new ArrayList<>();
 
 	@Parameter(names = "-cartesianProductOfExploredParameters", description = "", required = false, hidden = true, arity = 1)
