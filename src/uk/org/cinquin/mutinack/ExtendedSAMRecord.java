@@ -77,8 +77,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private final @NonNull MutinackGroup groupSettings;
 
 	public static @NonNull String getReadFullName(SAMRecord rec) {
-		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2")) +
-			(rec.getSupplementaryAlignmentFlag() ? "--suppl" : ""))/*.intern()*/;
+		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2") +
+			(rec.getSupplementaryAlignmentFlag() ? ("--suppl--" + rec.getAlignmentStart()) : ""))/*.intern()*/;
 	}
 
 	public @NonNull String getFullName() {
