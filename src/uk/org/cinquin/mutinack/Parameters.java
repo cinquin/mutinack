@@ -234,6 +234,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-parallelizationFactor", description = "Number of chunks into which to split each contig for parallel processing; setting this value too high can be highly counter-productive", required = false)
 	public int parallelizationFactor = 1;
 
+	@Parameter(names = "-noParallelizationOfContigsBelow", description = "Processing of contigs below this size will not be parallelized", required = false)
+	public int noParallelizationOfContigsBelow = 200_000;
+
 	@Parameter(names = "-contigByContigParallelization", description = "Contig-by-contig list of number of chunks into which to split contig for parallel processing; setting this value too high can be highly counter-productive; last value in the list applies to all contigs whose index falls outside of the list", required = false)
 	public List<Integer> contigByContigParallelization = new ArrayList<>();
 

@@ -1216,7 +1216,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			final int contigParallelizationFactor = getContigParallelizationFactor(
-				contigIndex, param);
+				contigIndex, param, contigSizes.get(contigNames.get(contigIndex)));
 			List<AnalysisChunk> contigAnalysisChunks = new ArrayList<>();
 			analysisChunks.add(contigAnalysisChunks);
 
@@ -1272,7 +1272,7 @@ public class Mutinack implements Actualizable, Closeable {
 			parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
 
 				final int contigParallelizationFactor = getContigParallelizationFactor(
-					contigIndex, param);
+					contigIndex, param, contigSizes.get(contigNames.get(contigIndex)));
 
 				final List<Future<?>> futures = new ArrayList<>();
 				int analyzerIndex = -1;
@@ -1413,13 +1413,17 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 	}
 
-	private static int getContigParallelizationFactor(int contigIndex, Parameters param) {
+	private static int getContigParallelizationFactor(int contigIndex, Parameters param, int contigSize) {
 		List<Integer> factorList = param.contigByContigParallelization;
 		final int result;
 		if (!factorList.isEmpty()) {
 			result = factorList.get(Math.min(factorList.size() - 1, contigIndex));
 		} else {
-			result = param.parallelizationFactor;
+			if (contigSize > param.noParallelizationOfContigsBelow) {
+				result = param.parallelizationFactor;
+			} else {
+				result = 1;
+			}
 		}
 		return result;
 	}
