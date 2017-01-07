@@ -16,8 +16,7 @@ public class LocationAnalysis implements Serializable {
 	private static final long serialVersionUID = 622542608557547921L;
 
 	public @Persistent CrossSampleLocationAnalysis crossSampleLocationAnalysis;
-	public @Final @Persistent
-	LocationExaminationResults locationStats;
+	public @Final @Persistent LocationExaminationResults locationStats;
 	public @Final @Persistent Set<CandidateSequence> candidates = new HashSet<>();
 	public @Final @Persistent Set<DuplexDisagreement> disagreements = new HashSet<>();
 
