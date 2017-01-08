@@ -373,7 +373,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			acceptMax(mutantCandidates, c -> ((CandidateSequenceI) c).getQuality().getValue()).
 			getMax());
 
-		@SuppressWarnings("null")//Incorrect Eclipse auto-unboxing warning
+		@SuppressWarnings("null")//getMin cannot return null as long as
+		//locationExamResults is not empty
 		final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
 			acceptMin(locationExamResults, cl -> {
 				List<@NonNull Integer> freq =
