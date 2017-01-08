@@ -1333,7 +1333,8 @@ public class Mutinack implements Actualizable, Closeable {
 		infoSignalHandler.handle(null);
 		if (!param.noStatusMessages) {
 			Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name
-				+ " at " + ((int) a.processingThroughput()) + " records / s").
+				+ " at " + ((int) a.stats.get(0).processingThroughput(a.timeStartProcessing)) +
+				" records / s").//TODO Improve reporting
 				collect(Collectors.joining(", ")) + " completed on host " +
 				StaticStuffToAvoidMutating.hostName +
 				" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()) +
@@ -1504,13 +1505,6 @@ public class Mutinack implements Actualizable, Closeable {
 		Util.printUserMustSeeMessage(baseMessage + "; keeping going anyway");
 	}
 
-	private double processingThroughput() {
-		return (stats.
-				get(0).
-				nRecordsProcessed.sum()) /
-				((System.nanoTime() - timeStartProcessing) / 1_000_000_000d);
-	}
-
 	private void printStatus(PrintStream stream, boolean colorize) {
 		stats.forEach(s -> {
 			try {
@@ -1536,9 +1530,6 @@ public class Mutinack implements Actualizable, Closeable {
 				internedVariableBarcodes.values().stream().sorted((ba, bb) -> - Long.compare(ba.nHits.sum(), bb.nHits.sum())).
 					limit(100).map(ByteArray::toString).collect(Collectors.toList()));
 		}
-
-		stream.println(blueF(colorize) + "Processing throughput: " + reset(colorize) +
-			((int) processingThroughput()) + " records / s");
 
 		if (!objectAllocations.isEmpty()) {
 			stream.println(objectAllocations);

@@ -258,6 +258,12 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	private static final long serialVersionUID = -7786797851357308577L;
 
+	public double processingThroughput(long timeStartProcessing) {
+		return (nRecordsProcessed.sum()) /
+			((System.nanoTime() - timeStartProcessing) / 1_000_000_000d);
+		//TODO Store start and stop times in AnalysisStats
+	}
+
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface AddChromosomeBins {};
 
