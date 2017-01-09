@@ -1455,9 +1455,10 @@ public class Mutinack implements Actualizable, Closeable {
 			RunResult root = getRunResult(param, analyzers);
 			try {
 				File originalOutputFile = new File(param.outputJSONTo);
+				String parentDirectory = originalOutputFile.getParent();
 				mapper.writerWithDefaultPrettyPrinter().writeValue(
-						new File(originalOutputFile.getParent() + "/" + param.jsonFilePathExtraPrefix +
-							originalOutputFile.getName()), root);
+						new File((parentDirectory == null ? "" : (parentDirectory + "/")) +
+							param.jsonFilePathExtraPrefix + originalOutputFile.getName()), root);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
