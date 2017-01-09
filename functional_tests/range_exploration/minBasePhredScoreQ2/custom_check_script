@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+set -o pipefail
 source ../../../bash_json_functions
 
 extract_json "| map(select(.analysisParameters.minBasePhredScoreQ2 == 24)) | map(select(.analysisParameters.minReadsPerStrandQ2 == 3)) | map(select(.analysisParameters.randomizeStrand == true))" "chrX:11,857,476" "" ${1}stats.json ${1}filtered.json

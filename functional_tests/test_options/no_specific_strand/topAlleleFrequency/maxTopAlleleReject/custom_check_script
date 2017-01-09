@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+set -o pipefail
 source ../../../../bash_json_functions
 
 extract_json "| map(select(.analysisParameters.maxTopAlleleFreqQ2 == "0.9"))" "chrIV:14,941,896" ".disagreements" ${1}stats.json ${1}filtered.json
