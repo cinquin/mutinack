@@ -575,6 +575,14 @@ public class Mutinack implements Actualizable, Closeable {
 
 		final MutinackGroup groupSettings = new MutinackGroup();
 		groupSettings.registerInterruptSignalProcessor();
+		groupSettings.PROCESSING_CHUNK = param.processingChunk;
+		groupSettings.INTERVAL_SLOP = param.alignmentPositionMismatchAllowed;
+		groupSettings.BIN_SIZE = param.contigStatsBinLength;
+		groupSettings.terminateImmediatelyUponError =
+			param.terminateImmediatelyUponError;
+		groupSettings.setBarcodePositions(0, param.variableBarcodeLength - 1,
+			3, 5);
+
 		param.group = groupSettings;
 
 		try (CloseableCloser closeableCloser = new CloseableCloser()) {
@@ -827,15 +835,6 @@ public class Mutinack implements Actualizable, Closeable {
 				out.println("Intersecting " + inputBam.getAbsolutePath() + " with " +
 					f.getAbsolutePath());
 			}
-
-			groupSettings.PROCESSING_CHUNK = param.processingChunk;
-			groupSettings.INTERVAL_SLOP = param.alignmentPositionMismatchAllowed;
-			groupSettings.BIN_SIZE = param.contigStatsBinLength;
-			groupSettings.terminateImmediatelyUponError =
-				param.terminateImmediatelyUponError;
-
-			groupSettings.setBarcodePositions(0, param.variableBarcodeLength - 1,
-				3, 5);
 
 			final int maxNDuplexes = param.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
 				param.maxNDuplexes.get(i);
