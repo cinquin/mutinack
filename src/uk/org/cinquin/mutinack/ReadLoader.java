@@ -93,7 +93,7 @@ public class ReadLoader {
 			:
 				null;
 
-		final Phaser phaser = analysisChunk.phaser;
+		final @NonNull Phaser phaser = Objects.requireNonNull(analysisChunk.phaser);
 		String lastContigName = null;
 		BiConsumer<PrintStream, Integer> info = null;
 		try {
@@ -179,7 +179,8 @@ public class ReadLoader {
 							e.getUnclippedEnd();
 							e.getUnclippedStart();
 						},
-						subAnalyzer.stats.nReadsInPrefetchQueue)) {
+						subAnalyzer.stats.nReadsInPrefetchQueue))//TODO Create a sample-wide stats object
+				{
 					while (iterator.hasNext() && !phaser.isTerminated() && !groupSettings.terminateAnalysis) {
 
 						final SAMRecord samRecord = iterator.next();

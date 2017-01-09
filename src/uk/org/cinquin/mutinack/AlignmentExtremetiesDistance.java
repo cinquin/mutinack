@@ -20,13 +20,13 @@ import org.eclipse.jdt.annotation.NonNull;
 
 final class AlignmentExtremetiesDistance {
 
-	private static final byte @NonNull[] emptyBarcode = new byte[0];
+	private static final byte @NonNull[] EMPTY_BARCODE = new byte[0];
 
 	private DuplexRead dr;
 	public final @NonNull DuplexRead temp;
-	
+
 	public AlignmentExtremetiesDistance(MutinackGroup groupSettings, Parameters param) {
-		temp = new DuplexRead(groupSettings, emptyBarcode, emptyBarcode, false, false);
+		temp = new DuplexRead(groupSettings, EMPTY_BARCODE, EMPTY_BARCODE, false, false);
 	}
 
 	public void set(ExtendedSAMRecord r) {
@@ -40,7 +40,7 @@ final class AlignmentExtremetiesDistance {
 					r.getUnclippedEnd());			
 		}		
 	}
-		
+
 	public void set(DuplexRead d) {
 		dr = d;
 	}

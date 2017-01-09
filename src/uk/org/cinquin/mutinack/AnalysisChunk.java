@@ -21,15 +21,16 @@ import java.util.List;
 import java.util.concurrent.Phaser;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 public class AnalysisChunk {
 	int contig;
-	@NonNull final String contigName;
+	final @NonNull String contigName;
 	int startAtPosition;
 	int terminateAtPosition;
 	int pauseAtPosition;
 	int lastProcessedPosition;
-	Phaser phaser;
+	@Nullable Phaser phaser;
 	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
 	public @NonNull MutinackGroup groupSettings;
 	public final int nParameterSets;
