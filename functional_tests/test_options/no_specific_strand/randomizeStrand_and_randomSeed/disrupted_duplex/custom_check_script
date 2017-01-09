@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 set -o pipefail
-source ../../../../../bash_json_functions
+source ../../../../bash_json_functions
 
 extract_json "| map(select(.analysisParameters.randomizeStrand == true))" "chrX:11,857,475" ".disagreements" ${1}stats.json ${1}filtered.json
 #Uncomment line below to check that error is generated if JSON objects differ
