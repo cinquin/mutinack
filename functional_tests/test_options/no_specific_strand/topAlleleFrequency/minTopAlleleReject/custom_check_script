@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+source ../../../../bash_json_functions
+
+extract_json "| map(select(.analysisParameters.minTopAlleleFreqQ2 == "0.51"))" "chrIV:14,941,896" ".disagreements" ${1}stats.json ${1}filtered.json
+compare_jsons ${1}filtered.json no_disagreement.json_preserve
+touch run.out.check custom_check

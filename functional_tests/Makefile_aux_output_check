@@ -9,5 +9,5 @@ all: $(FILES) $(FILES2)
 	./grep_lines_in_file $* < expected_$* > $@
 
 .DELETE_ON_ERROR:
-custom_check run.out.check: custom_check_script
+custom_check run.out.check: custom_check_script run.out
 	./custom_check_script

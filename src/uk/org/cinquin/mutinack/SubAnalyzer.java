@@ -91,6 +91,7 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
+import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
@@ -753,15 +754,10 @@ public final class SubAnalyzer {
 			}));
 		}
 
-		Quality maxQuality = MINIMUM;
-
 		byte wildtypeBase = 'X';
 
 		final int totalReadsAtPosition = candidateSet.stream().
 			mapToInt(c -> c.getNonMutableConcurringReads().size()).sum();
-
-		int totalGoodDuplexes = 0, totalGoodOrDubiousDuplexes = 0,
-			totalGoodDuplexesIgnoringDisag = 0, totalAllDuplexes = 0;
 
 		final TByteArrayList allPhredQualitiesAtPosition = new TByteArrayList(500);
 		int nWrongPairsAtPosition = 0;
@@ -790,10 +786,71 @@ public final class SubAnalyzer {
 			stats.nFractionWrongPairsAtPositionTooHigh.increment(location);
 		}
 
+		Quality maxQuality;
+		int totalGoodDuplexes, totalGoodOrDubiousDuplexes,
+			totalGoodDuplexesIgnoringDisag, totalAllDuplexes;
+
+		for (CandidateSequenceI candidate: candidateSet) {
+			candidate.getQuality().addAllUnique(positionQualities);
+			processCandidateQualityStep1(candidate, location, result, positionMedianPhred, positionQualities);
+			if (candidate.getMutationType().isWildtype()) {
+				wildtypeBase = candidate.getWildtypeSequence();
+			}
+		}
+
+		boolean leave = false;
+		do {
+			maxQuality = MINIMUM;
+			totalAllDuplexes = 0;
+			totalGoodDuplexes = 0;
+			totalGoodOrDubiousDuplexes = 0;
+			totalGoodDuplexesIgnoringDisag = 0;
+			for (CandidateSequenceI candidate: candidateSet) {
+				if (leave) {
+					candidate.getQuality().addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, DUBIOUS);
+				}
+				@NonNull Map<Quality, List<DuplexRead>> map = candidate.getDuplexes().stream().collect(
+					Collectors.groupingBy(dr -> dr.localAndGlobalQuality.getValue()));
+				if (param.enableCostlyAssertions) {
+					map.forEach((k, v) -> Assert.isTrue(Util.getDuplicates(v).isEmpty()));
+					Assert.isTrue(map.values().stream().mapToInt(v -> v.size()).sum() == candidate.getDuplexes().size());
+				}
+				@Nullable List<DuplexRead> gd = map.get(GOOD);
+				candidate.setnGoodDuplexes(gd == null ? 0 : gd.size());
+				@Nullable List<DuplexRead> db = map.get(DUBIOUS);
+				candidate.setnGoodOrDubiousDuplexes(candidate.getnGoodDuplexes() + (db == null ? 0 : db.size()));
+				candidate.setnGoodDuplexesIgnoringDisag((int) candidate.getDuplexes().stream().
+					filter(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD))
+					.count());
+
+				maxQuality = max(candidate.getQuality().getValue(), maxQuality);
+				totalAllDuplexes += candidate.getnDuplexes();
+				totalGoodDuplexes += candidate.getnGoodDuplexes();
+				totalGoodOrDubiousDuplexes += candidate.getnGoodOrDubiousDuplexes();
+				totalGoodDuplexesIgnoringDisag += candidate.getnGoodDuplexesIgnoringDisag();
+
+				processCandidateQualityStep2(candidate, location, result, positionMedianPhred, positionQualities);
+			}
+			if (leave) {
+				break;
+			} else {
+				result.nGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;
+				final Quality q = getAlleleFrequencyQuality(candidateSet, result);
+				if (q == null) {
+					break;
+				}
+				Assert.isTrue(q == DUBIOUS);
+				positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, q);
+				leave = true;//Just one more iteration
+				continue;
+			}
+		} while(Boolean.valueOf(null));//Assert never reached
+
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
 			result.disagreements.clear();
 		} else {
 			stats.nPosDuplexCandidatesForDisagreementQ2.accept(location, result.disagQ2Coverage);
+			stats.nPosDuplexCandidatesForDisagreementQ1.accept(location, result.disagOneStrandedCoverage);
 			candidateSet.stream().flatMap(c -> c.getRawMismatchesQ2().stream()).
 				forEach(result.rawMismatchesQ2::add);
 			candidateSet.stream().flatMap(c -> c.getRawInsertionsQ2().stream()).
@@ -801,204 +858,6 @@ public final class SubAnalyzer {
 			candidateSet.stream().flatMap(c -> c.getRawDeletionsQ2().stream()).
 				forEach(result.rawDeletionsQ2::add);
 		}
-
-		for (CandidateSequenceI candidate: candidateSet) {
-			candidate.getQuality().addAllUnique(positionQualities);
-			candidate.setMedianPhredAtPosition(positionMedianPhred);
-			//TODO Should report min rather than average collision probability?
-			candidate.setProbCollision((float) result.probAtLeastOneCollision);
-			candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
-			candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
-
-			candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
-				map(r -> r.duplexRead).
-				filter(d -> {
-					boolean nonNull = d != null;
-					if (nonNull && d.invalid) {
-						throw new AssertionFailedException();
-					}
-					return nonNull;
-				}).
-				collect(uniqueValueCollector()));//Collect *unique* duplexes
-
-			candidate.setnDuplexes(candidate.getDuplexes().size());
-
-			totalAllDuplexes += candidate.getnDuplexes();
-
-			if (candidate.getnDuplexes() == 0) {
-				candidate.getQuality().addUnique(NO_DUPLEXES, ATROCIOUS);
-				//continue;
-			}
-
-			candidate.getIssues().clear();
-			candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localAndGlobalQuality) != null) {
-				throw new AssertionFailedException();
-			}});
-
-			final Quality posQMin =	positionQualities.getValue(true);
-			final Quality maxDuplexQ = candidate.getDuplexes().stream().
-				map(dr -> {
-					if (posQMin != null) {
-						dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
-					}
-					return dr.localAndGlobalQuality.getValue();
-				}).
-				max(Quality::compareTo).orElse(ATROCIOUS);
-
-			switch(param.candidateQ2Criterion) {
-				case "1Q2Duplex":
-					candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
-					break;
-				case "NQ1Duplexes":
-					final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().
-					map(c -> c.duplexRead).
-					collect(uniqueValueCollector()).stream().
-					filter(d -> d != null && d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).
-						atLeast(GOOD)).
-					count();
-					if (countQ1Duplexes >= param.minQ1Duplexes) {
-						candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
-					}
-					break;
-				default:
-					throw new AssertionFailedException();
-			}
-
-			if (PositionAssay.COMPUTE_MAX_DPLX_Q_IGNORING_DISAG) {
-				candidate.getDuplexes().stream().
-					map(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality, true)).
-					max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
-			}
-
-			candidate.resetLigSiteDistances();
-			if (maxDuplexQ.atLeast(DUBIOUS)) {
-				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(maxDuplexQ)).
-					forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
-			}
-
-			final int count = (int)
-				candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(GOOD)).
-					count();
-			candidate.setnGoodDuplexes(count);
-
-			if (!param.rnaSeq) {
-				candidate.getNonMutableConcurringReads().forEachKey(r -> {
-					final int refPosition = location.position;
-					final int readPosition = r.referencePositionToReadPosition(refPosition);
-					if (!r.formsWrongPair()) {
-						final int distance = r.tooCloseToBarcode(readPosition, 0);
-						if (Math.abs(distance) > 160) {
-							throw new AssertionFailedException("Distance problem with candidate " + candidate +
-								" read at read position " + readPosition + " and refPosition " +
-								refPosition + " " + r.toString() + " in analyzer" +
-								analyzer.inputBam.getAbsolutePath() + "; distance is " + distance);
-						}
-						if (distance >= 0) {
-							stats.singleAnalyzerQ2CandidateDistanceToLigationSite.insert(distance);
-						} else {
-							stats.Q2CandidateDistanceToLigationSiteN.insert(-distance);
-						}
-					}
-					return true;
-				});
-			}
-
-			candidate.setnGoodDuplexesIgnoringDisag(candidate.getDuplexes().stream().
-				filter(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD)).
-				collect(uniqueValueCollector()).size());
-
-			totalGoodDuplexes += candidate.getnGoodDuplexes();
-
-			candidate.setnGoodOrDubiousDuplexes(candidate.getDuplexes().stream().
-				filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(DUBIOUS)).
-				collect(uniqueValueCollector()).size());
-
-			totalGoodOrDubiousDuplexes += candidate.getnGoodOrDubiousDuplexes();
-			totalGoodDuplexesIgnoringDisag += candidate.getnGoodDuplexesIgnoringDisag();
-
-			if (candidate.getMutationType().isWildtype()) {
-				candidate.setSupplementalMessage(null);
-				wildtypeBase = candidate.getWildtypeSequence();
-			} else if (candidate.getQuality().getValue().greaterThan(POOR)) {
-
-				final StringBuilder supplementalMessage = new StringBuilder();
-				final Map<String, Integer> stringCounts = new HashMap<>(100);
-
-				candidate.getNonMutableConcurringReads().keySet().stream().map(er -> {
-						String other = er.record.getMateReferenceName();
-						if (er.record.getReferenceName().equals(other))
-							return "";
-						else
-							return other + ":" + er.getMateAlignmentStart();
-					}).forEach(s -> {
-						if ("".equals(s))
-							return;
-						Integer found = stringCounts.get(s);
-						if (found == null){
-							stringCounts.put(s, 1);
-						} else {
-							stringCounts.put(s, found + 1);
-						}
-					});
-
-				final Optional<String> mates = stringCounts.entrySet().stream().map(entry -> entry.getKey() +
-					((entry.getValue() == 1) ? "" : (" (" + entry.getValue() + " repeats)")) + "; ").
-					sorted().reduce(String::concat);
-
-				final String hasMateOnOtherChromosome = mates.isPresent() ? mates.get() : "";
-
-				final IntSummaryStatistics insertSizeStats = candidate.getNonMutableConcurringReads().keySet().stream().
-					mapToInt(er -> Math.abs(er.getInsertSize())).summaryStatistics();
-				final int localMaxInsertSize = insertSizeStats.getMax();
-				final int localMinInsertSize = insertSizeStats.getMin();
-
-				candidate.setMinInsertSize(localMinInsertSize);
-				candidate.setMaxInsertSize(localMaxInsertSize);
-
-				if (localMaxInsertSize < param.minInsertSize || localMinInsertSize > param.maxInsertSize) {
-					candidate.getQuality().add(PositionAssay.INSERT_SIZE, DUBIOUS);
-				}
-
-				final boolean has0PredictedInsertSize = localMinInsertSize == 0;
-
-				final NumberFormat nf = DoubleAdderFormatter.nf.get();
-
-				final boolean hasNoMate = candidate.getNonMutableConcurringReads().keySet().stream().map(er -> er.record.
-					getMateReferenceName() == null).reduce(false, Boolean::logicalOr);
-
-				if (localMaxInsertSize > param.maxInsertSize) {
-					supplementalMessage.append("one predicted insert size is " +
-						nf.format(localMaxInsertSize)).append("; ");
-				}
-
-				if (localMinInsertSize < param.minInsertSize) {
-					supplementalMessage.append("one predicted insert size is " +
-						nf.format(localMinInsertSize)).append("; ");
-				}
-
-				candidate.setAverageMappingQuality((int) candidate.getNonMutableConcurringReads().keySet().stream().
-					mapToInt(r -> r.record.getMappingQuality()).summaryStatistics().getAverage());
-
-				if (!"".equals(hasMateOnOtherChromosome)) {
-					supplementalMessage.append("pair elements map to other chromosomes: " + hasMateOnOtherChromosome).append("; ");
-				}
-
-				if (hasNoMate) {
-					supplementalMessage.append("at least one read has no mate; ");
-				}
-
-				if ("".equals(hasMateOnOtherChromosome) && !hasNoMate && has0PredictedInsertSize) {
-					supplementalMessage.append("at least one insert has 0 predicted size; ");
-				}
-
-				if (candidate.getnWrongPairs() > 0) {
-					supplementalMessage.append(candidate.getnWrongPairs() + " wrong pairs; ");
-				}
-
-				candidate.setSupplementalMessage(supplementalMessage);
-			}
-			maxQuality = max(maxQuality, candidate.getQuality().getValue());
-		}//End loop over candidates
 
 		for (CandidateSequenceI candidate: candidateSet) {
 			candidate.setTotalAllDuplexes(totalAllDuplexes);
@@ -1039,19 +898,225 @@ public final class SubAnalyzer {
 			throw new AssertionFailedException();
 		}
 		result.analyzedCandidateSequences = candidateSet;
+		return result;
+	}//End examineLocation
+
+	private @Nullable Quality getAlleleFrequencyQuality(
+			THashSet<CandidateSequenceI> candidateSet,
+			LocationExaminationResults result) {
 		result.alleleFrequencies = streamTopTwoCandidatesnGDP(candidateSet).
 			mapToObj(i -> (int) (i * 10f / result.nGoodOrDubiousDuplexes)).
 			collect(Collectors.toCollection(() -> new ArrayList<>(2)));
 		while(result.alleleFrequencies.size() < 2) {
 			result.alleleFrequencies.add(0, 99);
 		}
-		return result;
-	}//End examineLocation
+		int topAlleleFrequency = result.alleleFrequencies.get(1);
+		if (!(topAlleleFrequency >= param.minTopAlleleFreqQ2 * 10 &&
+				topAlleleFrequency <= param.maxTopAlleleFreqQ2 * 10)) {
+			return DUBIOUS;
+		}
+		return null;
+	}
 
-	private static IntStream streamTopTwoCandidatesnGDP(Collection<CandidateSequenceI>
-			analyzedCandidateSequences) {
-		return analyzedCandidateSequences.stream().mapToInt(CandidateSequenceI::getnGoodOrDubiousDuplexes).
-			sorted().skip(Math.max(0, analyzedCandidateSequences.size() - 2));
+	@SuppressWarnings("null")
+	private void processCandidateQualityStep1(
+			final CandidateSequenceI candidate,
+			final @NonNull SequenceLocation location,
+			final LocationExaminationResults result,
+			final byte positionMedianPhred,
+			final @NonNull DetailedQualities<PositionAssay> positionQualities) {
+
+		candidate.setMedianPhredAtPosition(positionMedianPhred);
+		//TODO Should report min rather than average collision probability?
+		candidate.setProbCollision((float) result.probAtLeastOneCollision);
+		candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
+		candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
+
+		candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
+			map(r -> r.duplexRead).
+			filter(d -> {
+				boolean nonNull = d != null;
+				if (nonNull && d.invalid) {
+					throw new AssertionFailedException();
+				}
+				return nonNull;
+			}).
+			collect(uniqueValueCollector()));//Collect *unique* duplexes
+
+		candidate.setnDuplexes(candidate.getDuplexes().size());
+
+		if (candidate.getnDuplexes() == 0) {
+			candidate.getQuality().addUnique(NO_DUPLEXES, ATROCIOUS);
+		}
+
+		candidate.getIssues().clear();//This *must* be done to avoid interference
+		//between parameter sets, in parameter exploration runs
+		candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localAndGlobalQuality) != null) {
+			throw new AssertionFailedException();
+		}});
+
+		final Quality posQMin =	positionQualities.getValue(true);
+		final @NonNull Quality maxDuplexQ = candidate.getDuplexes().stream().
+			map(dr -> {
+				if (posQMin != null) {
+					dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
+				}
+				return dr.localAndGlobalQuality.getValue();
+			}).
+			max(Quality::compareTo).orElse(ATROCIOUS);
+
+		switch(param.candidateQ2Criterion) {
+			case "1Q2Duplex":
+				candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
+				break;
+			case "NQ1Duplexes":
+				final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().
+				map(c -> c.duplexRead).
+				collect(uniqueValueCollector()).stream().
+				filter(d -> d != null && d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).
+				atLeast(GOOD)).
+				count();
+				if (countQ1Duplexes >= param.minQ1Duplexes) {
+					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
+				}
+				break;
+			default:
+				throw new AssertionFailedException();
+		}
+
+		if (PositionAssay.COMPUTE_MAX_DPLX_Q_IGNORING_DISAG) {
+			candidate.getDuplexes().stream().
+			map(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality, true)).
+			max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
+		}
+
+		candidate.resetLigSiteDistances();
+		if (maxDuplexQ.atLeast(DUBIOUS)) {
+			candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(maxDuplexQ)).
+			forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
+		}
+
+	}
+
+	private void processCandidateQualityStep2(
+			final CandidateSequenceI candidate,
+			final @NonNull SequenceLocation location,
+			final LocationExaminationResults result,
+			final byte positionMedianPhred,
+			final @NonNull DetailedQualities<PositionAssay> positionQualities
+		) {
+
+		if (!param.rnaSeq) {
+			candidate.getNonMutableConcurringReads().forEachKey(r -> {
+				final int refPosition = location.position;
+				final int readPosition = r.referencePositionToReadPosition(refPosition);
+				if (!r.formsWrongPair()) {
+					final int distance = r.tooCloseToBarcode(readPosition, 0);
+					if (Math.abs(distance) > 160) {
+						throw new AssertionFailedException("Distance problem with candidate " + candidate +
+							" read at read position " + readPosition + " and refPosition " +
+							refPosition + " " + r.toString() + " in analyzer" +
+							analyzer.inputBam.getAbsolutePath() + "; distance is " + distance);
+					}
+					if (distance >= 0) {
+						stats.singleAnalyzerQ2CandidateDistanceToLigationSite.insert(distance);
+					} else {
+						stats.Q2CandidateDistanceToLigationSiteN.insert(-distance);
+					}
+				}
+				return true;
+			});
+		}
+
+		if (candidate.getMutationType().isWildtype()) {
+			candidate.setSupplementalMessage(null);
+		} else if (candidate.getQuality().getValue().greaterThan(POOR)) {
+
+			final StringBuilder supplementalMessage = new StringBuilder();
+			final Map<String, Integer> stringCounts = new HashMap<>(100);
+
+			candidate.getNonMutableConcurringReads().keySet().stream().map(er -> {
+					String other = er.record.getMateReferenceName();
+					if (er.record.getReferenceName().equals(other))
+						return "";
+					else
+						return other + ":" + er.getMateAlignmentStart();
+				}).forEach(s -> {
+					if ("".equals(s))
+						return;
+					Integer found = stringCounts.get(s);
+					if (found == null){
+						stringCounts.put(s, 1);
+					} else {
+						stringCounts.put(s, found + 1);
+					}
+				});
+
+			final Optional<String> mates = stringCounts.entrySet().stream().map(entry -> entry.getKey() +
+				((entry.getValue() == 1) ? "" : (" (" + entry.getValue() + " repeats)")) + "; ").
+				sorted().reduce(String::concat);
+
+			final String hasMateOnOtherChromosome = mates.isPresent() ? mates.get() : "";
+
+			final IntSummaryStatistics insertSizeStats = candidate.getNonMutableConcurringReads().keySet().stream().
+				mapToInt(er -> Math.abs(er.getInsertSize())).summaryStatistics();
+			final int localMaxInsertSize = insertSizeStats.getMax();
+			final int localMinInsertSize = insertSizeStats.getMin();
+
+			candidate.setMinInsertSize(localMinInsertSize);
+			candidate.setMaxInsertSize(localMaxInsertSize);
+
+			if (localMaxInsertSize < param.minInsertSize || localMinInsertSize > param.maxInsertSize) {
+				candidate.getQuality().add(PositionAssay.INSERT_SIZE, DUBIOUS);
+			}
+
+			final boolean has0PredictedInsertSize = localMinInsertSize == 0;
+
+			final NumberFormat nf = DoubleAdderFormatter.nf.get();
+
+			@SuppressWarnings("null")
+			final boolean hasNoMate = candidate.getNonMutableConcurringReads().keySet().stream().
+				map(er -> er.record.getMateReferenceName() == null).//XXX Clarify under what circumstances,
+				//if any, getMateReferenceName could return null
+				reduce(false, Boolean::logicalOr);
+
+			if (localMaxInsertSize > param.maxInsertSize) {
+				supplementalMessage.append("one predicted insert size is " +
+					nf.format(localMaxInsertSize)).append("; ");
+			}
+
+			if (localMinInsertSize < param.minInsertSize) {
+				supplementalMessage.append("one predicted insert size is " +
+					nf.format(localMinInsertSize)).append("; ");
+			}
+
+			candidate.setAverageMappingQuality((int) candidate.getNonMutableConcurringReads().keySet().stream().
+				mapToInt(r -> r.record.getMappingQuality()).summaryStatistics().getAverage());
+
+			if (!"".equals(hasMateOnOtherChromosome)) {
+				supplementalMessage.append("pair elements map to other chromosomes: " + hasMateOnOtherChromosome).append("; ");
+			}
+
+			if (hasNoMate) {
+				supplementalMessage.append("at least one read has no mate; ");
+			}
+
+			if ("".equals(hasMateOnOtherChromosome) && !hasNoMate && has0PredictedInsertSize) {
+				supplementalMessage.append("at least one insert has 0 predicted size; ");
+			}
+
+			if (candidate.getnWrongPairs() > 0) {
+				supplementalMessage.append(candidate.getnWrongPairs() + " wrong pairs; ");
+			}
+
+			candidate.setSupplementalMessage(supplementalMessage);
+		}
+	}
+
+	private static IntStream streamTopTwoCandidatesnGDP(
+			Collection<CandidateSequenceI> candidateSequences) {
+		return candidateSequences.stream().mapToInt(CandidateSequenceI::getnGoodOrDubiousDuplexes).
+			sorted().skip(Math.max(0, candidateSequences.size() - 2));
 	}
 
 	@SuppressWarnings("ReferenceEquality")

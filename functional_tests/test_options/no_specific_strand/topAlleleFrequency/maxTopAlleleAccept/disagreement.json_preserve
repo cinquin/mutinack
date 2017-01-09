@@ -1,0 +1,23 @@
+[
+  {
+    "candidates": null,
+    "name": "ins_stats"
+  },
+  {
+    "candidates": [
+      {
+        "hasAWtStrand": true,
+        "mutationSequence": {
+          "value": "TTTTTGG"
+        },
+        "mutationType": "DELETION",
+        "probCollision": -1,
+        "quality": "GOOD",
+        "templateStrand": null,
+        "wildtype": 0
+      }
+    ],
+    "name": "main_stats"
+  }
+]
+

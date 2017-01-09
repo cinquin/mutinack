@@ -77,22 +77,22 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	static {
 		getHasMaxGroup(DuplexAssay.class);
 		getHasMaxGroup(PositionAssay.class);
 	}
-	
+
 	public DetailedQualities(Class<T> assayClass) {
 		qualities = new CustomEnumMap<>(assayClass);
 		hasMaxGroup = getHasMaxGroup(assayClass);
 	}
-	
+
 	@Override
 	public String toString() {
 		return qualities.toString();
 	}
-	
+
 	public Stream<Entry<T, Quality>> getQualities() {
 		return qualities.entrySet().stream();
 	}
@@ -115,7 +115,7 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 			updateMax(q);
 		}
 	}
-	
+
 	@SuppressWarnings("null")
 	private void updateMin(@NonNull Quality q) {
 		if (min == null) {
@@ -146,8 +146,8 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 		}
 		updateMin(q);
 	}
-	
-	public Quality getValue(boolean allowNullMax) {
+
+	public @Nullable Quality getValue(boolean allowNullMax) {
 		if (!allowNullMax && hasMaxGroup && max == null) {
 			throw new IllegalStateException();
 		}
@@ -157,9 +157,9 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 	public Quality getValue() {
 		return getValue(false);
 	}
-	
+
 	@SuppressWarnings("null")
-	public Quality getValueIgnoring(Set<T> assaysToIgnore, boolean allowNullMax) {
+	public @NonNull Quality getValueIgnoring(Set<T> assaysToIgnore, boolean allowNullMax) {
 		final Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);
 		final Handle<@Nullable Quality> max1 = new Handle<>(null);
 		qualities.forEach((k, v) -> {
@@ -182,7 +182,7 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 		}
 		return Quality.nullableMin(max1Val, min1.get());
 	}
-	
+
 	public Quality getValueIgnoring(Set<T> assaysToIgnore) {
 		return getValueIgnoring(assaysToIgnore, false);
 	}

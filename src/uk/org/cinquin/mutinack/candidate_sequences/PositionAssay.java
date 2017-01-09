@@ -18,6 +18,8 @@ public enum PositionAssay implements AssayInfo {
 
 	TOO_HIGH_COVERAGE,
 
+	TOP_ALLELE_FREQUENCY,
+
 	INSERT_SIZE,
 
 	NO_DUPLEXES,

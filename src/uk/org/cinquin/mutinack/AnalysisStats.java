@@ -110,12 +110,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 		if (reportCoverageAtAllPositions) {
 			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
+			nPosDuplexCandidatesForDisagreementQ1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
 			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
 			nPosDuplexTooFewReadsPerStrand1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
 			nPosDuplexTooFewReadsPerStrand2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
 			nPosDuplexTooFewReadsAboveQ2Phred = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
 		} else {
 			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
+			nPosDuplexCandidatesForDisagreementQ1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 			nPosDuplexTooFewReadsPerStrand1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 			nPosDuplexTooFewReadsPerStrand2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
@@ -583,6 +585,10 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	@AddChromosomeBins
+	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ1;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2TooHighCoverage;

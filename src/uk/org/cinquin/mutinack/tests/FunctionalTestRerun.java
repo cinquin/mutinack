@@ -172,12 +172,13 @@ public class FunctionalTestRerun {
 							run.parameters.jsonFilePathExtraPrefix).
 						directory(new File(referenceOutputDirectory)).redirectErrorStream(true);
 					Process process = pb.start();
-					DataInputStream processOutput = new DataInputStream(process.getInputStream());
-					process.waitFor();
-					if (process.exitValue() != 0) {
-						byte[] processBytes = new byte[processOutput.available()];
-						processOutput.readFully(processBytes);
-						throw new FunctionalTestFailed(testName + "\n" + new String(processBytes));
+					try(DataInputStream processOutput = new DataInputStream(process.getInputStream())) {
+						process.waitFor();
+						if (process.exitValue() != 0) {
+							byte[] processBytes = new byte[processOutput.available()];
+							processOutput.readFully(processBytes);
+							throw new FunctionalTestFailed(testName + "\n" + new String(processBytes));
+						}
 					}
 					return;
 				} else {

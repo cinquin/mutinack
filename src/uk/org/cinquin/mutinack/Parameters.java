@@ -76,6 +76,9 @@ public final class Parameters implements Serializable, Cloneable {
 			throw new IllegalArgumentException("Parameter ignoreFirstNBasesQ2 must be greater than ignoreFirstNBasesQ1");
 		}
 
+		checkRange(minTopAlleleFreqQ2, "minTopAlleleFreqQ2", 0, 1);
+		checkRange(maxTopAlleleFreqQ2, "minTopAlleleFreqQ2", 0, 1);
+
 		final int nMaxDupArg = maxNDuplexes.size();
 		if (nMaxDupArg > 0 && nMaxDupArg < inputReads.size()) {
 			throw new IllegalArgumentException("maxNDuplexes must be specified once for each input file or not at all");
@@ -138,6 +141,13 @@ public final class Parameters implements Serializable, Cloneable {
 			if (!(value instanceof Integer) && !(value instanceof Float) && !(value instanceof Boolean)) {
 				throw new IllegalArgumentException("Parameter " + paramName + " is not a number or boolean");
 			}
+		}
+	}
+
+	private static void checkRange(float paramValue, String name, float min, float max) {
+		if (paramValue < min || paramValue > max) {
+			throw new IllegalArgumentException("Parameter " + name + " should be between " + min + " and " +
+				max + " but is " + paramValue);
 		}
 	}
 
@@ -421,6 +431,12 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value divided by 10 are reported and marked with a % sign", required = false)
 	public int topAlleleFreqReport = 3;
+
+	@Parameter(names = "-minTopAlleleFreqQ2", description = "Only positions where the frequency of the top allele is at least this high can contribute Q2 candidates", required = false)
+	public float minTopAlleleFreqQ2 = 0;
+
+	@Parameter(names = "-maxTopAlleleFreqQ2", description = "Only positions where the frequency of the top allele is at least this low can contribute Q2 candidates", required = false)
+	public float maxTopAlleleFreqQ2 = 1;
 
 	@Parameter(names = "-minBasePhredScoreQ1", description = "Bases whose Phred quality score is below this threshold" +
 		" are discarded (keeping this relatively low helps identify problematic reads)", required = false)
