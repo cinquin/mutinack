@@ -1,0 +1,1 @@
+A single duplex is seen that has 1) only 1 strand represented, 2) enough reads of that strand to pass Q2, and 3) carries a mutation (a deletion) that thus represents a "single-stranded disagreement".

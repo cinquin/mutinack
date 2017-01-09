@@ -154,7 +154,7 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 		return Quality.nullableMin(max, min);
 	}
 
-	public Quality getValue() {
+	public @Nullable Quality getValue() {
 		return getValue(false);
 	}
 

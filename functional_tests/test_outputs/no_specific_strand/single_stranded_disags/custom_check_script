@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+set -o pipefail
+source ../../../bash_json_functions
+
+extract_json "" "chrIV:14,941,896" ".disagreements" ${1}stats.json ${1}filtered.json
+compare_jsons ${1}filtered.json disagreement.json_preserve
+
+./jq --slurp --raw-output 'map(.samples[0]) | map(.stats) | .[] | map(select(.name == "main_stats")) | map(.nPosDuplexCandidatesForDisagreementQ1.seqLocCounters["chrIV"])' ${1}stats.json > ${1}filtered.json
+compare_jsons ${1}filtered.json coverage.json_preserve
+
+touch run.out.check custom_check

@@ -936,6 +936,7 @@ public class Mutinack implements Actualizable, Closeable {
 					s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
 					s.topBottomInsDisagreementsQ2.addPredicate(contigName, p);
 					s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(contigName, p);
+					s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(contigName, p);
 					s.codingStrandSubstQ2.addPredicate(contigName, p);
 					s.templateStrandSubstQ2.addPredicate(contigName, p);
 					s.codingStrandDelQ2.addPredicate(contigName, p);
@@ -975,6 +976,7 @@ public class Mutinack implements Actualizable, Closeable {
 						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
 						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
 						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+						s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(filterName, filter);
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
 						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
 						s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
@@ -992,6 +994,7 @@ public class Mutinack implements Actualizable, Closeable {
 						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
 						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
 						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
+						s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(notFilterName, notFilter);
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
 						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(notFilterName, notFilter);
 						s.nPosCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
@@ -1023,6 +1026,7 @@ public class Mutinack implements Actualizable, Closeable {
 						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
 						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
 						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
+						s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(filterName, filter);
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
 						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
 						s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);

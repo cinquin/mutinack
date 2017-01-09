@@ -844,7 +844,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					(int) (d.probCollision * 1_000d));
 			}
 
-			byte[] fstSeq = d.getFst().getSequence();
+			byte[] fstSeq = d.getFst() == null ? null : d.getFst().getSequence();
 			if (fstSeq == null) {
 				fstSeq = QUESTION_MARK;
 			}
@@ -864,27 +864,27 @@ public class SubAnalyzerPhaser extends Phaser {
 						stats.noWtDisagreementWriter;
 				if (tpdw != null) {
 					tpdw.append(location.getContigName() + "\t" +
-							(location.position + 1) + "\t" + (location.position + 1) + "\t" +
-							(mutant.mutationType == SUBSTITUTION ?
-									(new String(fstSeq) + "" + new String(sndSeq))
-								:
-									new String (sndSeq)) + "\t" +
-							mutant.mutationType + "\t" +
-							(d.hasAWtStrand ? "" : (d.getFst().mutationType)) + "\t" +
-							examResults.duplexInsertSize10thP + "\t" +
-							examResults.duplexInsertSize90thP + "\t" +
-							examResults.alleleFrequencies.get(0) + "\t" +
-							examResults.alleleFrequencies.get(1) + "\t" +
-							mediumLengthFloatFormatter.get().format(d.probCollision) + "\t" +
-							mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + "\t" +
-							entry.getValue().size() + "\t" +
-							((stats.analysisParameters.verbosity < 2) ? "" :
-							entry.getValue().stream().limit(20).map(dp ->
-								Stream.concat(dp.topStrandRecords.stream(),
-									dp.bottomStrandRecords.stream())/*.findFirst()*/.
-									map(ExtendedSAMRecord::getFullName).collect(Collectors.joining(", ", "{ ", " }"))
-							).collect(Collectors.joining(", ", "[ ",         " ]"))) +
-							"\n");
+						(location.position + 1) + "\t" + (location.position + 1) + "\t" +
+						(mutant.mutationType == SUBSTITUTION ?
+								(new String(fstSeq) + "" + new String(sndSeq))
+							:
+								new String (sndSeq)) + "\t" +
+						mutant.mutationType + "\t" +
+						(d.hasAWtStrand ? "" : (d.getFst() != null ? d.getFst().mutationType : "-")) + "\t" +
+						examResults.duplexInsertSize10thP + "\t" +
+						examResults.duplexInsertSize90thP + "\t" +
+						examResults.alleleFrequencies.get(0) + "\t" +
+						examResults.alleleFrequencies.get(1) + "\t" +
+						mediumLengthFloatFormatter.get().format(d.probCollision) + "\t" +
+						mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + "\t" +
+						entry.getValue().size() + "\t" +
+						((stats.analysisParameters.verbosity < 2) ? "" :
+						entry.getValue().stream().limit(20).map(dp ->
+							Stream.concat(dp.topStrandRecords.stream(),
+								dp.bottomStrandRecords.stream())/*.findFirst()*/.
+								map(ExtendedSAMRecord::getFullName).collect(Collectors.joining(", ", "{ ", " }"))
+						).collect(Collectors.joining(", ", "[ ",         " ]"))) +
+						"\n");
 				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);

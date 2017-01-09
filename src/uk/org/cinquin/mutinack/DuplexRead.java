@@ -640,7 +640,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 			dq.addUnique(N_READS_PER_STRAND, GOOD);
 		} else if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ1 &&
 				nTopStrandsWithCandidate >= param.minReadsPerStrandQ1) {
-			dq.addUnique(N_READS_PER_STRAND, DUBIOUS);
+			if (bottom != null && top != null) {
+				dq.addUnique(N_READS_PER_STRAND, DUBIOUS);
+			}
 			stats.nPosDuplexTooFewReadsPerStrand2.accept(location);
 			result.strandCoverageImbalance = Math.max(result.strandCoverageImbalance,
 					Math.abs(bottomStrandRecords.size() - topStrandRecords.size()));
@@ -670,6 +672,17 @@ public final class DuplexRead implements HasInterval<Integer> {
 				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
+		dq.addUnique(TOP_STRAND_MAP_Q2,
+			new IntMinMax<ExtendedSAMRecord>().
+				defaultMax(255).
+				acceptMax(topCounter.keptRecords,
+					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
+				getMax()
+			>= param.minMappingQualityQ2 ?
+				MAXIMUM
+			:
+				DUBIOUS);
+
 		if (dq.getValue().atLeast(GOOD)) {
 			//Check if criteria are met even if ignoring bases with
 			//Phred quality scores that do not meet Q2 threshold
@@ -698,16 +711,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 			}
 		}
 
-		dq.addUnique(TOP_STRAND_MAP_Q2,
-			new IntMinMax<ExtendedSAMRecord>().defaultMax(255).
-				acceptMax(topCounter.keptRecords,
-					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
-				getMax()
-			>= param.minMappingQualityQ2 ?
-				MAXIMUM
-			:
-				DUBIOUS);
-
 		dq.addUnique(BOTTOM_STRAND_MAP_Q2,
 			new IntMinMax<ExtendedSAMRecord>().defaultMax(255).
 				acceptMax(bottomCounter.keptRecords,
@@ -718,7 +721,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 			:
 				DUBIOUS);
 
-		final boolean bothStrandsPresent = bottom != null && top != null;
 		final boolean thresholds2Met, thresholds1Met;
 
 		thresholds2Met = ((top != null) ? top.count >= param.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
@@ -811,6 +813,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 			enoughReadsForQ2Disag &&
 			dq.getValue().atLeast(GOOD);
 
+		final boolean bothStrandsPresent = bottom != null && top != null;
+
 		final boolean noHiddenCandidateAndBSP = bothStrandsPresent &&
 			!top.candidate.isHidden() &&
 			!bottom.candidate.isHidden();
@@ -834,7 +838,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		if (!bothStrandsPresent) {
 			if (okForOneStrandedDisag && !(nonNullEval.candidate.getMutationType() == MutationType.WILDTYPE)) {
-				duplexDisagreement = new DuplexDisagreement(nonNullEval.candidate.getMutation(), null, false, DUBIOUS);
+				duplexDisagreement = new DuplexDisagreement(null, nonNullEval.candidate.getMutation(), false, DUBIOUS);
 				duplexDisagreement.probCollision = probAtLeastOneCollision;
 			} else {
 				duplexDisagreement = null;
@@ -948,10 +952,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 				}//End case with one wildtype candidate
 			}//End highEnoughQualForQ2Disagreement
 		}//End candidate for disagreement
-
-		Assert.isFalse(duplexDisagreement != null &&
-				dq.getValueIgnoring(assaysToIgnoreForDisagreementQuality).lowerThan(GOOD),
-			dq::toString);
 
 		if (duplexDisagreement != null) {
 			result.disagreements.addAt(duplexDisagreement, this);
