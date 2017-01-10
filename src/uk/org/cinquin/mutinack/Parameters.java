@@ -77,7 +77,8 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 
 		checkRange(minTopAlleleFreqQ2, "minTopAlleleFreqQ2", 0, 1);
-		checkRange(maxTopAlleleFreqQ2, "minTopAlleleFreqQ2", 0, 1);
+		checkRange(maxTopAlleleFreqQ2, "maxTopAlleleFreqQ2", 0, 1);
+		checkRange(maxMutFreqForDisag, "maxMutFreqForDisag", 0, 1);
 
 		final int nMaxDupArg = maxNDuplexes.size();
 		if (nMaxDupArg > 0 && nMaxDupArg < inputReads.size()) {
@@ -425,6 +426,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-Q2DisagCapsMatchingMutationQuality", description = "Q2 disagreement in the same sample or in sister sample caps to Q1 the quality of matching, same-position mutations from other duplexes", required = false, arity = 1)
 	@OnlyUsedAfterDuplexGrouping
 	public boolean Q2DisagCapsMatchingMutationQuality = true;
+
+	@Parameter(names = "-maxMutFreqForDisag", description = "Disagreements are marked as Q0 if the frequency of matching mutation candidates at the same position is greater than this threshold; " +
+		"note that this parameter does NOT affect coverage", required = false, arity = 1)
+	@OnlyUsedAfterDuplexGrouping
+	public float maxMutFreqForDisag = 1.0f;
 
 	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawMismatches = true;

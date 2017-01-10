@@ -22,9 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import contrib.net.sf.picard.util.IterableAdapter;
 import gnu.trove.map.hash.THashMap;
@@ -39,7 +39,7 @@ import gnu.trove.map.hash.THashMap;
 public class MapOfLists<K, V> implements Serializable, Iterable<Entry<K, List<V>>> {
 
 	private static final long serialVersionUID = -7056033474949626637L;
-	private final Map<K, List<V>> map = new THashMap<>();
+	private final THashMap<K, List<V>> map = new THashMap<>();
 
 	public void addAt(K k, V v) {
 		map.computeIfAbsent(k, key -> new ArrayList<>()).add(v);
@@ -89,6 +89,10 @@ public class MapOfLists<K, V> implements Serializable, Iterable<Entry<K, List<V>
 
 	public Iterable<K> keys() {
 		return new IterableAdapter<>(map.keySet().iterator());
+	}
+
+	public void forEachKey(Predicate<K> predicate) {
+		map.forEachKey(predicate::test);
 	}
 
 	@Override

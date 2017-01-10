@@ -17,7 +17,7 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 	private static final long serialVersionUID = 8966639744689364931L;
 
 	public @Final boolean hasAWtStrand;
-	public @Final @Persistent Quality quality;//For now only ever Q1 or Q2
+	public @Persistent Quality quality;
 
 	//Not taken into account for equality
 	public double probCollision;

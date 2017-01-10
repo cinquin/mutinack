@@ -89,6 +89,7 @@ import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
@@ -846,9 +847,27 @@ public final class SubAnalyzer {
 			}
 		} while(Boolean.valueOf(null));//Assert never reached
 
+
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
 			result.disagreements.clear();
 		} else {
+			if (param.maxMutFreqForDisag < 1f) {
+				final int finalTotalGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;
+				result.disagreements.forEachKey(disag -> {
+					Mutation m = disag.getSnd();
+					if (!(lowMutFreq(m, candidateSet, finalTotalGoodOrDubiousDuplexes))) {
+						disag.quality = Quality.min(disag.quality, POOR);
+					}
+					m = disag.getFst();
+					if (m != null && m.mutationType != WILDTYPE) {
+						if (!(lowMutFreq(m, candidateSet, finalTotalGoodOrDubiousDuplexes))) {
+							disag.quality = Quality.min(disag.quality, POOR);
+						}
+					}
+					return true;
+				});
+			}
+
 			stats.nPosDuplexCandidatesForDisagreementQ2.acceptSkip0(location, result.disagQ2Coverage);
 			stats.nPosDuplexCandidatesForDisagreementQ1.acceptSkip0(location, result.disagOneStrandedCoverage);
 			if (param.computeRawMismatches) {
@@ -902,6 +921,22 @@ public final class SubAnalyzer {
 		result.analyzedCandidateSequences = candidateSet;
 		return result;
 	}//End examineLocation
+
+	private boolean lowMutFreq(Mutation mut, THashSet<CandidateSequenceI> candidateSet, int nGOrDDuplexes) {
+		Objects.requireNonNull(mut);
+		Handle<Boolean> result = new Handle<>(true);
+		candidateSet.forEach((CandidateSequenceI c) -> {
+			Mutation cMut = c.getMutation();
+			if (cMut.equals(mut)) {
+				if (c.getnGoodOrDubiousDuplexes() > param.maxMutFreqForDisag * nGOrDDuplexes) {
+					result.set(false);
+				}
+				return false;
+			}
+			return true;
+		});
+		return result.get();
+	}
 
 	private @Nullable Quality getAlleleFrequencyQuality(
 			THashSet<CandidateSequenceI> candidateSet,
