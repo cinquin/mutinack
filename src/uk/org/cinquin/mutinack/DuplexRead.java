@@ -838,7 +838,20 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		if (!bothStrandsPresent) {
 			if (okForOneStrandedDisag && !(nonNullEval.candidate.getMutationType() == MutationType.WILDTYPE)) {
-				duplexDisagreement = new DuplexDisagreement(null, nonNullEval.candidate.getMutation(), false, DUBIOUS);
+				final boolean reverseComplementDisag =
+					topStrandIsNegative ?
+						nonNullEval == top
+					:
+						nonNullEval == bottom;
+
+				duplexDisagreement = new DuplexDisagreement(
+					null,
+					reverseComplementDisag ?
+						nonNullEval.candidate.getMutation().reverseComplement()
+					:
+						nonNullEval.candidate.getMutation(),
+					false,
+					DUBIOUS);
 				duplexDisagreement.probCollision = probAtLeastOneCollision;
 			} else {
 				duplexDisagreement = null;
