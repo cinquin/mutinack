@@ -846,12 +846,11 @@ public final class SubAnalyzer {
 			}
 		} while(Boolean.valueOf(null));//Assert never reached
 
-		stats.nPosDuplexCandidatesForDisagreementQ1.acceptSkip0(location, result.disagOneStrandedCoverage);
-
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
 			result.disagreements.clear();
 		} else {
 			stats.nPosDuplexCandidatesForDisagreementQ2.acceptSkip0(location, result.disagQ2Coverage);
+			stats.nPosDuplexCandidatesForDisagreementQ1.acceptSkip0(location, result.disagOneStrandedCoverage);
 			if (param.computeRawMismatches) {
 				candidateSet.stream().flatMap(c -> c.getRawMismatchesQ2().stream()).
 					forEach(result.rawMismatchesQ2::add);
