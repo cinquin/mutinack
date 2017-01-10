@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import contrib.net.sf.picard.util.IterableAdapter;
+import gnu.trove.map.hash.THashMap;
 
 /**
  * NB: Unlike most other classes in this project, this class is not thread safe.
@@ -39,12 +39,12 @@ import contrib.net.sf.picard.util.IterableAdapter;
 public class MapOfLists<K, V> implements Serializable, Iterable<Entry<K, List<V>>> {
 
 	private static final long serialVersionUID = -7056033474949626637L;
-	private final Map<K, List<V>> map = new HashMap<>();
-	
+	private final Map<K, List<V>> map = new THashMap<>();
+
 	public void addAt(K k, V v) {
 		map.computeIfAbsent(k, key -> new ArrayList<>()).add(v);
 	}
-	
+
 	public void addAt(K k, List<V> list) {
 		map.computeIfAbsent(k, key -> new ArrayList<>()).addAll(list);
 	}
@@ -60,7 +60,7 @@ public class MapOfLists<K, V> implements Serializable, Iterable<Entry<K, List<V>
 	public Set<K> keySet() {
 		return map.keySet();
 	}
-	
+
 	public Set<Entry<K, List<V>>> entrySet() {
 		return map.entrySet();
 	}

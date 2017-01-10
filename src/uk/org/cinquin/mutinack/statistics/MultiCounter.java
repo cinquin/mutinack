@@ -209,6 +209,14 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			accept(loc, (double) l);
 	}
 
+	public void acceptSkip0(@NonNull SequenceLocation loc, long l) {
+		if (l == 0) {
+			return;
+		}
+		if (on)
+			accept(loc, (double) l);
+	}
+
 	public double getSum(String predicateName) {
 		if (counters.containsKey(predicateName)) {
 			return counters.get(predicateName).getSnd().sum();
