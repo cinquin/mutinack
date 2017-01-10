@@ -1146,6 +1146,9 @@ public class Mutinack implements Actualizable, Closeable {
 			final PrintStream printStream = (signal == null) ? out : err;
 			for (Mutinack analyzer: analyzers) {
 				analyzer.printStatus(printStream, signal != null);
+				printStream.println("Processing at " + ((int) analyzer.stats.get(0).processingThroughput(
+						analyzer.timeStartProcessing)) +
+					" records / s");
 			}
 			printStream.flush();
 
@@ -1336,8 +1339,8 @@ public class Mutinack implements Actualizable, Closeable {
 
 		infoSignalHandler.handle(null);
 		if (!param.noStatusMessages) {
-			Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name
-				+ " at " + ((int) a.stats.get(0).processingThroughput(a.timeStartProcessing)) +
+			Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name +
+				" at " + ((int) a.stats.get(0).processingThroughput(a.timeStartProcessing)) +
 				" records / s").//TODO Improve reporting
 				collect(Collectors.joining(", ")) + " completed on host " +
 				StaticStuffToAvoidMutating.hostName +
