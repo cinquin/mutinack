@@ -380,8 +380,13 @@ public class ReadLoader {
 
 						//Put samRecord into map of reads to possibly be processed in next batch
 						if (readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref)) != null) {
-							throw new RuntimeException("Read " + extended.getFullName() + " read twice from " +
+							if (!param.randomizeMates) {//The assertion can be triggered when randomizing, probably
+								//because of supplementary alignments; just suppress the assertion when randomizing:
+								//the duplication could be indicative of a problem upstream, but otherwise it should
+								//be harmless
+								throw new RuntimeException("Read " + extended.getFullName() + " read twice from " +
 									analyzer.inputBam.getAbsolutePath());
+							}
 						}
 						furthestPositionReadInContig = Math.max(furthestPositionReadInContig,
 								samRecord.getAlignmentEnd() - 1);
