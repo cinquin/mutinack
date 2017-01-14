@@ -97,7 +97,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
 	public final @NonNull List<@NonNull ExtendedSAMRecord> topStrandRecords = new ArrayList<>(100),
 			bottomStrandRecords = new ArrayList<>(100);
-	private int totalNRecords = -1;
+	int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
 	//Only used for debugging
@@ -107,6 +107,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private int minInsertSize = -1;
 	public double probAtLeastOneCollision = -1;
 	public boolean missingStrand = false;
+	float minFracTopCandidate = Float.MAX_VALUE;
 	private Boolean topStrandIsNegative;//Use Boolean just to make sure an NPE is generated
 	//if property is accessed before it has been computed
 
@@ -723,11 +724,19 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		final boolean thresholds2Met, thresholds1Met;
 
-		thresholds2Met = ((top != null) ? top.count >= param.minConsensusThresholdQ2 * nTopStrandsWithCandidate : false) &&
-			(bottom != null ? bottom.count >= param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate : false);
+		thresholds2Met = ((top != null) && top.count >= param.minConsensusThresholdQ2 * nTopStrandsWithCandidate) &&
+			(bottom != null && bottom.count >= param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate);
 
-		thresholds1Met = (top != null ? top.count >= param.minConsensusThresholdQ1 * nTopStrandsWithCandidate : true) &&
-			(bottom != null ? bottom.count >= param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate : true);
+		thresholds1Met = (top == null || top.count >= param.minConsensusThresholdQ1 * nTopStrandsWithCandidate) &&
+			(bottom == null || bottom.count >= param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate);
+
+		if (top != null) {
+			minFracTopCandidate = top.count / ((float) nTopStrandsWithCandidate);
+		}
+
+		if (bottom != null) {
+			minFracTopCandidate = Math.min(minFracTopCandidate, bottom.count / ((float) nBottomStrandsWithCandidate));
+		}
 
 		if (!thresholds1Met) {
 			//TODO Following quality assignment is redundant with CONSENSUS_Q0 below

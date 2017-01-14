@@ -274,6 +274,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram minTopCandFreqQ2PosTopAlleleFreqOK = new Histogram(11);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram minTopCandFreqQ2PosTopAlleleFreqKO = new Histogram(11);
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram duplexTotalRecords = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
