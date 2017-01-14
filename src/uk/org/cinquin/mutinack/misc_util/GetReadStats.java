@@ -31,7 +31,7 @@ public class GetReadStats {
 			File bamFile, int maxInsertSize, int minMappingQualityQ2) {
 		final Histogram h;
 		try (SAMFileReader tempReader = new SAMFileReader(bamFile)) {
-			h = GetReadStats.getInsertSizeHist(tempReader.iterator(), 500_000,
+			h = getInsertSizeHist(tempReader.iterator(), 500_000,
 				r -> r.getInferredInsertSize() != 0 &&
 						r.getMappingQuality() >= minMappingQualityQ2 &&
 						Math.abs(r.getInferredInsertSize()) < maxInsertSize);

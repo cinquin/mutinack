@@ -45,15 +45,13 @@ public class TSVMapReader {
 		try(Stream<String> lines = r.lines()) {
 			lines.forEachOrdered(l -> {
 				@NonNull String[] components = l.split("\t");
-				List<String> suppInfo = new ArrayList<>();
-				suppInfo.addAll(Arrays.asList(components).subList(2, components.length));
+				List<String> suppInfo = new ArrayList<>(Arrays.asList(components).subList(2, components.length));
 				Pair<Set<String>, Set<String>> entry = tempMap.get(components[0]);
 				if (entry != null) {
 					entry.fst.add(components[1]);
 					entry.snd.addAll(suppInfo);
 				} else {
-					Set<String> suppInfoSet = new HashSet<>();
-					suppInfoSet.addAll(suppInfo);
+					Set<String> suppInfoSet = new HashSet<>(suppInfo);
 					
 					Set<String> nameSet = new HashSet<>();
 					nameSet.add(components[1]);
@@ -70,7 +68,7 @@ public class TSVMapReader {
 			final String name;
 			Assert.isFalse(geneNames.isEmpty());
 			name = geneNames.stream().collect(Collectors.joining("="));
-			result.put(e.getKey(), name + "\t" + e.getValue().snd);
+			result.put(e.getKey(), name + '\t' + e.getValue().snd);
 		}
 		
 		return result;

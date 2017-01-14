@@ -182,12 +182,12 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 						printingSorter).collect(Collectors.toList())) {
 			b.append(e.getKey()).append(": ").append(e.getValue().snd.toString()).
 			append("; total: ").append(DoubleAdderFormatter.formatDouble(e.getValue().snd.sum())).
-			append("\n");
+			append('\n');
 		}
 		for (Entry<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>> e: seqLocCounters.entrySet().
 				stream().sorted((Comparator<? super Entry<String, Pair<SerializablePredicate<SequenceLocation>, ICounterSeqLoc>>>)
 						printingSorter).collect(Collectors.toList())) {
-			b.append(e.getKey()).append(": ").append(e.getValue().snd.toString()).append("\n");
+			b.append(e.getKey()).append(": ").append(e.getValue().snd.toString()).append('\n');
 			/*b.append(e.getKey()).append(": total ").append(e.getValue().snd.totalSum()).
 			append("; ").append(e.getValue().snd.toString()).append("\n");*/
 		}

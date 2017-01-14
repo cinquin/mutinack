@@ -232,7 +232,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				final int firstIndex = name.indexOf("BC:Z:");
 				if (firstIndex == -1) {
 					throw new ParseRTException("Missing first barcode for read " + name +
-						" " + record.toString() + " from analyzer " + analyzer);
+						' ' + record.toString() + " from analyzer " + analyzer);
 				}
 				final int index;
 				if (record.getFirstOfPairFlag()) {
@@ -241,10 +241,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 					index = name.indexOf("BC:Z:", firstIndex + 1);
 					if (index == -1) {
 						throw new ParseRTException("Missing second barcode for read " + name +
-							" " + record.toString() + " from analyzer " + analyzer);
+							' ' + record.toString() + " from analyzer " + analyzer);
 					}
 				}
-				fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf("_", index)));
+				fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf('_', index)));
 			} else {
 				fullBarcodeString = bcAttr;
 			}

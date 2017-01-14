@@ -146,7 +146,7 @@ public class FunctionalTestRerun {
 
 		Path referenceOutputPath = Paths.get(run.parameters.referenceOutput);
 		String auxOutputFileBaseName = Files.createTempDirectory("functional_test_").toString();
-		run.parameters.auxOutputFileBaseName = auxOutputFileBaseName + "/";
+		run.parameters.auxOutputFileBaseName = auxOutputFileBaseName + '/';
 
 		run.parameters.jsonFilePathExtraPrefix = ManagementFactory.getRuntimeMXBean().getName() +
 			this.hashCode();
@@ -177,7 +177,7 @@ public class FunctionalTestRerun {
 						if (process.exitValue() != 0) {
 							byte[] processBytes = new byte[processOutput.available()];
 							processOutput.readFully(processBytes);
-							throw new FunctionalTestFailed(testName + "\n" + new String(processBytes));
+							throw new FunctionalTestFailed(testName + '\n' + new String(processBytes));
 						}
 					}
 					return;
@@ -192,7 +192,7 @@ public class FunctionalTestRerun {
 			File baseOutputDir = referenceOutputPath.getParent().toFile();
 			for (String expectedOutputBaseName: baseOutputDir.list((file, name) -> name.startsWith("expected_")
 					&& !name.equals("expected_run.out") && !name.equals("expected_output.txt"))) {
-				File actualOutputFile = new File(auxOutputFileBaseName + "/" +
+				File actualOutputFile = new File(auxOutputFileBaseName + '/' +
 					expectedOutputBaseName.replace("expected_", ""));
 				if (!actualOutputFile.exists()) {
 					throw new FunctionalTestFailed("Output file " +
@@ -203,7 +203,7 @@ public class FunctionalTestRerun {
 				//underlying file does not get closed (apparently even
 				//after the stream gets read to the end)
 				try (Stream<String> linesToLookFor = Files.lines(Paths.get(baseOutputDir.getAbsolutePath() +
-						"/" + expectedOutputBaseName))) {
+					'/' + expectedOutputBaseName))) {
 					checkOutput(FileUtils.readFileToString(actualOutputFile),
 						linesToLookFor);
 				}
@@ -247,7 +247,7 @@ public class FunctionalTestRerun {
 								if (suppMessage.length() == 0) {
 									suppMessage.append("Did find\n");
 								}
-								suppMessage.append(outLine).append("\n");
+								suppMessage.append(outLine).append('\n');
 							}
 						}
 				} catch (IOException e) {

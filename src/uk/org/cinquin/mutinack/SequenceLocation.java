@@ -68,7 +68,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 
 		@Override
 		public String toString() {
-			return contigIndex + "\t" + position + "\t" + plusHalf + "\t" + referenceGenome;
+			return contigIndex + "\t" + position + '\t' + plusHalf + '\t' + referenceGenome;
 		}
 
 		@Override
@@ -200,7 +200,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 
 	@Override
 	public String toString() {
-		return getContigName() + ":" +
+		return getContigName() + ':' +
 				nf.get().format(position + 1) +
 				(plusHalf ? ".5" : "");//Internal indexing starts at 0
 	}

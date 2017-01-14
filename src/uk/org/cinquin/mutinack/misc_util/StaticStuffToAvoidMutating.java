@@ -143,7 +143,7 @@ public class StaticStuffToAvoidMutating {
 							contigSizes0.put(curName, currentLength.get());
 							currentLength.set(0);
 						}
-						int endName = l.indexOf(" ");
+						int endName = l.indexOf(' ');
 						if (endName == -1) {
 							endName = l.length();
 						}

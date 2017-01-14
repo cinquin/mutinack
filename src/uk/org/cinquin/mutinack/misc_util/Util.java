@@ -273,7 +273,6 @@ public class Util {
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);
 
 		final SettableInteger lineModulo = new SettableInteger(0);
-		final String[] readNameHandle = new String[1];
 		final String pairIDs = Integer.toString(pairID);
 		final Handle<FourLines> fourLines = new Handle<>();
 		fourLines.set(new FourLines());
@@ -295,7 +294,7 @@ public class Util {
 				//String line3 = localFourLines.lines.get(2);
 				@NonNull String line4 = Objects.requireNonNull(localFourLines.lines.get(3));
 
-				String name = line1.substring(1, line1.indexOf(" ")) + "--";
+				String name = line1.substring(1, line1.indexOf(' ')) + "--";
 				if (pairID != 0) {
 					name += pairIDs;
 				}
@@ -309,7 +308,7 @@ public class Util {
 				}
 
 				if (rawReads.put(name, read) != null) {
-					throw new RuntimeException("Read " + readNameHandle[0] +
+					throw new RuntimeException("Read " + name +
 							" was found twice in file " + file.getName());
 				}
 				if (processingQueue.isEmpty()) { //May have reached the end point
@@ -534,7 +533,7 @@ public class Util {
 	public static void writePID(@NonNull String path) {
 		//TODO Switch to Process API when Java 9 is out
 		final String name = ManagementFactory.getRuntimeMXBean().getName();
-		final String pidString = name.split("@")[0] + "\n";
+		final String pidString = name.split("@")[0] + '\n';
 		try (PrintWriter pidOut = new PrintWriter(path)) {
 			pidOut.write(pidString);
 		} catch (FileNotFoundException e) {

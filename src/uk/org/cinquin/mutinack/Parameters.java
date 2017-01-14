@@ -750,7 +750,7 @@ public final class Parameters implements Serializable, Cloneable {
 					File f = new File(s);
 					String canonical = f.getCanonicalPath();
 					if (f.isDirectory()) {
-						return canonical + "/";
+						return canonical + '/';
 					} else {
 						return canonical;
 					}
@@ -845,17 +845,17 @@ public final class Parameters implements Serializable, Cloneable {
 					fieldHasDefaultValue = (Boolean) equalsMethod.invoke(fieldValue, fieldDefaultValue);
 				}
 				if (fieldHasDefaultValue) {
-					defaultValuesString += "Default parameter value: " + stringValue + "\n";
+					defaultValuesString += "Default parameter value: " + stringValue + '\n';
 				} else {
-					nonDefaultValuesString += "Non-default parameter value: " + stringValue + "\n";
+					nonDefaultValuesString += "Non-default parameter value: " + stringValue + '\n';
 				}
 			} catch (IllegalArgumentException | IllegalAccessException |
 					InvocationTargetException | NoSuchMethodException | SecurityException e) {
 				throw new RuntimeException(e);
 			}
 		}
-		return "Working directory: " + System.getProperty("user.dir") + "\n" +
-				nonDefaultValuesString + "\n" + defaultValuesString + "\n";
+		return "Working directory: " + System.getProperty("user.dir") + '\n' +
+				nonDefaultValuesString + '\n' + defaultValuesString + '\n';
 	}
 
 	public Object getFieldValue(String name) {
@@ -991,7 +991,7 @@ public final class Parameters implements Serializable, Cloneable {
 					if (names.contains(f.getName())) {
 						out.append(p.getNames()).append('\n');
 						String def = (required ? "\nRequired parameter" : (p.getDefault() == null ? "" : ("\nDefault: " +
-								p.getDefault().toString().trim() + '.'))) + "\n";
+								p.getDefault().toString().trim() + '.'))) + '\n';
 						String desc = wordWrap(p.getDescription(), 75) + def;
 						desc = "     " + desc;
 						desc = desc.replaceAll("\n", "\n     ") + '\n';

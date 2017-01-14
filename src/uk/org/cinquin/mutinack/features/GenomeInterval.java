@@ -139,7 +139,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	
 	@Override
 	public String toString() {
-		return name + " on contig " + contigName + " " + start + " to " + end;
+		return name + " on contig " + contigName + ' ' + start + " to " + end;
 	}
 
 	public double getLength() {

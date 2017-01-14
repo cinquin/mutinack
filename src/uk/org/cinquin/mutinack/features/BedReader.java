@@ -333,8 +333,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			final @NonNull String[] split = line.split("\t");
 			set.add(split[0]);
 		});
-		List<@NonNull String> result = new ArrayList<>();
-		result.addAll(set);
+		List<@NonNull String> result = new ArrayList<>(set);
 		result.sort(null);
 		return result;
 	}

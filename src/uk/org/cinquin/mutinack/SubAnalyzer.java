@@ -97,6 +97,7 @@ import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
+import uk.org.cinquin.mutinack.statistics.Histogram;
 
 public final class SubAnalyzer {
 	private static final Logger logger = LoggerFactory.getLogger(SubAnalyzer.class);
@@ -223,7 +224,7 @@ public final class SubAnalyzer {
 							if (nLeftBehind.incrementAndGet() == 0) {
 								logger.error("Sequences left behind before " + truncateProcessingAt);
 							}
-							return Integer.toString(read.record.getAlignmentStart()) + "-" +
+							return Integer.toString(read.record.getAlignmentStart()) + '-' +
 								Integer.toString(read.record.getAlignmentEnd()); })
 						.collect(Collectors.joining("; "));
 				if (!s.equals("")) {
@@ -800,6 +801,9 @@ public final class SubAnalyzer {
 		}
 
 		boolean leave = false;
+		final boolean qualityOKBeforeTopAllele =
+			Quality.nullableMax(positionQualities.getValue(true), GOOD).atLeast(GOOD);
+		Quality topAlleleQuality = null;
 		do {
 			maxQuality = MINIMUM;
 			totalAllDuplexes = 0;
@@ -836,17 +840,24 @@ public final class SubAnalyzer {
 				break;
 			} else {
 				result.nGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;
-				final Quality q = getAlleleFrequencyQuality(candidateSet, result);
-				if (q == null) {
+				topAlleleQuality = getAlleleFrequencyQuality(candidateSet, result);
+				if (topAlleleQuality == null) {
 					break;
 				}
-				Assert.isTrue(q == DUBIOUS);
-				positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, q);
+				Assert.isTrue(topAlleleQuality == DUBIOUS);
+				positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, topAlleleQuality);
 				leave = true;//Just one more iteration
 				continue;
 			}
 		} while(Boolean.valueOf(null));//Assert never reached
 
+		if (qualityOKBeforeTopAllele) {
+			registerDuplexMinFracTopCandidate(duplexReads,
+				topAlleleQuality == null ?
+					stats.minTopCandFreqQ2PosTopAlleleFreqOK
+				:
+					stats.minTopCandFreqQ2PosTopAlleleFreqKO);
+		}
 
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
 			result.disagreements.clear();
@@ -921,6 +932,19 @@ public final class SubAnalyzer {
 		result.analyzedCandidateSequences = candidateSet;
 		return result;
 	}//End examineLocation
+
+	private static void registerDuplexMinFracTopCandidate(
+			TCustomHashSet<DuplexRead> duplexReads, Histogram hist) {
+		duplexReads.forEach(dr -> {
+			Assert.isFalse(dr.totalNRecords == -1);
+			if (dr.totalNRecords < 2) {
+				return true;
+			}
+			Assert.isFalse(dr.minFracTopCandidate == Float.MAX_VALUE);
+			hist.insert((int) (dr.minFracTopCandidate * 10));
+			return true;
+		});
+	}
 
 	private boolean lowMutFreq(Mutation mut, THashSet<CandidateSequenceI> candidateSet, int nGOrDDuplexes) {
 		Objects.requireNonNull(mut);
@@ -1052,7 +1076,7 @@ public final class SubAnalyzer {
 					if (Math.abs(distance) > 160) {
 						throw new AssertionFailedException("Distance problem with candidate " + candidate +
 							" read at read position " + readPosition + " and refPosition " +
-							refPosition + " " + r.toString() + " in analyzer" +
+							refPosition + ' ' + r.toString() + " in analyzer" +
 							analyzer.inputBam.getAbsolutePath() + "; distance is " + distance);
 					}
 					if (distance >= 0) {
@@ -1077,7 +1101,7 @@ public final class SubAnalyzer {
 					if (er.record.getReferenceName().equals(other))
 						return "";
 					else
-						return other + ":" + er.getMateAlignmentStart();
+						return other + ':' + er.getMateAlignmentStart();
 				}).forEach(s -> {
 					if ("".equals(s))
 						return;
@@ -1390,7 +1414,7 @@ public final class SubAnalyzer {
 
 			if (tooLate) {
 				if (DebugLogControl.shouldLog(TRACE, logger)) {
-					logger.trace("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + " " + (rec.getReadLength() - 1) + " " + extendedRec.getFullName());
+					logger.trace("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + ' ' + (rec.getReadLength() - 1) + ' ' + extendedRec.getFullName());
 				}
 				stats.nCandidateIndelAfterLastNBases.increment(location);
 			} else {
@@ -1399,7 +1423,7 @@ public final class SubAnalyzer {
 					if (DebugLogControl.shouldLog(TRACE, logger)) {
 						logger.trace("Insertion at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-							"; insert size: " + insertSize + ")");
+							"; insert size: " + insertSize + ')');
 					}
 					location = new SequenceLocation(extendedRec.getLocation().contigIndex,
 						extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
@@ -1414,7 +1438,7 @@ public final class SubAnalyzer {
 							stats.rejectedIndelDistanceToLigationSite.insert(-distance);
 							stats.nCandidateIndelBeforeFirstNBases.increment(location);
 						}
-						logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+						logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + ' ' + extendedRec.getFullName());
 					} else {
 						distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
 						distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
@@ -1498,7 +1522,7 @@ public final class SubAnalyzer {
 							stats.rejectedIndelDistanceToLigationSite.insert(-distance);
 							stats.nCandidateIndelBeforeFirstNBases.increment(location);
 						}
-						logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + " " + extendedRec.getFullName());
+						logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + ' ' + extendedRec.getFullName());
 					} else {
 						distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
 						distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
@@ -1508,7 +1532,7 @@ public final class SubAnalyzer {
 						if (DebugLogControl.shouldLog(TRACE, logger)) {
 							logger.trace("Deletion at position " + readPosition + " for read " + rec.getReadName() +
 								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-								"; insert size: " + insertSize + ")");
+								"; insert size: " + insertSize + ')');
 						}
 
 						final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
@@ -1649,7 +1673,7 @@ public final class SubAnalyzer {
 					if (DebugLogControl.shouldLog(TRACE, logger)) {
 						logger.trace("Substitution at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-							"; insert size: " + insertSize + ")");
+							"; insert size: " + insertSize + ')');
 					}
 					final byte wildType = StringUtil.toUpperCase(refBases[refPosition]);
 					final byte mutation = StringUtil.toUpperCase(readBases[readPosition]);
@@ -1744,7 +1768,7 @@ public final class SubAnalyzer {
 				} else {
 					if (!extendedRec.formsWrongPair() && distance < -150) {
 						throw new AssertionFailedException("Distance problem 1 at read position " + readPosition +
-							" and refPosition " + refPosition + " " + extendedRec.toString() +
+							" and refPosition " + refPosition + ' ' + extendedRec.toString() +
 							" in analyzer" + analyzer.inputBam.getAbsolutePath() +
 							"; distance is " + distance + "");
 					}

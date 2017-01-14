@@ -36,29 +36,29 @@ public class CrossSampleLocationAnalysis implements Serializable {
 		StringBuilder result = new StringBuilder();
 
 		if (randomlySelected) {
-			result.append("+");
+			result.append('+');
 		}
 
 		if (lowTopAlleleFreq) {
-			result.append("%");
+			result.append('%');
 		}
 
 		if (twoOrMoreSamplesWithSameQ2MutationCandidate) {
-			result.append("!");
+			result.append('!');
 		}
 
 		if (!nDuplexesUniqueQ2MutationCandidate.isEmpty()) {
-			result.append("*").
+			result.append('*').
 				append(nDuplexesUniqueQ2MutationCandidate.stream().map(String::valueOf).
 					collect(Collectors.joining("_")));
 		}
 
 		if (oneSampleNoWt) {
-			result.append("|");
+			result.append('|');
 		}
 
 		if (noWt) {
-			result.append("_");
+			result.append('_');
 		}
 
 		return result.toString();

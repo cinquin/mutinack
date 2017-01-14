@@ -25,6 +25,7 @@ import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMFileWriterFactory;
 import contrib.net.sf.samtools.SAMRecord;
+import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
 import uk.org.cinquin.mutinack.sequence_IO.IteratorPrefetcher;
@@ -70,44 +71,46 @@ public class FilterReads {
 			
 			int nWrongPair = 0, nTooBig = 0, nDiffContig = 0;
 			
-			for (Iterator<SAMRecord> iterator = new IteratorPrefetcher<>(bamReader.iterator(), 100, null, e -> {}, null);
-					iterator.hasNext() ;) {
-				if (nProcessed == 1 || nProcessedMod++ == 100_000 || ! iterator.hasNext()) {
-					nProcessedMod = 0;
-					float nPt100 = nProcessed / 100;
-					System.err.print("\r" + String.format("%.2f",(nProcessed/nRecords)) + "% done; " +
-							String.format("%.2f",(nWrongPair / nPt100)) + " % wrong pair; " + 
-							String.format("%.2f",(nTooBig / nPt100)) + " % insertsize too large; " + 
-							String.format("%.2f",(nDiffContig / nPt100)) + " % mate diff contig; " + 
+			try(SAMRecordIterator bamIt = bamReader.iterator()) {
+				for (Iterator<SAMRecord> iterator = new IteratorPrefetcher<>(bamIt, 100, null,
+						e -> {}, null); iterator.hasNext(); ) {
+					if (nProcessed == 1 || nProcessedMod++ == 100_000 || !iterator.hasNext()) {
+						nProcessedMod = 0;
+						float nPt100 = nProcessed / 100;
+						System.err.print('\r' + String.format("%.2f", (nProcessed / nRecords)) + "% done; " +
+							String.format("%.2f", (nWrongPair / nPt100)) + " % wrong pair; " +
+							String.format("%.2f", (nTooBig / nPt100)) + " % insertsize too large; " +
+							String.format("%.2f", (nDiffContig / nPt100)) + " % mate diff contig; " +
 							"                     ");
-				}
-				nProcessed++;
+					}
+					nProcessed++;
 
-				final SAMRecord samRecord = iterator.next();
+					final SAMRecord samRecord = iterator.next();
 
-				if (samRecord.getReadUnmappedFlag() || samRecord.getMateUnmappedFlag() ||
+					if (samRecord.getReadUnmappedFlag() || samRecord.getMateUnmappedFlag() ||
 						samRecord.getReferenceIndex() == 2 || samRecord.getMateReferenceIndex() == 2) {
-					continue;
-				}
-				
-				boolean formsWrongPair = 
-						! (SamPairUtil.getPairOrientation(samRecord) == PairOrientation.FR);
-				
-				int insertSize = samRecord.getInferredInsertSize();
-				
-				boolean differentContigs = !samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex());
-				
-				if (formsWrongPair || Math.abs(insertSize) > 1_000 || differentContigs) {
-					if (formsWrongPair) {
-						nWrongPair++;
+						continue;
 					}
-					if (Math.abs(insertSize) > 1.000) {
-						nTooBig++;
+				
+					boolean formsWrongPair =
+						!(SamPairUtil.getPairOrientation(samRecord) == PairOrientation.FR);
+				
+					int insertSize = samRecord.getInferredInsertSize();
+				
+					boolean differentContigs = !samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex());
+				
+					if (formsWrongPair || Math.abs(insertSize) > 1_000 || differentContigs) {
+						if (formsWrongPair) {
+							nWrongPair++;
+						}
+						if (Math.abs(insertSize) > 1.000) {
+							nTooBig++;
+						}
+						if (differentContigs) {
+							nDiffContig++;
+						}
+						alignmentWriter.addAlignment(samRecord);
 					}
-					if (differentContigs) {
-						nDiffContig++;
-					}
-					alignmentWriter.addAlignment(samRecord);
 				}
 			}
 		}

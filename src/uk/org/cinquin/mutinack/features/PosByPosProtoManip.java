@@ -134,17 +134,17 @@ public class PosByPosProtoManip {
 						Boolean.TRUE.equals(fieldValue.getClass().getMethod("equals",Object.class).invoke
 							(fieldValue, fieldDefaultValue));
 					if (fieldHasDefaultValue) {
-						defaultValuesString += "Default parameter value: " + stringValue + "\n";
+						defaultValuesString += "Default parameter value: " + stringValue + '\n';
 					} else {
-						nonDefaultValuesString += "Non-default parameter value: " + stringValue + "\n";
+						nonDefaultValuesString += "Non-default parameter value: " + stringValue + '\n';
 					}
 				} catch (IllegalArgumentException | IllegalAccessException | 
 						InvocationTargetException | NoSuchMethodException | SecurityException e) {
 					throw new RuntimeException(e);
 				}
 			}
-			return "Working directory: " + System.getProperty("user.dir") + "\n" +
-					nonDefaultValuesString + "\n" + defaultValuesString + "\n";
+			return "Working directory: " + System.getProperty("user.dir") + '\n' +
+					nonDefaultValuesString + '\n' + defaultValuesString + '\n';
 		}
 	}
 		
@@ -633,17 +633,17 @@ public class PosByPosProtoManip {
 					if (movingAverage) {
 						if (nInBin++ == argValues.binSize) {
 							nInBin = 0;
-							writer.append(contigName + "\t" +
-									i + "\t" +
-									averaged + "\n");
+							writer.append(contigName + '\t' +
+									i + '\t' +
+									averaged + '\n');
 						}
 					} else if ((aboveThreshold ^ newAboveThreshold) || i == finalI
 							|| (outputAll && i > initialI)) {
 						if (aboveThreshold) {
-							writer.append(	contigName + "\t" +
-									(indexLastChange + 1)  + "\t" +
-									((i - 1) + 1) + "\t" +
-									numbers1[i - 1] /* Need other stuff?*/ + "\n");
+							writer.append(	contigName + '\t' +
+									(indexLastChange + 1)  + '\t' +
+									((i - 1) + 1) + '\t' +
+									numbers1[i - 1] /* Need other stuff?*/ + '\n');
 						}
 						indexLastChange = i;
 					}

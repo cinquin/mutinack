@@ -44,7 +44,7 @@ public class Worker {
 	public static void runWorker(Parameters param) throws InterruptedException {
 		final int nWorkers;
 		final String cleanedUpName;
-		final int columnIndex = param.startWorker.indexOf(":");
+		final int columnIndex = param.startWorker.indexOf(':');
 		if (columnIndex < 0) {
 			nWorkers = 1;
 			cleanedUpName = param.startWorker;
@@ -63,7 +63,7 @@ public class Worker {
 		KeySetView<Job, Boolean> pendingJobs = ConcurrentHashMap.newKeySet();
 		final Handle<Long> timeLastTermSignal = new Handle<>(0L);
 
-		final String workerIDBase = ManagementFactory.getRuntimeMXBean().getName() + "_";
+		final String workerIDBase = ManagementFactory.getRuntimeMXBean().getName() + '_';
 
 		final RemoteMethods server;
 		try {

@@ -116,7 +116,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 		result.append(formatterTL.get().format(
 				counter.getCounts().entrySet().stream().mapToDouble(e ->
 					((DoubleAdderFormatter) e.getValue()).sum()).average().getAsDouble()));
-		result.append("\n");
+		result.append('\n');
 		return result.toString();
 	}
 
@@ -146,21 +146,21 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 			Function<String, String> suppInfoP = this.supplementaryInfoProvider;
 
 			for (Entry<@NonNull String, Pair<Double, Double>> e: entriesByName) {
-				result.append(e.getKey() + "\t" + //RefSeqID
-						e.getValue().snd + "\t" + //Raw counts
-						e.getValue().fst + "\t" + //Counts normalized to transcript length
-						(e.getValue().fst / sumCoverage * 1_000_000 ) + "\t" + //TPM (Wagner et al, Theory Biosci 2012)
+				result.append(e.getKey() + '\t' + //RefSeqID
+						e.getValue().snd + '\t' + //Raw counts
+						e.getValue().fst + '\t' + //Counts normalized to transcript length
+						(e.getValue().fst / sumCoverage * 1_000_000 ) + '\t' + //TPM (Wagner et al, Theory Biosci 2012)
 						(refSeqToOfficialGeneName == null ? "" :
-							refSeqToOfficialGeneName.get(e.getKey())) + "\t" +
-						(suppInfoP == null ? "" : ("\t" + suppInfoP.apply(e.getKey()))) +
-						"\n");
+							refSeqToOfficialGeneName.get(e.getKey())) + '\t' +
+						(suppInfoP == null ? "" : ('\t' + suppInfoP.apply(e.getKey()))) +
+					'\n');
 			}
 			return result.toString();
 		} else {
 			counter.getCounts().entrySet().stream().sorted((a, b) -> - ((DoubleAdderFormatter) a.getValue()).
 					compareTo((DoubleAdderFormatter) b.getValue())).forEach (e ->
 					{
-						result.append(e.getKey()).append("=").append(e.getValue()).append(", ");
+						result.append(e.getKey()).append('=').append(e.getValue()).append(", ");
 					});
 			String r = result.toString();
 			return r.isEmpty() ? "" : r.substring(0, r.length() - 2);
@@ -173,7 +173,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 			try (FileWriter fw = new FileWriter(outputFile)) {
 				fw.append(getString());
 			} catch (IOException e) {
-				System.err.println("Problem writing BED counts to file " + outputFile.getName() + "\n" + e);
+				System.err.println("Problem writing BED counts to file " + outputFile.getName() + '\n' + e);
 			}
 			return getStats() + "Output written to " + Util.nonNullify(outputFile).getAbsolutePath();
 		} else {

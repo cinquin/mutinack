@@ -33,21 +33,21 @@ public class MultipleExceptions extends RuntimeException {
 	
 	@Override
 	public String getMessage() {
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PrintStream outPS = new PrintStream(outStream);
-        outPS.print(causeList.size() + " exceptions received:");
-        for (Throwable t: causeList) {
-        	outPS.print(" " + t.getMessage());
-        }
-        outPS.println();
-        int index = 0;
-        for (Throwable t: causeList) {
-        	index++;
-        	outPS.println("Exception " + index + ": " + t.getMessage());
-        	t.printStackTrace(outPS);
-        	outPS.println("--------------");
-        }
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream outPS = new PrintStream(outStream);
+		outPS.print(causeList.size() + " exceptions received:");
+		for (Throwable t: causeList) {
+			outPS.print(' ' + t.getMessage());
+		}
+		outPS.println();
+		int index = 0;
+		for (Throwable t: causeList) {
+			index++;
+			outPS.println("Exception " + index + ": " + t.getMessage());
+			t.printStackTrace(outPS);
+			outPS.println("--------------");
+		}
 
-        return outStream.toString();
+		return outStream.toString();
 	}
 }

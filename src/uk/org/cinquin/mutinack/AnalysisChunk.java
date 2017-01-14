@@ -32,7 +32,7 @@ public class AnalysisChunk {
 	int lastProcessedPosition;
 	@Nullable Phaser phaser;
 	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
-	public @NonNull MutinackGroup groupSettings;
+	public @NonNull final MutinackGroup groupSettings;
 	public final int nParameterSets;
 
 	public AnalysisChunk(@NonNull String contigName, int nParameterSets, @NonNull MutinackGroup groupSettings) {

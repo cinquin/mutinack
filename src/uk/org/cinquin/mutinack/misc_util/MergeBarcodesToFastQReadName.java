@@ -84,18 +84,18 @@ public class MergeBarcodesToFastQReadName {
 						if (!l1s[0].equals(l2s[0])) {
 							throw new ParseRTException("Read names " + l1s[0] + " and " + l2s[0] + " do not match");
 						}
-						String bc1 = l1s[1] + "_" + l1s[2];
-						String bc2 = l2s[1] + "_" + l2s[2];
-						String newName = l1s[0] + "_" + bc1 + "_" + bc2;
+						String bc1 = l1s[1] + '_' + l1s[2];
+						String bc2 = l2s[1] + '_' + l2s[2];
+						String newName = l1s[0] + '_' + bc1 + '_' + bc2;
 						StringBuilder restOfLine1 = new StringBuilder(newName), restOfLine2 = new StringBuilder(newName);
 						for (int i = 1; i < l1s.length; i++) {
-							restOfLine1.append(" ").append(l1s[i]);
+							restOfLine1.append(' ').append(l1s[i]);
 						}
 						for (int i = 1; i < l2s.length; i++) {
-							restOfLine2.append(" ").append(l2s[i]);
+							restOfLine2.append(' ').append(l2s[i]);
 						}
-						fw1.append(restOfLine1.append("\n"));
-						fw2.append(restOfLine2.append("\n"));
+						fw1.append(restOfLine1.append('\n'));
+						fw2.append(restOfLine2.append('\n'));
 						formatCheck = checkStartsWithAt;
 						break;
 					case 1:

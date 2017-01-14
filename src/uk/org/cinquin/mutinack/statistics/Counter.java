@@ -198,8 +198,8 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			if (map.isEmpty() || !(map.keySet().iterator().next() instanceof Comparable)) {
 				return linePrefix + map.toString();
 			} else {
-				return linePrefix + "{" + map.entrySet().stream().sorted(printingSorter).
-						map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")) + "}";
+				return linePrefix + '{' + map.entrySet().stream().sorted(printingSorter).
+						map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")) + '}';
 			}
 		}
 		StringBuilder result = new StringBuilder();
@@ -212,11 +212,11 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 					return ((ICounter<?>) o).sum();
 			}).sum();
 			result.append(DoubleAdderFormatter.nf.get().format(sum));
-			result.append("\n");
+			result.append('\n');
 		}
 		map.entrySet().stream().sorted(printingSorter).forEach( e -> {
 			if (!first.get()) {
-				result.append("\n");
+				result.append('\n');
 			} else {
 				first.set(Boolean.FALSE) ;
 			}
@@ -229,7 +229,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			if (val instanceof DoubleAdderFormatter) {
 				result.append(val);
 			} else {
-				result.append(DoubleAdderFormatter.nf.get().format(((Counter<?>) val).sum())).append("\n");
+				result.append(DoubleAdderFormatter.nf.get().format(((Counter<?>) val).sum())).append('\n');
 				result.append(((Counter<?>) val).toString(linePrefix + "  "));
 			}
 		});

@@ -343,12 +343,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@Override
 	public String toString() {
 		return leftAlignmentStart + ", " + rightAlignmentStart + ", " +
-			leftAlignmentEnd + ", " + rightAlignmentEnd + ", " + new String(leftBarcode) + "-" +
+			leftAlignmentEnd + ", " + rightAlignmentEnd + ", " + new String(leftBarcode) + '-' +
 			new String(rightBarcode) + ", " + " Q" + minQuality +
-			(localAndGlobalQuality == null ? "" : (" " + localAndGlobalQuality.getQualities().
+			(localAndGlobalQuality == null ? "" : (' ' + localAndGlobalQuality.getQualities().
 				min(Comparator.comparing(Entry::getValue)).map(Entry::getKey).map(
-					Enum::toString).orElse("") + " ")) +
-			"->" + maxQuality + topStrandRecords.toString() + " " +
+					Enum::toString).orElse("") + ' ')) +
+			"->" + maxQuality + topStrandRecords.toString() + ' ' +
 			bottomStrandRecords.toString();
 	}
 
@@ -735,9 +735,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 			stats.nConsensusQ1NotMet.increment(location);
 			if (param.logReadIssuesInOutputBam) {
 				issues.add(location + " CS0Y_" + (top != null ? top.count : "x") +
-						"_" + nTopStrandsWithCandidate + "_" +
+					'_' + nTopStrandsWithCandidate + '_' +
 						(bottom != null ? bottom.count : "x") +
-						"_" + nBottomStrandsWithCandidate);
+					'_' + nBottomStrandsWithCandidate);
 			}
 		}
 

@@ -216,28 +216,26 @@ public class AnalysisStats implements Serializable, Actualizable {
 		}
 
 
-		{
-			//Force initialization of counters for all possible substitutions:
-			//it is easier to put the output of multiple samples together if
-			//unencountered substitutions have a 0-count entry
-			for (byte mut: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
-				for (byte wt: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
-					if (wt == mut) {
-						continue;
-					}
-					Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
-					Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
+		//Force initialization of counters for all possible substitutions:
+		//it is easier to put the output of multiple samples together if
+		//unencountered substitutions have a 0-count entry
+		for (byte mut: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
+			for (byte wt: Arrays.asList((byte) 'A', (byte) 'T', (byte) 'G', (byte) 'C')) {
+				if (wt == mut) {
+					continue;
+				}
+				Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
+				Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
 
-					List<String> contigNames = groupSettings.getContigNames();
-					for (int contig = 0; contig < contigNames.size(); contig++) {
-						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
-								contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
-							SequenceLocation location = new SequenceLocation(contig,
-								Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE);
-							topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true, Quality.GOOD), 0);
-							codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
-							templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
-						}
+				List<String> contigNames = groupSettings.getContigNames();
+				for (int contig = 0; contig < contigNames.size(); contig++) {
+					for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
+							contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
+						SequenceLocation location = new SequenceLocation(contig,
+							Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE);
+						topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true, Quality.GOOD), 0);
+						codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
+						templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
 					}
 				}
 			}

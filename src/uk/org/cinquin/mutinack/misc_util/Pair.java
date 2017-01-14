@@ -76,7 +76,7 @@ public class Pair<A,B> implements Serializable {
 	@Override
 	public String toString()
 	{
-		return "(" + fst + ", " + snd + ")";
+		return "(" + fst + ", " + snd + ')';
 	}
 
 	public A getFst() {

@@ -252,8 +252,8 @@ public class SubAnalyzerPhaser extends Phaser {
 				analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 					subAnalyzer.candidateSequences.retainEntries((key, val) -> {
 						Assert.isTrue(key.contigIndex == contigIndex,
-							"Problem with contig indices, " + key + " " + key.contigIndex +
-								" " + contigIndex);
+							"Problem with contig indices, " + key + ' ' + key.contigIndex +
+								' ' + contigIndex);
 						return key.compareTo(lowerBound) >= 0;
 					});
 				});
@@ -573,9 +573,9 @@ public class SubAnalyzerPhaser extends Phaser {
 			csla.oneSampleNoWt = oneSampleNoWt;
 
 			final String baseOutput =
-				csla.toString() + "\t" +
-				location + "\t" +
-				candidate.getKind() + "\t" +
+				csla.toString() + '\t' +
+				location + '\t' +
+				candidate.getKind() + '\t' +
 				(!candidate.getMutationType().isWildtype() ?
 							candidate.getChange() : "");
 
@@ -645,7 +645,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull LocationExaminationResults examResults
 		) throws IOException {
 
-		final String line = baseOutput + "\t" + analyzer.name + "\t" +
+		final String line = baseOutput + '\t' + analyzer.name + '\t' +
 			candidate.toOutputString(stats.analysisParameters, examResults);
 
 		if (stats.detectionOutputStream != null) {
@@ -655,11 +655,11 @@ public class SubAnalyzerPhaser extends Phaser {
 		try {
 			final @Nullable OutputStreamWriter ambw = stats.mutationBEDWriter;
 			if (ambw != null) {
-				ambw.append(location.getContigName() + "\t" +
-						(location.position + 1) + "\t" + (location.position + 1) + "\t" +
-						candidate.getKind() + "\t" + baseOutput0 + "\t" +
+				ambw.append(location.getContigName() + '\t' +
+						(location.position + 1) + '\t' + (location.position + 1) + '\t' +
+						candidate.getKind() + '\t' + baseOutput0 + '\t' +
 						candidate.getnGoodDuplexes() +
-						"\n");
+					'\n');
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -667,7 +667,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		if (candidate.getPreexistingDetection() != null) {
 			stats.annotationOutputStream.append(candidate.getPreexistingDetection() + "\t" +
-				line + "\n");
+				line + '\n');
 		}
 	}
 
@@ -692,10 +692,10 @@ public class SubAnalyzerPhaser extends Phaser {
 		final @Nullable OutputStreamWriter cbw = stats.coverageBEDWriter;
 		if (cbw != null) {
 			try {
-				cbw.append(location.getContigName() + "\t" +
-						(location.position + 1) + "\t" +
-						(location.position + 1) + "\t" +
-						examResults.nGoodOrDubiousDuplexes + "\n");
+				cbw.append(location.getContigName() + '\t' +
+						(location.position + 1) + '\t' +
+						(location.position + 1) + '\t' +
+						examResults.nGoodOrDubiousDuplexes + '\n');
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -863,28 +863,28 @@ public class SubAnalyzerPhaser extends Phaser {
 					:
 						stats.noWtDisagreementWriter;
 				if (tpdw != null) {
-					tpdw.append(location.getContigName() + "\t" +
-						(location.position + 1) + "\t" + (location.position + 1) + "\t" +
+					tpdw.append(location.getContigName() + '\t' +
+						(location.position + 1) + '\t' + (location.position + 1) + '\t' +
 						(mutant.mutationType == SUBSTITUTION ?
 								(new String(fstSeq) + "" + new String(sndSeq))
 							:
-								new String (sndSeq)) + "\t" +
-						mutant.mutationType + "\t" +
-						(d.hasAWtStrand ? "" : (d.getFst() != null ? d.getFst().mutationType : "-")) + "\t" +
-						examResults.duplexInsertSize10thP + "\t" +
-						examResults.duplexInsertSize90thP + "\t" +
-						examResults.alleleFrequencies.get(0) + "\t" +
-						examResults.alleleFrequencies.get(1) + "\t" +
-						mediumLengthFloatFormatter.get().format(d.probCollision) + "\t" +
-						mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + "\t" +
-						entry.getValue().size() + "\t" +
+								new String (sndSeq)) + '\t' +
+						mutant.mutationType + '\t' +
+						(d.hasAWtStrand ? "" : (d.getFst() != null ? d.getFst().mutationType : "-")) + '\t' +
+						examResults.duplexInsertSize10thP + '\t' +
+						examResults.duplexInsertSize90thP + '\t' +
+						examResults.alleleFrequencies.get(0) + '\t' +
+						examResults.alleleFrequencies.get(1) + '\t' +
+						mediumLengthFloatFormatter.get().format(d.probCollision) + '\t' +
+						mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + '\t' +
+						entry.getValue().size() + '\t' +
 						((stats.analysisParameters.verbosity < 2) ? "" :
 						entry.getValue().stream().limit(20).map(dp ->
 							Stream.concat(dp.topStrandRecords.stream(),
 								dp.bottomStrandRecords.stream())/*.findFirst()*/.
 								map(ExtendedSAMRecord::getFullName).collect(Collectors.joining(", ", "{ ", " }"))
 						).collect(Collectors.joining(", ", "[ ",         " ]"))) +
-						"\n");
+						'\n');
 				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -973,7 +973,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						samRecord.setAttribute("VB", new String(e.variableBarcode));
 						samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
 						samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
-								duplexRead.rightAlignmentStart + "-" + duplexRead.rightAlignmentEnd);
+								duplexRead.rightAlignmentStart + '-' + duplexRead.rightAlignmentEnd);
 						if (!duplexRead.issues.isEmpty()) {
 							samRecord.setAttribute("IS", duplexRead.issues.toString());
 						} else {

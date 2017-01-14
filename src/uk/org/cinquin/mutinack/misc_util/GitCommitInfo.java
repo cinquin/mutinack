@@ -25,7 +25,7 @@ public class GitCommitInfo {
 					return "Could not retrieve git version info from " + classPath;
 				}
 			} else {
-				manifestPath = classPath.substring(0, classPath.lastIndexOf("!") + 1) + 
+				manifestPath = classPath.substring(0, classPath.lastIndexOf('!') + 1) +
 					"/META-INF/MANIFEST.MF";
 			}
 			try (InputStream is = new URL(manifestPath).openStream()) {

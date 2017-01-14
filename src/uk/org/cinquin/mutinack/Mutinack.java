@@ -260,8 +260,8 @@ public class Mutinack implements Actualizable, Closeable {
 		this.name = name;
 		this.inputBam = inputBam;
 		if (approximateReadInsertSize != null) {
-			insertSizeProbRaw = approximateReadInsertSize.toProbabilityArray(false);;
-			insertSizeProbSmooth = approximateReadInsertSize.toProbabilityArray(true);;
+			insertSizeProbRaw = approximateReadInsertSize.toProbabilityArray(false);
+			insertSizeProbSmooth = approximateReadInsertSize.toProbabilityArray(true);
 		} else {
 			insertSizeProbRaw = null;
 			insertSizeProbSmooth = null;
@@ -389,7 +389,7 @@ public class Mutinack implements Actualizable, Closeable {
 			if (index == exploreParameters.size() - 1 || !cartesian) {
 				for (String stat: statsNames) {
 					String extra = clone.distinctParameters.entrySet().stream().
-						map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining(", "));
+						map(e -> e.getKey() + '=' + e.getValue()).collect(Collectors.joining(", "));
 					consumer.accept(stat + ": " + extra, clone);
 				}
 			} else if (cartesian) {
@@ -542,7 +542,7 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		if (!versionChecked && !param.noStatusMessages) {
-			Util.printUserMustSeeMessage(GitCommitInfo.getGitCommit());
+			printUserMustSeeMessage(GitCommitInfo.getGitCommit());
 		}
 
 		if (!param.saveFilteredReadsTo.isEmpty()) {
@@ -550,14 +550,14 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		if (!param.noStatusMessages) {
-			Util.printUserMustSeeMessage("Analysis started on host " +
+			printUserMustSeeMessage("Analysis started on host " +
 				StaticStuffToAvoidMutating.hostName +
 				" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()));
 		}
 
 		out.println(param.toString());
 		out.println("Non-trivial assertions " +
-				(DebugLogControl.NONTRIVIAL_ASSERTIONS ?
+				(NONTRIVIAL_ASSERTIONS ?
 				"on" : "off"));
 
 		final List<@Nullable Mutinack> analyzers = new ArrayList<>();
@@ -700,7 +700,7 @@ public class Mutinack implements Actualizable, Closeable {
 		Util.parseListLocations(param.forceOutputAtPositions,
 			groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
 			if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
-				Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
+				printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 					" in list of forced output positions"));
 			}
 		});
@@ -713,7 +713,7 @@ public class Mutinack implements Actualizable, Closeable {
 							if (loc.isEmpty()) {
 								continue;
 							}
-							int columnPosition = loc.indexOf(":");
+							int columnPosition = loc.indexOf(':');
 							final @NonNull String contig = loc.substring(0, columnPosition);
 							final String pos = loc.substring(columnPosition + 1);
 							double position = NumberFormat.getNumberInstance(java.util.Locale.US).parse(pos).doubleValue() - 1;
@@ -725,7 +725,7 @@ public class Mutinack implements Actualizable, Closeable {
 							final SequenceLocation parsedLocation = new SequenceLocation(contigIndex, contig,
 								(int) Math.floor(position), position - Math.floor(position) > 0);
 							if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
-								Util.printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
+								printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 									" in list of forced output positions"));
 							}
 						} catch (Exception e) {
@@ -754,7 +754,7 @@ public class Mutinack implements Actualizable, Closeable {
 					}
 				}
 			}
-			Util.printUserMustSeeMessage("Added " + randomLocs + " random output positions");
+			printUserMustSeeMessage("Added " + randomLocs + " random output positions");
 		}
 		@SuppressWarnings("null")
 		@NonNull String forceOutputString = groupSettings.forceOutputAtLocations.toString();
@@ -907,8 +907,8 @@ public class Mutinack implements Actualizable, Closeable {
 					Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
 					builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
 					builder.setGeneratingProgramArgs(param.toString());
-					builder.setSampleName(analyzer.finalOutputBaseName + "_" +
-						s.getName() + "_" + name + "_pos_by_pos_coverage");
+					builder.setSampleName(analyzer.finalOutputBaseName + '_' +
+						s.getName() + '_' + name + "_pos_by_pos_coverage");
 					s.positionByPositionCoverageProtobuilder = builder;
 				});
 			}
@@ -1115,7 +1115,7 @@ public class Mutinack implements Actualizable, Closeable {
 				param.annotateMutationsInFile, param.annotateMutationsInFile, contigNames,
 				sampleNames, unknownSampleNames));
 			if (!unknownSampleNames.isEmpty()) {
-				Util.printUserMustSeeMessage("Warning: unrecognized sample names in annotateMutationsInFile " +
+				printUserMustSeeMessage("Warning: unrecognized sample names in annotateMutationsInFile " +
 					unknownSampleNames);
 			}
 		}
@@ -1202,21 +1202,19 @@ public class Mutinack implements Actualizable, Closeable {
 
 			final int startContigAtPosition;
 			final int terminateContigAtPosition;
-			{
-				final String contigName = contigNames.get(contigIndex);
-				int idx = truncateAtContigs.indexOf(contigName);
-				if (idx > -1) {
-					terminateContigAtPosition = truncateAtPositions.get(idx);
-				} else {
-					terminateContigAtPosition =
-						Objects.requireNonNull(contigSizes.get(contigName)) - 1;
-				}
-				idx = startAtContigs.indexOf(contigNames.get(contigIndex));
-				if (idx > -1) {
-					startContigAtPosition = startAtPositions.get(idx);
-				} else {
-					startContigAtPosition = 0;
-				}
+			final String contigName = contigNames.get(contigIndex);
+			int idx = truncateAtContigs.indexOf(contigName);
+			if (idx > -1) {
+				terminateContigAtPosition = truncateAtPositions.get(idx);
+			} else {
+				terminateContigAtPosition =
+					Objects.requireNonNull(contigSizes.get(contigName)) - 1;
+			}
+			idx = startAtContigs.indexOf(contigNames.get(contigIndex));
+			if (idx > -1) {
+				startContigAtPosition = startAtPositions.get(idx);
+			} else {
+				startContigAtPosition = 0;
 			}
 
 			final int contigParallelizationFactor = getContigParallelizationFactor(
@@ -1339,7 +1337,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 		infoSignalHandler.handle(null);
 		if (!param.noStatusMessages) {
-			Util.printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name +
+			printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name +
 				" at " + ((int) a.stats.get(0).processingThroughput(a.timeStartProcessing)) +
 				" records / s").//TODO Improve reporting
 				collect(Collectors.joining(", ")) + " completed on host " +
@@ -1349,9 +1347,9 @@ public class Mutinack implements Actualizable, Closeable {
 				(System.nanoTime() - analyzers.get(0).timeStartProcessing) / 1_000_000_000d +
 				" s)");
 			ManagementFactory.getGarbageCollectorMXBeans().forEach(gc ->
-				Util.printUserMustSeeMessage(gc.getName() + " (" +
+				printUserMustSeeMessage(gc.getName() + " (" +
 					Arrays.toString(gc.getMemoryPoolNames()) + "): " + gc.getCollectionCount() +
-					" " + gc.getCollectionTime()));
+					' ' + gc.getCollectionTime()));
 		}
 
 		if (param.readContigsFromFile) {//Probably reference transcriptome; TODO need to
@@ -1399,8 +1397,8 @@ public class Mutinack implements Actualizable, Closeable {
 						+ (analyzer.name + "_80thpn\n"));
 
 					for (Entry<String, Double> e: sortedEntries) {
-						writer.write(e.getKey() + "\t" + (e.getValue() / averageCoverage) + "\t" +
-							(e.getValue() / percentileCoverage95) + "\t" + (e.getValue() / percentileCoverage80) + "\n");
+						writer.write(e.getKey() + '\t' + (e.getValue() / averageCoverage) + '\t' +
+							(e.getValue() / percentileCoverage95) + '\t' + (e.getValue() / percentileCoverage80) + '\n');
 					}
 				} catch (IOException e) {
 					throw new RuntimeException(e);
@@ -1465,7 +1463,7 @@ public class Mutinack implements Actualizable, Closeable {
 				File originalOutputFile = new File(param.outputJSONTo);
 				String parentDirectory = originalOutputFile.getParent();
 				mapper.writerWithDefaultPrettyPrinter().writeValue(
-						new File((parentDirectory == null ? "" : (parentDirectory + "/")) +
+						new File((parentDirectory == null ? "" : (parentDirectory + '/')) +
 							param.jsonFilePathExtraPrefix + originalOutputFile.getName()), root);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -1509,7 +1507,7 @@ public class Mutinack implements Actualizable, Closeable {
 		if (param.terminateUponOutputFileError) {
 			throw new RuntimeException(baseMessage, e);
 		}
-		Util.printUserMustSeeMessage(baseMessage + "; keeping going anyway");
+		printUserMustSeeMessage(baseMessage + "; keeping going anyway");
 	}
 
 	private void printStatus(PrintStream stream, boolean colorize) {
@@ -1567,7 +1565,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 	@Override
 	public String toString() {
-		return name + " (" + inputBam.getAbsolutePath() + ")";
+		return name + " (" + inputBam.getAbsolutePath() + ')';
 	}
 
 	@Override

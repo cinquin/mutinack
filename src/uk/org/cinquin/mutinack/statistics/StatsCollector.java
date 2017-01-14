@@ -71,7 +71,7 @@ public class StatsCollector implements Serializable, Traceable, Actualizable {
 
 	public void add(@NonNull SequenceLocation location, long n) {
 		if (tracePrefix != null) {
-			System.err.println(tracePrefix + "+" + n + " at " + location);
+			System.err.println(tracePrefix + '+' + n + " at " + location);
 		}
 		get(location.contigIndex).add(n);
 	}

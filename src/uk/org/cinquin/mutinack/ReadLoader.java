@@ -471,7 +471,7 @@ public class ReadLoader {
 				synchronized(groupSettings.statusUpdateTasks) {
 					if (!groupSettings.statusUpdateTasks.remove(info)) {
 						logger.warn("Could not remove status udpate task");
-					};
+					}
 				}
 			}
 			if (groupSettings.terminateAnalysis) {
