@@ -824,6 +824,13 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final StatsCollector nVariableBarcodesCloseMisses = new StatsCollector();*/
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent StatsCollector nReadsOpticalDuplicates = new StatsCollector();
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram readDistance = new Histogram(50);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public @Final @Persistent StatsCollector nReadsInsertNoSize = new StatsCollector();
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)

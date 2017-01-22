@@ -52,6 +52,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -75,6 +76,7 @@ import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.IntMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
+import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
@@ -97,7 +99,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
 	public final @NonNull List<@NonNull ExtendedSAMRecord> topStrandRecords = new ArrayList<>(100),
 			bottomStrandRecords = new ArrayList<>(100);
-	int totalNRecords = -1;
+	public int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
 	//Only used for debugging
@@ -983,6 +985,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		final boolean atrocious = dq.getValue().atMost(ATROCIOUS);
+		if (!param.filterOpticalDuplicates || top != null || bottom != null)
 		candidateSet.forEach(candidate -> {
 			Assert.isFalse(top == null && bottom == null);
 			if (!atrocious &&
@@ -1073,16 +1076,20 @@ public final class DuplexRead implements HasInterval<Integer> {
 		Assert.isTrue(bottomStrandRecords.size() == bottomSize);
 	}
 
-	void analyzeForStats(AnalysisStats stats, final int maxAverageBasesClipped) {
+	void analyzeForStats(Parameters param, AnalysisStats stats) {
 		Assert.isFalse(invalid);
 
 		stats.duplexTotalRecords.insert(totalNRecords);
 
-		Collection<ExtendedSAMRecord> allDuplexRecords =
-				new ArrayList<>(topStrandRecords.size() +
-						bottomStrandRecords.size());
+		totalNRecords = topStrandRecords.size() + bottomStrandRecords.size();
+		List<ExtendedSAMRecord> allDuplexRecords = new ArrayList<>(totalNRecords);
 		allDuplexRecords.addAll(topStrandRecords);
 		allDuplexRecords.addAll(bottomStrandRecords);
+
+		if (param.filterOpticalDuplicates) {
+			//Side effect: allDuplexRecords sorted by x position
+			markDuplicates(param, stats, allDuplexRecords);
+		}
 
 		final boolean alreadyVisitedForStats = allDuplexRecords.stream().anyMatch(
 				r -> r.duplexAlreadyVisitedForStats);
@@ -1122,7 +1129,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			stats.duplexAverageNClipped.insert(averageNClipped);
 		}
 
-		if (averageNClipped > maxAverageBasesClipped) {
+		if (averageNClipped > param.maxAverageBasesClipped) {
 			globalQuality.addUnique(AVERAGE_N_CLIPPED, DUBIOUS);
 			stats.nDuplexesTooMuchClipping.accept(Objects.requireNonNull(roughLocation));
 		}
@@ -1135,6 +1142,160 @@ public final class DuplexRead implements HasInterval<Integer> {
 			stats.duplexInsert130_180averageNClipped.insert(averageNClipped);
 		}
 
+	}
+
+	public void markDuplicates(Parameters param, AnalysisStats stats, List<ExtendedSAMRecord> reads) {
+		reads.sort(Comparator.comparing(ExtendedSAMRecord::getxLoc));
+		reads.forEach(r -> {
+			r.visitedForOptDups = false;
+			r.opticalDuplicate = false;
+			r.hasOpticalDuplicates = false;
+			r.tempIndex0 = -1;
+			r.tempIndex1 = -1;
+		});
+		int maxxIndex = 0;
+		SettableInteger nDuplicates = new SettableInteger(0);
+		final int bandWidth = param.computeAllReadDistances ? 1_000_000_000 : param.opticalDuplicateDistance;
+		for (int recordIndex = 0; recordIndex < totalNRecords; recordIndex++) {
+			final ExtendedSAMRecord record = reads.get(recordIndex);
+			Assert.isTrue(!((record.opticalDuplicate || record.hasOpticalDuplicates) ^ record.visitedForOptDups));
+			if (record.opticalDuplicate || record.hasOpticalDuplicates) {
+				continue;
+			}
+			final int x = record.xLoc;
+			while (maxxIndex < totalNRecords - 1 && reads.get(maxxIndex + 1).xLoc < x + bandWidth) {
+				maxxIndex++;
+			}
+			final int finalRecordIndex = recordIndex;
+			final int finalMaxxIndex = maxxIndex;
+			forEachDuplicate(param, stats, reads, reads.get(recordIndex), recordIndex + 1, maxxIndex,
+					dupIndex -> {
+						nDuplicates.addAndGet(sweepOpticalDuplicateGroup(param, stats, reads, finalRecordIndex, finalMaxxIndex));
+						return false;//Stop on first duplicate because whole group has already been swept
+					});
+		}
+		stats.nReadsOpticalDuplicates.add(Objects.requireNonNull(
+				leftAlignmentStart != null ? leftAlignmentStart : rightAlignmentStart),
+			nDuplicates.get());
+	}
+
+	@SuppressWarnings("ReferenceEquality")
+	private static void forEachDuplicate(
+			Parameters param,
+			AnalysisStats stats,
+			List<ExtendedSAMRecord> reads,
+			ExtendedSAMRecord read,
+			final int startIndex,
+			final int endIndex,
+			IntPredicate predicate) {
+
+		if (startIndex - 1 > endIndex || endIndex < 0) {
+			throw new IllegalArgumentException("Start and end indices " + startIndex + " and " + endIndex);
+		}
+		final long squaredMinDistance = square(param.opticalDuplicateDistance);
+		final String rt = read.getRunAndTile();
+		final int x = read.getxLoc();
+		final int y = read.getyLoc();
+		for (int i = startIndex; i <= endIndex; i++) {
+			ExtendedSAMRecord other = reads.get(i);
+			if (other == read || other.visitedForOptDups) {
+				continue;
+			}
+			if (rt != other.getRunAndTile()) {
+				stats.readDistance.insert(50);//Arbitrary high value so that read pairs that cannot
+				//be optical duplicates are accounted for
+			} else {
+				final long squaredDistance = square(x - other.getxLoc()) + square(y - other.getyLoc());
+				if (squaredDistance == 0) {//Should only ever be true for a mate pair
+					Assert.isTrue(read.record.getReadName().equals(other.record.getReadName()));
+				} else {
+					stats.readDistance.insert((int) Math.log(squaredDistance));
+					if (squaredDistance < squaredMinDistance) {
+						if (!predicate.test(i)) {
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@SuppressWarnings("ReferenceEquality")
+	private static int sweepOpticalDuplicateGroup(
+			Parameters param,
+			AnalysisStats stats,
+			List<ExtendedSAMRecord> reads,
+			final int readIndex,
+			final int maxxIndex) {
+
+		if (reads.get(0).tempIndex0 == -1) {
+			markIndices(reads, param.computeAllReadDistances ? 1_000_000_000 : param.opticalDuplicateDistance);
+		}
+
+		Set<ExtendedSAMRecord> duplicateSet = new THashSet<>();
+		final ExtendedSAMRecord firstRead = reads.get(readIndex);
+		duplicateSet.add(firstRead);
+		List<ExtendedSAMRecord> toVisit = new ArrayList<>();
+		toVisit.add(firstRead);
+		while(!toVisit.isEmpty()) {
+			addDuplicates(param, stats, reads, toVisit, duplicateSet, toVisit.remove(toVisit.size() - 1));
+		}
+
+		ExtendedSAMRecord bestRead = duplicateSet.stream().max(
+			Comparator.comparing(ExtendedSAMRecord::getAveragePhred)).get();
+		for (ExtendedSAMRecord read: duplicateSet) {
+			ExtendedSAMRecord mate;
+			if (read == bestRead || ((mate = read.getMate()) != null && mate == bestRead)) {
+				read.hasOpticalDuplicates = true;
+			} else {
+				read.opticalDuplicate = true;
+			}
+		}
+
+		return duplicateSet.size() - 1;
+	}
+
+	private static void markIndices(List<ExtendedSAMRecord> reads, int bandWidth) {
+		int nReads = reads.size();
+		int maxxIndex = 0;
+		int minxIndex = 0;
+		for (int readIndex = 0; readIndex < nReads; readIndex++) {
+			final ExtendedSAMRecord read = reads.get(readIndex);
+			Assert.isFalse(read.visitedForOptDups);
+			Assert.isFalse(read.opticalDuplicate);
+			Assert.isFalse(read.hasOpticalDuplicates);
+			final int x = read.xLoc;
+			while (maxxIndex < nReads - 1 && reads.get(maxxIndex + 1).xLoc < x + bandWidth) {
+				maxxIndex++;
+			}
+			while (minxIndex < nReads - 1 && reads.get(minxIndex + 1).xLoc < x - bandWidth) {
+				minxIndex++;
+			}
+			read.tempIndex0 = minxIndex;
+			read.tempIndex1 = maxxIndex;
+		}
+	}
+
+	private static void addDuplicates(
+			Parameters param,
+			AnalysisStats stats,
+			List<ExtendedSAMRecord> reads,
+			List<ExtendedSAMRecord> toVisit,
+			Set<ExtendedSAMRecord> duplicateSet,
+			ExtendedSAMRecord read) {
+
+		read.visitedForOptDups = true;
+		forEachDuplicate(param, stats, reads, read, read.tempIndex0, read.tempIndex1, i -> {
+			ExtendedSAMRecord dup = reads.get(i);
+			toVisit.add(dup);
+			duplicateSet.add(dup);
+			return true;
+		});
+	}
+
+	private static long square(int n) {
+		long l = n;
+		return l * l;
 	}
 
 }

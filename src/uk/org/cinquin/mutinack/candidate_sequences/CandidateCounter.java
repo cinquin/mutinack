@@ -64,6 +64,9 @@ public final class CandidateCounter {
 		candidates.forEach(candidate -> {
 			for (int i = records.size() - 1; i >= 0; --i) {
 				final ExtendedSAMRecord r = records.get(i);
+				if (r.isOpticalDuplicate()) {
+					continue;
+				}
 				final int ligSiteDistance = candidate.getNonMutableConcurringReads().get(r);
 				if (ligSiteDistance != candidate.getNonMutableConcurringReads().getNoEntryValue()) {
 					Byte phredScore = r.basePhredScores.get(location);

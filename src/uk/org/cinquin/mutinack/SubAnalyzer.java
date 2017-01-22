@@ -391,7 +391,7 @@ public final class SubAnalyzer {
 		}
 
 		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
-			duplexRead.analyzeForStats(stats, param.maxAverageBasesClipped);
+			duplexRead.analyzeForStats(param, stats);
 		}
 
 		for (DuplexRead dr: cleanedUpDuplexes.getIterable()) {
@@ -852,7 +852,7 @@ public final class SubAnalyzer {
 		} while(Boolean.valueOf(null));//Assert never reached
 
 		if (qualityOKBeforeTopAllele) {
-			registerDuplexMinFracTopCandidate(duplexReads,
+			registerDuplexMinFracTopCandidate(param, duplexReads,
 				topAlleleQuality == null ?
 					stats.minTopCandFreqQ2PosTopAlleleFreqOK
 				:
@@ -933,11 +933,11 @@ public final class SubAnalyzer {
 		return result;
 	}//End examineLocation
 
-	private static void registerDuplexMinFracTopCandidate(
+	private static void registerDuplexMinFracTopCandidate(Parameters param,
 			TCustomHashSet<DuplexRead> duplexReads, Histogram hist) {
 		duplexReads.forEach(dr -> {
 			Assert.isFalse(dr.totalNRecords == -1);
-			if (dr.totalNRecords < 2) {
+			if (dr.totalNRecords < 2 || (param.filterOpticalDuplicates && dr.minFracTopCandidate == Float.MAX_VALUE)) {
 				return true;
 			}
 			Assert.isFalse(dr.minFracTopCandidate == Float.MAX_VALUE);
@@ -1219,6 +1219,9 @@ public final class SubAnalyzer {
 					throw new AssertionFailedException();
 				}
 				c2.getNonMutableConcurringReads().keySet().forEach(r -> {
+					if (r.isOpticalDuplicate()) {
+						return;
+					}
 					DuplexRead d = r.duplexRead;
 					if (d != null && duplexesSupportingC.contains(d)) {
 						boolean disowned = !d.topStrandRecords.contains(r) && !d.bottomStrandRecords.contains(r);

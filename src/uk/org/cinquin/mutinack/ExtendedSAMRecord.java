@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -48,9 +48,9 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
  *
  */
 public final class ExtendedSAMRecord implements HasInterval<Integer> {
-	
+
 	static final Logger logger = LoggerFactory.getLogger(ExtendedSAMRecord.class);
-			
+
 	private final @NonNull Map<String, ExtendedSAMRecord> extSAMCache;
 	public final @NonNull SAMRecord record;
 	private final @NonNull String name;
@@ -63,6 +63,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public final byte @Nullable[] constantBarcode;
 	public final @NonNull SequenceLocation location;
 	final int medianPhred;
+	final float averagePhred;
 	/**
 	 * Length of read ignoring trailing Ns.
 	 */
@@ -73,6 +74,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private Boolean formsWrongPair;
 	public boolean processed = false;
 	public boolean duplexAlreadyVisitedForStats = false;
+
+	public final int xLoc, yLoc;
+	public final String runAndTile;
+	public boolean opticalDuplicate = false;
+	public boolean hasOpticalDuplicates = false;
+	public boolean visitedForOptDups = false;
+	public int tempIndex0 = -1, tempIndex1 = -1;
 
 	private final @NonNull MutinackGroup groupSettings;
 
@@ -105,7 +113,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		final int readLength = record.getReadLength();
 		final int adapterClipped = readLength - effectiveLength;
 
-		int nClippedLeft = (!getReadNegativeStrandFlag() ? 
+		int nClippedLeft = (!getReadNegativeStrandFlag() ?
 
 						/* positive strand */
 						getAlignmentStart() - getUnclippedStart() :
@@ -118,19 +126,19 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 							getAlignmentStart() - getUnclippedStart() - adapterClipped));
 		nClippedLeft = Math.max(0, nClippedLeft);
 
-		int nClippedRight =	getReadNegativeStrandFlag() ? 
+		int nClippedRight =	getReadNegativeStrandFlag() ?
 
 						/* negative strand */
 						getUnclippedEnd() - getAlignmentEnd() :
 
 						/* positive strand */
-						(getAlignmentEnd() >= getMateAlignmentEnd() ? 
+						(getAlignmentEnd() >= getMateAlignmentEnd() ?
 							/* adapter run through, causes clipping we should ignore */
 							0 :
 							getUnclippedEnd() - getAlignmentEnd() - adapterClipped);
 		nClippedRight = Math.max(0, nClippedRight);
 
-		nClipped = nClippedLeft + nClippedRight;	
+		nClipped = nClippedLeft + nClippedRight;
 	}
 
 	public int getnClipped() {
@@ -171,7 +179,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		if (getReadNegativeStrandFlag()) {
 			int i = 0;
-			while (read[i] == 'N' && 
+			while (read[i] == 'N' &&
 					i < readLength - 1) {
 				i++;
 			}
@@ -184,39 +192,41 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 		Assert.isFalse(effectiveLength < 0);
 		this.effectiveLength = effectiveLength;
-		
-		int sumBaseQualities = 0;
-		int nConsidered = 0;
+
+		int sumBaseQualities0 = 0;
+		int nConsidered0 = 0;
 		TIntList qualities = new TIntArrayList(effectiveLength);
 		int n =  Math.min(effectiveLength, readLength / 2);
 		for (int index1 = 0; index1 < n; index1++) {
-			nConsidered++;
+			nConsidered0++;
 			final byte b = baseQualities[index1];
-			sumBaseQualities += b;
+			sumBaseQualities0 += b;
 			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
 			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
-		int avQuality = sumBaseQualities / nConsidered;
+
+		int avQuality = sumBaseQualities0 / nConsidered0;
 		analyzer.stats.forEach(s-> s.averageReadPhredQuality0.insert(avQuality));
 
-		sumBaseQualities = 0;
-		nConsidered = 0;
+		int sumBaseQualities1 = 0;
+		int nConsidered1 = 0;
 		for (int index1 = readLength / 2; index1 < effectiveLength; index1++) {
-			nConsidered++;
+			nConsidered1++;
 			final byte b = baseQualities[index1];
-			sumBaseQualities += b;
+			sumBaseQualities1 += b;
 			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
 			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
-		if (nConsidered > 0) {
-			int avQuality1 = sumBaseQualities / nConsidered;
+		if (nConsidered1 > 0) {
+			int avQuality1 = sumBaseQualities1 / nConsidered1;
 			analyzer.stats.forEach(s -> s.averageReadPhredQuality1.insert(avQuality1));
 		}
 
 		qualities.sort();
 		medianPhred = qualities.get(qualities.size() / 2);
+		averagePhred = (sumBaseQualities0 + sumBaseQualities1) / ((float) (nConsidered0 + nConsidered1));
 		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 
 		Assert.isTrue(rec.getUnclippedEnd() - 1 >= getAlignmentEnd(),
@@ -257,7 +267,49 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			constantBarcode = DUMMY_BARCODE;//EMPTY_BARCODE
 		}
 
+		String readName = record.getReadName();
+		int endFirstChunk = nthIndexOf(readName, ':', 5);
+		runAndTile = record.getReadName().substring(0, endFirstChunk).intern();
+		byte[] readNameBytes = readName.getBytes();
+
+		xLoc = parseInt(readNameBytes, endFirstChunk + 1);
+		int endXLoc = readName.indexOf(':', endFirstChunk + 1);
+		yLoc = parseInt(readNameBytes, endXLoc + 1);
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
+	}
+
+	private static boolean LENIENT_COORDINATE_PARSING = true;
+
+	private static int parseInt(final byte[] b, final int fromIndex) {
+		final int end = b.length - 1;
+		int i = fromIndex;
+		int result = 0;
+		while (i <= end) {
+			if (b[i] == ':') {
+				return result;
+			}
+			byte character = b[i];
+			if (character < 48 || character > 57) {
+				if (LENIENT_COORDINATE_PARSING) {
+					return result;
+				}
+				throw new ParseRTException("Character " + character + " is not a digit when parsing " + new String(b)
+					+ " from " + fromIndex);
+			}
+			result = 10 * result + b[i] - 48;
+			i++;
+		}
+		return result;
+	}
+
+	private static int nthIndexOf(final String s, final char c, final int n) {
+		int i = -1;
+		int found = 0;
+		while (found < n) {
+			i = s.indexOf(c, i + 1);
+			found++;
+		}
+		return i;
 	}
 
 	private static final byte @NonNull[] EMPTY_BARCODE = new byte [0];
@@ -288,7 +340,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return name + ": " + "startNoBC: " + getAlignmentStart() +
 			"; endNoBC: " + getAlignmentEnd() +
 			"; alignmentStart: " + (getReadNegativeStrandFlag() ? "-" : "+") + getAlignmentStart() +
-			"; alignmentEnd: " + getAlignmentEnd() + 
+			"; alignmentEnd: " + getAlignmentEnd() +
 			"; cigar: " + record.getCigarString() +
 			"; length: " + record.getReadLength() +
 			"; effectiveLength: " + effectiveLength +
@@ -317,7 +369,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		while (ceIndex < nElmnts && nBasesAligned < nBasesToAlign) {
 			final CigarElement c = cElmnts.get(ceIndex);
 			final int blockLength = c.getLength();
-			
+
 			if (c.getOperator() == CigarOperator.MATCH_OR_MISMATCH) {
 				int nTakenBases = Math.min(blockLength, nBasesToAlign - nBasesAligned);
 				nBasesAligned += nTakenBases;
@@ -327,7 +379,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			} else if (c.getOperator() == CigarOperator.DELETION) {
 				nBasesAligned += blockLength;
 			}
-			//Ignoring clipping at end of read		
+			//Ignoring clipping at end of read
 
 			ceIndex++;
 		}
@@ -362,7 +414,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 			final int readPositionOfLigSiteA = referencePositionToReadPosition(refPositionOfMateLigationSite - 1) + 1;
 			final int readPositionOfLigSiteB = referencePositionToReadPosition(refPositionOfMateLigationSite + 1) - 1;
-			
+
 			if (getReadNegativeStrandFlag()) {
 				distance1 = Math.max(readPositionOfLigSiteA, readPositionOfLigSiteB) + ignoreFirstNBases - readPosition;
 			} else {
@@ -431,7 +483,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		if (formsWrongPair == null) {
 			formsWrongPair = record.getReadPairedFlag() && (
 					record.getReadUnmappedFlag() ||
-					record.getMateUnmappedFlag() || 
+					record.getMateUnmappedFlag() ||
 					SamPairUtil.getPairOrientation(record) == PairOrientation.TANDEM ||
 					SamPairUtil.getPairOrientation(record) == PairOrientation.RF
 															);
@@ -478,7 +530,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	/** Indexing starts at 0
-	 * 
+	 *
 	 * @return
 	 */
 	public int getMateAlignmentEnd() {
@@ -542,5 +594,25 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public @NonNull String getReferenceName() {
 		return location.getContigName();
+	}
+
+	public int getxLoc() {
+		return xLoc;
+	}
+
+	public int getyLoc() {
+		return yLoc;
+	}
+
+	public String getRunAndTile() {
+		return runAndTile;
+	}
+
+	public boolean isOpticalDuplicate() {
+		return opticalDuplicate;
+	}
+
+	public float getAveragePhred() {
+		return averagePhred;
 	}
 }

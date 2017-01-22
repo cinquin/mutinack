@@ -505,6 +505,15 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-ignoreTandemRFPairs", description = "Read pairs that form tandem or RF are thrown out at the onset", required = false)
 	public boolean ignoreTandemRFPairs = false;
 
+	@Parameter(names = "-filterOpticalDuplicates", description = "", required = false)
+	public boolean filterOpticalDuplicates = false;
+
+	@Parameter(names = "-opticalDuplicateDistance", description = "", required = false)
+	public int opticalDuplicateDistance = 100;
+
+	@Parameter(names = "-computeAllReadDistances", description = "higher computational cost", required = false)
+	public boolean computeAllReadDistances = false;
+
 	@Parameter(names = "-minNumberDuplexesSisterArm", description = "Min number of duplexes in sister arm to call a candidate mutation unique; adjust this number to deal with heterozygous mutations", required = false)
 	@OnlyUsedAfterDuplexGrouping
 	public int minNumberDuplexesSisterArm = 10;

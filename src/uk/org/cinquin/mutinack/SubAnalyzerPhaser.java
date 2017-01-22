@@ -963,6 +963,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
 						samRecord.setAttribute("DQ", minDuplexQuality.toInt());
 						samRecord.setAttribute("DR", maxDuplexQuality.toInt());
+						samRecord.setDuplicateReadFlag(e.isOpticalDuplicate());
 						String info = topOrBottom.get() + " Q" +
 								minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
 								" global Qs: " + duplexRead.globalQuality +
