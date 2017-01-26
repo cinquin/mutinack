@@ -102,8 +102,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
-	//Only used for debugging
-	boolean invalid = false;
+	boolean invalid = false;//Only used for debugging
 	public int nReadsWrongPair = 0;
 	public int maxInsertSize = -1;
 	private int minInsertSize = -1;
