@@ -433,7 +433,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			flatMap(Collection::stream).
 			filter(c -> {
 				Assert.isTrue(c.getLocation().distanceOnSameContig(location) == 0);
-				return c.getQuality().getValue().greaterThan(POOR);}).
+				return c.getQuality().getNonNullValue().greaterThan(POOR);}).
 			collect(Collectors.toList());
 
 		final List<CandidateSequenceI> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.stream().
@@ -444,7 +444,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		final List<CandidateSequenceI> allCandidatesIncludingDisag = locationExamResults.stream().
 			map(l -> l.analyzedCandidateSequences).
 			flatMap(Collection::stream).
-			filter(c -> c.getQuality().getValue().greaterThan(POOR) ||
+			filter(c -> c.getQuality().getNonNullValue().greaterThan(POOR) ||
 				c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)).
 			filter(c -> !c.isHidden()).
 			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
@@ -478,7 +478,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final Map<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new IdentityHashMap<>(8);
 		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
-			flatMap(Collection::stream).filter(c -> c.getQuality().getValue().greaterThan(POOR)).
+			flatMap(Collection::stream).filter(c -> c.getQuality().getNonNullValue().greaterThan(POOR)).
 			forEach(c->
 				nGoodOrDubiousDuplexes.computeIfAbsent(c.getOwningSubAnalyzer(), c0 -> new SettableInteger(0)).
 					addAndGet(c.getnGoodOrDubiousDuplexes())
@@ -503,11 +503,11 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			if (!candidate.getMutationType().isWildtype() &&
 				allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
-						(c.getQuality().getValue().atLeast(GOOD))).count() >= 2) {
+						(c.getQuality().getNonNullValue().atLeast(GOOD))).count() >= 2) {
 				csla.twoOrMoreSamplesWithSameQ2MutationCandidate = true;
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
-					candidate.getQuality().getValue().atLeast(GOOD) &&
+					candidate.getQuality().getNonNullValue().atLeast(GOOD) &&
 					candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation &&
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
 					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE, !tooHighCoverage) &&
@@ -718,7 +718,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 
 		for (CandidateSequenceI c: examResults.analyzedCandidateSequences) {
-			if (c.getQuality().getValue().atLeast(GOOD)) {
+			if (c.getQuality().getNonNullValue().atLeast(GOOD)) {
 				if (c.getMutationType().isWildtype()) {
 					stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
 					if (!repetitiveBEDs.isEmpty()) {
@@ -782,7 +782,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
 				flatMap(c -> c.getDuplexes().stream()).
-				filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(GOOD)).
+				filter(dr -> dr.localAndGlobalQuality.getNonNullValue().atLeast(GOOD)).
 				map(DuplexRead::getMaxDistanceToLigSite).
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});

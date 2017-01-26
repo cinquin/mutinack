@@ -158,6 +158,14 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 		return getValue(false);
 	}
 
+	public @NonNull Quality getNonNullValue() {
+		Quality v = getValue();
+		if (v == null) {
+			throw new IllegalStateException();
+		}
+		return v;
+	}
+
 	@SuppressWarnings("null")
 	public @NonNull Quality getValueIgnoring(Set<T> assaysToIgnore, boolean allowNullMax) {
 		final Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);

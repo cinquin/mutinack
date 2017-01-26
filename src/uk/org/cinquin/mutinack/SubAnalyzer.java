@@ -154,6 +154,7 @@ public final class SubAnalyzer {
 	}
 
 
+	@SuppressWarnings("null")//Stats not initialized straight away
 	SubAnalyzer(@NonNull Mutinack analyzer) {
 		this.analyzer = analyzer;
 		this.param = analyzer.param;
@@ -1091,7 +1092,7 @@ public final class SubAnalyzer {
 
 		if (candidate.getMutationType().isWildtype()) {
 			candidate.setSupplementalMessage(null);
-		} else if (candidate.getQuality().getValue().greaterThan(POOR)) {
+		} else if (candidate.getQuality().getNonNullValue().greaterThan(POOR)) {
 
 			final StringBuilder supplementalMessage = new StringBuilder();
 			final Map<String, Integer> stringCounts = new HashMap<>(100);
