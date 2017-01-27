@@ -73,7 +73,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		return new String(rcBytes);
 	}
 
-	public Mutation reverseComplement() {
+	public @NonNull Mutation reverseComplement() {
 		final byte[] cMutSeq;
 		if (mutationSequence != null) {
 			if (mutationSequence.length < 1) {
