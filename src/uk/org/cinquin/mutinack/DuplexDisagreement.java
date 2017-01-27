@@ -22,7 +22,7 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 	//Not taken into account for equality
 	public double probCollision;
 
-	public DuplexDisagreement(@NonNull Mutation first, @Nullable Mutation second,
+	public DuplexDisagreement(@Nullable Mutation first, @NonNull Mutation second,
 			boolean hasAWtStrand, Quality quality) {
 		super(first, second);
 		this.hasAWtStrand = hasAWtStrand;

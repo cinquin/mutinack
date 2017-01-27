@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -43,7 +42,7 @@ public class Pair<A,B> implements Serializable {
 		snd = null;
 	}
 
-	public Pair(@NonNull A first, @Nullable B second) {
+	public Pair(A first, @Nullable B second) {
 		super();
 		this.fst = first;
 		this.snd = second;

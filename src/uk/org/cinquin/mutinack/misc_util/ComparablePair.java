@@ -19,8 +19,6 @@ package uk.org.cinquin.mutinack.misc_util;
 import java.io.Serializable;
 import java.util.Objects;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 //Adapted from http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
 public class ComparablePair<A extends Comparable<A>, B extends Comparable<B>> extends Pair<A,B>
 	implements Comparable<ComparablePair<A,B>>, Serializable {
@@ -30,7 +28,7 @@ public class ComparablePair<A extends Comparable<A>, B extends Comparable<B>> ex
 	protected ComparablePair() {
 	}
 
-	public ComparablePair(@NonNull A first, B second) {
+	public ComparablePair(A first, B second) {
     	super(first, second);
     }
 
