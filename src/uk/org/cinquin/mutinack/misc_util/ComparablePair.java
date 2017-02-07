@@ -34,10 +34,10 @@ public class ComparablePair<A extends Comparable<A>, B extends Comparable<B>> ex
 
 	@Override
 	public int compareTo(ComparablePair<A, B> o) {
-		if (this.fst.equals(o.fst)) {
-			return Objects.requireNonNull(this.snd).compareTo(o.snd);
+		if (Objects.equals(this.fst, o.fst)) {
+			return Objects.compare(this.snd, o.snd, B::compareTo);
 		} else {
-			return this.fst.compareTo(o.fst);
+			return Objects.compare(this.fst, o.fst, A::compareTo);
 		}
 	}
 }
