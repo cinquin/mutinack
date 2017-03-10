@@ -87,6 +87,7 @@ import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
+import contrib.net.sf.picard.sam.BuildBamIndex;
 import contrib.net.sf.samtools.SAMFileHeader;
 import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMFileWriter;
@@ -624,7 +625,18 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		SAMFileWriter result = factory.makeBAMWriter(header, false, new File(path), 0);
-		closeableCloser.add(new CloseableWrapper<>(result, SAMFileWriter::close));
+		closeableCloser.add(new CloseableWrapper<>(result, writer -> {
+			writer.close();
+
+			if (param.sortOutputAlignmentFile) {
+				if (!path.endsWith(".bam")) {
+					throw new IllegalArgumentException("Path " + path + " does not end with .bam");
+				}
+				try (SAMFileReader bamOutput = new SAMFileReader(new File(path))) {
+					//BuildBamIndex.createIndex(bamOutput, new File(path.replaceAll(".bam$", ".bai")));
+				}
+			}
+		}));
 
 		return result;
 	}
