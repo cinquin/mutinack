@@ -531,7 +531,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 	private static boolean versionChecked = false;
 
-	@SuppressWarnings("resource")
+	@SuppressWarnings({"resource", "FutureReturnValueIgnored"})
 	public static RunResult realMain1(Parameters param, PrintStream out, PrintStream err)
 			throws InterruptedException, IOException {
 
