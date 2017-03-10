@@ -552,14 +552,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 			Collections.singleton(N_STRAND_READS_ABOVE_Q2_PHRED);
 
 	public void examineAtLoc(@NonNull SequenceLocation location,
-		LocationExaminationResults result,
-		@NonNull THashSet<@NonNull CandidateSequenceI> candidateSet,
-		@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
-		@NonNull CandidateCounter topCounter,
-		@NonNull CandidateCounter bottomCounter,
-		Mutinack analyzer,
-		Parameters param,
-		AnalysisStats stats) {
+			LocationExaminationResults result,
+			@NonNull THashSet<@NonNull CandidateSequenceI> candidateSet,
+			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
+			@NonNull CandidateCounter topCounter,
+			@NonNull CandidateCounter bottomCounter,
+			Mutinack analyzer,
+			Parameters param,
+			AnalysisStats stats) {
 
 		if (result.threadCount.incrementAndGet() != 1) {
 			throw new AssertionFailedException();
