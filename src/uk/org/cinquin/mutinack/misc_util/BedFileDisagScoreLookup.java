@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -66,8 +67,10 @@ public class BedFileDisagScoreLookup {
 		SettableInteger inRange = new SettableInteger(0);
 		SettableInteger outOfRange = new SettableInteger(0);
 
-		try (FileReader fileReader = new FileReader(new File(locationsFile))) {
-			Files.lines(Paths.get(locationsFile)).forEach(line -> {
+		try (FileReader fileReader = new FileReader(new File(locationsFile));
+			Stream<String> lines = Files.lines(Paths.get(locationsFile))) {
+
+			lines.forEach(line -> {
 				final String[] split = line.split("\t");
 				
 				final int sequenceLength = split[3].length();

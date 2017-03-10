@@ -329,10 +329,12 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	public static List<@NonNull String> getContigNames(String locationsFilePath)
 			throws IOException {
 		Set<@NonNull String> set = new HashSet<>();
-		Files.lines(Paths.get(locationsFilePath)).forEach(line -> {
-			final @NonNull String[] split = line.split("\t");
-			set.add(split[0]);
-		});
+		try (Stream<String> lines = Files.lines(Paths.get(locationsFilePath))) {
+			lines.forEach(line -> {
+				final @NonNull String[] split = line.split("\t");
+				set.add(split[0]);
+			});
+		}
 		List<@NonNull String> result = new ArrayList<>(set);
 		result.sort(null);
 		return result;
