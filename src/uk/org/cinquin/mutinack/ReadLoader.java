@@ -38,6 +38,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.net.sf.picard.reference.ReferenceSequence;
 import contrib.net.sf.samtools.SAMFileReader;
@@ -379,8 +380,23 @@ public class ReadLoader {
 						}
 
 						//Put samRecord into map of reads to possibly be processed in next batch
-						if (readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref)) != null) {
-							if (!param.randomizeMates) {//The assertion can be triggered when randomizing, probably
+						final @Nullable Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence> previous;
+						if ((previous = readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref))) != null) {
+							if (param.allowMissingSupplementaryFlag) {
+								readsToProcess.put(extended.getFullName(), previous);//Put back previous record
+								if (extended.record.getSupplementaryAlignmentFlag() ||
+										previous.fst.record.getSupplementaryAlignmentFlag()) {
+									throw new RuntimeException();
+								}
+								//TODO This essentially picks one of the alignments at random to mark as supplementary
+								//That does not affect anything else, but that should be improved as some point
+								samRecord.setSupplementaryAlignmentFlag(true);
+								extended = subAnalyzer.getExtended(samRecord, location);
+								if (readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref)) != null) {
+									throw new RuntimeException("Read " + extended.getFullName() + " read twice from " +
+										analyzer.inputBam.getAbsolutePath());
+								}
+							} else if (!param.randomizeMates) {//The assertion can be triggered when randomizing, probably
 								//because of supplementary alignments; just suppress the assertion when randomizing:
 								//the duplication could be indicative of a problem upstream, but otherwise it should
 								//be harmless

@@ -292,6 +292,9 @@ public final class Parameters implements Serializable, Cloneable {
 		" alignments produced by BWA", required = false)
 	public boolean lenientSamValidation = true;
 
+	@Parameter(names = "-allowMissingSupplementaryFlag",description = "", required = false)
+	public boolean allowMissingSupplementaryFlag = false;
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-originalReadFile1", description = "Fastq-formatted raw read data", required = false, hidden = true)
