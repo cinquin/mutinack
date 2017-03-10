@@ -462,7 +462,7 @@ public class ReadLoader {
 		} catch (Throwable t) {
 			Util.printUserMustSeeMessage("Exception " + t +
 					" on thread " + Thread.currentThread());
-			groupSettings.errorOccurred();
+			groupSettings.errorOccurred(t);
 			phaser.forceTermination();
 			throw new RuntimeException("Exception while processing contig " + lastContigName +
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);

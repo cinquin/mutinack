@@ -54,6 +54,7 @@ public class MutinackGroup implements Closeable, Serializable {
 	 * Terminate analysis but finish writing output BAM file.
 	 */
 	public volatile transient boolean terminateAnalysis = false;
+	public volatile transient Throwable errorCause = null;
 
 	private static final int VARIABLE_BARCODE_START = 0;
 	private int VARIABLE_BARCODE_END = Integer.MAX_VALUE;
@@ -166,9 +167,12 @@ public class MutinackGroup implements Closeable, Serializable {
 		this.contigSizes = contigSizes;
 	}
 
-	public void errorOccurred() {
-		if (terminateImmediatelyUponError) {
-			terminateAnalysis = true;
+	public void errorOccurred(Throwable t) {
+		if (errorCause == null) {//Inconsequential race condition
+			errorCause = t;
+			if (terminateImmediatelyUponError) {
+				terminateAnalysis = true;
+			}
 		}
 	}
 }

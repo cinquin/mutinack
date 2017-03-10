@@ -1326,11 +1326,22 @@ public class Mutinack implements Actualizable, Closeable {
 							get(p);
 						final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
 
-						Runnable r = () -> ReadLoader.load(analyzer, analyzer.param, groupSettings,
-							subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
-							contigNames,
-							contigIndex, sharedAlignmentWriter,
-							StaticStuffToAvoidMutating::getContigSequence);
+						Runnable r = () -> {
+							try {
+								ReadLoader.load(analyzer, analyzer.param, groupSettings,
+									subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
+									contigNames,
+									contigIndex, sharedAlignmentWriter,
+									StaticStuffToAvoidMutating::getContigSequence);
+							} catch (Exception e) {
+								if (groupSettings.errorCause == null) {
+									throw e;
+								} else {
+									//Eat exceptions that are secondary
+									//to avoid a long, useless list being reported to the user
+								}
+							}
+						};
 						futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
 					}//End loop over parallelization factor
 				}//End loop over analyzers
@@ -1342,6 +1353,10 @@ public class Mutinack implements Actualizable, Closeable {
 				//but may still be examined before the primary exception
 				for (Future<?> f: futures) {
 					gatherer.tryAdd(f::get);
+				}
+
+				if (groupSettings.errorCause != null) {
+					gatherer.add(groupSettings.errorCause);
 				}
 
 				gatherer.throwIfPresent();
