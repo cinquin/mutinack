@@ -163,7 +163,7 @@ public final class Parameters implements Serializable, Cloneable {
 			for (Object o: col) {
 				if (!set.add(o)) {
 					throw new IllegalArgumentException("Can specify each argument at most once for " + field.getName() +
-						" but " + o + "is specified more than once");
+						" but " + o + " is specified more than once");
 				}
 			}
 		});
