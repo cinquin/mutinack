@@ -556,8 +556,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)
 	public List<@NonNull String> saveFilteredReadsTo = new ArrayList<>();
 
-	@Parameter(names = "-collapseFilteredReads", description = "Only write one (randomly-chosen) read per duplex strand", required = false, hidden = false)
+	@Parameter(names = "-collapseFilteredReads", description = "Only write one (randomly-chosen) read pair per duplex strand", required = false, hidden = false)
 	public boolean collapseFilteredReads = false;
+
+	@Parameter(names = "-writeBothStrands", description = "Used in conjunction with -collapseFilteredReads; write read pairs from both the top and the bottom strand, when available", required = false, hidden = false)
+	public boolean writeBothStrands = true;
 
 	@FilePathList
 	@NoDuplicates

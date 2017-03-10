@@ -193,8 +193,13 @@ public class SubAnalyzerPhaser extends Phaser {
 							onAdvance1(location);
 						}
 						analysisChunk.lastProcessedPosition = position;
-						if (outputReads) {
-							prepareReadsToWrite(location, analysisChunk, param.collapseFilteredReads, dn);
+						if (outputReads && statsIndex == 0) {//Only output reads once; note
+							//however that different parameter sets may lead to different duplex
+							//grouping, which will not be apparent in BAM output
+							final @NonNull SequenceLocation locationNoPH =
+								new SequenceLocation(contigIndex, contigName, position, false);
+							prepareReadsToWrite(locationNoPH, analysisChunk, param.collapseFilteredReads,
+								param.writeBothStrands, dn);
 						}
 					} catch (IOException e) {
 						throw new RuntimeException(e);
@@ -914,6 +919,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull SequenceLocation location,
 			final @NonNull AnalysisChunk analysisChunk,
 			final boolean collapseFilteredReads,
+			final boolean writeBothStrands,
 			final @NonNull AtomicInteger dn
 		) {
 		analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
@@ -935,47 +941,51 @@ public class SubAnalyzerPhaser extends Phaser {
 				Handle<String> topOrBottom = new Handle<>();
 				Consumer<ExtendedSAMRecord> queueWrite = (ExtendedSAMRecord e) -> {
 					final SAMRecord samRecord = e.record;
-					Integer dsAttr = (Integer) samRecord.getAttribute("DS");
-					if (dsAttr == null || nReads > dsAttr) {
-						if (dsAttr != null && subAnalyzer.readsToWrite.containsKey(e.getFullName())) {
-							//Read must have been already written
-							//For now, don't try to correct it with better duplex
-							return;
-						}
-						samRecord.setAttribute("DS", nReads);
-						samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
-						samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
-						samRecord.setAttribute("DQ", minDuplexQuality.toInt());
-						samRecord.setAttribute("DR", maxDuplexQuality.toInt());
-						samRecord.setDuplicateReadFlag(e.isOpticalDuplicate());
-						String info = topOrBottom.get() + " Q" +
-								minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
-								" global Qs: " + duplexRead.globalQuality +
-								" P" + duplexRead.getMinMedianPhred() +
-								" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
-						samRecord.setAttribute("DI", info);
-						samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
-						samRecord.setAttribute("VB", new String(e.variableBarcode));
-						samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
-						samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
-								duplexRead.rightAlignmentStart + '-' + duplexRead.rightAlignmentEnd);
-						if (!duplexRead.issues.isEmpty()) {
-							samRecord.setAttribute("IS", duplexRead.issues.toString());
-						} else {
-							samRecord.setAttribute("IS", null);
-						}
-						samRecord.setAttribute("AI", subAnalyzer.getAnalyzer().name);
-						subAnalyzer.readsToWrite.put(e.getFullName(), samRecord);
+					samRecord.setAttribute("DS", nReads);
+					samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
+					samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
+					samRecord.setAttribute("DQ", minDuplexQuality.toInt());
+					samRecord.setAttribute("DR", maxDuplexQuality.toInt());
+					samRecord.setDuplicateReadFlag(e.isOpticalDuplicate());
+					String info = topOrBottom.get() + " Q" +
+						minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
+						" global Qs: " + duplexRead.globalQuality +
+						" P" + duplexRead.getMinMedianPhred() +
+						" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
+					samRecord.setAttribute("DI", info);
+					samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
+					samRecord.setAttribute("VB", new String(e.variableBarcode));
+					samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
+					samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
+						duplexRead.rightAlignmentStart + '-' + duplexRead.rightAlignmentEnd);
+					if (!duplexRead.issues.isEmpty()) {
+						samRecord.setAttribute("IS", duplexRead.issues.toString());
+					} else {
+						samRecord.setAttribute("IS", null);
+					}
+					samRecord.setAttribute("AI", subAnalyzer.getAnalyzer().name);
+					subAnalyzer.queueOutputRead(e, samRecord, useAnyStart);
+				};
+				Consumer<List<ExtendedSAMRecord>> writePair = (List<ExtendedSAMRecord> list) -> {
+					ExtendedSAMRecord e = list.get(0);
+					queueWrite.accept(e);
+					final ExtendedSAMRecord mate = e.getMate();
+					if (mate != null) {
+						queueWrite.accept(mate);
 					}
 				};
 				if (collapseFilteredReads) {
-					if (!duplexRead.topStrandRecords.isEmpty()) {
+					final boolean topPresent = !duplexRead.topStrandRecords.isEmpty();
+					if (topPresent) {
 						topOrBottom.set("T");
-						queueWrite.accept(duplexRead.topStrandRecords.get(0));
+						writePair.accept(duplexRead.topStrandRecords);
 					}
-					if (!duplexRead.bottomStrandRecords.isEmpty()) {
+					if ((writeBothStrands || !topPresent) && !duplexRead.bottomStrandRecords.isEmpty()) {
 						topOrBottom.set("B");
-						queueWrite.accept(duplexRead.bottomStrandRecords.get(0));
+						writePair.accept(duplexRead.bottomStrandRecords);
+					}
+					if (!duplexRead.topStrandRecords.isEmpty() && !duplexRead.bottomStrandRecords.isEmpty()) {
+						Assert.isFalse(duplexRead.topStrandRecords.get(0).equals(duplexRead.bottomStrandRecords.get(0)));
 					}
 				} else {
 					topOrBottom.set("T");
