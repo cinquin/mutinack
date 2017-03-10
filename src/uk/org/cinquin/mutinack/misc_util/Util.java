@@ -145,6 +145,14 @@ public class Util {
 
 	public static Pair<List<String>, List<Integer>> parseListPositions(List<String> l,
 			boolean noContigRepeat, String errorMessagePrefix) {
+
+		l.stream().forEach(s -> {
+			if (s.split(":").length != 2) {
+				throw new ParseRTException("Position should be formatted as contig:number but did not find " +
+					"the expected number of ':' in " + s);
+			}
+		});
+
 		final List<String> contigNames = l.stream().map
 				(s -> s.split(":")[0]).collect(Collectors.toList());
 
