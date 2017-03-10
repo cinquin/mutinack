@@ -239,6 +239,7 @@ public class Mutinack implements Actualizable, Closeable {
 	public @NonNull List<@NonNull AnalysisStats> stats = new ArrayList<>();
 	private String finalOutputBaseName;
 	public boolean notifiedUnpairedReads = false;
+	final @Nullable SAMFileWriter outputAlignmentWriter;
 
 	private Mutinack(
 			MutinackGroup groupSettings,
@@ -251,7 +252,8 @@ public class Mutinack implements Actualizable, Closeable {
 			byte @NonNull [] constantBarcode,
 			@NonNull List<File> intersectAlignmentFiles,
 			@NonNull OutputLevel outputLevel,
-			int maxNDuplexes) {
+			int maxNDuplexes,
+			@Nullable SAMFileWriter outputAlignmentWriter) {
 
 		param.validate();//This is redundant with validation performed in realMain0, but it
 		//kept here in case a worker and server are out of sync
@@ -259,6 +261,7 @@ public class Mutinack implements Actualizable, Closeable {
 		this.param = param;
 		this.name = name;
 		this.inputBam = inputBam;
+		this.outputAlignmentWriter = outputAlignmentWriter;
 		if (approximateReadInsertSize != null) {
 			insertSizeProbRaw = approximateReadInsertSize.toProbabilityArray(false);
 			insertSizeProbSmooth = approximateReadInsertSize.toProbabilityArray(true);
@@ -595,6 +598,38 @@ public class Mutinack implements Actualizable, Closeable {
 	}
 
 	@SuppressWarnings("resource")
+	private static SAMFileWriter createWriter(Parameters param, String path, CloseableCloser closeableCloser) {
+		SAMFileWriterFactory factory = new SAMFileWriterFactory();
+		SAMFileHeader header = new SAMFileHeader();
+		factory.setCreateIndex(true);
+		header.setSortOrder(param.sortOutputAlignmentFile ?
+			contrib.net.sf.samtools.SAMFileHeader.SortOrder.coordinate
+			: contrib.net.sf.samtools.SAMFileHeader.SortOrder.unsorted);
+		if (param.sortOutputAlignmentFile) {
+			factory.setMaxRecordsInRam(10_000);
+		}
+		final File inputBam = new File(param.inputReads.get(0));
+
+		try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
+			final SAMFileHeader inputHeader = tempReader.getFileHeader();
+			header.setSequenceDictionary(inputHeader.getSequenceDictionary());
+			List<SAMProgramRecord> programs = new ArrayList<>(inputHeader.getProgramRecords());
+			SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
+			//documentation somewhere of what programGroupId should be??
+			mutinackRecord.setProgramName("Mutinack");
+			mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
+			mutinackRecord.setCommandLine(param.toString());
+			programs.add(mutinackRecord);
+			header.setProgramRecords(programs);
+		}
+
+		SAMFileWriter result = factory.makeBAMWriter(header, false, new File(path), 0);
+		closeableCloser.add(new CloseableWrapper<>(result, SAMFileWriter::close));
+
+		return result;
+	}
+
+	@SuppressWarnings("resource")
 	private static void realMain2(
 			final Parameters param,
 			final MutinackGroup groupSettings,
@@ -603,37 +638,18 @@ public class Mutinack implements Actualizable, Closeable {
 			final PrintStream err,
 			final CloseableCloser closeableCloser) throws IOException, InterruptedException {
 
-		final SAMFileWriter alignmentWriter;
-		if (param.outputAlignmentFile == null) {
-			alignmentWriter = null;
+		final SAMFileWriter sharedAlignmentWriter;
+		if (param.outputAlignmentFile.isEmpty()) {
+			sharedAlignmentWriter = null;
+		} else if (param.inputReads.size() >= 1 && param.outputAlignmentFile.size() == 1) {
+			sharedAlignmentWriter = createWriter(param, param.outputAlignmentFile.get(0), closeableCloser);
+		} else if (param.inputReads.size() != param.outputAlignmentFile.size()) {
+			throw new IllegalArgumentException("Number of paths passed with outputAlignmentFile should be 0, 1, or " +
+				"match the number of paths passed with inputReads, i.e. " + param.inputReads.size() +", not " +
+				param.outputAlignmentFile.size());
 		} else {
-			SAMFileWriterFactory factory = new SAMFileWriterFactory();
-			SAMFileHeader header = new SAMFileHeader();
-			factory.setCreateIndex(true);
-			header.setSortOrder(param.sortOutputAlignmentFile ?
-				contrib.net.sf.samtools.SAMFileHeader.SortOrder.coordinate
-				: contrib.net.sf.samtools.SAMFileHeader.SortOrder.unsorted);
-			if (param.sortOutputAlignmentFile) {
-				factory.setMaxRecordsInRam(10_000);
-			}
-			final File inputBam = new File(param.inputReads.get(0));
-
-			try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
-				final SAMFileHeader inputHeader = tempReader.getFileHeader();
-				header.setSequenceDictionary(inputHeader.getSequenceDictionary());
-				List<SAMProgramRecord> programs = new ArrayList<>(inputHeader.getProgramRecords());
-				SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
-				//documentation somewhere of what programGroupId should be??
-				mutinackRecord.setProgramName("Mutinack");
-				mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
-				mutinackRecord.setCommandLine(param.toString());
-				programs.add(mutinackRecord);
-				header.setProgramRecords(programs);
-			}
-			alignmentWriter = factory.
-				makeBAMWriter(header, false, new File(param.outputAlignmentFile), 0);
+			sharedAlignmentWriter = null;
 		}
-		closeableCloser.add(new CloseableWrapper<>(alignmentWriter, SAMFileWriter::close));
 
 		final OutputStreamWriter mutationAnnotationWriter;
 		if (param.annotateMutationsOutputFile != null) {
@@ -843,6 +859,15 @@ public class Mutinack implements Actualizable, Closeable {
 			@SuppressWarnings("null")
 			final @NonNull OutputLevel outputLevel = d[param.verbosity];
 
+			final SAMFileWriter alignmentWriter;
+			if (sharedAlignmentWriter != null) {
+				alignmentWriter = sharedAlignmentWriter;
+			} else if (!param.outputAlignmentFile.isEmpty()) {
+				alignmentWriter = createWriter(param, param.outputAlignmentFile.get(i), closeableCloser);
+			} else {
+				alignmentWriter = null;
+			}
+
 			final Mutinack analyzer = new Mutinack(
 				groupSettings,
 				param,
@@ -857,7 +882,8 @@ public class Mutinack implements Actualizable, Closeable {
 				nonNullify(param.constantBarcode.getBytes()),
 				intersectFiles,
 				outputLevel,
-				maxNDuplexes);
+				maxNDuplexes,
+				alignmentWriter);
 			analyzers.set(i, analyzer);
 
 			analyzer.finalOutputBaseName = (param.auxOutputFileBaseName != null ?
@@ -1246,7 +1272,8 @@ public class Mutinack implements Actualizable, Closeable {
 
 				final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
 					analysisChunk,
-					alignmentWriter, groupSettings.forceOutputAtLocations,
+					!param.outputAlignmentFile.isEmpty(),
+					groupSettings.forceOutputAtLocations,
 					dubiousOrGoodDuplexCovInAllInputs,
 					goodDuplexCovInAllInputs,
 					contigNames.get(contigIndex), contigIndex,
@@ -1290,7 +1317,7 @@ public class Mutinack implements Actualizable, Closeable {
 						Runnable r = () -> ReadLoader.load(analyzer, analyzer.param, groupSettings,
 							subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
 							contigNames,
-							contigIndex, alignmentWriter,
+							contigIndex, sharedAlignmentWriter,
 							StaticStuffToAvoidMutating::getContigSequence);
 						futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
 					}//End loop over parallelization factor

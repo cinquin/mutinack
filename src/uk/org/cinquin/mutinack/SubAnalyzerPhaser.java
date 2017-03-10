@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +50,6 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
@@ -93,8 +91,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final @NonNull String contigName;
 	private final int PROCESSING_CHUNK;
 
-	private final ConcurrentHashMap<@NonNull String, @NonNull SAMRecord> readsToWrite;
-	private final SAMFileWriter outputAlignment;
+	private final boolean outputReads;
 	private final int nSubAnalyzers;
 
 	private int nIterations = 0;
@@ -102,7 +99,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 	public SubAnalyzerPhaser(@NonNull Parameters param,
 								@NonNull AnalysisChunk analysisChunk,
-								@Nullable SAMFileWriter alignmentWriter,
+								boolean outputReads,
 								@NonNull Map<SequenceLocation, Boolean> forceOutputAtLocations,
 								@NonNull Histogram dubiousOrGoodDuplexCovInAllInputs,
 								@NonNull Histogram goodDuplexCovInAllInputs,
@@ -116,11 +113,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		this.groupSettings = analysisChunk.groupSettings;
 		previousLastProcessable = new SettableInteger(-1);
 
-		readsToWrite = alignmentWriter == null ?
-				null
-			:
-				new ConcurrentHashMap<>(100_000);
-		outputAlignment = alignmentWriter;
+		this.outputReads = outputReads;
 		this.dubiousOrGoodDuplexCovInAllInputs = dubiousOrGoodDuplexCovInAllInputs;
 		this.goodDuplexCovInAllInputs = goodDuplexCovInAllInputs;
 		this.forceOutputAtLocations = forceOutputAtLocations;
@@ -200,8 +193,8 @@ public class SubAnalyzerPhaser extends Phaser {
 							onAdvance1(location);
 						}
 						analysisChunk.lastProcessedPosition = position;
-						if (readsToWrite != null) {
-							writeReads(location, analysisChunk, param.collapseFilteredReads, readsToWrite, dn);
+						if (outputReads) {
+							prepareReadsToWrite(location, analysisChunk, param.collapseFilteredReads, dn);
 						}
 					} catch (IOException e) {
 						throw new RuntimeException(e);
@@ -234,16 +227,8 @@ public class SubAnalyzerPhaser extends Phaser {
 						val.getAlignmentStart() + maxInsertSize > localPauseAt);
 				}
 				subAnalyzer.extSAMCache.compact();
+				subAnalyzer.writeOutputReads();
 			});//End loop over subAnalyzers
-
-			if (outputAlignment != null) {
-				synchronized(outputAlignment) {
-					for (SAMRecord samRecord: readsToWrite.values()) {
-						outputAlignment.addAlignment(samRecord);
-					}
-				}
-				readsToWrite.clear();
-			}
 
 			if (nIterations < 2) {
 				nIterations++;
@@ -925,11 +910,10 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 	}
 
-	private static void writeReads(
+	private static void prepareReadsToWrite(
 			final @NonNull SequenceLocation location,
 			final @NonNull AnalysisChunk analysisChunk,
 			final boolean collapseFilteredReads,
-			final @NonNull ConcurrentHashMap<@NonNull String, @NonNull SAMRecord> readsToWrite,
 			final @NonNull AtomicInteger dn
 		) {
 		analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
@@ -953,7 +937,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					final SAMRecord samRecord = e.record;
 					Integer dsAttr = (Integer) samRecord.getAttribute("DS");
 					if (dsAttr == null || nReads > dsAttr) {
-						if (dsAttr != null && readsToWrite.containsKey(e.getFullName())) {
+						if (dsAttr != null && subAnalyzer.readsToWrite.containsKey(e.getFullName())) {
 							//Read must have been already written
 							//For now, don't try to correct it with better duplex
 							return;
@@ -981,7 +965,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							samRecord.setAttribute("IS", null);
 						}
 						samRecord.setAttribute("AI", subAnalyzer.getAnalyzer().name);
-						readsToWrite.put(e.getFullName(), samRecord);
+						subAnalyzer.readsToWrite.put(e.getFullName(), samRecord);
 					}
 				};
 				if (collapseFilteredReads) {

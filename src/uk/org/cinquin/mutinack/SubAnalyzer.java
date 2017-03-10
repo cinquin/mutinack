@@ -54,6 +54,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -114,6 +115,8 @@ public final class SubAnalyzer {
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
 			new THashMap<>(10_000, 0.1f);
 	private final AtomicInteger threadCount = new AtomicInteger();
+	final @NonNull ConcurrentHashMap<@NonNull String, @NonNull SAMRecord> readsToWrite
+		= new ConcurrentHashMap<>();
 	private final Random random;
 
 	private static final @NonNull Set<DuplexAssay>
@@ -153,6 +156,18 @@ public final class SubAnalyzer {
 		byteArrayMap.put((byte) 'n', new byte[] {'n'});
 	}
 
+	void queueOutputRead(@NonNull String name, @NonNull SAMRecord r) {
+		readsToWrite.put(name, r);
+	}
+
+	void writeOutputReads() {
+		synchronized(analyzer.outputAlignmentWriter) {
+			for (SAMRecord samRecord: readsToWrite.values()) {
+				Objects.requireNonNull(analyzer.outputAlignmentWriter).addAlignment(samRecord);
+			}
+		}
+		readsToWrite.clear();
+	}
 
 	@SuppressWarnings("null")//Stats not initialized straight away
 	SubAnalyzer(@NonNull Mutinack analyzer) {

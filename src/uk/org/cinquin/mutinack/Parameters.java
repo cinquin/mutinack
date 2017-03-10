@@ -60,7 +60,7 @@ import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 public final class Parameters implements Serializable, Cloneable {
 
 	public void automaticAdjustments() {
-		if (outputAlignmentFile == null) {
+		if (outputAlignmentFile.isEmpty()) {
 			logReadIssuesInOutputBam = false;
 		}
 	}
@@ -603,11 +603,13 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-randomOutputRate", description = "Randomly choose genome positions at this rate to include in output", required = false)
 	public float randomOutputRate = 0;
 
-	@FilePath
+	@FilePathList
 	@Parameter(names = "-outputAlignmentFile", description = "Write BAM output with duplex information provided in custom tags;" +
 		" note that a read may be omitted from the output, e.g. if it falls below a Q1 threshold (it is" +
-		" relatively rare but possible for a read to be omitted even though it counts toward coverage).", required = false)
-	public @Column(length = 1_000) String outputAlignmentFile = null;
+		" relatively rare but possible for a read to be omitted even though it counts toward coverage). Specify" +
+		" parameter once for all reads to go to same output file (with different AI tags), or as many times" +
+		" as there are input files", required = false)
+	public @NonNull @Column(length = 1_000) List<String> outputAlignmentFile = new ArrayList<>();
 
 	@FilePath
 	@Parameter(names = "-discardedReadFile", description = "Write discarded reads to BAM file specified by parameter", required = false, hidden = hideInProgressParameters)
@@ -1098,7 +1100,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + (noStatusMessages ? 1231 : 1237);
 		result = prime * result + ((originalReadFile1 == null) ? 0 : originalReadFile1.hashCode());
 		result = prime * result + ((originalReadFile2 == null) ? 0 : originalReadFile2.hashCode());
-		result = prime * result + ((outputAlignmentFile == null) ? 0 : outputAlignmentFile.hashCode());
+		result = prime * result + outputAlignmentFile.hashCode();
 		result = prime * result + (outputCoverageBed ? 1231 : 1237);
 		result = prime * result + (outputCoverageProto ? 1231 : 1237);
 		result = prime * result + (outputDuplexDetails ? 1231 : 1237);
@@ -1356,10 +1358,7 @@ public final class Parameters implements Serializable, Cloneable {
 				return false;
 		} else if (!originalReadFile2.equals(other.originalReadFile2))
 			return false;
-		if (outputAlignmentFile == null) {
-			if (other.outputAlignmentFile != null)
-				return false;
-		} else if (!outputAlignmentFile.equals(other.outputAlignmentFile))
+		if (!outputAlignmentFile.equals(other.outputAlignmentFile))
 			return false;
 		if (outputCoverageBed != other.outputCoverageBed)
 			return false;
