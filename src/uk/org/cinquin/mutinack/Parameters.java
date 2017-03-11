@@ -96,6 +96,10 @@ public final class Parameters implements Serializable, Cloneable {
 			}
 		}
 
+		if (clipPairOverlap && !collapseFilteredReads) {
+			throw new IllegalArgumentException("-clipPairOverlap requires -collapseFilteredReads");
+		}
+
 		switch(candidateQ2Criterion) {
 			case "1Q2Duplex":
 				break;
@@ -561,6 +565,9 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Parameter(names = "-writeBothStrands", description = "Used in conjunction with -collapseFilteredReads; write read pairs from both the top and the bottom strand, when available", required = false, arity = 1)
 	public boolean writeBothStrands = true;
+
+	@Parameter(names = "-clipPairOverlap", description = "Hard clip overlap between read pairs (currently does not add an H block to the Cigar); requires -collapseFilteredReads", required = false)
+	public boolean clipPairOverlap = false;
 
 	@FilePathList
 	@NoDuplicates

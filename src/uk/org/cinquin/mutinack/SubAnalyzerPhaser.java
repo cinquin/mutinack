@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -71,6 +72,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.CrossSampleLocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.sequence_IO.TrimOverlappingReads;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
 public class SubAnalyzerPhaser extends Phaser {
@@ -198,8 +200,13 @@ public class SubAnalyzerPhaser extends Phaser {
 							//grouping, which will not be apparent in BAM output
 							final @NonNull SequenceLocation locationNoPH =
 								new SequenceLocation(contigIndex, contigName, position, false);
-							prepareReadsToWrite(locationNoPH, analysisChunk, param.collapseFilteredReads,
-								param.writeBothStrands, dn);
+							prepareReadsToWrite(
+								locationNoPH,
+								analysisChunk,
+								param.collapseFilteredReads,
+								param.writeBothStrands,
+								param.clipPairOverlap,
+								dn);
 						}
 					} catch (IOException e) {
 						throw new RuntimeException(e);
@@ -922,6 +929,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull AnalysisChunk analysisChunk,
 			final boolean collapseFilteredReads,
 			final boolean writeBothStrands,
+			final boolean clipPairOverlap,
 			final @NonNull AtomicInteger dn
 		) {
 		analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
@@ -941,8 +949,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				final Quality minDuplexQuality = duplexRead.minQuality;
 				final Quality maxDuplexQuality = duplexRead.maxQuality;
 				Handle<String> topOrBottom = new Handle<>();
-				Consumer<ExtendedSAMRecord> queueWrite = (ExtendedSAMRecord e) -> {
-					final SAMRecord samRecord = e.record;
+				BiConsumer<ExtendedSAMRecord, SAMRecord> queueWrite = (ExtendedSAMRecord e, SAMRecord samRecord) -> {
 					samRecord.setAttribute("DS", nReads);
 					samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
 					samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
@@ -968,12 +975,29 @@ public class SubAnalyzerPhaser extends Phaser {
 					samRecord.setAttribute("AI", subAnalyzer.getAnalyzer().name);
 					subAnalyzer.queueOutputRead(e, samRecord, useAnyStart);
 				};
+				@SuppressWarnings("null")
 				Consumer<List<ExtendedSAMRecord>> writePair = (List<ExtendedSAMRecord> list) -> {
-					ExtendedSAMRecord e = list.get(0);
-					queueWrite.accept(e);
+					final ExtendedSAMRecord e = list.get(0);
 					final ExtendedSAMRecord mate = e.getMate();
+					SAMRecord samRecord = e.record, mateSamRecord = mate == null ? null : mate.record;
 					if (mate != null) {
-						queueWrite.accept(mate);
+						if (clipPairOverlap) {
+							try {
+								samRecord = (SAMRecord) samRecord.clone();
+								mateSamRecord = (SAMRecord) mateSamRecord.clone();
+							} catch (CloneNotSupportedException excp) {
+								throw new RuntimeException(excp);
+							}
+							TrimOverlappingReads.clipForNoOverlap(samRecord, mateSamRecord);
+							TrimOverlappingReads.removeClippedBases(samRecord);
+							TrimOverlappingReads.removeClippedBases(mateSamRecord);
+						}
+						if (!mateSamRecord.getReadUnmappedFlag()) {
+							queueWrite.accept(mate, mateSamRecord);
+						}
+					}
+					if (!samRecord.getReadUnmappedFlag()) {
+						queueWrite.accept(e, samRecord);
 					}
 				};
 				if (collapseFilteredReads) {
@@ -991,9 +1015,9 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				} else {
 					topOrBottom.set("T");
-					duplexRead.topStrandRecords.forEach(queueWrite);
+					duplexRead.topStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
 					topOrBottom.set("B");
-					duplexRead.bottomStrandRecords.forEach(queueWrite);
+					duplexRead.bottomStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
 				}
 			}
 		});
