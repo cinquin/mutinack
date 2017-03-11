@@ -559,7 +559,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-collapseFilteredReads", description = "Only write one (randomly-chosen) read pair per duplex strand", required = false)
 	public boolean collapseFilteredReads = false;
 
-	@Parameter(names = "-writeBothStrands", description = "Used in conjunction with -collapseFilteredReads; write read pairs from both the top and the bottom strand, when available", required = false, hidden = false)
+	@Parameter(names = "-writeBothStrands", description = "Used in conjunction with -collapseFilteredReads; write read pairs from both the top and the bottom strand, when available", required = false, arity = 1)
 	public boolean writeBothStrands = true;
 
 	@FilePathList
