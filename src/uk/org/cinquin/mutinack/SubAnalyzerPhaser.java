@@ -232,7 +232,9 @@ public class SubAnalyzerPhaser extends Phaser {
 						val.getAlignmentStart() + maxInsertSize > localPauseAt);
 				}
 				subAnalyzer.extSAMCache.compact();
-				subAnalyzer.writeOutputReads();
+				if (outputReads) {
+					subAnalyzer.writeOutputReads();
+				}
 			});//End loop over subAnalyzers
 
 			if (nIterations < 2) {
