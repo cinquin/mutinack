@@ -727,6 +727,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-enableCostlyAssertions", description = "Enable internal sanity checks that significantly slow down execution", required = false, arity = 1)
 	public boolean enableCostlyAssertions = true;
 
+	@Parameter(names = "-jiggle", description = "Internally jiggle the data in a way that should not change the important outputs; use in combination with random seed to get reproducible jiggling", required = false)
+	public boolean jiggle = false;
+
 	@Parameter(names = "-randomSeed", description = "TODO", required = false, hidden = hideAdvancedParameters)
 	public long randomSeed = new SecureRandom().nextLong();
 

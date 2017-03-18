@@ -76,6 +76,7 @@ import gnu.trove.map.TMap;
 import gnu.trove.map.hash.TByteObjectHashMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TObjectProcedure;
 import gnu.trove.set.hash.TCustomHashSet;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
@@ -341,10 +342,18 @@ public final class SubAnalyzer {
 
 		final SettableInteger nReadsExcludedFromDuplexes = new SettableInteger(0);
 
-		extSAMCache.forEachValue(rExtended -> {
+		final TObjectProcedure<@NonNull ExtendedSAMRecord> callLoadRead = rExtended -> {
 			loadRead(rExtended, duplexKeeper, ed, sequenceLocationCache, nReadsExcludedFromDuplexes);
 			return true;
-		});
+		};
+
+		if (param.jiggle) {
+			List<@NonNull ExtendedSAMRecord> reorderedReads = new ArrayList<>(extSAMCache.values());
+			Collections.shuffle(reorderedReads, random);
+			reorderedReads.forEach(e -> callLoadRead.execute(e));
+		} else {
+			extSAMCache.forEachValue(callLoadRead);
+		}
 
 		if (param.randomizeStrand) {
 			for (DuplexRead dr: duplexKeeper.getIterable()) {
