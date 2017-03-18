@@ -6,11 +6,11 @@ import java.util.Collection;
  *  Compilation:  javac ResizingArrayQueue.java
  *  Execution:    java ResizingArrayQueue < input.txt
  *  Dependencies: StdIn.java StdOut.java
- *  Data files:   http://algs4.cs.princeton.edu/13stacks/tobe.txt  
- *  
+ *  Data files:   http://algs4.cs.princeton.edu/13stacks/tobe.txt
+ *
  *  Queue implementation with a resizing array.
  *
- *  % java ResizingArrayQueue < tobe.txt 
+ *  % java ResizingArrayQueue < tobe.txt
  *  to be or not to be (2 left on queue)
  *
  ******************************************************************************/
@@ -31,7 +31,7 @@ import java.util.Queue;
  *  when it is full and halves the underlying array when it is one-quarter full.
  *  The <em>enqueue</em> and <em>dequeue</em> operations take constant amortized time.
  *  The <em>size</em>, <em>peek</em>, and <em>is-empty</em> operations takes
- *  constant time in the worst case. 
+ *  constant time in the worst case.
  *  <p>
  *  For additional documentation, see <a href="http://algs4.cs.princeton.edu/13stacks">Section 1.3</a> of
  *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
@@ -113,7 +113,7 @@ public class ResizingArrayQueue<Item> implements Iterable<Item>, Queue<Item> {
         first++;
         if (first == q.length) first = 0;           // wrap-around
         // shrink size of array if necessary
-        //if (N > 0 && N == q.length/4) resize(q.length/2); 
+        //if (N > 0 && N == q.length/4) resize(q.length/2);
         return item;
     }
 

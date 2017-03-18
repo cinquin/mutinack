@@ -37,7 +37,7 @@ import contrib.net.sf.samtools.Defaults;
  * and delegate to the preferred implementation.
  *
  * TODO: Replace this with {@link java.io.LineNumberReader}?
- * 
+ *
  * @author alecw@broadinstitute.org
  */
 public class BufferedLineReader implements LineReader {

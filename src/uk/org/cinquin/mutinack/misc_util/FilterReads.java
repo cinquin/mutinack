@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -38,7 +38,7 @@ import uk.org.cinquin.mutinack.sequence_IO.IteratorPrefetcher;
  *
  */
 public class FilterReads {
-	
+
 	public static void main(String[] args) {
 		final SAMFileWriter alignmentWriter;
 		SAMFileWriterFactory factory = new SAMFileWriterFactory();
@@ -65,12 +65,12 @@ public class FilterReads {
 						bamReader.getIndex().getMetaData(0).getUnalignedRecordCount();
 			}
 			nRecords /= 100f;
-			
+
 			int nProcessedMod = 0;
 			float nProcessed = 0;
-			
+
 			int nWrongPair = 0, nTooBig = 0, nDiffContig = 0;
-			
+
 			try(SAMRecordIterator bamIt = bamReader.iterator()) {
 				for (Iterator<SAMRecord> iterator = new IteratorPrefetcher<>(bamIt, 100, null,
 						e -> {}, null); iterator.hasNext(); ) {
@@ -91,14 +91,14 @@ public class FilterReads {
 						samRecord.getReferenceIndex() == 2 || samRecord.getMateReferenceIndex() == 2) {
 						continue;
 					}
-				
+
 					boolean formsWrongPair =
 						!(SamPairUtil.getPairOrientation(samRecord) == PairOrientation.FR);
-				
+
 					int insertSize = samRecord.getInferredInsertSize();
-				
+
 					boolean differentContigs = !samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex());
-				
+
 					if (formsWrongPair || Math.abs(insertSize) > 1_000 || differentContigs) {
 						if (formsWrongPair) {
 							nWrongPair++;
@@ -114,8 +114,8 @@ public class FilterReads {
 				}
 			}
 		}
-		
+
 		alignmentWriter.close();
-		
+
 	}
 }

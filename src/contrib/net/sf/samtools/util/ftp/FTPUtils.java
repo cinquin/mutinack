@@ -129,7 +129,7 @@ public class FTPUtils {
 	                    // canceled
 	                    break;
 	                }
-	
+
 	            }
 	            if (success) {
 	                userInfo = user + ":" + password;

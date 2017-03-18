@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -44,7 +44,7 @@ public class BedFileDisagScoreLookup {
 	 * formatted as the "outputTopBottomDisagreementBED" Mutinack output files.
 	 * Second argument: path to BED file containing scores
 	 * Third and fourth arguments: min and max length of the disagreement (inclusive)
-	 * 
+	 *
 	 * Output: score of each disagreement (or -1 if not found in BED file).
 	 * @param args
 	 * @throws IOException
@@ -55,9 +55,9 @@ public class BedFileDisagScoreLookup {
 		final String scoreBedFile = args[1];
 		final float minLength = Float.parseFloat(args[2]);
 		final float maxLength = Float.parseFloat(args[3]);
-		
+
 		final List<@NonNull String> contigNames = BedReader.getContigNames(locationsFile);
-		
+
 		final BedReader scores;
 		try (BufferedReader br = new BufferedReader(new FileReader(
 				new File(scoreBedFile)))) {
@@ -72,7 +72,7 @@ public class BedFileDisagScoreLookup {
 
 			lines.forEach(line -> {
 				final String[] split = line.split("\t");
-				
+
 				final int sequenceLength = split[3].length();
 				if (sequenceLength > maxLength || sequenceLength < minLength) {
 					outOfRange.incrementAndGet();
@@ -86,26 +86,26 @@ public class BedFileDisagScoreLookup {
 				Collection<GenomeInterval> intervals = scores.apply(
 					new SequenceLocation(contigNames.indexOf(contig),
 						contigNames, position));
-				
+
 				List<String> addToEnd = new ArrayList<>();
 				Arrays.stream(split).skip(3).forEach(addToEnd::add);
-								
+
 				final float result;
 				if (intervals.isEmpty()) {
 					result = -1;
 				} else {
-					result = (float) 
+					result = (float)
 						intervals.stream().mapToDouble(GenomeInterval::getScore).sum();
 					intervals.forEach(i -> addToEnd.add(i.toString()));
 				}
-				
+
 				String endOfLine = addToEnd.stream().
 					collect(Collectors.joining("\t"));
-				
+
 				System.out.println(contig + ":" + position + "\t" + result + "\t" +
 					endOfLine);
 			});
-			
+
 			System.err.println(outOfRange.get() + " out of range; " +
 				inRange.get() + " in range");
 		}

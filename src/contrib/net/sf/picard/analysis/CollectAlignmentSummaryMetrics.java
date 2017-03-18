@@ -55,7 +55,7 @@ import contrib.net.sf.samtools.util.CollectionUtil;
  * <li>Strand balance - reads mapped to positive strand / total mapped reads</li>
  * </ul>
  * Metrics are written for the first read of a pair, the second read, and combined for the pair.
- * 
+ *
  * @author Doug Voet (dvoet at broadinstitute dot org)
  */
 public class CollectAlignmentSummaryMetrics extends SinglePassSamProgram {

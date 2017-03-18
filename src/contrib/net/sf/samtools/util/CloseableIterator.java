@@ -28,7 +28,7 @@ import java.util.Iterator;
 
 /**
  * This interface is used by iterators that use releasable resources during iteration.
- * 
+ *
  * The consumer of a CloseableIterator should ensure that the close() method is always called,
  * for example by putting such a call in a finally block.  Two conventions should be followed
  * by all implementors of CloseableIterator:
@@ -36,7 +36,7 @@ import java.util.Iterator;
  * 2) When hasNext() returns false, the iterator implementation should automatically close itself.
  *    The latter makes it somewhat safer for consumers to use the for loop syntax for iteration:
  *    for (Type obj : getCloseableIterator()) { ... }
- * 
+ *
  * We do not inherit from java.io.Closeable because IOExceptions are a pain to deal with.
  */
 public interface CloseableIterator<T> extends Iterator<T>, Closeable {

@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -32,7 +32,7 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	@JsonIgnore
 	protected boolean on = true;
 	private static final long serialVersionUID = -1557536590861199764L;
-	
+
 	@JsonIgnore
 	private final int maxSize;
 
@@ -40,9 +40,9 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	public String average;
 	public String median;
 	public String notes;
-	
+
 	private final LongAdderFormatter sum = new LongAdderFormatter();
-	
+
 	public Histogram(int maxSize) {
 		super(maxSize);
 		if (maxSize < 1) {
@@ -120,7 +120,7 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 			}
 		}
 	}
-	
+
 	@Override
 	public void turnOff() {
 		on = false;
@@ -135,7 +135,7 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	public boolean isOn() {
 		return on;
 	}
-	
+
 	@Override
 	public void actualize() {
 		double nEntries0 = 0;

@@ -9,16 +9,16 @@ import contrib.net.sf.samtools.util.CollectionUtil;
 /**
  * Describes a mechanism for revising and evaluating qualities read from a BCL file.  This class accumulates observations about low quality
  * scores that it evaluates, so distinct instances should be used for unrelated sets of BCL readers.
- * 
+ *
  * The mechanism for revising qualities is not configurable.  The qualities that are less than 1 are revised to 1, and other qualities are
  * not affected.
  *
  * This class is thread-safe and a single instance can and should be passed to {@link BclReader}s running in separate threads.
- * 
+ *
  * To replicate the functionality of {@link BclReader}s prior to the introduction of this class, create a single instance passing 
  * {@link #ILLUMINA_ALLEGED_MINIMUM_QUALITY} to the constructor, and then call {@link #assertMinimumQualities()} once the readers finish
  * their work.
- * 
+ *
  * @author mccowan
  */
 public class BclQualityEvaluationStrategy {

@@ -217,7 +217,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 			return false;
 		}
 	}
-	
+
 	@Override
 	public boolean remove(Object o){
 		return getAndRemove(o) != null;
@@ -684,7 +684,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 	public static <E extends Comparable<E>, T extends HasInterval<E>> boolean overlaps(TreeNode<E,T> n, E p) {
 		return overlaps(n, Interval.toInterval(p,p));
 	}
-	
+
 	public static <E extends Comparable<E>, T extends HasInterval<E>> boolean overlaps(TreeNode<E,T> node, Interval<E> target) {
 		Deque<TreeNode<E,T>> todo = new ArrayDeque<>();
 		todo.push(node);
@@ -873,7 +873,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 		int size;
 		double score;
 	}
-	
+
 	public static <T, E extends Comparable<E>> List<T> getNonOverlappingMaxScore(
 			List<? extends T> items, Function<? super T,Interval<E>> toIntervalFunc, Function<? super T, Double> scoreFunc)
 	{

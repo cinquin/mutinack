@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -45,10 +45,10 @@ public class BedFileExpMovingAverage {
 		final double alpha = Double.parseDouble(args[1]);
 		final boolean parseExpressionLevel = args.length >= 3 && args[2].equals("-parseExpressionLevel");
 		final double truncate = args.length >= 4 ? Double.parseDouble(args[3]) : Double.MAX_VALUE;
-		
+
 		System.err.println("parseExpressionLevel: " + parseExpressionLevel);
 		System.err.println("truncateAt: " + truncate);
-		
+
 		final List<@NonNull String> contigNames = BedReader.getContigNames(refFile);
 
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
@@ -60,7 +60,7 @@ public class BedFileExpMovingAverage {
 				double v = 0;
 				String contigName = contigNames.get(contig);
 				for (int c = 0; c < defaultTruncateContigPositions.get(contig) / BIN_SIZE; c++) {
-					int l = c * BIN_SIZE; 
+					int l = c * BIN_SIZE;
 					for (; l < (c + 1) * BIN_SIZE; l++) {
 						double vl = 0;
 						final SequenceLocation loc = new SequenceLocation(contig, contigName, l);

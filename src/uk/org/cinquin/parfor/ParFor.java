@@ -19,7 +19,7 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 
 public final class ParFor {
-	
+
 	static final Logger logger = LoggerFactory.getLogger("Parfor");
 	/**
 	 * Profiling suggests setting thread names represents a substantial
@@ -31,7 +31,7 @@ public final class ParFor {
 	private final int startIndex, endIndex;
 	private final int nIterations;
 	private final boolean stopAllUponException;
-	
+
 	private ILoopWorker[] workers = null;
 	private int workerArrayIndex = 0;
 	private final transient AtomicInteger index = new AtomicInteger();
@@ -45,7 +45,7 @@ public final class ParFor {
 	private volatile boolean started = false;
 	private final Object doneSemaphore = new Object();
 	private volatile boolean done = false;
-	
+
 	public static volatile ExecutorService defaultThreadPool;
 	private final ExecutorService threadPool;
 	@SuppressWarnings("unused")
@@ -55,7 +55,7 @@ public final class ParFor {
 		int getValue();
 		void setValueThreadSafe(int ourProgress);
 	}
-	
+
 	public static final class PluginRuntimeException extends RuntimeException {
 
 		private static final long serialVersionUID = 1737304285173402447L;
@@ -64,7 +64,7 @@ public final class ParFor {
 			super(message, e);
 		}
 	}
-	
+
 
 	public ParFor(int startIndex, int endIndex, ProgressReporter progressBar,
 			ExecutorService threadPool, boolean stopAllUponException) {
@@ -107,7 +107,7 @@ public final class ParFor {
 		if (name != null)
 			setName(name);
 	}
-	
+
 	public int getNThreads() {
 		return workers.length;
 	}
@@ -131,7 +131,7 @@ public final class ParFor {
 	public List<Object> run(boolean block) throws InterruptedException {
 		return run(block, -1);
 	}
-	
+
 	public List<Object> runNonBlocking() {
 		try {
 			return run(false, -1);
@@ -180,7 +180,7 @@ public final class ParFor {
 							if (SET_THREAD_NAMES) {
 								Thread.currentThread().setName(name + workerID);
 							}
-							
+
 							final ILoopWorker localWorker = workers[workerID];
 							@SuppressWarnings("unchecked")
 							final List<Object> localResults = (List<Object>) partialResults[workerID];
@@ -207,7 +207,7 @@ public final class ParFor {
 									lastGUIUpdate = currentTime;
 									sliceModulo = 0;
 									int ourProgress = (int) ( (n-startIndex)*progressMultiplyingFactor);
-									if (ourProgress > localProgress.getValue()) 
+									if (ourProgress > localProgress.getValue())
 										localProgress.setValueThreadSafe(ourProgress);
 									//Not perfect but minimizes synchronization
 								}
@@ -252,7 +252,7 @@ public final class ParFor {
 				futures[i] = threadPool.submit(runnables[i], 0);
 			}
 
-			if (!block && nToCompleteBeforeReturn == -1) {	
+			if (!block && nToCompleteBeforeReturn == -1) {
 				return null;
 			}
 
@@ -363,7 +363,7 @@ public final class ParFor {
 
 	public void interrupt() {
 		for (Future<?> future:futures) {
-			if (future != null) 
+			if (future != null)
 				future.cancel(true);
 		}
 	}

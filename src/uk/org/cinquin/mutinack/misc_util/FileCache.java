@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -38,13 +38,13 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 
 public class FileCache<T extends Serializable> {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(FileCache.class);
 
 	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
-	
+
 	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
-	
+
 	@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
 	public static <T> @NonNull T getCached(String path, String cacheExtension, Function<String, @NonNull T> processor) {
 		String canonicalPath;
@@ -62,7 +62,7 @@ public class FileCache<T extends Serializable> {
 		cache.put(canonicalPath, new SoftReference<> (result));
 		return result;
 	}
-	
+
 	@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
 	public static <T> @NonNull T getCached0(String path, String cacheExtension, Function<String, @NonNull T> processor) {
 		File cachedInfo;
@@ -74,7 +74,7 @@ public class FileCache<T extends Serializable> {
 
 		T result = null;
 		boolean recreate = true;
-		if (cachedInfo.exists() && 
+		if (cachedInfo.exists() &&
 				cachedInfo.lastModified() > new File(path).lastModified()) {
 			try (DataInputStream dataIS = new DataInputStream(new FileInputStream(cachedInfo))) {
 				byte [] bytes = new byte [(int) cachedInfo.length()];
@@ -84,7 +84,7 @@ public class FileCache<T extends Serializable> {
 			} catch (Exception e) {
 				logger.debug("Problem reading cache from " + cachedInfo.getAbsolutePath(), e);
 			}
-		} 
+		}
 		if (recreate) {
 			logger.debug("Could not read from cache for " + path);
 			result = processor.apply(path);

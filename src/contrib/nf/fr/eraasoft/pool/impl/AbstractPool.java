@@ -12,14 +12,14 @@ import contrib.nf.fr.eraasoft.pool.PoolableObject;
 
 
 /**
- * 
+ *
  * Object pool implementation based on LinkedBlockingQueue<br>
  * Use PoolSettings class to obtain an instance of this class
- * 
+ *
  * @see PoolSettings
- * 
+ *
  * @author eddie
- * 
+ *
  * @param <T>
  */
 public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
@@ -95,7 +95,7 @@ public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
 		for (;queue.size()>0;) {
 			T t = queue.poll();
 			destroyObject(t);
-			
+
 		}
 		totalSize.set(0);
 
@@ -147,7 +147,7 @@ public abstract class AbstractPool<T> implements ObjectPool<T>, Controllable {
 		for (T t : listT) {
 			queue.add(t);
 		}
-		
+
 		int objectToCreate = settings.min() - totalSize.get();
 		for (int n=0;n<objectToCreate;n++) {
 			try {

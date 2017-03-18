@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -47,7 +47,7 @@ import uk.org.cinquin.mutinack.misc_util.Util;
  */
 public class MutinackGroup implements Closeable, Serializable {
 	private static final long serialVersionUID = 4569342905242962301L;
-	
+
 	static final Logger logger = LoggerFactory.getLogger(MutinackGroup.class);
 
 	/**
@@ -61,7 +61,7 @@ public class MutinackGroup implements Closeable, Serializable {
 	private static final int CONSTANT_BARCODE_START = 3;
 	private static final int CONSTANT_BARCODE_END = 5;
 	private byte[] Ns;
-	
+
 	public final transient Collection<BiConsumer<PrintStream, Integer>>
 		statusUpdateTasks = new ArrayList<>();
 	private List<@NonNull String> contigNames;
@@ -83,10 +83,10 @@ public class MutinackGroup implements Closeable, Serializable {
 		if (previousVal == Integer.MAX_VALUE) {
 			return;
 		}
-		Assert.isTrue(previousVal == newVal, 
+		Assert.isTrue(previousVal == newVal,
 			"Trying to set %s to %s but it has already been set to %s", var, newVal, previousVal);
 	}
-	
+
 	public synchronized void setBarcodePositions(int variableStart, int variableEnd,
 			int constantStart, int constantEnd) {
 		Assert.isTrue(variableStart == 0, "Unimplemented");

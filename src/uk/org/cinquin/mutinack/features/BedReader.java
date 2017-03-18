@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -74,12 +74,12 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	@JsonIgnore
 	private final @NonNull Map<@NonNull String, @NonNull String> suppInfo;
 	private final String readerName;
-		
+
 	@Override
 	public String toString() {
 		return "Tester for BED file at " + readerName;
 	}
-	
+
 	@SuppressWarnings("resource")
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
 			List<@NonNull String> contigNames, String readerName, boolean parseScore) {
@@ -102,7 +102,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		}
 		return result;
 	}
-	
+
 	public final static <V> Map<V, Integer> invertList(List<V> list) {
 		Map<V, Integer> result = new HashMap<>();
 		for (int i = 0; i < list.size(); i++) {
@@ -116,12 +116,12 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	@SuppressWarnings("null")
 	public BedReader(List<@NonNull String> contigNames, BufferedReader reader,
 			String readerName, BufferedReader suppInfoReader, boolean parseScore) throws ParseRTException {
-		
+
 		Map<String, Integer> reverseIndex = invertList(contigNames);
-		
+
 		this.readerName = readerName;
 		bedFileIntervals = new MapOfLists<>();
-		
+
 		int entryCount = 0;
 		final AtomicInteger lineCount = new AtomicInteger(0);
 		final AtomicInteger skipped = new AtomicInteger(0);
@@ -131,7 +131,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			bedFileIntervals.addAt(contigNames.get(i), new IntervalTree.IntervalData<>(-1, -1,
 					new GenomeInterval("", i, contigNames.get(i), -1, -1, null, Optional.empty(), 0)));
 		}
-		
+
 		try(Stream<String> lines = reader.lines()) {
 			lines.forEachOrdered(l -> {
 				try {
@@ -206,7 +206,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 							throw new IllegalArgumentException("Could not find contig " + components[0]);
 						}
 					}
-					GenomeInterval interval = new GenomeInterval(name, contigIndex, 
+					GenomeInterval interval = new GenomeInterval(name, contigIndex,
 							/*contig*/ components[0], start, end, length, strandPolarity, score);
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
 				} catch (IllegalArgumentException | ParseRTException e) {
@@ -221,7 +221,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			}
 		}
 
-		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs = 
+		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs =
 				bedFileIntervals.entrySet().stream().sorted(Comparator.comparing(Entry::getKey)).collect(Collectors.toList());
 
 		//NB For this to work the contig IDs used in the test function must match
@@ -230,17 +230,17 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			entryCount += sortedContig.getValue().size();
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
-		
+
 		Assert.isFalse(entryCount != lineCount.get() - skipped.get(),
 				"Incorrect number of entries after BED file reading: %s vs %s", entryCount, lineCount.get());
-		
+
 		if (suppInfoReader == null) {
 			suppInfo = Collections.emptyMap();
 		} else {
 			suppInfo = TSVMapReader.getMap(suppInfoReader);
 		}
 	}
-	
+
 	private synchronized static void warnMissingContigOnce(@NonNull String name,
 			@NonNull String readerName) {
 		if (missingContigNames.add(name)) {
@@ -260,7 +260,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	public boolean test(SequenceLocation loc) {
 		return contigTrees.get(loc.contigIndex).contains(loc.position);
 	}
-	
+
 	public static boolean anyMatch(Collection<GenomeFeatureTester> testers,
 			SequenceLocation location) {
 		for (GenomeFeatureTester tester: testers) {
@@ -270,7 +270,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		}
 		return false;
 	}
-	
+
 	public SerializablePredicate<SequenceLocation> getStrandSpecificTester(final boolean negativeStrand) {
 		return loc -> {
 			Collection<GenomeInterval> matches = contigTrees.get(loc.contigIndex).query(loc.position).getUnprotectedData();

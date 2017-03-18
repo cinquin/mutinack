@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -71,7 +71,7 @@ import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.parfor.ParFor;
 
 public class PosByPosProtoManip {
-	
+
 	public static class Params {
 		@Parameter(names = "-startAtPosition", description = "Formatted as chrI:12,000,000 or chrI:12000000; specify up to once per contig", required = false,
 				converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
@@ -80,13 +80,13 @@ public class PosByPosProtoManip {
 		@Parameter(names = "-stopAtPosition", description = "Formatted as chrI:12,000,000 or chrI:12000000; specify up to once per contig", required = false,
 				converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
 		public List<@NonNull String> stopAtPositions = new ArrayList<>();
-	
+
 		@Parameter(names = "-outputAll", description = "Output file with a reported value at each position", required = false)
 		public boolean outputAll = false;
-		
+
 		@Parameter(names = "-threshold", description = "Only positions with counts greater than or equal to this value will be reported", required = true)
 		public int threshold = 1;
-		
+
 		@Parameter(names = "-input", description = "Protobuf file name or - for stdin", required = true, variableArity = true)
 		public List<String> inputs;
 
@@ -95,7 +95,7 @@ public class PosByPosProtoManip {
 
 		@Parameter(names = "-domainBedFile", description = "Only domains defined in following bed file will be used for histogram computation", required = false)
 		public String domainBedFile = "";
-	
+
 		@Parameter(names = "-output", description = "File name or - for stdout", required = true)
 		public String output;
 
@@ -110,7 +110,7 @@ public class PosByPosProtoManip {
 
 		@Parameter
 		public List<String> mainParam;
-		
+
 		@HideInToString
 		private static final Params defaultValues = new Params();
 
@@ -147,16 +147,16 @@ public class PosByPosProtoManip {
 					nonDefaultValuesString + '\n' + defaultValuesString + '\n';
 		}
 	}
-		
+
 	public static void main(String [] args) throws IOException, InterruptedException {
-		
+
 		final Params argValues = new Params();
 		JCommander commander = new JCommander();
 		commander.setAcceptUnknownOptions(false);
 		commander.setAllowAbbreviatedOptions(false);
 		commander.addObject(argValues);
 		commander.parse(args);
-		
+
 		if (argValues.mainParam.isEmpty()) {
 			throw new IllegalArgumentException("No main command found in arguments " +
 					Arrays.toString(args));
@@ -164,7 +164,7 @@ public class PosByPosProtoManip {
 			throw new IllegalArgumentException("Multiple main commands found: " + 
 					argValues.mainParam);
 		}
-		
+
 		String command = argValues.mainParam.get(0);
 
 		switch (command) {
@@ -184,14 +184,14 @@ public class PosByPosProtoManip {
 			ParFor.defaultThreadPool.shutdown();
 		}
 	}
-	
+
 	private static void checkArgumentLength(int length, List<?> list, String errorMessage) {
 		if (list.size() != length) {
 			throw new IllegalArgumentException(errorMessage + " but found " + list.size() +
 					" elements: " + list);
 		}
 	}
-	
+
 	private static void iterateGenomeNumbers(Params argValues, GenomeNumbers gn1,
 			BiConsumer<SequenceLocation, Integer> processor) {
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().map(ContigNumbers::getContigName).
@@ -201,7 +201,7 @@ public class PosByPosProtoManip {
 		for (int i = 0; i < contigNames0.size(); i++) {
 			contigIndices.put(contigNames0.get(i), i);
 		}
-		
+
 		Pair<List<String>, List<Integer>> p = 
 				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
@@ -210,9 +210,9 @@ public class PosByPosProtoManip {
 		Pair<List<String>, List<Integer>> p2 = Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPositions");	
 		final List<String> stopAtContigs = p2.fst;
 		final List<Integer> stopAtPositions = p2.snd;
-		
+
 		Util.checkPositionsOrdering(p, p2);
-				
+
 		for (ContigNumbers cnl: gn1.getContigNumbersList()) {
 			final @NonNull String contigName = cnl.getContigName();
 			final int[] numbers1 = cnl.getNumbersArray();
@@ -242,7 +242,7 @@ public class PosByPosProtoManip {
 			}
 		}
 	}
-	
+
 	/**
 	 * Given a proto input and a BED file, computes intervals within the bed file
 	 * that have at least one count in the proto input
@@ -255,10 +255,10 @@ public class PosByPosProtoManip {
 		if ("".equals(argValues.domainBedFile)) {
 			throw new IllegalArgumentException("Must specify input bed file");
 		}
-		
+
 		Set<GenomeInterval> resultIntervals = new HashSet<>();
 		SettableInteger nPos = new SettableInteger(0);
-		
+
 		GenomeNumbers gn1 = getFromFile(argValues.inputs.get(0));
 		List<@NonNull String> contigNames0 = gn1.getContigNumbersList().stream().
 				map(ContigNumbers::getContigName).collect(Collectors.toList());
@@ -306,12 +306,12 @@ public class PosByPosProtoManip {
 			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
 					new GenomeInterval("", contigIndex++, s, -1, -1, null, Util.emptyOptional(), 0)));
 		}
-		
+
 		for (GenomeInterval interval: resultIntervals) {
 			bedFileIntervals.addAt(interval.contigName, 
 					new IntervalTree.IntervalData<>(interval.getStart(), interval.getEnd(), interval));
 		}
-		
+
 		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs = 
 				bedFileIntervals.entrySet().stream().sorted(
 					Comparator.comparing(Entry::getKey)).collect(Collectors.toList());
@@ -322,11 +322,11 @@ public class PosByPosProtoManip {
 		for (Entry<String, List<IntervalData<GenomeInterval>>> sortedContig: sortedContigs) {
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
-		
+
 		SettableInteger positivePositions = new SettableInteger(0);
 		SettableInteger withinBedPositions = new SettableInteger(0);
 		SettableInteger testedPositions = new SettableInteger(0);
-		
+
 		iterateGenomeNumbers(argValues, gn1, (location, n) -> {
 			testedPositions.incrementAndGet();
 			if (reader.test(location)) {
@@ -336,11 +336,11 @@ public class PosByPosProtoManip {
 				positivePositions.incrementAndGet();
 			}
 		});
-		
+
 		System.out.println(positivePositions + " of " + withinBedPositions + " positions in BED file " + 
 				"belong to interval with at least one hit (total of " + testedPositions + " genome positions scanned)");
 	}
-	
+
 	//TODO Use iterateGenomeNumbers instead of duplicating code
 	private static void histogram(Params argValues) throws IOException {
 		checkArgumentLength(1, argValues.inputs, "Exactly 1 input expected for histogram command");
@@ -352,7 +352,7 @@ public class PosByPosProtoManip {
 		for (int i = 0; i < contigNames0.size(); i++) {
 			contigIndices.put(contigNames0.get(i), i);
 		}
-		
+
 		Pair<List<String>, List<Integer>> p = 
 				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
@@ -361,9 +361,9 @@ public class PosByPosProtoManip {
 		Pair<List<String>, List<Integer>> p2 = Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPositions");	
 		final List<String> stopAtContigs = p2.fst;
 		final List<Integer> stopAtPositions = p2.snd;
-		
+
 		Util.checkPositionsOrdering(p, p2);
-		
+
 		String output = argValues.output;
 
 		@SuppressWarnings("resource")
@@ -412,7 +412,7 @@ public class PosByPosProtoManip {
 				} else {
 					finalI = stopAtPositions.get(stopAtContigs.indexOf(contigName));
 				}
-				
+
 				final int contigId = Objects.requireNonNull(contigIndices.get(contigName));
 
 				for (int i = initialI; i <= finalI; i++) {
@@ -463,7 +463,7 @@ public class PosByPosProtoManip {
 	            }
 	    );
 	}
-	
+
 	private static void mathOp(Params argValues) throws IOException, InterruptedException {
 		Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
 		builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
@@ -485,7 +485,7 @@ public class PosByPosProtoManip {
 			});
 		}
 		parFor.run(true);
-		
+
 		Set<String> sampleNames = new HashSet<>();
 		for (GenomeNumbers g: inputs) {
 			int increment = 0;
@@ -493,7 +493,7 @@ public class PosByPosProtoManip {
 				g.setSampleName(g.getSampleName() + (increment++));
 			}
 		}
-		
+
 		Set<String> contigNames0 = inputs.get(0).getContigNumbersList().stream().map(ContigNumbers::getContigName).
 			collect(Collectors.toSet());
 		for (int i = 1; i < inputs.size(); i++) {
@@ -504,17 +504,17 @@ public class PosByPosProtoManip {
 						contigNames0 + " vs " + contigNames1);
 			}
 		}
-				
+
 		for (ContigNumbers cnl: inputs.get(0).getContigNumbersList()) {
 			PosByPosNumbersPB.ContigNumbers.Builder builder2 =
 					PosByPosNumbersPB.ContigNumbers.newBuilder();
 			builder2.setContigName(cnl.getContigName());
-			
+
 			Map<String, ContigNumbers> mapArrays = inputs.stream().flatMap(c -> 
 					c.getContigNumbersList().stream().map(cnl2 -> new Pair<>(c.getSampleName(), cnl2))).
 				filter(cn -> cn.snd.getContigName().equals(cnl.getContigName())).
 				collect(Collectors.groupingBy(p -> p.fst, singletonCollector()));
-			
+
 			SettableInteger length = new SettableInteger(-1);
 			List<int[]> allNumbers = mapArrays.entrySet().stream().map(entry -> {
 				String sampleName = entry.getKey();
@@ -533,11 +533,11 @@ public class PosByPosProtoManip {
 				return numbers;
 			}).collect(Collectors.toList());
 
-						
+
 			builder2.ensureNumbersIsMutable(length.get());
 			builder2.numUsedInNumbers_ = length.get();
 			final int[] resultNumbers = builder2.getNumbersArray();
-			
+
 			SettableInteger index = new SettableInteger(0);
 			final Runnable operation;
 			switch (argValues.mainParam.get(0)) {
@@ -552,14 +552,14 @@ public class PosByPosProtoManip {
 					throw new AssertionFailedException(
 							"Unknown operation " + argValues.mainParam.get(0));
 			}
-			
+
 			for (int i = 0; i < length.get(); i++) {
 				index.set(i);
 				operation.run();
 			}
 			builder.addContigNumbers(builder2);
 		}
-		
+
 		if (builder.getSampleName().startsWith("-")) {
 			builder.setSampleName(builder.getSampleName().substring(1));
 			System.out.write(builder.build().toByteArray());
@@ -569,13 +569,13 @@ public class PosByPosProtoManip {
 			Files.write(path, builder.build().toByteArray());
 		}
 	}
-	
+
 	private static void thresholdToBed(Params argValues) throws IOException {
 		checkArgumentLength(1, argValues.inputs, "Exactly 1 input expected for thresholdToBed");
-		
+
 		final int threshold = argValues.threshold;
 		final boolean outputAll = argValues.outputAll;
-		
+
 		Pair<List<String>, List<Integer>> p = 
 				Util.parseListPositions(argValues.startAtPositions, true, "startAtPositions");	
 		final List<String> startAtContigs = p.fst;
@@ -584,13 +584,13 @@ public class PosByPosProtoManip {
 		Pair<List<String>, List<Integer>> p2 = Util.parseListPositions(argValues.stopAtPositions, true, "stopAtPositions");	
 		final List<String> stopAtContigs = p2.fst;
 		final List<Integer> stopAtPositions = p2.snd;
-		
+
 		Util.checkPositionsOrdering(p, p2);
-		
+
 		GenomeNumbers gn1 = getFromFile(argValues.inputs.get(0));
-		
+
 		final boolean movingAverage = argValues.expMovAverage;
-		
+
 		try (PrintStream writer = argValues.output.equals("-") ?
 									System.out :
 									new PrintStream(new FileOutputStream(argValues.output))) {
@@ -625,11 +625,11 @@ public class PosByPosProtoManip {
 					nPos++;
 					final int localValue = numbers1[i];
 					final boolean newAboveThreshold = localValue >= threshold;
-					
+
 					if (newAboveThreshold && movingAverage) {
 						averaged = alpha * localValue + (1 - alpha) * averaged;
 					}
-					
+
 					if (movingAverage) {
 						if (nInBin++ == argValues.binSize) {
 							nInBin = 0;
@@ -658,7 +658,7 @@ public class PosByPosProtoManip {
 			}
 		}	
 	}
-	
+
 	private static GenomeNumbers getFromFile(String path) throws IOException {
 		final byte[] bytes;
 		if (path.equals("-")) {
@@ -677,7 +677,7 @@ public class PosByPosProtoManip {
 		checkNoContigNameDups(gn, path);
 		return gn;
 	}
-	
+
 	private static void checkNoContigNameDups(GenomeNumbers gn1, Set<String> nameSet, String sampleName) {
 		for (ContigNumbers cn: gn1.getContigNumbersList()) {
 			String name = cn.getContigName();
@@ -687,7 +687,7 @@ public class PosByPosProtoManip {
 			}
 		}
 	}
-	
+
 	private static void checkNoContigNameDups(GenomeNumbers gn1, String sampleName) {
 		checkNoContigNameDups(gn1, new HashSet<>(), sampleName);
 	}

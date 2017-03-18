@@ -390,7 +390,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
 					public V next() {
 						return it.next().getValue();
 					}
-					
+
 				};
 			}
     	};

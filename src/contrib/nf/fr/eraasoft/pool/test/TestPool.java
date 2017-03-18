@@ -9,7 +9,7 @@ import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import junit.framework.TestCase;
 
 public class TestPool extends TestCase {
-	
+
 	public static void testPool() {
 		// Create your PoolSettings with an instance of PoolableObject
 		PoolSettings<StringBuilder> poolSettings = new PoolSettings<>(
@@ -51,7 +51,7 @@ public class TestPool extends TestCase {
 		PoolSettings.shutdown();
 
 	}
-	
+
 	public static void testCreatePoolableObect() {
 		@SuppressWarnings("unused")
 		PoolableObject<StringBuilder> poolableStringBuilder = new PoolableObjectBase<StringBuilder>() {
@@ -65,6 +65,6 @@ public class TestPool extends TestCase {
 				t.setLength(0);
 			}
 		};
-		
+
 	}
 }

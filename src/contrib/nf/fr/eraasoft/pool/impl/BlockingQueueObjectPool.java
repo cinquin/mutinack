@@ -9,14 +9,14 @@ import contrib.nf.fr.eraasoft.pool.PoolableObject;
 
 
 /**
- * 
+ *
  * Object pool implementation based on LinkedBlockingQueue<br>
  * Use PoolSettings class to obtain an instance of this class
- * 
+ *
  * @see PoolSettings
- * 
+ *
  * @author eddie
- * 
+ *
  * @param <T>
  */
 public abstract class BlockingQueueObjectPool<T> extends AbstractPool<T> {
@@ -46,7 +46,7 @@ public abstract class BlockingQueueObjectPool<T> extends AbstractPool<T> {
 		} catch (InterruptedException e) {
 			throw new PoolException(e);
 		}
-		
+
 		return t;
 	}
 

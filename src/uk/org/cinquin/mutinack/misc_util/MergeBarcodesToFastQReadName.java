@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -39,15 +39,15 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
  *
  */
 public class MergeBarcodesToFastQReadName {
-	
-	private static final Consumer<String> checkStartsWithAt = 
+
+	private static final Consumer<String> checkStartsWithAt =
 			s -> {if (!s.startsWith("@")) throw new ParseRTException(s + " does not start with @" );};
 
-	private static final Consumer<String> checkIsPlus = 
+	private static final Consumer<String> checkIsPlus =
 			s -> {if (!"+".equals(s)) throw new ParseRTException(s + " is not equal to +" );};
 
 	/**
-	 * Arguments are four file paths: two input paths (fastq formatted files) and 
+	 * Arguments are four file paths: two input paths (fastq formatted files) and
 	 * two output files. Reads must appear in the same order in input files. The output
 	 * files are overwritten, and deleted if any failure is encountered.
 	 * @param args
@@ -60,10 +60,10 @@ public class MergeBarcodesToFastQReadName {
 			 BufferedWriter fw2 = new BufferedWriter(new FileWriter(outFile2));
 			 Stream<String> lines1 = Files.lines(Paths.get(inFile1));
 			 Stream<String> lines2 = Files.lines(Paths.get(inFile2))) {
-			
+
 			final Iterator<String> l1it = lines1.iterator();
 			final Iterator<String> l2it = lines2.iterator();
-			
+
 			int phase = -1;
 
 			while (l1it.hasNext()) {
@@ -74,7 +74,7 @@ public class MergeBarcodesToFastQReadName {
 				final String l2 = l2it.next();
 				phase++;
 				if (phase == 4) {
-					phase = 0;	
+					phase = 0;
 				}
 				final Consumer<String> formatCheck;
 				switch (phase) {
@@ -128,7 +128,7 @@ public class MergeBarcodesToFastQReadName {
 			try {
 				Files.delete(Paths.get(outFile1));
 				Files.delete(Paths.get(outFile2));
-			} catch (Exception e) {	
+			} catch (Exception e) {
 			}
 			System.exit(1);
 		}

@@ -5,7 +5,7 @@ import contrib.net.sf.samtools.util.StringUtil;
 
 /**
  * A read name encoder conforming to the standard described by Illumina Casava 1.8.
- * 
+ *
  * @see <a href="http://biowulf.nih.gov/apps/CASAVA1_8_Changes.pdf">Casava 1.8 update</a>
  * @author mccowan
  */

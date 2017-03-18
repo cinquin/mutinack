@@ -4,17 +4,17 @@ import java.util.Date;
 
 /**
  * Like {@link Iso8601Date}, but also comes in a "lazy now" flavor.
- * 
+ *
  * When "lazy now" mode is enabled, this instance's date value is undefined until the first time it is queried, at which time it is set to 
  * {@link System#currentTimeMillis()}.  This value is returned on subsequent queries, so it is consistent.
- * 
+ *
  * The "lazy state" is conveyed via {@link #toString()}.  A "lazy now" instance will answer {@link #toString()} with
  * {@link #LAZY_NOW_LABEL} if the time has not yet been queried/set, or a {@link Iso8601Date}-formatted date of the query time if it
  * has been queried.  This characteristic is useful for serialization and persistence purposes.
- * 
+ *
  * Consumers can create "lazy now" instances via the {@link #generateLazyNowInstance()} factory method or by passing {@link #LAZY_NOW_LABEL} to 
  * {@link #RelativeIso8601Date(String)}.
- * 
+ *
  * @author mccowan
  */
 public class RelativeIso8601Date extends Iso8601Date {

@@ -5,10 +5,10 @@ import contrib.nf.fr.eraasoft.pool.impl.PoolFactory;
 
 /**
  * Class used to configure your object pooling. Instance of this classes must be used in a Singleton context (static variable).<br>
- * 
- * 
+ *
+ *
  * @author eddie
- * 
+ *
  * @param <T>
  */
 public class PoolSettings<T> {
@@ -30,15 +30,15 @@ public class PoolSettings<T> {
 	private int maxIdle = min;
 	private boolean validateWhenReturn = false;
 	private boolean debug = false;
-	
+
 	public static void timeBetweenTwoControls(int time) {
 		SECONDS_BETWEEN_TWO_CONTROLS = time;
 	}
-	
+
 	public static int timeBetweenTwoControls() {
 		return SECONDS_BETWEEN_TWO_CONTROLS;
 	}
-	
+
 
 	private final PoolFactory<T> poolFactory;
 
@@ -123,7 +123,7 @@ public class PoolSettings<T> {
 	public static void shutdown() {
 		PoolController.shutdown();
 	}
-	
+
 	/**
 	 * Clear the ObjectPool associated with this PoolSetting and remove it to the PoolController<br>
 	 * 
@@ -131,7 +131,7 @@ public class PoolSettings<T> {
 	public static void removePoolSetting(@SuppressWarnings("rawtypes") PoolSettings poolSettings) {
 		PoolController.removePoolSettings(poolSettings);
 	}
-	
+
 	/**
 	 * if true invoke PoolableObject.validate() method
 	 * @param validateWhenReturn
@@ -146,21 +146,21 @@ public class PoolSettings<T> {
 	public boolean validateWhenReturn() {
 		return validateWhenReturn;
 	}
-	
+
 	@SuppressWarnings("hiding")
 	public PoolSettings<T> debug(boolean debug) {
 		this.debug = debug;
 		return this;
 	}
-	
+
 	public boolean debug() {
 		return debug;
 	}
-	
+
 	public void clearCurrentPool() {
 		poolFactory.clear();
 	}
-	
+
 
 }
  

@@ -20,7 +20,7 @@ public class PoolFactory<T> {
 			createPoolInstance();
 		return pool;
 	}
-	
+
 	public void clear() {
 		if (getPool(false) instanceof Controllable) {
 			((Controllable) getPool(false)).clear();

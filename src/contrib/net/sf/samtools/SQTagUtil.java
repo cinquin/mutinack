@@ -25,7 +25,7 @@ package contrib.net.sf.samtools;
 
 /**
  * Utility methods for encoding and decoding the SQ tag value of SAMRecord.
- * 
+ *
  * @author alecw@broadinstitute.org
  */
 public class SQTagUtil {

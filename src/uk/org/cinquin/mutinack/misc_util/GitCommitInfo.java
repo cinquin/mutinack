@@ -10,7 +10,7 @@ public class GitCommitInfo {
 
 	public static String getGitCommit() {
 		try {
-			//Adapted from 
+			//Adapted from
 			//http://stackoverflow.com/questions/1272648/reading-my-own-jars-manifest
 			Class<?> clazz = GitCommitInfo.class;
 			String className = clazz.getSimpleName() + ".class";

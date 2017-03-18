@@ -46,7 +46,7 @@ import contrib.net.sf.picard.PicardException;
  * a later sequence.  When the mate is reached in the input SAM file, the file that was written will be deleted.
  * This should result in all temporary files being deleted by the time all the reads are processed.  The temp
  * directory is marked to be deleted on exit so everything should get cleaned up.
- * 
+ *
  * @author alecw@broadinstitute.org
  */
 class DiskReadEndsMap implements ReadEndsMap {

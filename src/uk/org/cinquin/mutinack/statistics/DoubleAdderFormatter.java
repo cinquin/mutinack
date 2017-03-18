@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -37,13 +37,13 @@ public final class DoubleAdderFormatter extends DoubleAdder
 		double dsum = sum();
 		return formatDouble(dsum);
 	}
-	
+
 	public static final ThreadLocal<NumberFormat> nf = ThreadLocal.withInitial(() -> {
 		NumberFormat f = NumberFormat.getInstance();
 		setNanAndInfSymbols(f);
 		return f;
 	});
-	
+
 	public static boolean setNanAndInfSymbols(NumberFormat f) {
 		 if (f instanceof DecimalFormat) {
 			 DecimalFormat f2 = (DecimalFormat) f;
@@ -65,7 +65,7 @@ public final class DoubleAdderFormatter extends DoubleAdder
 	public int compareTo(DoubleAdderFormatter value) {
 		return Double.compare(sum(), value.sum());
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
 		throw new RuntimeException("Unimplemented");
@@ -75,9 +75,9 @@ public final class DoubleAdderFormatter extends DoubleAdder
 	public int hashCode() {
 		throw new RuntimeException("Unimplemented");
 	}
-	
+
 	public String sum;
-	
+
 	@Override
 	public void actualize() {
 		sum = toString();

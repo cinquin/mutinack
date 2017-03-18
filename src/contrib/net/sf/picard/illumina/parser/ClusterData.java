@@ -28,7 +28,7 @@ import contrib.net.sf.picard.PicardException;
 
 /**
  * Store the information from Illumina files for a single cluster with one or more reads.
- * 
+ *
  * @author jburke@broadinstitute.org
  */
 public class ClusterData {

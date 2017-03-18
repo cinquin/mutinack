@@ -35,7 +35,7 @@ import contrib.net.sf.samtools.util.CollectionUtil;
  *
  * Note: Files passed by CycledIlluminaFileMap are not checked for proper extension (e.g. cif or cnf) so a CnfParser
  * can read a map to cif files and put it in the a NoiseData, you've been warned!
- * 
+ *
  * @author Jonathan Burke
  */
 class CnfParser extends IlluminaIntensityParser<NoiseData> {

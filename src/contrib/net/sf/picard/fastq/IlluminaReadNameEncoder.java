@@ -4,7 +4,7 @@ import contrib.net.sf.picard.illumina.parser.ClusterData;
 
 /**
  * A read name encoder following the encoding initially produced by picard fastq writers.
- * 
+ *
  * @see <a href="http://en.wikipedia.org/wiki/FASTQ_format#Illumina_sequence_identifiers">Illumina sequence identifiers</a> almost describes the format used here, except instead of an instrumnet name, we write the run barcode 
  * @author mccowan
  */

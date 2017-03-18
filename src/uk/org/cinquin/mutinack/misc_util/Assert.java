@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -41,7 +41,7 @@ public class Assert {
 			throw new AssertionFailedException(errStream.toString());
 		}
 	}
-	
+
 	public static void isTrue(boolean condition, String message) {
 		if (!condition) {
 			isTrue(condition, message, "");
@@ -53,7 +53,7 @@ public class Assert {
 			isTrue(condition, format.get(), args);
 		}
 	}
-	
+
 	public static void isFalse(boolean condition, String format, Object... args) {
 		isTrue(!condition, format, args);
 	}
@@ -104,7 +104,7 @@ public class Assert {
 	public static void isTrueVarArg(Supplier<Boolean> s, String format, Object... args) {
 		isTrue(s.get(), format, args);
 	}
-	
+
 	public static void isTrue(Supplier<Boolean> s, String message) {
 		isTrue(s.get(), message);
 	}
@@ -114,11 +114,11 @@ public class Assert {
 			isTrue(s.get(), format, args);
 		}
 	}
-	
+
 	public static void isFalse(Supplier<Boolean> s, String format, Object... args) {
 		isFalse(s.get(), format, args);
 	}
-	
+
 	public static void isFalse(Supplier<Boolean> s, boolean nonTrivial, String format, Object... args) {
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS || !nonTrivial) {
 			isFalse(s.get(), format, args);
@@ -128,11 +128,11 @@ public class Assert {
 	public static void isTrue(boolean condition) {
 		isTrue(condition, "");
 	}
-	
+
 	public static void isFalse(boolean condition) {
 		isFalse(condition, "");
 	}
-	
+
 	public static void noException(Runnable r) {
 		r.run();
 	}
@@ -140,7 +140,7 @@ public class Assert {
 	public static void isNonNull(Object o) {
 		isFalse(o == null);
 	}
-	
+
 	public static void isNonNull(Object o, String format, Object... args) {
 		isFalse(o == null, format, args);
 	}

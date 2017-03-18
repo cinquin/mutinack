@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -62,7 +62,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@SuppressWarnings("unchecked")
 	private static final Comparator<? super Map.Entry<Object, Object>>
 		byKeySorter = (e, f) -> ((Comparable<Object>) e.getKey()).compareTo(f.getKey());
-		
+
 	@SuppressWarnings("unchecked")
 	private static final Comparator<? super Map.Entry<Object, Object>>
 		byValueSorter = (e, f) -> {
@@ -73,10 +73,10 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			}
 			return result;
 		};
-	
+
 	@JsonIgnore
 	private final transient Comparator<? super Map.Entry<Object,Object>> printingSorter;
-	
+
 	public Counter(boolean sortByValue, MutinackGroup groupSettings) {
 		this.sortByValue = sortByValue;
 		if (sortByValue) {
@@ -97,7 +97,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			}
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.org.cinquin.duplex_analysis.ICounter#accept(T)
 	 */
@@ -106,7 +106,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		if (on)
 			accept(t, 1d);
 	}
-	
+
 	void acceptVarArgs(long n, @NonNull Object ... indices) {
 		if (on)
 			accept(Arrays.asList(indices), n);
@@ -116,13 +116,13 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		if (on)
 			accept(Arrays.asList(indices), d);
 	}
-	
+
 	@Override
 	public void accept(@NonNull Object t, long l) {
 		if (on)
 			accept(t, (double) l);
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void accept(@NonNull Object t, double d, int offset) {
 		@NonNull Object index = t;
@@ -157,7 +157,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			((Counter<Object>) preExistingValue).accept(Objects.requireNonNull(list), d, offset + 1);
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.org.cinquin.duplex_analysis.ICounter#accept(T, long)
 	 */
@@ -167,7 +167,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 				return;
 		accept(t, d, 0);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.org.cinquin.duplex_analysis.ICounter#sum()
 	 */
@@ -184,12 +184,12 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		}
 		return result;
 	}
-	
+
 	@Override
 	public @NonNull Map<Object, @NonNull Object> getCounts() {
 		return map;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see uk.org.cinquin.duplex_analysis.ICounter#toString()
 	 */
@@ -222,7 +222,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			}
 			result.append(linePrefix);
 			result.append(nameProcessors == null || nameProcessors.get(0) == null ?
-					e.getKey().toString() 
+					e.getKey().toString()
 					: nameProcessors.get(0).apply(e.getKey()));
 			result.append(": ");
 			Object val = e.getValue();
@@ -235,12 +235,12 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		});
 		return result.toString();
 	}
-	
+
 	@Override
 	public String toString() {
 		return toString("");
 	}
-	
+
 	@Override
 	public void turnOff() {
 		on = false;
@@ -250,7 +250,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	public void turnOn() {
 		on = true;
 	}
-	
+
 	@Override
 	public boolean isOn() {
 		return on;
@@ -260,12 +260,12 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	public int compareTo(ICounter<T> o) {
 		return Double.compare(sum(), o.sum());
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
 		throw new RuntimeException("Unimplemented");
 	}
-	
+
 	@Override
 	public int hashCode() {
 		throw new RuntimeException("Unimplemented");

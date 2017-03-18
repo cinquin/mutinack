@@ -43,7 +43,7 @@ import contrib.net.sf.samtools.SAMTag;
  * Takes ClusterData provided by an IlluminaDataProvider into one or two SAMRecords,
  * as appropriate, and optionally marking adapter sequence.  There is one converter per
  * IlluminaBasecallsToSam run, and all the TileProcessors use the same converter.
- * 
+ *
  * @author jburke@broadinstitute.org
  */
 public class ClusterDataToSamConverter implements

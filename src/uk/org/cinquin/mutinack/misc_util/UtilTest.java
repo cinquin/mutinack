@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,7 +25,7 @@ import org.junit.Test;
 
 @SuppressWarnings("static-method")
 public class UtilTest {
-	
+
 	@Test
 	public void testBasesEqualByteByteBoolean() {
 	    assertEquals(Util.basesEqual((byte) 'a', (byte) 'b', true), false);
@@ -70,9 +70,9 @@ public class UtilTest {
 	    assertFalse(Util.basesEqual(new byte[] {'d', 'd', 'c'}, new byte[] {'a', 'b', 'c'}, false, 1));
 	    assertFalse(Util.basesEqual(new byte[] {'a', 'd', 'd'}, new byte[] {'a', 'b', 'c'}, false, 1));
 	    assertFalse(Util.basesEqual(new byte[] {'d', 'b', 'd'}, new byte[] {'a', 'b', 'c'}, false, 1));
-	    
+
 	    //Include Ns
-	    
+
 	    assertTrue(Util.basesEqual(new byte[] {'a', 'b', 'c'}, new byte[] {'a', 'N', 'c'}, true, 0));
 	    assertTrue(Util.basesEqual(new byte[] {'a', 'b', 'c'}, new byte[] {'N', 'b', 'N'}, true, 1));
 	    assertTrue(Util.basesEqual(new byte[] {'a', 'b', 'c'}, new byte[] {'N', 'N', 'N'}, true, 2));
@@ -89,7 +89,7 @@ public class UtilTest {
 	    assertFalse(Util.basesEqual(new byte[] {'d', 'd', 'N'}, new byte[] {'a', 'b', 'c'}, true, 1));
 	    assertFalse(Util.basesEqual(new byte[] {'N', 'd', 'd'}, new byte[] {'a', 'b', 'c'}, true, 1));
 	    assertFalse(Util.basesEqual(new byte[] {'d', 'N', 'd'}, new byte[] {'a', 'b', 'c'}, true, 1));
-	 
+
 	}
 
 }

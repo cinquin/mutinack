@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -49,27 +49,27 @@ public class StaticStuffToAvoidMutating {
 	private static final Map<String, ReferenceSequence> contigSequences =
 		new ConcurrentHashMap<>();
 	private static ReferenceSequenceFile refFile;
-	
+
 	private static ExecutorService executorService;
-	
+
 	private static final int HARD_MAX_THREADS_PER_POOL = 1500;
 
 	public static void instantiateThreadPools(int nMaxThreads) {
 		if (getExecutorService() != null) {
 			return;
 		}
-		
+
 		if (nMaxThreads > HARD_MAX_THREADS_PER_POOL) {
 			logger.warn("Capping number of threads from " + nMaxThreads +
 				" to " + HARD_MAX_THREADS_PER_POOL);
 			nMaxThreads = HARD_MAX_THREADS_PER_POOL;
 		}
-		
+
 		setExecutorService(new ThreadPoolExecutor(0, nMaxThreads,
                 300, TimeUnit.SECONDS, new SynchronousQueue<>(),
                 new NamedPoolThreadFactory("Mutinack executor pool - "),
                 new ThreadPoolExecutor.AbortPolicy()));
-		
+
 		if (ParFor.defaultThreadPool == null) {
 			ParFor.defaultThreadPool = new ThreadPoolExecutor(0, nMaxThreads,
 					300, TimeUnit.SECONDS, new SynchronousQueue<>(),
@@ -77,7 +77,7 @@ public class StaticStuffToAvoidMutating {
 					new ThreadPoolExecutor.AbortPolicy());
 		}
 	}
-	
+
 	public static final String hostName;
 	static {
 		String name;
@@ -90,7 +90,7 @@ public class StaticStuffToAvoidMutating {
 		}
 		hostName = name;
 	}
-	
+
 	public static ExecutorService getExecutorService() {
 		return executorService;
 	}
@@ -108,7 +108,7 @@ public class StaticStuffToAvoidMutating {
 				throw new RuntimeException("Problem reading reference file " + referenceGenome, e);
 			}
 		}
-		
+
 		for (String contigName: contigNames) {
 			contigSequences.computeIfAbsent(contigName, name -> {
 				try {
@@ -124,11 +124,11 @@ public class StaticStuffToAvoidMutating {
 			});
 		}
 	}
-	
+
 	public static ReferenceSequence getContigSequence(String name) {
 		return contigSequences.get(name);
 	}
-	
+
 	public static @NonNull Map<@NonNull String, @NonNull Integer> loadContigsFromFile(
 			String referenceGenome) {
 		return Objects.requireNonNull(FileCache.getCached(referenceGenome, ".info", path -> {

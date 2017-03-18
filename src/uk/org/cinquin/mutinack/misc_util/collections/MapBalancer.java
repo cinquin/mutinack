@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -38,21 +38,21 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
  * because they serialize the objects stored in the map), by transparently parallelizing across a
  * number of internal sub-maps that are not exposed to users. Note that this class breaks the Map
  * contract; that could be relatively easily addressed, but the class is good enough as such for our
- * purposes. 
+ * purposes.
  * @author olivier
  *
  * @param <K>
  * @param <V>
  */
 public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Closeable {
-		
+
 	private volatile RuntimeException storageException = null;
 	private volatile boolean terminated = false;
 	private final List<Thread> threads = new ArrayList<>();
 	private final List<Map<K, V>> maps;
 	private final List<LinkedBlockingQueue<Pair<K,V>>> mapPutQueues;
 	private final int nMaps;
-	
+
 	public MapBalancer(int nMaps, int initialCapacity, Supplier<Map<K, V>> factory) {
 		if ((nMaps & (nMaps - 1)) != 0) {
 			throw new IllegalArgumentException("nMaps not a power of 2");
@@ -61,11 +61,11 @@ public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Cl
 		maps = new ArrayList<>(nMaps);
 		mapPutQueues = new ArrayList<>(nMaps);
 		for (int i = 0; i < nMaps; i++) {
-			final Map<K, V> map = factory.get(); 
+			final Map<K, V> map = factory.get();
 			maps.add(map);
 			final LinkedBlockingQueue<Pair<K,V>> queue = new LinkedBlockingQueue<>(10);
 			mapPutQueues.add(queue);
-			Runnable r = () -> 
+			Runnable r = () ->
 			{
 				Pair<K,V> entry = null;
 				while (true) {
@@ -87,7 +87,7 @@ public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Cl
 			t.start();
 		}
 	}
-	
+
 	@Override
 	/**
 	 * May not put anything new into the Map after close has been called, but already-present
@@ -99,7 +99,7 @@ public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Cl
 			t.interrupt();
 		}
 	}
-	
+
 	@Override
 	public int size() {
 		int sum = 0;

@@ -37,7 +37,7 @@ import contrib.net.sf.samtools.util.CloserUtil;
  * Abstract class for parsing text-based whitespace-delimited Illumina output files, organized
  * by tile.  Concrete implementations must call setFiles() in order to provide the list of files
  * to be iterated over.
- * 
+ *
  * @author jburke@broadinstitute.org
  */
 class IlluminaTextIterator implements Iterator<String[]> {

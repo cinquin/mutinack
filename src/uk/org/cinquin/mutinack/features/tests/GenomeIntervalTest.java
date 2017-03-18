@@ -1,16 +1,16 @@
 /**
  * Mutinack mutation detection program.
  * Copyright (C) 2014-2016 Olivier Cinquin
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -46,12 +46,12 @@ public class GenomeIntervalTest {
 
 	@Test
 	public void test() {
-		
+
 		List<IntervalData<GenomeInterval>> intervalDataList = getTestIntervalDataList();
 
 		List<IntervalData<GenomeInterval>> clone0 = deepClone(intervalDataList);
 		IntervalTree<GenomeInterval> tree1 = new IntervalTree<>(clone0);
-		
+
 		List<IntervalData<GenomeInterval>> clone1 = deepClone(intervalDataList);
 		Collections.reverse(clone1);
 		IntervalTree<GenomeInterval> tree2 = new IntervalTree<> (clone1);
@@ -59,28 +59,28 @@ public class GenomeIntervalTest {
 		List<IntervalData<GenomeInterval>> clone2 = deepClone(intervalDataList);
 		Collections.shuffle(clone2);
 		IntervalTree<GenomeInterval> tree3 = new IntervalTree<> (clone2);
-		
+
 		//Run query multiple times for each tree to ensure that query does not end up
 		//modifying contents
 		for (IntervalTree<GenomeInterval> tree: Arrays.asList(tree1, tree2, tree3, tree1, tree2, tree3)) {
 			check(tree, intervalDataList);
 		}
-		
+
 		//Same sort of test as above, but using random intervals
 		for (int i = 0; i < 10_000; i++) {
-			GenomeInterval i1 = new GenomeInterval("Random interval", -1, "", 
-					(int) (Math.random() - 0.5) * 2 * 200, 
+			GenomeInterval i1 = new GenomeInterval("Random interval", -1, "",
+					(int) (Math.random() - 0.5) * 2 * 200,
 					(int) (Math.random() - 0.5) * 2 * 200, null, Util.emptyOptional(), 0);
-			
+
 			intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 		}
-		
+
 		intervalDataList = new ArrayList<>(
 			intervalDataList.stream().collect(TroveSetCollector.uniqueValueCollector()));
-		
+
 		clone0 = deepClone(intervalDataList);
 		tree1 = new IntervalTree<>(clone0);
-		
+
 		clone1 = deepClone(intervalDataList);
 		Collections.reverse(clone1);
 		tree2 = new IntervalTree<> (clone1);
@@ -127,13 +127,13 @@ public class GenomeIntervalTest {
 		//a query has no result, but instead returns the same (immutable)
 		//empty set
 		assertTrue(new IntervalTree<>(Collections.emptyList()).query(0) == IntervalData.EMPTY);
-		
+
 		//Check that IntervalTree is creating a new empty set if requesting
 		//a defensive copy of the result
 		IntervalData<Object> queryResult = new IntervalTree<>(Collections.emptyList()).query(0);
 		assertTrue(queryResult.getData() != queryResult.getUnprotectedData());
 	}
-	
+
 	private List<IntervalData<GenomeInterval>> deepClone(List<IntervalData<GenomeInterval>> list) {
 		//Ideally we would clone the Interval as well
 		return list.stream().map(id -> new IntervalData<>(id.getStart(), id.getEnd(),
@@ -142,7 +142,7 @@ public class GenomeIntervalTest {
 
 	@SuppressWarnings("unused")
 	private final SecureRandom random = new SecureRandom();
-	
+
 	private List<IntervalData<GenomeInterval>> getTestIntervalDataList() {
 		final List<IntervalData<GenomeInterval>> intervalDataList = new ArrayList<>();
 
@@ -168,14 +168,14 @@ public class GenomeIntervalTest {
 	private void check(IntervalTree<GenomeInterval> tree, List<IntervalData<GenomeInterval>> intervalList) {
 		for (int position = -200 ; position <= 200; position ++) {
 			final int position0 = position;
-			
-			Set<GenomeInterval> groundTruthSet = intervalList.stream().filter(v -> 
+
+			Set<GenomeInterval> groundTruthSet = intervalList.stream().filter(v ->
 					v.getStart() <= position0 && v.getEnd() >= position0).
-					flatMap(v -> v.getData().stream()).collect(Collectors.toSet());;
+					flatMap(v -> v.getData().stream()).collect(Collectors.toSet());
 
 			Collection<GenomeInterval> data = tree.query(position0).getData();
 			assertTrue(data.equals(groundTruthSet));
-			
+
 			data = tree.query(position0).getUnprotectedData();
 			assertTrue(data.equals(groundTruthSet));
 
@@ -186,11 +186,11 @@ public class GenomeIntervalTest {
 				}
 			);
 			assertTrue(data0.equals(groundTruthSet));
-			
+
 			/* This part of the test disabled because of long run time (but the
 			test does pass if code is uncommented).
 			final int position1 = random.nextInt(400) - 200;
-			groundTruthSet = intervalList.stream().filter(v -> 
+			groundTruthSet = intervalList.stream().filter(v ->
 				v.getStart() <= position1 && v.getEnd() >= position0).
 				flatMap(v -> v.getData().stream()).collect(Collectors.toSet());;
 
