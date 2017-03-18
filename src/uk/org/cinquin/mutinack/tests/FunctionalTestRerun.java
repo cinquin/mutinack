@@ -154,13 +154,13 @@ public class FunctionalTestRerun {
 		try {
 			try (ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 					ByteArrayOutputStream errStream = new ByteArrayOutputStream()) {
-				PrintStream outPS = new PrintStream(outStream);
-				PrintStream errPS = new PrintStream(errStream);
+
 
 				StaticStuffToAvoidMutating.instantiateThreadPools(64);
 
 				//Only one test should run at a time, so it's OK to use a static variable
-				try {
+				try (PrintStream outPS = new PrintStream(outStream);
+						PrintStream errPS = new PrintStream(errStream)) {
 					MutinackGroup.forceKeeperType = duplexKeeperType;
 					Mutinack.realMain1(run.parameters, outPS, errPS);
 				} finally {
