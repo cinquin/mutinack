@@ -22,12 +22,14 @@ in a single `mutinack.jar` file. The only runtime requirement is a Java
 \>= 8 runtime (and GNU make and Perl with module File::Grep for
 functional tests), and Mutinack should thus run on any platform that has
 such a runtime (FreeBSD, Mac OS X, and Linux have been tested with
-OpenJDK 1.8 or 1.9 early access build 114). The `mutinack.jar` file can
-be [directly downloaded](http://cinquin.org.uk/static/mutinack.jar), or
-built from a clone of this repository using `ant jar` (Ant is
-technically not required but makes the build very straightforward; Git
-is used to optionally include version information in the build). *Be sure
-to perform a recursive clone of this repository* (passing Git the
+OpenJDK 1.8 or 1.9 early access build 161). Running under Java 9
+requires a few module-related tweaks; see branch `java9` of the
+repository. The `mutinack.jar` file can be [directly
+downloaded](http://cinquin.org.uk/static/mutinack.jar), or built from a
+clone of this repository using `ant jar` (Ant is technically not
+required but makes the build very straightforward; Git is used to
+optionally include version information in the build). *Be sure to
+perform a recursive clone of this repository* (passing Git the
 `--recursive` argument). Note that on startup Mutinack checks whether a
 newer version is available for download; this can be disabled with the
 `-skipVersionCheck` flag.
