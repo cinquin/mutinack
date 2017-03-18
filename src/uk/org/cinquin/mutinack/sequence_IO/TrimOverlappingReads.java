@@ -39,6 +39,7 @@ import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.net.sf.samtools.SAMTag;
+import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 
 public class TrimOverlappingReads {
 
@@ -46,31 +47,40 @@ public class TrimOverlappingReads {
 	 * Checks to see whether the ends of the reads overlap and soft clips reads
 	 * them if necessary.
 	 */
-	public static void clipForNoOverlap(final SAMRecord read1, final SAMRecord read2) {
+	public static void clipForNoOverlap(final SAMRecord read1, final SAMRecord read2,
+			final ExtendedSAMRecord er1, final ExtendedSAMRecord er2) {
 		// If both reads are mapped, see if we need to clip the ends due to small
 		// insert size
-		if (!(read1.getReadUnmappedFlag() || read2.getReadUnmappedFlag())) {
-			if (read1.getReadNegativeStrandFlag() != read2.getReadNegativeStrandFlag()) {
-				final SAMRecord pos = (read1.getReadNegativeStrandFlag()) ? read2 : read1;
-				final SAMRecord neg = (read1.getReadNegativeStrandFlag()) ? read1 : read2;
+		if (!(read1.getReadUnmappedFlag() || read2.getReadUnmappedFlag()) &&
+					read1.getReadNegativeStrandFlag() != read2.getReadNegativeStrandFlag() &&
+					!read1.getSupplementaryAlignmentFlag() && !read2.getSupplementaryAlignmentFlag()) {
+			final SAMRecord pos = (read1.getReadNegativeStrandFlag()) ? read2 : read1;
+			final SAMRecord neg = (read1.getReadNegativeStrandFlag()) ? read1 : read2;
 
-				final int posDiff = pos.getAlignmentEnd() - neg.getAlignmentStart() + 1;
+			final ExtendedSAMRecord poser = (read1.getReadNegativeStrandFlag()) ? er2 : er1;
 
-				// Innies only -- do we need to do anything else about jumping libraries?
-				if (posDiff > 0) {
-					final List<CigarElement> elems = new ArrayList<>(pos.getCigar().getCigarElements());
-					Collections.reverse(elems);
-					final int clipped = lengthOfSoftClipping(elems.iterator());
-					final int clipFrom = pos.getReadLength() - posDiff - clipped + 1;
+			final int posDiff = pos.getReadLength() -
+				poser.referencePositionToReadPosition(neg.getAlignmentStart() - 1);
+
+			// Innies only -- do we need to do anything else about jumping libraries?
+			if (posDiff > 0) {
+				final List<CigarElement> elems = new ArrayList<>(pos.getCigar().getCigarElements());
+				Collections.reverse(elems);
+				final int clipFrom = Math.max(1, pos.getReadLength() - posDiff + 1);
+				try {
 					CigarUtil.softClip3PrimeEndOfRead(pos, Math.min(pos.getReadLength(), clipFrom));
-					removeNmMdAndUqTags(pos); // these tags are now invalid!
+				} catch (RuntimeException e) {
+					throw new RuntimeException("Problem clipping read from " + Math.min(pos.getReadLength(), clipFrom) +
+						"; pos.getReadLength()=" + pos.getReadLength() + "; clipFrom=" + clipFrom + "; read cigar: " +
+						pos.getCigarString() + "; name: " + pos.getReadName() + "; bases: " + new String(pos.getReadBases()), e);
 				}
-
+				removeNmMdAndUqTags(pos); // these tags are now invalid!
 			}
 		}
 	}
 
 	/** Returns the number of soft-clipped bases until a non-soft-clipping element is encountered. */
+	@SuppressWarnings("unused")
 	private static int lengthOfSoftClipping(Iterator<CigarElement> iterator) {
 		int clipped = 0;
 		while (iterator.hasNext()) {

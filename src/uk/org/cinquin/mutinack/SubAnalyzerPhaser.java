@@ -988,7 +988,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							} catch (CloneNotSupportedException excp) {
 								throw new RuntimeException(excp);
 							}
-							TrimOverlappingReads.clipForNoOverlap(samRecord, mateSamRecord);
+							TrimOverlappingReads.clipForNoOverlap(samRecord, mateSamRecord, e, mate);
 							TrimOverlappingReads.removeClippedBases(samRecord);
 							TrimOverlappingReads.removeClippedBases(mateSamRecord);
 						}
