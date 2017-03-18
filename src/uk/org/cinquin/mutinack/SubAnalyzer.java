@@ -369,8 +369,6 @@ public final class SubAnalyzer {
 				duplexKeeper.getIterable(), nReadsExcludedFromDuplexes.get()));
 		}
 
-		final boolean allReadsSameBarcode = param.alignmentPositionMismatchAllowed == 0;
-
 		//Group duplexes that have alignment positions that differ by at most
 		//param.alignmentPositionMismatchAllowed
 		//and left/right consensus that differ by at most
@@ -380,7 +378,7 @@ public final class SubAnalyzer {
 			param.nVariableBarcodeMismatchesAllowed > 0 ?
 				DuplexRead.groupDuplexes(
 					duplexKeeper,
-					duplex -> duplex.computeConsensus(allReadsSameBarcode, param.variableBarcodeLength),
+					duplex -> duplex.computeConsensus(false, param.variableBarcodeLength),
 					() -> getDuplexKeeper(fallBackOnIntervalTree),
 					param,
 					stats,
@@ -389,7 +387,7 @@ public final class SubAnalyzer {
 				duplexKeeper;
 
 		if (param.nVariableBarcodeMismatchesAllowed == 0) {
-			cleanedUpDuplexes.getIterable().forEach(d -> d.computeConsensus(allReadsSameBarcode,
+			cleanedUpDuplexes.getIterable().forEach(d -> d.computeConsensus(true,
 				param.variableBarcodeLength));
 		}
 
