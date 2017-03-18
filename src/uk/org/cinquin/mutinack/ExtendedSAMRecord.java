@@ -29,7 +29,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import contrib.edu.stanford.nlp.util.HasInterval;
 import contrib.edu.stanford.nlp.util.Interval;
 import contrib.net.sf.samtools.CigarElement;
-import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
@@ -370,14 +369,20 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			final CigarElement c = cElmnts.get(ceIndex);
 			final int blockLength = c.getLength();
 
-			if (c.getOperator() == CigarOperator.MATCH_OR_MISMATCH) {
-				int nTakenBases = Math.min(blockLength, nBasesToAlign - nBasesAligned);
-				nBasesAligned += nTakenBases;
-				nReadBasesProcessed += nTakenBases;
-			} else if (c.getOperator() == CigarOperator.INSERTION) {
-				nReadBasesProcessed += blockLength;
-			} else if (c.getOperator() == CigarOperator.DELETION) {
-				nBasesAligned += blockLength;
+			switch(c.getOperator()) {
+				case M:
+					int nTakenBases = Math.min(blockLength, nBasesToAlign - nBasesAligned);
+					nBasesAligned += nTakenBases;
+					nReadBasesProcessed += nTakenBases;
+					break;
+				case I:
+					nReadBasesProcessed += blockLength;
+					break;
+				case D:
+				case N:
+					nBasesAligned += blockLength;
+					break;
+				default://Nothing to do
 			}
 			//Ignoring clipping at end of read
 
