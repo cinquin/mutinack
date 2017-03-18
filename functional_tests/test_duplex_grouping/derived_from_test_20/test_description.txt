@@ -1,0 +1,1 @@
+Extract from sample 20, with variability in barcode reads that tests computation of the barcode consensus.
