@@ -1279,7 +1279,7 @@ public final class SubAnalyzer {
 
 	@SuppressWarnings("null")
 	ExtendedSAMRecord getExtended(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
-		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record);
+		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
 		return extSAMCache.computeIfAbsent(readFullName, s ->
 			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, extSAMCache));
 	}

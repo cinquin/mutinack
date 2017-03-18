@@ -83,9 +83,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	private final @NonNull MutinackGroup groupSettings;
 
-	public static @NonNull String getReadFullName(SAMRecord rec) {
-		return (rec.getReadName() + "--" + (rec.getFirstOfPairFlag()? "1" : "2") +
-			(rec.getSupplementaryAlignmentFlag() ? ("--suppl--" + rec.getAlignmentStart()) : ""))/*.intern()*/;
+	public static @NonNull String getReadFullName(SAMRecord rec, boolean getMate) {
+		return (rec.getReadName() + "--" + ((getMate ^ rec.getFirstOfPairFlag())? "1" : "2") + "--" +
+			(getMate ? rec.getMateAlignmentStart() : rec.getAlignmentStart())) +
+			(!getMate && rec.getSupplementaryAlignmentFlag() ? "--suppl" : "")/*.intern()*/;
 	}
 
 	public @NonNull String getFullName() {
@@ -162,7 +163,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.record = rec;
 		this.location = location;
 		hashCode = fullName.hashCode();
-		mateName = (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "2" : "1"))/*.intern()*/;
+		mateName = getReadFullName(rec, true);
 
 		final int readLength = rec.getReadLength();
 
@@ -317,7 +318,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull MutinackGroup groupSettings,
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
 			@NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
-		this(rec, (rec.getReadName() + "--" +  (rec.getFirstOfPairFlag() ? "1" : "2"))/*.intern()*/,
+		this(rec, getReadFullName(rec, false),
 				groupSettings, analyzer, location, extSAMCache);
 	}
 

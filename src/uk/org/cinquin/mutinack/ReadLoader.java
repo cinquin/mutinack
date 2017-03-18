@@ -265,7 +265,7 @@ public class ReadLoader {
 										continue;
 									}
 									int ir5p = ir.getAlignmentStart();
-									final Pair<String, Integer> pair = new Pair<>(ExtendedSAMRecord.getReadFullName(ir), ir5p);
+									final Pair<String, Integer> pair = new Pair<>(ExtendedSAMRecord.getReadFullName(ir, false), ir5p);
 									if (ir5p < current5p - 6) {
 										stats.forEach(s -> s.nRecordsNotInIntersection1.accept(location));
 									} else if (ir5p <= current5p + 6) {
@@ -281,7 +281,7 @@ public class ReadLoader {
 						previous5p = current5p;
 
 						if (nIntersect > 0 &&
-								intersectReads.get(new Pair<>(ExtendedSAMRecord.getReadFullName(samRecord),
+								intersectReads.get(new Pair<>(ExtendedSAMRecord.getReadFullName(samRecord, false),
 										current5p)) < nIntersect) {
 							stats.forEach(s -> s.nRecordsNotInIntersection2.accept(location));
 							continue;
