@@ -366,14 +366,14 @@ public final class SubAnalyzer {
 		}
 
 		Pair<DuplexRead, DuplexRead> pair;
-		if (DebugLogControl.COSTLY_ASSERTIONS &&
+		if (param.enableCostlyAssertions &&
 				(pair =
 					DuplexRead.checkNoEqualDuplexes(duplexKeeper.getIterable())) != null) {
 			throw new AssertionFailedException("Equal duplexes: " +
 				pair.fst + " and " + pair.snd);
 		}
 
-		if (DebugLogControl.COSTLY_ASSERTIONS) {
+		if (param.enableCostlyAssertions) {
 			Assert.isTrue(checkReadsOccurOnceInDuplexes(extSAMCache.values(),
 				duplexKeeper.getIterable(), nReadsExcludedFromDuplexes.get()));
 		}
@@ -741,7 +741,7 @@ public final class SubAnalyzer {
 					(1_000f * duplexRead.probAtLeastOneCollision));
 			}
 		}
-		if (DebugLogControl.COSTLY_ASSERTIONS) {
+		if (param.enableCostlyAssertions) {
 			Assert.noException(() -> checkDuplexAndCandidates(duplexReads, candidateSet));
 		}
 
@@ -765,7 +765,7 @@ public final class SubAnalyzer {
 					MAX_AVERAGE_CLIPPING_OF_DUPLEX_AT_POS, DUBIOUS);
 		}
 
-		if (DebugLogControl.COSTLY_ASSERTIONS) {
+		if (param.enableCostlyAssertions) {
 			Assert.noException(() -> duplexReads.forEach(duplexRead -> {
 				for (int i = duplexRead.topStrandRecords.size() - 1; i >= 0; --i) {
 					ExtendedSAMRecord r = duplexRead.topStrandRecords.get(i);

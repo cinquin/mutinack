@@ -527,7 +527,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		});//End duplex grouping
 
 		DuplexKeeper keeper = result.get();
-		if (DebugLogControl.COSTLY_ASSERTIONS) {
+		if (param.enableCostlyAssertions) {
 			checkNoEqualDuplexes(keeper.getIterable());
 		}
 

@@ -116,7 +116,6 @@ import uk.org.cinquin.mutinack.misc_util.BAMUtil;
 import uk.org.cinquin.mutinack.misc_util.CloseableCloser;
 import uk.org.cinquin.mutinack.misc_util.CloseableListWrapper;
 import uk.org.cinquin.mutinack.misc_util.CloseableWrapper;
-import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.GetReadStats;
 import uk.org.cinquin.mutinack.misc_util.GitCommitInfo;
 import uk.org.cinquin.mutinack.misc_util.Handle;
@@ -538,8 +537,6 @@ public class Mutinack implements Actualizable, Closeable {
 
 		Thread.interrupted();//XXX The actual problem needs to be fixed upstream
 
-		DebugLogControl.COSTLY_ASSERTIONS = param.enableCostlyAssertions;
-
 		if (!versionChecked && !param.noStatusMessages && !param.skipVersionCheck) {
 			versionChecked = true;
 			StaticStuffToAvoidMutating.getExecutorService().submit(Util::versionCheck);
@@ -563,6 +560,9 @@ public class Mutinack implements Actualizable, Closeable {
 		out.println("Non-trivial assertions " +
 				(NONTRIVIAL_ASSERTIONS ?
 				"on" : "off"));
+		out.println("Costly assertions " +
+			(param.enableCostlyAssertions ?
+			"on" : "off"));
 
 		final List<@Nullable Mutinack> analyzers = new ArrayList<>();
 

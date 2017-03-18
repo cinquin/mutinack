@@ -33,8 +33,6 @@ public class DebugLogControl {
 	 */
 	public static final boolean ENABLE_TRACE = true;
 
-	public static boolean COSTLY_ASSERTIONS = true;
-
 	public static boolean shouldLog(Level level, Logger logger) {
 		return logger.isEnabled(level);
 	}
