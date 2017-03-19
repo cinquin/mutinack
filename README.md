@@ -309,8 +309,7 @@ JavaProfiler](https://www.yourkit.com/java/profiler/index.jsp) and
 innovative and intelligent tools for profiling Java and .NET
 applications.
 
-[![YourKit](https://www.yourkit.com/images/yklogo.png)](https://www.
-yourkit.com)
+[![YourKit](https://www.yourkit.com/images/yklogo.png)](https://www.yourkit.com)
 
 **License**
 
