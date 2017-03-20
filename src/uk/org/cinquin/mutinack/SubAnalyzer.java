@@ -112,6 +112,8 @@ public final class SubAnalyzer {
 	int truncateProcessingAt = Integer.MAX_VALUE;
 	int startProcessingAt = 0;
 	List<@NonNull DuplexRead> analyzedDuplexes;
+	float[] averageClipping;
+	int averageClippingOffset = Integer.MAX_VALUE;
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
 			new THashMap<>(10_000, 0.1f);
 	private final AtomicInteger threadCount = new AtomicInteger();
@@ -223,12 +225,17 @@ public final class SubAnalyzer {
 
 	/**
 	 * Load all reads currently referred to by candidate sequences and group them into DuplexReads
+	 * @param toPosition
+	 * @param fromPosition
 	 */
-	void load() {
+	void load(int fromPosition, int toPosition) {
 		Assert.isFalse(threadCount.incrementAndGet() > 1);
 		try {
+			if (toPosition < fromPosition) {
+				throw new IllegalArgumentException("Going from " + fromPosition + " to " + toPosition);
+			}
 			final List<@NonNull DuplexRead> resultDuplexes = new ArrayList<>(3_000);
-			loadAll(resultDuplexes);
+			loadAll(fromPosition, toPosition, resultDuplexes);
 			analyzedDuplexes = resultDuplexes;
 		} finally {
 			if (NONTRIVIAL_ASSERTIONS) {
@@ -314,9 +321,14 @@ public final class SubAnalyzer {
 
 	/**
 	 * Group reads into duplexes.
+	 * @param toPosition
+	 * @param fromPosition
 	 * @param finalResult
 	 */
-	private void loadAll(@NonNull List<DuplexRead> finalResult) {
+	private void loadAll(
+			final int fromPosition,
+			final int toPosition,
+			final @NonNull List<DuplexRead> finalResult) {
 
 		/**
 		 * Use a custom hash map type to keep track of duplexes when
@@ -430,6 +442,32 @@ public final class SubAnalyzer {
 
 		for (DuplexRead dr: cleanedUpDuplexes.getIterable()) {
 			finalResult.add(dr);
+		}
+
+		averageClippingOffset = fromPosition;
+		final int arrayLength = toPosition - fromPosition + 1;
+		averageClipping = new float[arrayLength];
+		int[] duplexNumber = new int[arrayLength];
+
+		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
+			int start = duplexRead.getUnclippedAlignmentStart() - fromPosition;
+			int stop = duplexRead.getUnclippedAlignmentEnd() - fromPosition;
+			start = Math.min(Math.max(0, start), toPosition - fromPosition);
+			stop = Math.min(Math.max(0, stop), toPosition - fromPosition);
+
+			for (int i = start; i <= stop; i++) {
+				averageClipping[i] += duplexRead.averageNClipped;
+				duplexNumber[i]++;
+			}
+		}
+
+		for (int i = 0; i < averageClipping.length; i++) {
+			int n = duplexNumber[i];
+			if (n == 0) {
+				Assert.isTrue(averageClipping[i] == 0);
+			} else {
+				averageClipping[i] /= n;
+			}
 		}
 	}//End loadAll
 
@@ -709,7 +747,6 @@ public final class SubAnalyzer {
 		final CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
 
 		int[] insertSizes = new int [duplexReads.size()];
-		float averageClippingOfCoveringDuplexes = 0;
 		double averageCollisionProb = 0;
 		int index = 0;
 		for (DuplexRead duplexRead: duplexReads) {
@@ -734,7 +771,7 @@ public final class SubAnalyzer {
 				insertSizes[index] = duplexRead.maxInsertSize;
 				index++;
 			}
-			averageClippingOfCoveringDuplexes += duplexRead.averageNClipped;
+
 			averageCollisionProb += duplexRead.probAtLeastOneCollision;
 			if (param.variableBarcodeLength == 0 && !duplexRead.missingStrand) {
 				stats.duplexCollisionProbabilityWhen2Strands.insert((int)
@@ -751,7 +788,6 @@ public final class SubAnalyzer {
 			result.duplexInsertSize90thP = insertSizes[(int) (index * 0.9f)];
 		}
 
-		averageClippingOfCoveringDuplexes /= duplexReads.size();
 		averageCollisionProb /= duplexReads.size();
 		if (param.variableBarcodeLength == 0) {
 			stats.duplexCollisionProbability.insert((int) (1_000d * averageCollisionProb));
@@ -760,7 +796,8 @@ public final class SubAnalyzer {
 
 		final DetailedQualities<PositionAssay> positionQualities = new DetailedQualities<>(PositionAssay.class);
 
-		if (averageClippingOfCoveringDuplexes > param.maxAverageClippingOfAllCoveringDuplexes) {
+		if (averageClipping[location.position - averageClippingOffset] >
+				param.maxAverageClippingOfAllCoveringDuplexes) {
 			positionQualities.addUnique(
 					MAX_AVERAGE_CLIPPING_OF_DUPLEX_AT_POS, DUBIOUS);
 		}

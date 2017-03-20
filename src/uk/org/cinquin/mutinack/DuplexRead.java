@@ -1297,4 +1297,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return l * l;
 	}
 
+	public int getUnclippedAlignmentStart() {
+		return position0;
+	}
+
+	public int getUnclippedAlignmentEnd() {
+		return position3;
+	}
+
 }
