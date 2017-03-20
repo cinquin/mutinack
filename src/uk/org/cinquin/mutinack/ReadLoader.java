@@ -50,6 +50,7 @@ import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.set.hash.THashSet;
+import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
@@ -86,6 +87,7 @@ public class ReadLoader {
 		lastProcessable.set(startAt - 1);
 		analysisChunk.lastProcessedPosition = startAt - 1;
 		analysisChunk.pauseAtPosition = lastProcessable.get() + PROCESSING_CHUNK;
+		Assert.isTrue(analysisChunk.pauseAtPosition >= analysisChunk.lastProcessedPosition);
 
 		final boolean needRandom = param.dropReadProbability > 0 ||
 			param.randomizeMates;

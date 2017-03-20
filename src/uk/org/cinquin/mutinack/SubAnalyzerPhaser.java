@@ -157,6 +157,11 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				}
 
+				final int targetStopPosition =
+					Math.min(analysisChunk.pauseAtPosition, analysisChunk.terminateAtPosition);
+
+				Assert.isTrue(analysisChunk.pauseAtPosition >= saveLastProcessedPosition);
+
 				analysisChunk.lastProcessedPosition = saveLastProcessedPosition;
 				for (int i = 0; i < nSubAnalyzers; i++) {
 					SubAnalyzer sub = analysisChunk.subAnalyzers.get(i);
@@ -164,14 +169,14 @@ public class SubAnalyzerPhaser extends Phaser {
 							new SequenceLocation(contigIndex, contigName, analysisChunk.lastProcessedPosition))) {
 						throw new AssertionFailedException();
 					}
-					if (statsIndex == 0 || !sub.stats.canSkipDuplexLoading) {
-						sub.load();
+					if (saveLastProcessedPosition + 1 <= targetStopPosition && (statsIndex == 0 || !sub.stats.canSkipDuplexLoading)) {
+						sub.load(saveLastProcessedPosition + 1, targetStopPosition);
 					}
 				}
 
 				outer:
 				for (int position = saveLastProcessedPosition + 1;
-						position <= Math.min(analysisChunk.pauseAtPosition, analysisChunk.terminateAtPosition) &&
+						position <= targetStopPosition &&
 						!groupSettings.terminateAnalysis; position ++) {
 
 					final @NonNull SequenceLocation location =
