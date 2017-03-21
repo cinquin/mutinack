@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.collections.InterningSet;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 @PersistenceCapable//(identityType = IdentityType.APPLICATION, objectIdClass = SequenceLocation.PK.class)
@@ -159,6 +160,21 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		this.hash = computeHash();
 	}
 
+	public static @NonNull SequenceLocation get(InterningSet<@NonNull SequenceLocation> interningSet,
+			int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
+		//TODO Since escape analysis probably cannot remove the allocation below (to be verified;
+		//removing the allocation would need to be done only for objects not already present in the set),
+		//create a custom method to retrieve pre-existing objects from the set based only on the
+		//constructor parameters (without instantiating a temporary object).
+		return interningSet.intern(new SequenceLocation(contigIndex, contigName, position, plusHalf));
+	}
+
+	public static @NonNull SequenceLocation get(InterningSet<@NonNull SequenceLocation> interningSet,
+		int contigIndex, @NonNull String contigName, int position) {
+		return get(interningSet, contigIndex, contigName, position, false);
+	}
+
+
 	public SequenceLocation(int contigIndex, List<String> nameMap, int position, boolean plusHalf) {
 		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, plusHalf);
 	}
@@ -278,4 +294,5 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 		return new SequenceLocation(split[0], indexContigNameReverseMap, position);
 	}
+
 }

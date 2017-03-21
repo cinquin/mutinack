@@ -95,6 +95,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
+import uk.org.cinquin.mutinack.misc_util.collections.InterningSet;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -304,21 +305,6 @@ public final class SubAnalyzer {
 		return result;
 	}
 
-	private static class InterningSet<T> extends THashSet<T> {
-		public InterningSet(int i) {
-			super(i);
-		}
-
-		public T intern(T l) {
-			T previous = get(l);
-			if (previous != null) {
-				return previous;
-			}
-			add(l);
-			return l;
-		}
-	}
-
 	/**
 	 * Group reads into duplexes.
 	 * @param toPosition
@@ -366,6 +352,9 @@ public final class SubAnalyzer {
 		} else {
 			extSAMCache.forEachValue(callLoadRead);
 		}
+
+		sequenceLocationCache.clear();//Not strictly necessary, but might as well release the
+		//memory now
 
 		if (param.randomizeStrand) {
 			for (DuplexRead dr: duplexKeeper.getIterable()) {
@@ -1332,8 +1321,11 @@ public final class SubAnalyzer {
 	 *
 	 * @return the furthest position in the contig covered by the read
 	 */
-	int processRead(@NonNull SequenceLocation location,
-			final @NonNull ExtendedSAMRecord extendedRec, final @NonNull ReferenceSequence ref) {
+	int processRead(
+			final @NonNull SequenceLocation location,
+			final @NonNull InterningSet<SequenceLocation> locationInterningSet,
+			final @NonNull ExtendedSAMRecord extendedRec,
+			final @NonNull ReferenceSequence ref) {
 
 		Assert.isFalse(extendedRec.processed, "Double processing of record %s"/*,
 		 extendedRec.getFullName()*/);
@@ -1421,6 +1413,7 @@ public final class SubAnalyzer {
 
 		for (AlignmentBlock block: rec.getAlignmentBlocks()) {
 			processAlignmentBlock(location,
+				locationInterningSet,
 				readLocalCandidates,
 				ref,
 				!param.rnaSeq,
@@ -1444,6 +1437,7 @@ public final class SubAnalyzer {
 	}
 
 	private void processAlignmentBlock(@NonNull SequenceLocation location,
+			InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ReferenceSequence ref,
 			final boolean notRnaSeq,
@@ -1499,7 +1493,7 @@ public final class SubAnalyzer {
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
 							"; insert size: " + insertSize + ')');
 					}
-					location = new SequenceLocation(extendedRec.getLocation().contigIndex,
+					location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 						extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
 					int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, param.ignoreFirstNBasesQ1);
 					int distance1 = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
@@ -1610,9 +1604,9 @@ public final class SubAnalyzer {
 						}
 
 						final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
-						location = new SequenceLocation(extendedRec.getLocation().contigIndex,
+						location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 							extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1);
-						final @NonNull SequenceLocation deletionEnd = new SequenceLocation(extendedRec.getLocation().contigIndex,
+						final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 							extendedRec.getLocation().getContigName(), location.position + deletionLength);
 
 						final byte @Nullable[] deletedSequence = notRnaSeq ?
@@ -1624,7 +1618,7 @@ public final class SubAnalyzer {
 						//So disagreements between deletions that have only overlapping
 						//spans are detected.
 						for (int i = 1; i < deletionLength; i++) {
-							SequenceLocation location2 = new SequenceLocation(extendedRec.getLocation().contigIndex,
+							SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 								extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
 							CandidateSequenceI hiddenCandidate = new CandidateDeletion(
 								this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE,
@@ -1645,7 +1639,7 @@ public final class SubAnalyzer {
 
 						final CandidateSequenceI candidate = new CandidateDeletion(this,
 							deletedSequence, location, extendedRec, distance,
-							location, new SequenceLocation(extendedRec.getLocation().contigIndex,
+							location, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 								extendedRec.getLocation().getContigName(), refPosition));
 
 						if (!extendedRec.formsWrongPair()) {
@@ -1695,11 +1689,11 @@ public final class SubAnalyzer {
 			}
 			boolean insertCandidateAtRegularPosition = true;
 			final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
-				new SequenceLocation(extendedRec.getLocation().contigIndex,
+				SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 					extendedRec.getLocation().getContigName(), refPosition, true)
 				: null;
 
-			location = new SequenceLocation(extendedRec.getLocation().contigIndex,
+			location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 				extendedRec.getLocation().getContigName(), refPosition);
 
 			if (baseQualities[readPosition] < param.minBasePhredScoreQ1) {
@@ -1807,7 +1801,8 @@ public final class SubAnalyzer {
 					}
 					candidate.addBasePhredQualityScore(baseQualities[readPosition]);
 					extendedRec.nReferenceDisagreements++;
-					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
+					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
+							ExtendedSAMRecord.PHRED_NO_ENTRY) {
 						logger.warn("Recording Phred score multiple times at same position " + location);
 					}
 					if (param.computeRawMismatches && insertCandidateAtRegularPosition) {
@@ -1882,7 +1877,8 @@ public final class SubAnalyzer {
 					readLocalCandidates.add(candidate2, locationPH);
 				}
 				candidate.addBasePhredQualityScore(baseQualities[readPosition]);
-				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) != null) {
+				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
+						ExtendedSAMRecord.PHRED_NO_ENTRY) {
 					logger.warn("Recording Phred score multiple times at same position " + location);
 				}
 			}//End of wildtype case

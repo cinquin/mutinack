@@ -36,7 +36,7 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectByteHashMap;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
@@ -68,7 +68,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	 */
 	public final int effectiveLength;
 	int nReferenceDisagreements = 0;
-	public final @NonNull Map<SequenceLocation, Byte> basePhredScores = new THashMap<>(150);
+	public static final byte PHRED_NO_ENTRY = -1;
+	public final @NonNull TObjectByteHashMap<SequenceLocation> basePhredScores =
+		new TObjectByteHashMap<>(150, 0.5f, PHRED_NO_ENTRY);
 	private int nClipped = -1;
 	private Boolean formsWrongPair;
 	public boolean processed = false;

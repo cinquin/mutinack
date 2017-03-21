@@ -55,6 +55,7 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.collections.InterningSet;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.sequence_IO.IteratorPrefetcher;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -171,6 +172,8 @@ public class ReadLoader {
 				boolean firstRun = true;
 				subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
 
+				final InterningSet<@NonNull SequenceLocation> locationInterningSet = new InterningSet<>(10_000);
+
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
 						e -> {
 							//Work around BWA output problem with reads that hang off the reference end
@@ -194,7 +197,7 @@ public class ReadLoader {
 						}
 
 						final @NonNull SequenceLocation location =
-							new SequenceLocation(contigIndex, contigName, samRecord.getAlignmentStart());
+							SequenceLocation.get(locationInterningSet, contigIndex, contigName, samRecord.getAlignmentStart());
 
 						if (!samRecord.getReadPairedFlag()) {
 							if (!analyzer.notifiedUnpairedReads) {
@@ -436,11 +439,12 @@ public class ReadLoader {
 								}
 								if (read.getAlignmentStart() - 1 <= localPauseAt ||
 										read.getMateAlignmentStart() - 1 <= localPauseAt) {
-									subAnalyzer.processRead(location, read, rec.snd);
+									subAnalyzer.processRead(location, locationInterningSet, read, rec.snd);
 									it.remove();
 								}
 							}
 							firstRun = false;
+							locationInterningSet.clear();
 							phaser.arriveAndAwaitAdvance();
 						}
 						if (finishUp) {
@@ -454,9 +458,9 @@ public class ReadLoader {
 
 				if (analysisChunk.lastProcessedPosition < truncateAtPosition) {
 					readsToProcess.forEach((k, v) -> {
-						final SequenceLocation location = new SequenceLocation(contigIndex, contigName,
+						final SequenceLocation location = SequenceLocation.get(locationInterningSet, contigIndex, contigName,
 							v.fst.record.getAlignmentStart());
-						subAnalyzer.processRead(location, v.fst, v.snd);
+						subAnalyzer.processRead(location, locationInterningSet, v.fst, v.snd);
 					});
 				}
 

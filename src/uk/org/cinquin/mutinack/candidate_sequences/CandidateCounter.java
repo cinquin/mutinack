@@ -69,13 +69,13 @@ public final class CandidateCounter {
 				}
 				final int ligSiteDistance = candidate.getNonMutableConcurringReads().get(r);
 				if (ligSiteDistance != candidate.getNonMutableConcurringReads().getNoEntryValue()) {
-					Byte phredScore = r.basePhredScores.get(location);
-					if (phredScore != null) {
+					byte phredScore = r.basePhredScores.get(location);
+					if (phredScore != ExtendedSAMRecord.PHRED_NO_ENTRY) {
 						sumPhreds += phredScore;
 						nPhreds++;
 					}
 					if (minBasePhredScore > 0) {
-						if (phredScore != null && phredScore < minBasePhredScore) {
+						if (phredScore != ExtendedSAMRecord.PHRED_NO_ENTRY && phredScore < minBasePhredScore) {
 							continue;
 						}
 					}
