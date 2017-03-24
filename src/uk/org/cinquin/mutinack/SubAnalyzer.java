@@ -1610,10 +1610,8 @@ public final class SubAnalyzer {
 						final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 							extendedRec.getLocation().getContigName(), location.position + deletionLength);
 
-						final byte @Nullable[] deletedSequence = notRnaSeq ?
-								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition)
-							:
-								null;
+						final byte @Nullable[] deletedSequence =
+								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
 
 						//Add hidden mutations to all locations covered by deletion
 						//So disagreements between deletions that have only overlapping
