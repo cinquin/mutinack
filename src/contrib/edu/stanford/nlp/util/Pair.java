@@ -28,14 +28,14 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
    *
    * @serial
    */
-  public T1 first;
+  private int first;
 
   /**
    * Direct access is deprecated.  Use second().
    *
    * @serial
    */
-  public T2 second;
+  private int second;
 
   public Pair() {
     // first = null; second = null; -- default initialization
@@ -55,11 +55,11 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
   }
 
   public void setFirst(T1 o) {
-    first = o;
+    first = (Integer) o;
   }
 
   public void setSecond(T2 o) {
-    second = o;
+    second = (Integer) o;
   }
 
   @Override
@@ -206,7 +206,17 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
   }
 
 
-  /**
+  public T1 getFirst() {
+		return (T1) (Integer) first;
+	}
+
+
+	public T2 getSecond() {
+		return (T2) (Integer) second;
+	}
+
+
+	/**
    * use serialVersionUID for cross version serialization compatibility
    */
   private static final long serialVersionUID = 1360822168806852921L;
