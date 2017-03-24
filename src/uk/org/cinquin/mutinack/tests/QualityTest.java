@@ -19,8 +19,8 @@ package uk.org.cinquin.mutinack.tests;
 
 import org.junit.Test;
 
-import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.qualities.Quality;
 
 public class QualityTest {
 
