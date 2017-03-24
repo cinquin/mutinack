@@ -212,8 +212,8 @@ public final class SubAnalyzer {
 			@NonNull SequenceLocation location) {
 
 		//No need for synchronization since we should not be
-		//concurrently inserting two candidates in the same position
-		THashSet<CandidateSequenceI> candidates = candidateSequences.computeIfAbsent(location, k -> new THashSet<>());
+		//concurrently inserting two candidates at the same position
+		THashSet<CandidateSequenceI> candidates = candidateSequences.computeIfAbsent(location, k -> new THashSet<>(4));
 		CandidateSequenceI candidateMapValue = candidates.get(candidate);
 		if (candidateMapValue == null) {
 			boolean added = candidates.add(candidate);
