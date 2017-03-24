@@ -40,14 +40,10 @@ import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import uk.org.cinquin.final_annotation.Final;
-import uk.org.cinquin.mutinack.DetailedQualities;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
-import uk.org.cinquin.mutinack.output.LocationExaminationResults;
-import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
-import uk.org.cinquin.mutinack.output.json.ByteStringSerializer;
-import uk.org.cinquin.mutinack.output.json.TByteArrayListSerializer;
 import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
@@ -61,6 +57,12 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
+import uk.org.cinquin.mutinack.output.json.ByteStringSerializer;
+import uk.org.cinquin.mutinack.output.json.TByteArrayListSerializer;
+import uk.org.cinquin.mutinack.qualities.DetailedQualities;
+import uk.org.cinquin.mutinack.qualities.Quality;
 
 
 /**

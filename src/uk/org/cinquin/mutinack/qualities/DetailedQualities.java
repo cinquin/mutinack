@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.qualities;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -32,7 +32,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import uk.org.cinquin.mutinack.candidate_sequences.AssayInfo;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
-import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.collections.CustomEnumMap;
 

@@ -30,15 +30,15 @@ import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_DPLX
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_Q_FOR_ALL_DUPLEXES;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MEDIAN_PHRED_AT_POS;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.NO_DUPLEXES;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.ATROCIOUS;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.DUBIOUS;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.GOOD;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.MINIMUM;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.POOR;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.max;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector.uniqueValueCollector;
+import static uk.org.cinquin.mutinack.qualities.Quality.ATROCIOUS;
+import static uk.org.cinquin.mutinack.qualities.Quality.DUBIOUS;
+import static uk.org.cinquin.mutinack.qualities.Quality.GOOD;
+import static uk.org.cinquin.mutinack.qualities.Quality.MINIMUM;
+import static uk.org.cinquin.mutinack.qualities.Quality.POOR;
+import static uk.org.cinquin.mutinack.qualities.Quality.max;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -86,7 +86,6 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
-import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -98,6 +97,8 @@ import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
 import uk.org.cinquin.mutinack.misc_util.collections.InterningSet;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.qualities.DetailedQualities;
+import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 

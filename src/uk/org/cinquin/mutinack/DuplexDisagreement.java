@@ -7,9 +7,9 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.final_annotation.Final;
-import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.qualities.Quality;
 
 @PersistenceCapable
 public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {

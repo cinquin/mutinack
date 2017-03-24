@@ -30,16 +30,16 @@ import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_READS_WR
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_STRAND_READS_ABOVE_Q2_PHRED;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.TOP_STRAND_MAP_Q2;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.TOTAL_N_READS_Q2;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.ATROCIOUS;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.DUBIOUS;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.GOOD;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.MAXIMUM;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.MINIMUM;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.POOR;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.max;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.min;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.Util.shortLengthFloatFormatter;
+import static uk.org.cinquin.mutinack.qualities.Quality.ATROCIOUS;
+import static uk.org.cinquin.mutinack.qualities.Quality.DUBIOUS;
+import static uk.org.cinquin.mutinack.qualities.Quality.GOOD;
+import static uk.org.cinquin.mutinack.qualities.Quality.MAXIMUM;
+import static uk.org.cinquin.mutinack.qualities.Quality.MINIMUM;
+import static uk.org.cinquin.mutinack.qualities.Quality.POOR;
+import static uk.org.cinquin.mutinack.qualities.Quality.max;
+import static uk.org.cinquin.mutinack.qualities.Quality.min;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,7 +69,6 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateDuplexEval;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
-import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -81,6 +80,8 @@ import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.qualities.DetailedQualities;
+import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
 /**

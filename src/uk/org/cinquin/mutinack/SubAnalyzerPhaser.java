@@ -23,11 +23,11 @@ import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.AT_LEAST
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.DISAG_THAT_MISSED_Q2;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MIN_DUPLEXES_SISTER_SAMPLE;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.TOO_HIGH_COVERAGE;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.GOOD;
-import static uk.org.cinquin.mutinack.candidate_sequences.Quality.POOR;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.ENABLE_TRACE;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.mediumLengthFloatFormatter;
+import static uk.org.cinquin.mutinack.qualities.Quality.GOOD;
+import static uk.org.cinquin.mutinack.qualities.Quality.POOR;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -57,7 +57,6 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
-import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -72,6 +71,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.CrossSampleLocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.sequence_IO.TrimOverlappingReads;
 import uk.org.cinquin.mutinack.statistics.Histogram;
 

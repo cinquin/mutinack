@@ -4,7 +4,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -16,9 +15,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
-import uk.org.cinquin.mutinack.candidate_sequences.Quality;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.collections.CustomEnumMap;
+import uk.org.cinquin.mutinack.qualities.Quality;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -75,7 +74,7 @@ public class BenchmarkCustomEnumMap {
 
 	@SuppressWarnings("null")
 	private static Quality getMin(Map<PositionAssay, Quality> map) {
-		final Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);
+		final Handle<Quality> min1 = new Handle<>(Quality.MAXIMUM);
 		map.forEach((k, v) -> {
 			min1.set(Quality.min(min1.get(), v));
 		});
