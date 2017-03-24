@@ -181,7 +181,7 @@ public class ReadLoader {
 							if (e.getReadUnmappedFlag() && e.getAlignmentStart() > 0) {
 								e.setReadUnmappedFlag(false);
 							}
-							e.eagerDecode();
+							//e.eagerDecode();
 							e.getUnclippedEnd();
 							e.getUnclippedStart();
 						},
