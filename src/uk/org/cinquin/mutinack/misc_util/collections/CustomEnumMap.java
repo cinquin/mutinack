@@ -789,7 +789,7 @@ public class CustomEnumMap<K extends Enum<K>, V> extends LocalAbstractMap<K, V>
     }
 
     /**
-     * Throws an exception if e is not of the correct type for this enum set.
+     * Throws an exception if key is not of the correct type for this enum set.
      */
     private void typeCheck(K key) {
         @SuppressWarnings("GetClassOnEnum")
