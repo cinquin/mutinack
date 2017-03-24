@@ -1658,7 +1658,7 @@ public final class SubAnalyzer {
 						readLocalCandidates.add(candidate, location);
 						extendedRec.nReferenceDisagreements++;
 
-						if (notRnaSeq && param.computeRawMismatches) {
+						if (param.computeRawMismatches) {
 							@SuppressWarnings("null")
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 								new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
