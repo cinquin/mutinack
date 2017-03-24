@@ -17,24 +17,17 @@
 
 package uk.org.cinquin.mutinack.tests;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import contrib.net.sf.samtools.SAMRecord;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import mockit.Delegate;
 import mockit.Injectable;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
@@ -45,17 +38,15 @@ import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters;
-import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 @RunWith(JMockit.class)
 @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
-@SuppressWarnings("static-method")
 public class OpticalDuplicateTest {
 
 	private final ExtendedSAMRecordTest esrtInstance =  new ExtendedSAMRecordTest();
 
 	@Test
+	@SuppressWarnings({ "unused", "static-access" })
 	public void testOpticalDuplication(
 			@NonNull @Injectable SAMRecord sr1,
 			@NonNull @Mocked MutinackGroup settings,
