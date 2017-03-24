@@ -129,7 +129,6 @@ public class SubAnalyzerPhaser extends Phaser {
 		this.PROCESSING_CHUNK = PROCESSING_CHUNK;
 	}
 
-
 	@Override
 	protected final boolean onAdvance(final int phase, final int registeredParties) {
 		//This is the place to make comparisons between analyzer results
