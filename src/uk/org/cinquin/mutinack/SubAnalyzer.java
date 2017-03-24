@@ -119,8 +119,8 @@ public final class SubAnalyzer {
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
 			new THashMap<>(10_000, 0.5f);
 	private final AtomicInteger threadCount = new AtomicInteger();
-	private final @NonNull Map<@NonNull ExtendedSAMRecord, @NonNull SAMRecord> readsToWrite
-		= new HashMap<>();
+	@NonNull Map<@NonNull ExtendedSAMRecord, @NonNull SAMRecord> readsToWrite
+		= new THashMap<>();
 	private final Random random;
 
 	private static final @NonNull Set<DuplexAssay>
