@@ -405,7 +405,7 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	 */
 	public E getBegin()
 	{
-		return first;
+		return getFirst();
 	}
 
 	/**
@@ -414,7 +414,7 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	 */
 	public E getEnd()
 	{
-		return second;
+		return getSecond();
 	}
 
 	protected static <E extends Comparable<E>> E max(E a, E b)
@@ -437,18 +437,18 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	public boolean contains(E p)
 	{
 		// Check that the start point is before p
-		boolean check1 = (includesBegin())? (first.compareTo(p) <= 0):(first.compareTo(p) < 0);
+		boolean check1 = (includesBegin())? (getFirst().compareTo(p) <= 0):(getFirst().compareTo(p) < 0);
 		// Check that the end point is after p
-		boolean check2 = (includesEnd())? (second.compareTo(p) >= 0):(second.compareTo(p) > 0);
+		boolean check2 = (includesEnd())? (getSecond().compareTo(p) >= 0):(getSecond().compareTo(p) > 0);
 		return (check1 && check2);
 	}
 
 	public boolean containsOpen(E p)
 	{
 		// Check that the start point is before p
-		boolean check1 = first.compareTo(p) <= 0;
+		boolean check1 = getFirst().compareTo(p) <= 0;
 		// Check that the end point is after p
-		boolean check2 = second.compareTo(p) >= 0;
+		boolean check2 = getSecond().compareTo(p) >= 0;
 		return (check1 && check2);
 	}
 
@@ -467,8 +467,8 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	public Interval<E> expand(Interval<E> other)
 	{
 		if (other == null) return this;
-		E a = min(this.first, other.first);
-		E b = max(this.second, other.second);
+		E a = min(this.getFirst(), other.getFirst());
+		E b = max(this.getSecond(), other.getSecond());
 		return toInterval(a,b);
 	}
 
@@ -481,8 +481,8 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	public Interval<E> intersect(Interval<E> other)
 	{
 		if (other == null) return null;
-		E a = max(this.first, other.first);
-		E b = min(this.second, other.second);
+		E a = max(this.getFirst(), other.getFirst());
+		E b = min(this.getSecond(), other.getSecond());
 		return toInterval(a,b);
 	}
 
@@ -495,11 +495,11 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	public boolean overlaps(Interval<E> other)
 	{
 		if (other == null) return false;
-		int comp12 = this.first.compareTo(other.second());
+		int comp12 = this.getFirst().compareTo(other.second());
 		if (comp12 > 0) {
 			return false;
 		}
-		int comp21 = this.second.compareTo(other.first());
+		int comp21 = this.getSecond().compareTo(other.first());
 		if (comp21 < 0) {
 			return false;
 		}
@@ -655,13 +655,13 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	{
 		if (other == null) return 0;
 		int flags = 0;
-		int comp11 = this.first.compareTo(other.first());   // 3 choices
+		int comp11 = this.getFirst().compareTo(other.first());   // 3 choices
 		flags |= toRelFlags(comp11, REL_FLAGS_SS_SHIFT);
-		int comp22 = this.second.compareTo(other.second());   // 3 choices
+		int comp22 = this.getSecond().compareTo(other.second());   // 3 choices
 		flags |= toRelFlags(comp22, REL_FLAGS_EE_SHIFT);
-		int comp12 = this.first.compareTo(other.second());   // 3 choices
+		int comp12 = this.getFirst().compareTo(other.second());   // 3 choices
 		flags |= toRelFlags(comp12, REL_FLAGS_SE_SHIFT);
-		int comp21 = this.second.compareTo(other.first());   // 3 choices
+		int comp21 = this.getSecond().compareTo(other.first());   // 3 choices
 		flags |= toRelFlags(comp21, REL_FLAGS_ES_SHIFT);
 		flags = addIntervalRelationFlags(flags, false);
 		return flags;
@@ -792,8 +792,8 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 	public RelType getRelation(Interval<E> other) {
 		// TODO: Handle open/closed intervals?
 		if (other == null) return RelType.NONE;
-		int comp11 = this.first.compareTo(other.first());   // 3 choices
-		int comp22 = this.second.compareTo(other.second());   // 3 choices
+		int comp11 = this.getFirst().compareTo(other.first());   // 3 choices
+		int comp22 = this.getSecond().compareTo(other.second());   // 3 choices
 
 		if (comp11 == 0) {
 			if (comp22 == 0) {
@@ -832,8 +832,8 @@ public class Interval<E extends Comparable<E>> extends Pair<E,E> implements HasI
 			//    |---|   other
 			return RelType.CONTAIN;
 		} else {
-			int comp12 = this.first.compareTo(other.second());
-			int comp21 = this.second.compareTo(other.first());
+			int comp12 = this.getFirst().compareTo(other.second());
+			int comp21 = this.getSecond().compareTo(other.first());
 			if (comp12 > 0) {
 				//           |---|  this
 				// |---|   other

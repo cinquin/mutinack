@@ -655,7 +655,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 
 			// If target is to the right of the rightmost point of any interval
 			// in this node and all children, there won't be any matches.
-			if (target.first.compareTo(n.maxEnd) > 0)
+			if (target.getFirst().compareTo(n.maxEnd) > 0)
 				continue;
 
 			// Search left children
@@ -670,7 +670,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 
 			// If target is to the left of the start of this interval,
 			// then it can't be in any child to the right.
-			if (target.second.compareTo(n.value.getInterval().first()) < 0)  {
+			if (target.getSecond().compareTo(n.value.getInterval().first()) < 0)  {
 				continue;
 			}
 
@@ -696,7 +696,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 
 			// If target is to the right of the rightmost point of any interval
 			// in this node and all children, there won't be any matches.
-			if (target.first.compareTo(n.maxEnd) > 0)
+			if (target.getFirst().compareTo(n.maxEnd) > 0)
 				continue;
 
 			// Check this node
@@ -711,7 +711,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 
 			// If target is to the left of the start of this interval,
 			// then it can't be in any child to the right.
-			if (target.second.compareTo(n.value.getInterval().first()) < 0)  {
+			if (target.getSecond().compareTo(n.value.getInterval().first()) < 0)  {
 				continue;
 			}
 
@@ -796,7 +796,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 
 			// If target is to the right of the rightmost point of any interval
 			// in this node and all children, there won't be any matches.
-			if (target.first.compareTo(n.maxEnd) > 0) {
+			if (target.getFirst().compareTo(n.maxEnd) > 0) {
 				continue;
 			}
 
@@ -808,7 +808,7 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 				todo.push(n.left);
 			}
 			// If target is to the left of the start of this interval, then no need to search right
-			if (target.second.compareTo(n.value.getInterval().first()) <= 0)  {
+			if (target.getSecond().compareTo(n.value.getInterval().first()) <= 0)  {
 				continue;
 			}
 

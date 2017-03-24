@@ -42,16 +42,16 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
   }
 
   public Pair(T1 first, T2 second) {
-    this.first = first;
-    this.second = second;
+    this.setFirst(first);
+    this.setSecond(second);
   }
 
   public T1 first() {
-    return first;
+    return getFirst();
   }
 
   public T2 second() {
-    return second;
+    return getSecond();
   }
 
   public void setFirst(T1 o) {
@@ -64,7 +64,7 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
 
   @Override
   public String toString() {
-    return "(" + first + "," + second + ")";
+    return "(" + getFirst() + "," + getSecond() + ")";
   }
 
   @Override
@@ -72,7 +72,7 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
     if (o instanceof Pair) {
       @SuppressWarnings("rawtypes")
       Pair p = (Pair) o;
-      return (first == null ? p.first() == null : first.equals(p.first())) && (second == null ? p.second() == null : second.equals(p.second()));
+      return (getFirst() == null ? p.first() == null : getFirst().equals(p.first())) && (getSecond() == null ? p.second() == null : getSecond().equals(p.second()));
     } else {
       return false;
     }
@@ -80,14 +80,14 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
 
   @Override
   public int hashCode() {
-    int firstHash  = (first == null ? 0 : first.hashCode());
-    int secondHash = (second == null ? 0 : second.hashCode());
+    int firstHash  = (getFirst() == null ? 0 : getFirst().hashCode());
+    int secondHash = (getSecond() == null ? 0 : getSecond().hashCode());
 
     return firstHash*31 + secondHash;
   }
 
   public List<Object> asList() {
-    return CollectionUtils.makeList(first, second);
+    return CollectionUtils.makeList(getFirst(), getSecond());
   }
 
   /**
@@ -98,8 +98,8 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
   public static Pair<String, String> readStringPair(DataInputStream in) {
     Pair<String, String> p = new Pair<String, String>();
     try {
-      p.first = in.readUTF();
-      p.second = in.readUTF();
+      p.setFirst(in.readUTF());
+      p.setSecond(in.readUTF());
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -124,8 +124,8 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
    */
   public void save(DataOutputStream out) {
     try {
-      out.writeUTF(first.toString());
-      out.writeUTF(second.toString());
+      out.writeUTF(getFirst().toString());
+      out.writeUTF(getSecond().toString());
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -215,7 +215,7 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
   static class MutableInternedPair extends Pair<String, String> {
 
     private MutableInternedPair(Pair<String, String> p) {
-      super(p.first, p.second);
+      super(p.getFirst(), p.getSecond());
       internStrings();
     }
 
@@ -230,11 +230,11 @@ public class Pair <T1,T2> implements Comparable<Pair<T1,T2>>, Serializable {
     }
 
     private void internStrings() {
-      if (first != null) {
-        first = first.intern();
+      if (getFirst() != null) {
+        setFirst(getFirst().intern());
       }
-      if (second != null) {
-        second = second.intern();
+      if (getSecond() != null) {
+        setSecond(getSecond().intern());
       }
     }
 
