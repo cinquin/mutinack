@@ -502,19 +502,36 @@ public class ReadLoader {
 		}
 		//Ensure that there is no memory leak (references are kept to subAnalyzers,
 		//at least through the status update handlers; XXX not clear if the maps
-		//should already have been completely cleared as part of position examination.
+		//should already have been completely cleared as part of position examination).
+		clearSubAnalyzers(analysisChunk);
+	}
+
+	//It's OK for clearing to occur multiple times, but not concurrently (which
+	//can generate an NPE)
+	private static synchronized void clearSubAnalyzers(AnalysisChunk analysisChunk) {
 		analysisChunk.subAnalyzers.forEach(sa -> {
 			sa.extSAMCache.clear();
+			sa.extSAMCache.compact();
 			sa.candidateSequences.clear();
+			sa.candidateSequences.compact();
 			if (sa.analyzedDuplexes != null) {
 				//An exception may have occurred before analyzedDuplexes was allocated,
 				//so check for null
 				sa.analyzedDuplexes.clear();
+				sa.analyzedDuplexes = null;
 			}
+			sa.averageClipping = null;
+			nullReadsToWrite(sa);//Set to null to generate NPE is an attempt is made
+			//to reuse it
 		});
 		//TODO Clear subAnalyzers list, but *only after* all analyzers have completed
 		//that chunk
 		//analysisChunk.subAnalyzers.clear();
+	}
+
+	@SuppressWarnings("null")
+	private static void nullReadsToWrite(SubAnalyzer sa) {
+		sa.readsToWrite = null;
 	}
 
 	private static void switchPair(SAMRecord r) {
