@@ -117,7 +117,7 @@ public final class SubAnalyzer {
 	float[] averageClipping;
 	int averageClippingOffset = Integer.MAX_VALUE;
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
-			new THashMap<>(10_000, 0.1f);
+			new THashMap<>(10_000, 0.5f);
 	private final AtomicInteger threadCount = new AtomicInteger();
 	private final @NonNull Map<@NonNull ExtendedSAMRecord, @NonNull SAMRecord> readsToWrite
 		= new HashMap<>();
