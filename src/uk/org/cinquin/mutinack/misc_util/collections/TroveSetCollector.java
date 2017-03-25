@@ -24,14 +24,14 @@ import gnu.trove.set.hash.THashSet;
 
 public class TroveSetCollector {
 	public static<T> Collector<T, Set<T>, Set<T>> uniqueValueCollector() {
-	    return Collector.of(
-	            THashSet<T>::new,
-				Set::add,
-	            (set1, set2) -> {
-	            	set1.addAll(set2);
-	            	return set1;
-	            	},
-	            set -> set
-	    );
+		return Collector.of(
+			() -> new THashSet<>(30),
+			Set::add,
+			(set1, set2) -> {
+				set1.addAll(set2);
+				return set1;
+			},
+			set -> set
+			);
 	}
 }
