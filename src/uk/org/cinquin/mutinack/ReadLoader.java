@@ -437,7 +437,7 @@ public class ReadLoader {
 									return false;
 								}
 								if (read.getAlignmentStart() - 1 <= localPauseAt ||
-									read.getMateAlignmentStart() - 1 <= localPauseAt) {
+										read.getMateAlignmentStart() - 1 <= localPauseAt) {
 									subAnalyzer.processRead(location, locationInterningSet, read, v.snd);
 									return false;
 								}
