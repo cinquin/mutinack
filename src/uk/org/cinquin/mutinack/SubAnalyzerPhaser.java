@@ -939,13 +939,14 @@ public class SubAnalyzerPhaser extends Phaser {
 		analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
 			//If outputting an alignment populated with fields identifying the duplexes,
 			//fill in the fields here
-			for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
+			subAnalyzer.analyzedDuplexes.parallelStream().forEach(duplexRead -> {
+			//for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
 				boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
 					duplexRead.maxInsertSize > 10_000;
 				boolean write = location.equals(duplexRead.rightAlignmentEnd) ||
 					(useAnyStart && location.equals(duplexRead.leftAlignmentEnd));
 				if (!write) {
-					continue;
+					return;
 				}
 				final int randomIndexForDuplexName = dn.incrementAndGet();
 
@@ -1023,7 +1024,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					topOrBottom.set("B");
 					duplexRead.bottomStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
 				}
-			}
+			});
 		});
 	}
 

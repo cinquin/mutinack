@@ -162,7 +162,7 @@ public final class SubAnalyzer {
 
 	private volatile boolean writing = false;
 
-	void queueOutputRead(@NonNull ExtendedSAMRecord e, @NonNull SAMRecord r, boolean mayAlreadyBeQueued) {
+	synchronized void queueOutputRead(@NonNull ExtendedSAMRecord e, @NonNull SAMRecord r, boolean mayAlreadyBeQueued) {
 		Assert.isFalse(writing);
 		final SAMRecord previous;
 		if ((previous = readsToWrite.put(e, r)) != null && !mayAlreadyBeQueued) {
