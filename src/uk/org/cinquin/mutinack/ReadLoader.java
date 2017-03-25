@@ -49,8 +49,11 @@ import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import gnu.trove.map.TMap;
+import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
@@ -140,8 +143,8 @@ public class ReadLoader {
 				final QueryInterval[] bamContig = {
 						bamReader.makeQueryInterval(contigName, Math.max(1, startAt - maxInsertSize + 1))};
 				analyzer.timeStartProcessing = System.nanoTime();
-				final Map<String, Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence>>
-					readsToProcess = new HashMap<>(5_000);
+				final TMap<String, Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence>>
+					readsToProcess = new THashMap<>(5_000);
 
 				subAnalyzer.truncateProcessingAt = truncateAtPosition;
 				subAnalyzer.startProcessingAt = startAt;
@@ -169,7 +172,7 @@ public class ReadLoader {
 					throw new RuntimeException("Problem with sample " + analyzer.name, e);
 				}
 
-				boolean firstRun = true;
+				Handle<Boolean> firstRun = new Handle<>(true);
 				subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
 
 				final InterningSet<@NonNull SequenceLocation> locationInterningSet = new InterningSet<>(10_000);
@@ -425,25 +428,23 @@ public class ReadLoader {
 							 * Only process the reads that will contribute to mutation candidates to be analyzed in the
 							 * next round.
 							 */
-							Iterator<Pair<ExtendedSAMRecord, @NonNull ReferenceSequence>> it =
-									readsToProcess.values().iterator();
 							final int localPauseAt = analysisChunk.pauseAtPosition;
-							while (it.hasNext()) {
-								Pair<ExtendedSAMRecord, @NonNull ReferenceSequence> rec = it.next();
-								final ExtendedSAMRecord read = rec.fst;
-								if (firstRun && read.getAlignmentStart() + maxInsertSize < startAt) {
+							readsToProcess.retainEntries((k, v) -> {
+								final ExtendedSAMRecord read = v.fst;
+								if (firstRun.get() && read.getAlignmentStart() + maxInsertSize < startAt) {
 									//The purpose of this was to make runs reproducible irrespective of
 									//the way contigs are broken up for parallelization; probably largely redundant now
-									it.remove();
-									continue;
+									return false;
 								}
 								if (read.getAlignmentStart() - 1 <= localPauseAt ||
-										read.getMateAlignmentStart() - 1 <= localPauseAt) {
-									subAnalyzer.processRead(location, locationInterningSet, read, rec.snd);
-									it.remove();
+									read.getMateAlignmentStart() - 1 <= localPauseAt) {
+									subAnalyzer.processRead(location, locationInterningSet, read, v.snd);
+									return false;
 								}
+								return true;
 							}
-							firstRun = false;
+								);
+							firstRun.set(false);
 							locationInterningSet.clear();
 							phaser.arriveAndAwaitAdvance();
 						}
