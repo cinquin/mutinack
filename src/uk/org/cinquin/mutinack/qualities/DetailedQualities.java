@@ -17,9 +17,6 @@
 package uk.org.cinquin.mutinack.qualities;
 
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -30,10 +27,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.mutinack.candidate_sequences.AssayInfo;
-import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
-import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Handle;
-import uk.org.cinquin.mutinack.misc_util.collections.CustomEnumMap;
 
 /**
  * Keeps track of a "min_assay" group, and a "max_assay" group.
@@ -47,68 +41,53 @@ import uk.org.cinquin.mutinack.misc_util.collections.CustomEnumMap;
  *
  * @param <T>
  */
-public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Serializable {
+public abstract class DetailedQualities<T extends Enum<T> & AssayInfo> implements Serializable {
 	private static final long serialVersionUID = -5423960175598403757L;
 
-	private final @NonNull Map<T, @NonNull Quality> qualities;
-	private @Nullable Quality min = null, max = null;
+	public abstract long toLong();
 
-	/**
-	 * Currently only used for assertions
-	 */
-	private final boolean hasMaxGroup;
+	protected abstract Quality qualitiesGet(T t);
+	protected abstract void qualitiesPut(T t, @NonNull Quality q);
+	protected abstract void qualitiesForEach(BiConsumer<T, @NonNull Quality> consumer);
+	protected abstract void qualitiesClear();
+	protected abstract Map<T, Quality> getQualityMap();
 
-	//Not a ConcurrentMap because of the high runtime cost (even after the map has been
-	//filled), according to sampling
-	private final static Map<Class<?>, Method> methodMap = new HashMap<>();
+	//private AtomicInteger counter = new AtomicInteger();
 
-	private static <T> boolean getHasMaxGroup(Class<T> assayClass) {
-		try {
-			return (boolean)
-				methodMap.computeIfAbsent(assayClass, clazz -> {
-					try {
-						return clazz.getMethod("hasMaxGroup");
-					} catch (NoSuchMethodException | SecurityException e) {
-						throw new RuntimeException(e);
-					}
-				}).invoke(null);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new RuntimeException(e);
-		}
+	protected final void enter() {
+		/*if (counter.incrementAndGet() > 1) {
+			throw new AssertionFailedException();
+		}*/
 	}
 
-	static {
-		getHasMaxGroup(DuplexAssay.class);
-		getHasMaxGroup(PositionAssay.class);
+	protected final void leave() {
+		//counter.decrementAndGet();
 	}
 
-	public DetailedQualities(Class<T> assayClass) {
-		qualities = new CustomEnumMap<>(assayClass);
-		hasMaxGroup = getHasMaxGroup(assayClass);
-	}
 
 	@Override
 	public String toString() {
-		return qualities.toString();
+		return getQualityMap().toString();
 	}
 
 	public Stream<Entry<T, Quality>> getQualities() {
-		return qualities.entrySet().stream();
+		return getQualityMap().entrySet().stream();
 	}
 
 	public boolean qualitiesContain(T a) {
-		return qualities.containsKey(a);
+		return qualitiesGet(a) != null;
 	}
 
 	public void addUnique(T assay, @NonNull Quality q) {
-		if (qualities.put(assay, q) != null) {
+		if (qualitiesGet(assay) != null) {
 			throw new IllegalStateException(assay + " already defined");
 		}
+		qualitiesPut(assay, q);
 		if (assay.isMinGroup()) {
 			updateMin(q);
 		}
 		if (assay.isMaxGroup()) {
-			if (max != null) {
+			if (getMax() != null) {
 				throw new IllegalStateException("Only 1 max_assay assay allowed for now");
 			}
 			updateMax(q);
@@ -117,19 +96,19 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 
 	@SuppressWarnings("null")
 	private void updateMin(@NonNull Quality q) {
-		if (min == null) {
-			min = q;
+		if (getMin() == null) {
+			setMin(q);
 		} else {
-			min = Quality.min(q, min);
+			setMin(Quality.min(q, getMin()));
 		}
 	}
 
 	@SuppressWarnings("null")
 	private void updateMax(@NonNull Quality q) {
-		if (max == null) {
-			max = q;
+		if (getMax() == null) {
+			setMax(q);
 		} else {
-			max = Quality.max(q, max);
+			setMax(Quality.max(q, getMax()));
 		}
 	}
 
@@ -137,20 +116,20 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 		if (assay.isMaxGroup()) {
 			throw new IllegalArgumentException();
 		}
-		Quality previousQ = qualities.get(assay);
+		Quality previousQ = qualitiesGet(assay);
 		if (previousQ == null) {
-			qualities.put(assay, q);
+			qualitiesPut(assay, q);
 		} else {
-			qualities.put(assay, Quality.min(previousQ, q));
+			qualitiesPut(assay, Quality.min(previousQ, q));
 		}
 		updateMin(q);
 	}
 
 	public @Nullable Quality getValue(boolean allowNullMax) {
-		if (!allowNullMax && hasMaxGroup && max == null) {
+		if (!allowNullMax && isHasMaxGroup() && getMax() == null) {
 			throw new IllegalStateException();
 		}
-		return Quality.nullableMin(max, min);
+		return Quality.nullableMin(getMax(), getMin());
 	}
 
 	public @Nullable Quality getValue() {
@@ -167,9 +146,9 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 
 	@SuppressWarnings("null")
 	public @NonNull Quality getValueIgnoring(Set<T> assaysToIgnore, boolean allowNullMax) {
-		final Handle<@NonNull Quality> min1 = new Handle<>(Quality.MAXIMUM);
-		final Handle<@Nullable Quality> max1 = new Handle<>(null);
-		qualities.forEach((k, v) -> {
+		final Handle<Quality> min1 = new Handle<>(Quality.MAXIMUM);
+		final Handle<Quality> max1 = new Handle<>(null);
+		qualitiesForEach((k, v) -> {
 			if (assaysToIgnore.contains(k)) {
 				return;
 			}
@@ -184,7 +163,7 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 			}//else ignorable assay
 		});
 		final Quality max1Val = max1.get();
-		if ((!allowNullMax) && max1Val == null && hasMaxGroup) {
+		if ((!allowNullMax) && max1Val == null && isHasMaxGroup()) {
 			throw new IllegalStateException();
 		}
 		return Quality.nullableMin(max1Val, min1.get());
@@ -195,17 +174,17 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 	}
 
 	public Quality getQuality(T assay) {
-		return qualities.get(assay);
+		return qualitiesGet(assay);
 	}
 
 	public void forEach(BiConsumer<T, @NonNull Quality> consumer) {
-		qualities.forEach(consumer::accept);
+		qualitiesForEach(consumer::accept);
 	}
 
 	public void reset() {
-		qualities.clear();
-		min = null;
-		max = null;
+		qualitiesClear();
+		setMin(null);
+		setMax(null);
 	}
 
 	public void addAll(DetailedQualities<@NonNull T> q) {
@@ -225,5 +204,15 @@ public class DetailedQualities<T extends Enum<T> & AssayInfo> implements Seriali
 		add(assay, b ? Quality.GOOD : Quality.DUBIOUS);
 		return b;
 	}
+
+	protected abstract Quality getMin();
+
+	protected abstract void setMin(Quality min);
+
+	protected abstract Quality getMax();
+
+	protected abstract void setMax(Quality max);
+
+	protected abstract boolean isHasMaxGroup();
 
 }

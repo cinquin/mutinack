@@ -18,7 +18,6 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -26,10 +25,9 @@ import org.eclipse.jdt.annotation.Nullable;
 import gnu.trove.TByteCollection;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import uk.org.cinquin.mutinack.DuplexRead;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
-import uk.org.cinquin.mutinack.output.LocationExaminationResults;
-import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.Mutinack;
@@ -37,6 +35,8 @@ import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 
 public interface CandidateSequenceI extends Serializable {
 
@@ -109,7 +109,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setProbCollision(float probAtLeastOneCollision);
 	void setnWrongPairs(int count);
 	int getnWrongPairs();
-	@NonNull Map<DuplexRead, DetailedQualities<DuplexAssay>> getIssues();
+	@NonNull TObjectLongHashMap<DuplexRead> getIssues();
 	void resetLigSiteDistances();
 	void acceptLigSiteDistance(int maxDistanceToLigSite);
 	void setnGoodDuplexesIgnoringDisag(int size);

@@ -80,6 +80,7 @@ import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.qualities.DetailedDuplexQualities;
 import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.statistics.Histogram;
@@ -119,7 +120,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	*/
 	@NonNull Quality minQuality = MAXIMUM, maxQuality = MINIMUM;
 	DetailedQualities<DuplexAssay> localAndGlobalQuality;
-	final @NonNull DetailedQualities<DuplexAssay> globalQuality = new DetailedQualities<>(DuplexAssay.class);
+	final @NonNull DetailedQualities<DuplexAssay> globalQuality = new DetailedDuplexQualities();
 	SequenceLocation roughLocation;
 	float referenceDisagreementRate;
 	int averageNClipped = -1;
@@ -635,7 +636,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			stats.nPosDuplexBothStrandsPresent.accept(location);
 		}
 
-		final @NonNull DetailedQualities<DuplexAssay> dq = new DetailedQualities<>(DuplexAssay.class);
+		final @NonNull DetailedQualities<DuplexAssay> dq = new DetailedDuplexQualities();
 		globalQuality.forEach(dq::add);
 
 		if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ2 &&

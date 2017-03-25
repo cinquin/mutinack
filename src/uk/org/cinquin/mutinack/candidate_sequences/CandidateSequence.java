@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,7 +37,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gnu.trove.TByteCollection;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import uk.org.cinquin.final_annotation.Final;
@@ -61,6 +59,8 @@ import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
 import uk.org.cinquin.mutinack.output.json.ByteStringSerializer;
 import uk.org.cinquin.mutinack.output.json.TByteArrayListSerializer;
+import uk.org.cinquin.mutinack.qualities.DetailedDuplexQualities;
+import uk.org.cinquin.mutinack.qualities.DetailedPositionQualities;
 import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 import uk.org.cinquin.mutinack.qualities.Quality;
 
@@ -81,7 +81,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private transient @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
 	@Persistent private DetailedQualities<PositionAssay> quality;
-	private transient Map<DuplexRead, DetailedQualities<DuplexAssay>> issues;
+	private transient TObjectLongHashMap<DuplexRead> issues;
 	private @Nullable StringBuilder supplementalMessage;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
 	private transient @Nullable Collection<@NonNull DuplexRead> duplexes;
@@ -500,7 +500,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public @NonNull DetailedQualities<PositionAssay> getQuality() {
 		if (quality == null) {
-			quality = new DetailedQualities<>(PositionAssay.class);
+			quality = new DetailedPositionQualities();
 		}
 		return quality;
 	}
@@ -653,9 +653,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Map<DuplexRead, DetailedQualities<DuplexAssay>> getIssues() {
+	public @NonNull TObjectLongHashMap<DuplexRead> getIssues() {
 		if (issues == null) {
-			issues = new THashMap<>();
+			issues = new TObjectLongHashMap<>();
 		}
 		return issues;
 	}
@@ -745,8 +745,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		StringBuilder result = new StringBuilder();
 
 		NumberFormat formatter = Util.mediumLengthFloatFormatter.get();
-		Stream<String> qualityKD = getIssues().values().stream().map(
-				iss -> iss.getQualities().
+		Stream<String> qualityKD = Arrays.stream(getIssues().values()).mapToObj(
+				iss -> DetailedDuplexQualities.fromLong(iss).getQualities().
 				filter(entry -> entry.getValue().lowerThan(Quality.GOOD)).
 				map(Object::toString).
 				collect(Collectors.joining(",", "{", "}")));

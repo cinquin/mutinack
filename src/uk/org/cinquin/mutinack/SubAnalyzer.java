@@ -96,6 +96,7 @@ import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
 import uk.org.cinquin.mutinack.misc_util.collections.InterningSet;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.qualities.DetailedPositionQualities;
 import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -783,7 +784,7 @@ public final class SubAnalyzer {
 		}
 		result.probAtLeastOneCollision = averageCollisionProb;
 
-		final DetailedQualities<PositionAssay> positionQualities = new DetailedQualities<>(PositionAssay.class);
+		final DetailedQualities<PositionAssay> positionQualities = new DetailedPositionQualities();
 
 		if (averageClipping[location.position - averageClippingOffset] >
 				param.maxAverageClippingOfAllCoveringDuplexes) {
