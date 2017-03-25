@@ -41,7 +41,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 public class MutationListReader {
 
 	@SuppressWarnings("resource")
-	public static Map<Pair<@NonNull SequenceLocation, @NonNull String>, 
+	public static Map<Pair<@NonNull SequenceLocation, @NonNull String>,
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> readMutationList(
 		String path, String readerName, List<@NonNull String> contigNames,
 		@NonNull Set<String> sampleNames, @NonNull Set<String> unknownSamples) {
