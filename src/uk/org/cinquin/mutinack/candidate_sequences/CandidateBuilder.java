@@ -28,7 +28,8 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 
 public final class CandidateBuilder {
 
-	private final @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequenceI> candidates = new THashMap<>();
+	private final @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequenceI> candidates
+		= new THashMap<>(300);
 	private final boolean negativeStrand;
 
 	public CandidateBuilder add(@NonNull CandidateSequenceI c, @NonNull SequenceLocation l) {
