@@ -26,6 +26,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
 import uk.org.cinquin.mutinack.misc_util.IterableAdapter;
+import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 
 public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 
@@ -36,6 +37,16 @@ public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 		} else {
 			return Collections.emptyList();
 		}
+	}
+
+	@Override
+	public int size() {
+		SettableInteger i = new SettableInteger(0);
+		this.forEachValue(l -> {
+			i.addAndGet(l.size());
+			return true;
+		});
+		return i.get();
 	}
 
 	public boolean add(int i, V v) {

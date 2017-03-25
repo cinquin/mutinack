@@ -17,10 +17,12 @@
 
 package uk.org.cinquin.mutinack;
 
+import java.util.List;
+
 import org.eclipse.jdt.annotation.NonNull;
 
 public interface DuplexKeeper {
-	@NonNull Iterable<DuplexRead> getOverlapping(DuplexRead d);
+	@NonNull List<DuplexRead> getOverlapping(DuplexRead d);
 	@NonNull Iterable<DuplexRead> getStartingAtPosition(int position);
 	@NonNull Iterable<DuplexRead> getIterable();
 	boolean add(DuplexRead d);

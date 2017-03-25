@@ -17,6 +17,8 @@
 
 package uk.org.cinquin.mutinack;
 
+import java.util.List;
+
 import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.mutinack.misc_util.collections.TIntObjectListHashMap;
@@ -24,7 +26,7 @@ import uk.org.cinquin.mutinack.misc_util.collections.TIntObjectListHashMap;
 public class DuplexHashMapKeeper extends TIntObjectListHashMap<DuplexRead> implements DuplexKeeper {
 
 	@Override
-	public @NonNull Iterable<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull List<DuplexRead> getOverlapping(DuplexRead d) {
 		return getList(d.position0);
 	}
 

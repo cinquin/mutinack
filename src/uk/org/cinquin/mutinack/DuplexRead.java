@@ -72,7 +72,6 @@ import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
-import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.IntMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
@@ -447,15 +446,18 @@ public final class DuplexRead implements HasInterval<Integer> {
 			AnalysisStats stats,
 			int callDepth) {
 
-		Handle<DuplexKeeper> result = new Handle<>(factory.get());
+		DuplexKeeper result = factory.get();
 
-		List<DuplexRead> sorted = new ArrayList<>(duplexes.size());
+		final DuplexRead[] sorted = new DuplexRead[duplexes.size()];
+		int i = 0;
 		for (DuplexRead d: duplexes.getIterable()) {
-			sorted.add(d);
+			sorted[i] = d;
+			i++;
 		}
-		sorted.sort(duplexCountQualComparator);
+		Arrays.parallelSort(sorted, duplexCountQualComparator);
 
-		sorted.forEach(duplex1 -> {
+		for (int index = 0; index < sorted.length; index++) {
+			final DuplexRead duplex1 = sorted[index];
 
 			preliminaryOp.accept(duplex1);
 
@@ -463,10 +465,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 			Assert.isNonNull(duplex1.getInterval());
 
-			List<DuplexRead> overlapping = new ArrayList<>(30);
-			for (DuplexRead dr: result.get().getOverlapping(duplex1)) {
-				overlapping.add(dr);
-			}
+			List<DuplexRead> overlapping = result.getOverlapping(duplex1);
 			Collections.sort(overlapping, duplexCountQualComparator);
 
 			for (DuplexRead duplex2: overlapping) {
@@ -511,8 +510,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 								duplex2.computeConsensus(false, param.variableBarcodeLength);
 
 						if (changed) {
-							result.set(groupDuplexes(result.get(), d -> {},
-								factory, param, stats, callDepth + 1));
+							result = groupDuplexes(result, d -> {}, factory, param, stats, callDepth + 1);
 						} else {
 							stats.duplexGroupingDepth.insert(callDepth);
 						}
@@ -524,16 +522,15 @@ public final class DuplexRead implements HasInterval<Integer> {
 			}//End loop over overlapping duplexes
 
 			if (!mergedDuplex) {
-				result.get().add(duplex1);
+				result.add(duplex1);
 			}
-		});//End duplex grouping
+		}//End duplex grouping
 
-		DuplexKeeper keeper = result.get();
 		if (param.enableCostlyAssertions) {
-			checkNoEqualDuplexes(keeper.getIterable());
+			checkNoEqualDuplexes(result.getIterable());
 		}
 
-		return result.get();
+		return result;
 	}
 
 	@SuppressWarnings("ReferenceEquality")

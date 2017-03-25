@@ -37,16 +37,16 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		return new IterableAdapter<>(iterator());
 	}
 
-	private final List<DuplexRead> overlappingDuplexes = new ArrayList<>(10_000);
+	private final @NonNull List<DuplexRead> overlappingDuplexes = new ArrayList<>(10_000);
 	@Override
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
 	 * is set up this way to minimize object turnover).
 	 */
-	public @NonNull Iterable<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull List<DuplexRead> getOverlapping(DuplexRead d) {
 		overlappingDuplexes.clear();
 		getOverlapping(d.getInterval(), overlappingDuplexes);
-		return new IterableAdapter<>(overlappingDuplexes.iterator());
+		return overlappingDuplexes;
 	}
 
 	private final List<DuplexRead> duplexesAtPosition0 = new ArrayList<>(10_000);
