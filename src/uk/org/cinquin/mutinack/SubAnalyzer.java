@@ -1071,11 +1071,13 @@ public final class SubAnalyzer {
 			candidate.getQuality().addUnique(NO_DUPLEXES, ATROCIOUS);
 		}
 
-		candidate.getIssues().clear();//This *must* be done to avoid interference
-		//between parameter sets, in parameter exploration runs
-		candidate.getDuplexes().forEach(d -> {if (candidate.getIssues().put(d, d.localAndGlobalQuality) != null) {
-			throw new AssertionFailedException();
-		}});
+		if (param.verbosity > 2) {
+			candidate.getIssues().clear();//This *must* be done to avoid interference
+			//between parameter sets, in parameter exploration runs
+			candidate.getDuplexes().forEach(d -> {
+				candidate.getIssues().put(d, d.localAndGlobalQuality.toLong());
+			});
+		}
 
 		final Quality posQMin =	positionQualities.getValue(true);
 		final @NonNull Quality maxDuplexQ = candidate.getDuplexes().stream().
