@@ -369,7 +369,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private static void registerMismatches(@NonNull SequenceLocation location, int nMismatches,
 			byte @NonNull [] barcode1, byte @NonNull [] barcode2, boolean negativeStrand1,
 			boolean negativeStrand2, AnalysisStats stats) {
-		if (nMismatches ==0) {
+		if (nMismatches == 0) {
 			return;
 		}
 		for (int i = 0; i < barcode1.length; i++) {
