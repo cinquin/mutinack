@@ -234,7 +234,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				result += ": " + new String(new byte[] {getWildtypeSequence()}) +
 				"->" + new String(getSequence());
 				break;
-			default : throw new AssertionFailedException();
+			default:
+				throw new AssertionFailedException();
 		}
 		result += " at " + getLocation() + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
 		return result;
