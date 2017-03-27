@@ -17,6 +17,7 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import javax.jdo.annotations.Discriminator;
 import javax.jdo.annotations.DiscriminatorStrategy;
@@ -36,9 +37,9 @@ import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 
 /**
- * Equality test does not include sequence itself, just its span in the reference genome.
  * @author olivier
- *
+ * It is assumed (and asserted) that two deletions that span the same genome range
+ * must have the same sequence.
  */
 @PersistenceCapable
 @Discriminator(strategy = DiscriminatorStrategy.CLASS_NAME)
@@ -74,6 +75,9 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 			return false;
 		if (!deletionStart.equals(other.deletionStart))
 			return false;
+		Assert.isTrue(Arrays.equals(getSequence(), other.getSequence()), () ->
+			"Two deletions with same span but different sequences: " +
+			new String(getSequence()) + " vs " + new String(other.getSequence()) + "; " + this + "; " + other);
 		return true;
 	}
 
