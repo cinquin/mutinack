@@ -118,9 +118,9 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Mutation other = (Mutation) obj;
-		if (!Arrays.equals(mutationSequence, other.mutationSequence))
-			return false;
 		if (mutationType != other.mutationType)
+			return false;
+		if (!Arrays.equals(mutationSequence, other.mutationSequence))
 			return false;
 		if (wildtype != other.wildtype)
 			return false;
