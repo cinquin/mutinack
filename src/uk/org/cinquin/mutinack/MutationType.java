@@ -22,7 +22,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 
 public enum MutationType {
-	INSERTION, DELETION, SUBSTITUTION, WILDTYPE;
+	INSERTION, DELETION, SUBSTITUTION, WILDTYPE, UNKNOWN;
 
 	@Override
 	public @NonNull String toString() {
@@ -31,6 +31,7 @@ public enum MutationType {
 			case INSERTION: return "insertion";
 			case DELETION: return "deletion";
 			case SUBSTITUTION: return "substitution";
+			case UNKNOWN: return "unknown";
 			default: throw new AssertionFailedException();
 		}
 	}

@@ -18,6 +18,7 @@ package uk.org.cinquin.mutinack;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -32,15 +33,18 @@ import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
 public final class Mutation implements Comparable<Mutation>, Serializable {
 
 	private static final long serialVersionUID = 6679657529214343514L;
-	public final MutationType mutationType;
+	public final @NonNull MutationType mutationType;
 	private final byte wildtype;
 	@JsonSerialize(using = ByteArrayStringSerializer.class)
 	public final byte[] mutationSequence;
 	private Boolean templateStrand;
 
-	public Mutation(MutationType mutationType, byte wildtype, boolean negativeStrand,
+	public static final Mutation UNKNOWN_STATUS = new Mutation(MutationType.UNKNOWN,
+		(byte) 0, false, null, Optional.empty());
+
+	public Mutation(@NonNull MutationType mutationType, byte wildtype, boolean negativeStrand,
 			byte[] mutationSequence, @NonNull Optional<Boolean> templateStrand) {
-		this.mutationType = mutationType;
+		this.mutationType = Objects.requireNonNull(mutationType);
 		this.wildtype = wildtype;
 		this.mutationSequence = mutationSequence;
 		this.setTemplateStrand(templateStrand);
@@ -100,7 +104,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + Arrays.hashCode(mutationSequence);
-		result = prime * result + ((mutationType == null) ? 0 : mutationType.hashCode());
+		result = prime * result + mutationType.hashCode();
 		result = prime * result + wildtype;
 		return result;
 	}
@@ -132,7 +136,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	}
 
 	public Mutation(CandidateSequenceI c) {
-		mutationType = c.getMutationType();
+		mutationType = Objects.requireNonNull(c.getMutationType());
 		wildtype = c.getWildtypeSequence();
 		mutationSequence = c.getSequence();
 	}
@@ -161,6 +165,8 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 			case SUBSTITUTION:
 				return "subst " + (longForm ? (new String(new byte[] {wildtype}) + "->") : "") +
 					mutationSequenceString();
+			case UNKNOWN:
+				return "?";
 			default : throw new AssertionFailedException();
 		}
 	}

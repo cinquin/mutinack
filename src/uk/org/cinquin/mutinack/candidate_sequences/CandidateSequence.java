@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -197,7 +198,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@SuppressWarnings("null")
 	public CandidateSequence(String sampleName, @NonNull MutationType mutationType,
 			byte @Nullable[] sequence) {
-		this.mutationType = mutationType;
+		this.mutationType = Objects.requireNonNull(mutationType);
 		this.sequence = sequence;
 		this.sampleName = sampleName;
 		this.owningSubAnalyzer = null;
@@ -212,7 +213,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			int initialLigationSiteD) {
 		this.owningSubAnalyzer = owningSubAnalyzer;
 		this.sampleName = owningSubAnalyzer.analyzer.name;
-		this.mutationType = mutationType;
+		this.mutationType = Objects.requireNonNull(mutationType);
 		this.sequence = sequence;
 		this.location = location;
 		this.initialConcurringRead = initialConcurringRead;

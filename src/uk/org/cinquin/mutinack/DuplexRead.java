@@ -854,7 +854,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 						nonNullEval == bottom;
 
 				duplexDisagreement = new DuplexDisagreement(
-					null,
+					Mutation.UNKNOWN_STATUS,
 					reverseComplementDisag ?
 						nonNullEval.candidate.getMutation().reverseComplement()
 					:
