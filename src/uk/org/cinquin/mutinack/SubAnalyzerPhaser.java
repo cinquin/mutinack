@@ -980,12 +980,12 @@ public class SubAnalyzerPhaser extends Phaser {
 					samRecord.setAttribute("AI", subAnalyzer.getAnalyzer().name);
 					subAnalyzer.queueOutputRead(e, samRecord, useAnyStart);
 				};
-				@SuppressWarnings("null")
 				Consumer<List<ExtendedSAMRecord>> writePair = (List<ExtendedSAMRecord> list) -> {
 					final ExtendedSAMRecord e = list.get(0);
 					final ExtendedSAMRecord mate = e.getMate();
-					SAMRecord samRecord = e.record, mateSamRecord = mate == null ? null : mate.record;
+					SAMRecord samRecord = e.record;
 					if (mate != null) {
+						SAMRecord mateSamRecord = mate.record;
 						if (clipPairOverlap) {
 							try {
 								samRecord = (SAMRecord) samRecord.clone();
