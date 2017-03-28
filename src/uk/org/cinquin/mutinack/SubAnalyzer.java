@@ -361,9 +361,7 @@ public final class SubAnalyzer {
 			duplexKeeper.forEach(dr -> dr.randomizeStrands(random));
 		}
 
-		for (DuplexRead dr: duplexKeeper.getIterable()) {
-			dr.computeGlobalProperties();
-		}
+		duplexKeeper.forEach(DuplexRead::computeGlobalProperties);
 
 		Pair<DuplexRead, DuplexRead> pair;
 		if (param.enableCostlyAssertions &&
@@ -396,14 +394,14 @@ public final class SubAnalyzer {
 				duplexKeeper;
 
 		if (param.nVariableBarcodeMismatchesAllowed == 0) {
-			cleanedUpDuplexes.getIterable().forEach(d -> d.computeConsensus(true,
+			cleanedUpDuplexes.forEach(d -> d.computeConsensus(true,
 				param.variableBarcodeLength));
 		}
 
 		//Group duplexes by alignment start (or equivalent)
 		TIntObjectHashMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
 			(1_000, 0.5f, -999);
-		cleanedUpDuplexes.getIterable().forEach(dr -> {
+		cleanedUpDuplexes.forEach(dr -> {
 			List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.position0,
 				(Supplier<List<DuplexRead>>) ArrayList::new);
 			list.add(dr);
@@ -424,20 +422,16 @@ public final class SubAnalyzer {
 			});
 		}
 
-		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
-			duplexRead.analyzeForStats(param, stats);
-		}
+		cleanedUpDuplexes.forEach(duplexRead -> duplexRead.analyzeForStats(param, stats));
 
-		for (DuplexRead dr: cleanedUpDuplexes.getIterable()) {
-			finalResult.add(dr);
-		}
+		cleanedUpDuplexes.forEach(finalResult::add);
 
 		averageClippingOffset = fromPosition;
 		final int arrayLength = toPosition - fromPosition + 1;
 		averageClipping = new float[arrayLength];
 		int[] duplexNumber = new int[arrayLength];
 
-		for (DuplexRead duplexRead: cleanedUpDuplexes.getIterable()) {
+		cleanedUpDuplexes.forEach(duplexRead -> {
 			int start = duplexRead.getUnclippedAlignmentStart() - fromPosition;
 			int stop = duplexRead.getUnclippedAlignmentEnd() - fromPosition;
 			start = Math.min(Math.max(0, start), toPosition - fromPosition);
@@ -447,7 +441,7 @@ public final class SubAnalyzer {
 				averageClipping[i] += duplexRead.averageNClipped;
 				duplexNumber[i]++;
 			}
-		}
+		});
 
 		for (int i = 0; i < averageClipping.length; i++) {
 			int n = duplexNumber[i];
