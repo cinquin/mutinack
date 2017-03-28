@@ -1604,7 +1604,7 @@ public final class SubAnalyzer {
 						final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 							extendedRec.getLocation().getContigName(), location.position + deletionLength);
 
-						final byte @Nullable[] deletedSequence =
+						final byte @NonNull[] deletedSequence =
 								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
 
 						//Add hidden mutations to all locations covered by deletion
@@ -1653,7 +1653,6 @@ public final class SubAnalyzer {
 						extendedRec.nReferenceDisagreements++;
 
 						if (param.computeRawMismatches) {
-							@SuppressWarnings("null")
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 								new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
 									new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
