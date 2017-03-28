@@ -917,7 +917,8 @@ public final class SubAnalyzer {
 				topAlleleQuality == null ?
 					stats.minTopCandFreqQ2PosTopAlleleFreqOK
 				:
-					stats.minTopCandFreqQ2PosTopAlleleFreqKO);
+					stats.minTopCandFreqQ2PosTopAlleleFreqKO,
+				location);
 		}
 
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
@@ -995,13 +996,15 @@ public final class SubAnalyzer {
 	}//End examineLocation
 
 	private static void registerDuplexMinFracTopCandidate(Parameters param,
-			TCustomHashSet<DuplexRead> duplexReads, Histogram hist) {
+			TCustomHashSet<DuplexRead> duplexReads, Histogram hist, SequenceLocation location) {
 		duplexReads.forEach(dr -> {
 			Assert.isFalse(dr.totalNRecords == -1);
 			if (dr.totalNRecords < 2 || (param.filterOpticalDuplicates && dr.minFracTopCandidate == Float.MAX_VALUE)) {
 				return true;
 			}
-			Assert.isFalse(dr.minFracTopCandidate == Float.MAX_VALUE);
+			Assert.isFalse(dr.minFracTopCandidate == Float.MAX_VALUE, (Supplier<String>) () ->
+				"Problem at position " + location + "with duplex " + dr
+			);
 			hist.insert((int) (dr.minFracTopCandidate * 10));
 			return true;
 		});
