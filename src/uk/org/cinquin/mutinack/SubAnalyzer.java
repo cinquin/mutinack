@@ -358,9 +358,7 @@ public final class SubAnalyzer {
 		//memory now
 
 		if (param.randomizeStrand) {
-			for (DuplexRead dr: duplexKeeper.getIterable()) {
-				dr.randomizeStrands(random);
-			}
+			duplexKeeper.forEach(dr -> dr.randomizeStrands(random));
 		}
 
 		for (DuplexRead dr: duplexKeeper.getIterable()) {

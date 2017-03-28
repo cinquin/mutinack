@@ -21,17 +21,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.IterableAdapter;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 
-public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
+public class TIntObjectListHashMap<V> implements Iterable<V> {
+
+	private final TIntObjectHashMap<List<V>> map = new TIntObjectHashMap<>();
 
 	public @NonNull List<V> getList(int i) {
-		List<V> l = get(i);
+		List<V> l = map.get(i);
 		if (l != null) {
 			return l;
 		} else {
@@ -39,25 +43,40 @@ public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 		}
 	}
 
-	@Override
 	public int size() {
 		SettableInteger i = new SettableInteger(0);
-		this.forEachValue(l -> {
+		map.forEachValue(l -> {
 			i.addAndGet(l.size());
 			return true;
 		});
 		return i.get();
 	}
 
+	public boolean containsValue(V v) {
+		Handle<Boolean> found = new Handle<>(false);
+		map.forEachValue(l -> {
+			if (l.contains(v)) {
+				found.set(true);
+				return false;
+			}
+			return true;
+		});
+		return found.get();
+	}
+
 	public boolean add(int i, V v) {
-		return computeIfAbsent(i, () -> new ArrayList<>(100)).add(v);
+		return map.computeIfAbsent(i, () -> new ArrayList<>(100)).add(v);
 	}
 
 	public @NonNull Iterable<V> getIterable() {
+		return new IterableAdapter<>(this::iterator);
+	}
 
-		return new IterableAdapter<>(() -> new Iterator<V>() {
+	@Override
+	public Iterator<V> iterator() {
+		return new Iterator<V>() {
 			final Iterator<List<V>> listIt =
-					TIntObjectListHashMap.this.valueCollection().iterator();
+					map.valueCollection().iterator();
 
 			Iterator<V> it;
 
@@ -79,7 +98,14 @@ public class TIntObjectListHashMap<V> extends TIntObjectHashMap<List<V>> {
 					it = listIt.next().iterator();
 				}
 			}
+		};
+	}
 
+	@Override
+	public void forEach(Consumer<? super V> consumer) {
+		map.forEachValue(list -> {
+			list.forEach(consumer);
+			return true;
 		});
 	}
 }

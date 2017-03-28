@@ -18,7 +18,9 @@
 package uk.org.cinquin.mutinack;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -35,6 +37,14 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 	@Override
 	public @NonNull Iterable<DuplexRead> getIterable() {
 		return new IterableAdapter<>(iterator());
+	}
+
+	@Override
+	public void forEach(Consumer<? super DuplexRead> consumer) {
+		Iterator<DuplexRead> it = iterator();
+		while (it.hasNext()) {
+			consumer.accept(it.next());
+		}
 	}
 
 	private final @NonNull List<DuplexRead> overlappingDuplexes = new ArrayList<>(10_000);
