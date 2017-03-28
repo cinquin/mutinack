@@ -351,7 +351,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			(localAndGlobalQuality == null ? "" : (' ' + localAndGlobalQuality.getQualities().
 				min(Comparator.comparing(Entry::getValue)).map(Entry::getKey).map(
 					Enum::toString).orElse("") + ' ')) +
-			"->" + maxQuality + topStrandRecords.toString() + ' ' +
+			"->" + maxQuality + "; all records: " + topStrandRecords.toString() + ' ' +
 			bottomStrandRecords.toString();
 	}
 
