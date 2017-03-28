@@ -162,7 +162,6 @@ public class IntervalTree<E extends Comparable<E>, T extends HasInterval<E>> ext
 		@Override
 		public T next() {
 			if (hasNext()) {
-				@SuppressWarnings("null")
 				T x = next;
 				next = getNext();
 				return x;
