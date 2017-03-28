@@ -449,10 +449,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 		DuplexKeeper result = factory.get();
 
 		final DuplexRead[] sorted = new DuplexRead[duplexes.size()];
-		int i = 0;
-		for (DuplexRead d: duplexes.getIterable()) {
-			sorted[i] = d;
-			i++;
+		{
+			SettableInteger index = new SettableInteger(0);
+			duplexes.forEach(d -> sorted[index.getAndIncrement()] = d);
 		}
 		Arrays.parallelSort(sorted, duplexCountQualComparator);
 
