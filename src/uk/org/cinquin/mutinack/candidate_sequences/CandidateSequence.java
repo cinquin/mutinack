@@ -198,6 +198,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@SuppressWarnings("null")
 	public CandidateSequence(String sampleName, @NonNull MutationType mutationType,
 			byte @Nullable[] sequence) {
+		Assert.isFalse(mutationType == MutationType.UNKNOWN);
 		this.mutationType = Objects.requireNonNull(mutationType);
 		this.sequence = sequence;
 		this.sampleName = sampleName;
@@ -213,6 +214,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			int initialLigationSiteD) {
 		this.owningSubAnalyzer = owningSubAnalyzer;
 		this.sampleName = owningSubAnalyzer.analyzer.name;
+		Assert.isFalse(mutationType == MutationType.UNKNOWN);
 		this.mutationType = Objects.requireNonNull(mutationType);
 		this.sequence = sequence;
 		this.location = location;
@@ -540,6 +542,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public @NonNull MutationType getMutationType() {
+		Assert.isFalse(mutationType == MutationType.UNKNOWN);
 		return mutationType;
 	}
 
