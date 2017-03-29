@@ -90,6 +90,10 @@ public final class Parameters implements Serializable, Cloneable {
 			throw new IllegalArgumentException("Invalid verbosity " + verbosity + "; must be >= 0 and < " + d.length);
 		}
 
+		if (inputReads.isEmpty() && startServer == null && startWorker == null && !help && !version) {
+			throw new IllegalArgumentException("No input reads specified");
+		}
+
 		for (String ir: inputReads) {
 			if (ir.endsWith(".bai")) {
 				throw new IllegalArgumentException("Unexpected .bai extension in input read path " + ir);
