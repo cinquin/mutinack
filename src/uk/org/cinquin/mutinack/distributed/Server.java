@@ -293,7 +293,6 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 
 	@Override
 	public void submitWork(String workerID, Job job) throws RemoteException {
-		//System.err.println("Job result " + job.result.output);
 		Job localJobObj = runningJobs.get(job);
 		if (localJobObj == null) {
 			throw new IllegalStateException("Unknown job " + job + " from client " + workerID);
@@ -345,7 +344,6 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		}
 
 		job.timeReturnedToSubmitter = System.nanoTime();
-		//System.err.println("RETURNING " + job.result.output);
 		return job.result;
 	}
 
