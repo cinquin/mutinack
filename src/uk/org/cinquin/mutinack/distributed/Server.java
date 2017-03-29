@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.swing.Timer;
@@ -148,6 +149,8 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 	private static final RMIClientSocketFactory clientSocketFactory =
 		new RMISSLClientSocketFactory();
 
+	private final AtomicInteger nTermsReceived = new AtomicInteger(0);
+
 	public Server(int port, @Nullable String fullPath0, String recordRunsTo,
 			String keysFile, @Nullable String writePIDPath, boolean silent)
 			throws RemoteException {
@@ -212,6 +215,10 @@ public class Server extends UnicastRemoteObject implements RemoteMethods {
 		Runtime.getRuntime().addShutdownHook(shutdownHook);
 
 		Signals.registerSignalProcessor("TERM", s -> {
+			if (nTermsReceived.incrementAndGet() > 0) {
+				dumpRecordedRuns();
+				System.exit(0);
+			}
 			disconnectWaitingWorkers();
 			synchronized(runningJobs) {
 				while(!runningJobs.isEmpty()) {
