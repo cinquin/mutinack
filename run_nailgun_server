@@ -7,7 +7,7 @@ tmp_pipe=${tmp_dir}/pid
 mkfifo -m 600 "${tmp_pipe}"
 port=
 if [ ! -z $1 ]; then port=:"$1"; fi
-(java -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.keyStore=mutinack_public_selfsigned.jks -Djavax.net.ssl.keyStorePassword=passphrase -cp mutinack.jar:nailgun/nailgun-server/target/nailgun-server-0.9.2-SNAPSHOT-jar-with-dependencies.jar:datanucleus-core-5.0.7-SNAPSHOT.jar:datanucleus-rdbms-5.0.6-SNAPSHOT.jar:datanucleus-api-jdo-5.0.6-SNAPSHOT.jar:javax.jdo-3.2.0-m7-SNAPSHOT.jar:javax.persistence-2.2.0-m2-SNAPSHOT.jar:jdo-api-3.1.jar:postgresql-9.4.1212.jar com.martiansoftware.nailgun.NGServer --writePID ${tmp_pipe} 127.0.0.1${port} > run_nailgun_server_out_err 2>&1 || true; (echo FAILED > ${tmp_pipe}) 2> /dev/null) > /dev/null  &
+(java -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.keyStore=mutinack_public_selfsigned.jks -Djavax.net.ssl.keyStorePassword=passphrase -cp mutinack.jar:nailgun/nailgun-server/target/nailgun-server-0.9.2-SNAPSHOT-jar-with-dependencies.jar:datanucleus-core-5.0.7-SNAPSHOT.jar:datanucleus-rdbms-5.0.6-SNAPSHOT.jar:datanucleus-api-jdo-5.0.6-SNAPSHOT.jar:javax.jdo-3.2.0-m7-SNAPSHOT.jar:javax.persistence-2.2.0-m2-SNAPSHOT.jar:jdo-api-3.1.jar:postgresql-9.4.1212.jar com.martiansoftware.nailgun.NGServer --writePID ${tmp_pipe} 127.0.0.1${port} > run_nailgun_server_out_err 2>&1 || true; (echo FAILED > ${tmp_pipe}) 2> /dev/null) > /dev/null 2> /dev/null &
 result=`cat "${tmp_pipe}"`
 if [ "${result}" = "FAILED" ];
 then
