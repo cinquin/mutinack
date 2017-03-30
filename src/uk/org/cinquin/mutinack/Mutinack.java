@@ -473,6 +473,7 @@ public class Mutinack implements Actualizable, Closeable {
 		commander.parse(args);
 
 		param.automaticAdjustments();
+		param.commandLine = Arrays.toString(args);
 		param.validate();
 
 		if (param.timeoutSeconds != 0) {

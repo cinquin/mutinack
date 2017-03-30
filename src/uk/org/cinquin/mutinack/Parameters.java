@@ -66,6 +66,14 @@ public final class Parameters implements Serializable, Cloneable {
 	}
 
 	public void validate() {
+		try {
+			validate1();
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException("Problem while validating command line " + commandLine, e);
+		}
+	}
+
+	public void validate1() {
 		if (parallelizationFactor != 1 &&
 			!contigByContigParallelization.isEmpty()) {
 			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
@@ -200,6 +208,10 @@ public final class Parameters implements Serializable, Cloneable {
 			}
 		}
 	}
+
+	@HideInToString
+	@JsonIgnore
+	public String commandLine;
 
 	@HideInToString
 	@JsonIgnore
