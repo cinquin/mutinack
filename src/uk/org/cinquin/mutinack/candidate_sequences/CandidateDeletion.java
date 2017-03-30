@@ -75,6 +75,8 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 			return false;
 		if (!deletionStart.equals(other.deletionStart))
 			return false;
+		Assert.isTrue(getLocation().equals(other.getLocation()));//At the moment
+		//there is no reason to compare deletions in different contigs
 		Assert.isTrue(Arrays.equals(getSequence(), other.getSequence()), () ->
 			"Two deletions with same span but different sequences: " +
 			new String(getSequence()) + " vs " + new String(other.getSequence()) + "; " + this + "; " + other);
