@@ -100,16 +100,16 @@ public class SubAnalyzerPhaser extends Phaser {
 	private final @NonNull AtomicInteger dn = new AtomicInteger(0);
 
 	public SubAnalyzerPhaser(@NonNull Parameters param,
-								@NonNull AnalysisChunk analysisChunk,
-								boolean outputReads,
-								@NonNull Map<SequenceLocation, Boolean> forceOutputAtLocations,
-								@NonNull Histogram dubiousOrGoodDuplexCovInAllInputs,
-								@NonNull Histogram goodDuplexCovInAllInputs,
-								@NonNull String contigName,
-								int contigIndex,
-								@NonNull List<GenomeFeatureTester> excludeBEDs,
-								@NonNull List<@NonNull BedReader> repetitiveBEDs,
-								int PROCESSING_CHUNK) {
+			@NonNull AnalysisChunk analysisChunk,
+			boolean outputReads,
+			@NonNull Map<SequenceLocation, Boolean> forceOutputAtLocations,
+			@NonNull Histogram dubiousOrGoodDuplexCovInAllInputs,
+			@NonNull Histogram goodDuplexCovInAllInputs,
+			@NonNull String contigName,
+			int contigIndex,
+			@NonNull List<GenomeFeatureTester> excludeBEDs,
+			@NonNull List<@NonNull BedReader> repetitiveBEDs,
+		int PROCESSING_CHUNK) {
 		this.param = param;
 		this.analysisChunk = analysisChunk;
 		this.groupSettings = analysisChunk.groupSettings;
