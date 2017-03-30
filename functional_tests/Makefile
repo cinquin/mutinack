@@ -187,12 +187,25 @@ ref.fa.info:
 %/ref.fa.fai:
 	@ln -f ref.fa.fai $@
 
+export CHRI="-stopAtPosition chrIII:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
+export CHRII="-stopAtPosition chrI:1 -stopAtPosition chrIII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
+export CHRIII="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
+export CHRIV="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIII:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
+export CHRV="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrIII:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
+export CHRX="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrIII:1 -stopAtPosition chrM:1"
+export CHRM="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrIII:1"
+
 #TODO: introduce optional dependency on %/alignment-2/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam
 .PRECIOUS: %.out
 %/run.out: %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam $(FORCE_RERUN) 
 	@echo _____Computing $(BUILD): $@
 #collapseFilteredReads
-	@(cd $* && $(JAVA_LAUNCH) $(COSTLY_ASSERTIONS_OPTION) $(MUTINACK_OPTIONS) $(shell test -e $*/no_jiggle || echo -jiggle) -noStatusMessages -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt))  > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
+	@(cd $* && $(JAVA_LAUNCH) $(COSTLY_ASSERTIONS_OPTION) $(MUTINACK_OPTIONS) $(shell test -e $*/no_jiggle || echo -jiggle) -noStatusMessages -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell cat $*/args.txt | envsubst))  > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
+
+.PRECIOUS: %.out
+%/run.out: %/mutinack.jar %/jacoco.jar %/ref.fa %/ref.fa.info %/ref.fa.fai %/logback.xml %/args.txt %/test_genome_locations.txt %/alignment-1/alignment-1.bam $(FORCE_RERUN)
+	@echo _____Computing $(BUILD): $@
+	@(cd $* && $(JAVA_LAUNCH) $(COSTLY_ASSERTIONS_OPTION) $(MUTINACK_OPTIONS) $(shell test -e $*/no_jiggle || echo -jiggle) -noStatusMessages -runName $(BASEDIR)/"$*" -referenceOutput $(BASEDIR)/$*/expected_output.txt -auxOutputFileBaseName $(BASEDIR)/"$*"/ -workingDirectory $(BASEDIR)/"$*" $(SUBMIT_TO_SERVER) $(OUTPUT_COVERAGE_PROTO) -readContigsFromFile -verbosity 3 -referenceGenome ref.fa $(shell echo $(OUTPUT_ARGS)) -outputJSONTo $(BASEDIR)/"$*"/stats.json -sortOutputAlignmentFile true -logReadIssuesInOutputBam true -forceOutputAtPositionsFile test_genome_locations.txt $(shell env CHRI=$(CHRI) CHRII=$(CHRII) CHRIII=$(CHRIII) CHRIV=$(CHRIV) CHRV=$(CHRV) CHRX=$(CHRX) CHRM=$(CHRM) sh -c 'cat $*/args.txt | envsubst')) > $@ && export res=0 || export res=1; test -e $*/expect_error && export expect_error=0 || export expect_error=1; eval 'test 1 -eq $$(($$res ^ $$expect_error))' || (java -jar mutinack.jar -version > $*/FAILED && $(GIT) add $*/FAILED; false )
 
 AVOID_STUPID_RULE_SIDE_EFFECT = $(MAKE)
 
