@@ -31,8 +31,10 @@ DEBUG_ATTACH =
 #Uncomment the line below to remotely debug
 #DEBUG_ATTACH = $(shell echo -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`)
 
-ifndef COSTLY_ASSERTIONS_OPTION
+ifndef COSTLY_ASSERTIONS
 export COSTLY_ASSERTIONS_OPTION = -enableCostlyAssertions true
+else
+export COSTLY_ASSERTIONS_OPTION = -enableCostlyAssertions $(COSTLY_ASSERTIONS)
 endif
 
 #####Progress reporter adapted from http://stackoverflow.com/questions/451413/make-makefile-progress-indication

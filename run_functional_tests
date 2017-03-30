@@ -70,13 +70,13 @@ ${MAKE} clean
 
 for target in all_failed all
 do
-	for assertions in "-enableCostlyAssertions true" "-enableCostlyAssertions false"
+	for assertions in "true" "false"
 	do
 		if [ "$target" = "all" ]
 		then
 			${MAKE} clean_results
 		fi
-		export COSTLY_ASSERTIONS_OPTION="$assertions"
+		export COSTLY_ASSERTIONS="$assertions"
 		counter=0
 		while true
 		do
