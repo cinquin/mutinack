@@ -1,0 +1,1 @@
+${CHRIII} -startAtPosition chrIII:1,419,400 -stopAtPosition chrIII:1,419,782 -inputReads alignment-1/alignment-1.bam -inputReads alignment-2/alignment-2.bam -sampleName alignment1 -sampleName alignment2
