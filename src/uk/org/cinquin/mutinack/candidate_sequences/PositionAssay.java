@@ -1,5 +1,7 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
+import uk.org.cinquin.mutinack.qualities.Quality;
+
 /**
  * See also {@link uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay}
  * @author olivier
@@ -8,6 +10,8 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 public enum PositionAssay implements AssayInfo {
 
 	MEDIAN_PHRED_AT_POS,
+
+	MEDIAN_CANDIDATE_PHRED,
 
 	FRACTION_WRONG_PAIRS_AT_POS,
 

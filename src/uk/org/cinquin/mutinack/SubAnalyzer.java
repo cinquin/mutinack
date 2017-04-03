@@ -28,6 +28,7 @@ import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.FRACTION
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_AVERAGE_CLIPPING_OF_DUPLEX_AT_POS;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_DPLX_Q_IGNORING_DISAG;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MAX_Q_FOR_ALL_DUPLEXES;
+import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MEDIAN_CANDIDATE_PHRED;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MEDIAN_PHRED_AT_POS;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.NO_DUPLEXES;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
@@ -819,7 +820,7 @@ public final class SubAnalyzer {
 		int nPairsAtPosition = 0;
 
 		for (CandidateSequenceI candidate: candidateSet) {
-			candidate.addPhredQualitiesToList(allPhredQualitiesAtPosition);
+			candidate.addPhredScoresToList(allPhredQualitiesAtPosition);
 			nPairsAtPosition += candidate.getNonMutableConcurringReads().size();
 			candidate.setnWrongPairs((int) candidate.getNonMutableConcurringReads().keySet().stream().
 				filter(ExtendedSAMRecord::formsWrongPair).count());
@@ -830,7 +831,7 @@ public final class SubAnalyzer {
 		allPhredQualitiesAtPosition.sort();
 		final byte positionMedianPhred = nPhredQualities == 0 ? 127 :
 			allPhredQualitiesAtPosition.get(nPhredQualities / 2);
-		if (positionMedianPhred < param.minMedianPhredQualityAtPosition) {
+		if (positionMedianPhred < param.minMedianPhredScoreAtPosition) {
 			positionQualities.addUnique(MEDIAN_PHRED_AT_POS, DUBIOUS);
 			stats.nMedianPhredAtPositionTooLow.increment(location);
 		}
@@ -1041,6 +1042,10 @@ public final class SubAnalyzer {
 			final @NonNull DetailedQualities<PositionAssay> positionQualities) {
 
 		candidate.setMedianPhredAtPosition(positionMedianPhred);
+		final byte candidateMedianPhred = candidate.getMedianPhredScore();//Will be -1 for insertions and deletions
+		if (candidateMedianPhred != -1 && candidateMedianPhred < param.minCandidateMedianPhredScore) {
+			candidate.getQuality().addUnique(MEDIAN_CANDIDATE_PHRED, DUBIOUS);
+		}
 		//TODO Should report min rather than average collision probability?
 		candidate.setProbCollision((float) result.probAtLeastOneCollision);
 		candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
@@ -1791,7 +1796,7 @@ public final class SubAnalyzer {
 						candidate2.setWildtypeSequence(wildType);
 						readLocalCandidates.add(candidate2, locationPH);
 					}
-					candidate.addBasePhredQualityScore(baseQualities[readPosition]);
+					candidate.addBasePhredScore(baseQualities[readPosition]);
 					extendedRec.nReferenceDisagreements++;
 					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
 							ExtendedSAMRecord.PHRED_NO_ENTRY) {
@@ -1868,7 +1873,7 @@ public final class SubAnalyzer {
 					candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
 					readLocalCandidates.add(candidate2, locationPH);
 				}
-				candidate.addBasePhredQualityScore(baseQualities[readPosition]);
+				candidate.addBasePhredScore(baseQualities[readPosition]);
 				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
 						ExtendedSAMRecord.PHRED_NO_ENTRY) {
 					logger.warn("Recording Phred score multiple times at same position " + location);

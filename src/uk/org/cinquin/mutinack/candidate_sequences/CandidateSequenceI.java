@@ -23,7 +23,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gnu.trove.TByteCollection;
-import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import uk.org.cinquin.mutinack.DuplexRead;
@@ -80,8 +79,7 @@ public interface CandidateSequenceI extends Serializable {
 	MutationType getMutationType();
 	String getKind();
 	String getChange();
-	@NonNull TByteArrayList getPhredQualityScores();
-	void addPhredQualitiesToList(@NonNull TByteCollection ql);
+	void addPhredScoresToList(@NonNull TByteCollection ql);
 	void mergeWith(@NonNull CandidateSequenceI c);
 	int getMaxDistanceToLigSite();
 	int getMinDistanceToLigSite();
@@ -128,6 +126,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setRefPositionOfMateLigationSite(int refPositionOfMateLigationSite);
 	void setInsertSizeNoBarcodeAccounting(boolean b);
 	void setHidden(boolean b);
-	void addBasePhredQualityScore(byte b);
+	void addBasePhredScore(byte b);
+	byte getMedianPhredScore();
 
 }

@@ -100,9 +100,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int insertSizeAtPos10thP = -1;
 	private int insertSizeAtPos90thP = -1;
 	private int nWrongPairs;
-	private byte singleBasePhredQuality = -1;
+	private byte singleBasePhredScore = -1;
 	@Persistent @JsonSerialize(using = TByteArrayListSerializer.class)
-		private TByteArrayList phredQualityScores;
+		private TByteArrayList phredScores;
 	@Persistent private Serializable preexistingDetection;
 	private byte medianPhredAtPosition;
 	private int minDistanceToLigSite = Integer.MAX_VALUE;
@@ -552,61 +552,65 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public void addBasePhredQualityScore(byte q) {
+	public void addBasePhredScore(byte q) {
 		Assert.isFalse(q < 0, "Negative Phred quality score: %s"/*, q*/);
-		if (phredQualityScores == null && singleBasePhredQuality == -1) {
-			singleBasePhredQuality = q;
+		if (phredScores == null && singleBasePhredScore == -1) {
+			singleBasePhredScore = q;
 		} else {
 			allocateBasePhredQualityArray();
-			phredQualityScores.add(q);
+			phredScores.add(q);
 		}
 	}
 
 	private void allocateBasePhredQualityArray() {
-		if (phredQualityScores != null) {
+		if (phredScores != null) {
 			return;
 		}
-		Assert.isFalse(singleBasePhredQuality == -2);
-		phredQualityScores = new TByteArrayList(1000);
-		if (singleBasePhredQuality != -1) {
-			phredQualityScores.add(singleBasePhredQuality);
-			singleBasePhredQuality = -2;
+		Assert.isFalse(singleBasePhredScore == -2);
+		phredScores = new TByteArrayList(1_000);
+		if (singleBasePhredScore != -1) {
+			phredScores.add(singleBasePhredScore);
 		}
+		singleBasePhredScore = -2;
 	}
 
 	@SuppressWarnings("null")
-	@Override
-	public @NonNull TByteArrayList getPhredQualityScores() {
+	private @NonNull TByteArrayList getPhredScores() {
 		allocateBasePhredQualityArray();
-		return phredQualityScores;
+		return phredScores;
 	}
 
-	public byte getMedianPhredQuality() {
-		if (phredQualityScores == null) {
-			if (singleBasePhredQuality == -2) {
+	@Override
+	public byte getMedianPhredScore() {
+		if (phredScores == null) {
+			if (singleBasePhredScore == -2) {
 				throw new AssertionFailedException();
-			} else if (singleBasePhredQuality == -1) {
-				throw new IllegalStateException("No base to compute median from");
+			} else if (singleBasePhredScore == -1) {
+				return -1;
 			} else {
-				return singleBasePhredQuality;
+				return singleBasePhredScore;
 			}
 		}
-		phredQualityScores.sort();
-		return phredQualityScores.get(phredQualityScores.size() / 2);
+		final int nScores = phredScores.size();
+		if (nScores == 0) {
+			return -1;
+		}
+		phredScores.sort();
+		return phredScores.get(nScores / 2);
 	}
 
 	@Override
-	public void addPhredQualitiesToList(@NonNull TByteCollection ql) {
-		if (phredQualityScores == null) {
-			if (singleBasePhredQuality == -1) {
+	public void addPhredScoresToList(@NonNull TByteCollection ql) {
+		if (phredScores == null) {
+			if (singleBasePhredScore == -1) {
 				return;
-			} else if (singleBasePhredQuality < 0) {
+			} else if (singleBasePhredScore < 0) {
 				throw new AssertionFailedException();
 			} else {
-				ql.add(singleBasePhredQuality);
+				ql.add(singleBasePhredScore);
 			}
 		} else {
-			ql.addAll(phredQualityScores);
+			ql.addAll(phredScores);
 		}
 	}
 
@@ -639,7 +643,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s"/*,
 				this, candidate, candidate.getNonMutableConcurringReads()*/);
 		getMutableConcurringReads().putAll(candidate.getNonMutableConcurringReads());
-		candidate.addPhredQualitiesToList(getPhredQualityScores());
+		candidate.addPhredScoresToList(getPhredScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
 		acceptLigSiteDistance(candidate.getMaxDistanceToLigSite());
 		incrementNegativeStrandCount(candidate.getNegativeStrandCount());

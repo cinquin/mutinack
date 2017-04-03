@@ -467,11 +467,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-maxTopAlleleFreqQ2", description = "Only positions where the frequency of the top allele is at least this low can contribute Q2 candidates", required = false)
 	public float maxTopAlleleFreqQ2 = 1;
 
-	@Parameter(names = "-minBasePhredScoreQ1", description = "Bases whose Phred quality score is below this threshold" +
+	@Parameter(names = "-minBasePhredScoreQ1", description = "Bases whose Phred score is below this threshold" +
 		" are discarded (keeping this relatively low helps identify problematic reads)", required = false)
 	public int minBasePhredScoreQ1 = 20;
 
-	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred quality score is below this threshold are not used to propose Q2 mutation candidates",
+	@Parameter(names = "-minBasePhredScoreQ2", description = "Bases whose Phred score is below this threshold are not used to propose Q2 mutation candidates",
 		required = false)
 	@OnlyUsedAfterDuplexGrouping
 	@ExplorationIncompatibleWithRawMismatches
@@ -488,12 +488,16 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-ignoreLastNBases", description = "Potential mutations that occur within this many bases of read end are ignored", required = false)
 	public int ignoreLastNBases = 4;
 
-	@Parameter(names = "-minReadMedianPhredScore", description = "Reads whose median Phred quality score is below this threshold are discarded", required = false)
+	@Parameter(names = "-minReadMedianPhredScore", description = "Reads whose median Phred score is below this threshold are discarded", required = false)
 	public int minReadMedianPhredScore = 0;
 
-	@Parameter(names = "-minMedianPhredQualityAtPosition", description = "Positions whose median Phred quality score is below this threshold are not used to propose Q2 mutation candidates", required = false)
+	@Parameter(names = {"-minMedianPhredScoreAtPosition", "-minMedianPhredQualityAtPosition"}, description = "Positions whose median Phred score is below this threshold are not used to propose Q2 mutation candidates", required = false)
 	@OnlyUsedAfterDuplexGrouping
-	public int minMedianPhredQualityAtPosition = 0;
+	public int minMedianPhredScoreAtPosition = 0;
+
+	@Parameter(names = "-minCandidateMedianPhredScore", description = "Mutation candidates for which the median Phred score of supporting reads at the corresponding position is below this threshold are capped at Q1", required = false)
+	@OnlyUsedAfterDuplexGrouping
+	public int minCandidateMedianPhredScore = 20;
 
 	@Parameter(names = "-maxFractionWrongPairsAtPosition", description = "Positions are not used to propose Q2 mutation candidates if the fraction of reads covering the position that have an unmapped mate or a mate that forms a wrong pair orientation (RF, Tandem) is above this threshold", required = false)
 	public float maxFractionWrongPairsAtPosition = 1.0f;
@@ -1116,7 +1120,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((minMappingQIntersect == null) ? 0 : minMappingQIntersect.hashCode());
 		result = prime * result + minMappingQualityQ1;
 		result = prime * result + minMappingQualityQ2;
-		result = prime * result + minMedianPhredQualityAtPosition;
+		result = prime * result + minMedianPhredScoreAtPosition;
 		result = prime * result + minNumberDuplexesSisterArm;
 		result = prime * result + minQ1Duplexes;
 		result = prime * result + minQ1Q2DuplexesToCallMutation;
@@ -1352,7 +1356,7 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (minMappingQualityQ2 != other.minMappingQualityQ2)
 			return false;
-		if (minMedianPhredQualityAtPosition != other.minMedianPhredQualityAtPosition)
+		if (minMedianPhredScoreAtPosition != other.minMedianPhredScoreAtPosition)
 			return false;
 		if (minNumberDuplexesSisterArm != other.minNumberDuplexesSisterArm)
 			return false;
