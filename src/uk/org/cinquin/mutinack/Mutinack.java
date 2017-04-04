@@ -726,13 +726,16 @@ public class Mutinack implements Actualizable, Closeable {
 
 		groupSettings.forceOutputAtLocations.clear();
 
-		Util.parseListLocations(param.forceOutputAtPositions,
+		Util.parseListStartStopLocations(param.forceOutputAtPositions,
 			groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
 			if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 				printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 					" in list of forced output positions"));
 			}
 		});
+
+		param.tracePositions.stream().map(s -> SequenceLocation.parse(s, groupSettings.indexContigNameReverseMap)).
+			forEach(param.parsedTracePositions::add);
 
 		for (String forceOutputFilePath: param.forceOutputAtPositionsFile) {
 			try(Stream<String> lines = Files.lines(Paths.get(forceOutputFilePath))) {

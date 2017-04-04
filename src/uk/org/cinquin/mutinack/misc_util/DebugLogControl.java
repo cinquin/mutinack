@@ -19,6 +19,8 @@ package uk.org.cinquin.mutinack.misc_util;
 
 import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
+import uk.org.cinquin.mutinack.Parameters;
+import uk.org.cinquin.mutinack.SequenceLocation;
 
 public class DebugLogControl {
 
@@ -33,8 +35,9 @@ public class DebugLogControl {
 	 */
 	public static final boolean ENABLE_TRACE = true;
 
-	public static boolean shouldLog(Level level, Logger logger) {
-		return logger.isEnabled(level);
+	public static boolean shouldLog(Level level, Logger logger, Parameters param, SequenceLocation location) {
+		return logger.isEnabled(level) ||
+			(!param.parsedTracePositions.isEmpty() && param.parsedTracePositions.contains(location));
 	}
 
 }

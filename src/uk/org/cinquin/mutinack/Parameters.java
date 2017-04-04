@@ -381,6 +381,12 @@ public final class Parameters implements Serializable, Cloneable {
 	@NoDuplicates
 	public List<String> traceFields = new ArrayList<>();
 
+	@Parameter(names = "-tracePositions", description = "Log details of mutations read at specified positions", required = false,
+		converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
+	@NoDuplicates
+	public List<@NonNull String> tracePositions = new ArrayList<>();
+	public final List<SequenceLocation> parsedTracePositions = new ArrayList<>();
+
 	@Parameter(names = "-contigStatsBinLength", description = "Length of bin to use for statistics that" +
 		" are broken down more finely than contig by contig", required = false)
 	public int contigStatsBinLength = 2_000_000;

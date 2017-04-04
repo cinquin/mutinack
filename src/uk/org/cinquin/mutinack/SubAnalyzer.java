@@ -1481,15 +1481,15 @@ public final class SubAnalyzer {
 				readPosition > rec.getReadLength() - param.ignoreLastNBases) && notRnaSeq;
 
 			if (tooLate) {
-				if (DebugLogControl.shouldLog(TRACE, logger)) {
-					logger.trace("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + ' ' + (rec.getReadLength() - 1) + ' ' + extendedRec.getFullName());
+				if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+					logger.info("Ignoring indel too close to end " + readPosition + (readOnNegativeStrand ? " neg strand " : " pos strand ") + readPosition + ' ' + (rec.getReadLength() - 1) + ' ' + extendedRec.getFullName());
 				}
 				stats.nCandidateIndelAfterLastNBases.increment(location);
 			} else {
 				if (insertion) {
 					stats.nCandidateInsertions.increment(location);
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Insertion at position " + readPosition + " for read " + rec.getReadName() +
+					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+						logger.info("Insertion at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
 							"; insert size: " + insertSize + ')');
 					}
@@ -1558,13 +1558,13 @@ public final class SubAnalyzer {
 							}
 						}
 
-						if (DebugLogControl.shouldLog(TRACE, logger)) {
-							logger.trace("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
+						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+							logger.info("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
 						}
 						readLocalCandidates.add(candidate, location);
 						forceCandidateInsertion = true;
-						if (DebugLogControl.shouldLog(TRACE, logger)) {
-							logger.trace("Added candidate at " + location + "; readLocalCandidates now " + readLocalCandidates.build());
+						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+							logger.info("Added candidate at " + location + "; readLocalCandidates now " + readLocalCandidates.build());
 						}
 						extendedRec.nReferenceDisagreements++;
 					}
@@ -1597,8 +1597,8 @@ public final class SubAnalyzer {
 						distance = Math.min(distance0, distance1) + 1;
 
 						stats.nCandidateDeletions.increment(location);
-						if (DebugLogControl.shouldLog(TRACE, logger)) {
-							logger.trace("Deletion at position " + readPosition + " for read " + rec.getReadName() +
+						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+							logger.info("Deletion at position " + readPosition + " for read " + rec.getReadName() +
 								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
 								"; insert size: " + insertSize + ')');
 						}
@@ -1723,20 +1723,20 @@ public final class SubAnalyzer {
 							stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
 						}
 					}
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Ignoring subst too close to barcode for read " + rec.getReadName());
+					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+						logger.info("Ignoring subst too close to barcode for read " + rec.getReadName());
 					}
 					insertCandidateAtRegularPosition = false;
 				} else if (tooLate && insertCandidateAtRegularPosition) {
 					stats.nCandidateSubstitutionsAfterLastNBases.increment(location);
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Ignoring subst too close to read end for read " + rec.getReadName());
+					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+						logger.info("Ignoring subst too close to read end for read " + rec.getReadName());
 					}
 					insertCandidateAtRegularPosition = false;
 				}
 				if (goodToInsert || forceCandidateInsertion) {
-					if (DebugLogControl.shouldLog(TRACE, logger)) {
-						logger.trace("Substitution at position " + readPosition + " for read " + rec.getReadName() +
+					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+						logger.info("Substitution at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
 							"; insert size: " + insertSize + ')');
 					}

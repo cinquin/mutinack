@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package uk.org.cinquin.mutinack;
+import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
 import static java.util.Objects.requireNonNull;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.AVERAGE_N_CLIPPED;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.BOTTOM_STRAND_MAP_Q2;
@@ -92,7 +93,6 @@ import uk.org.cinquin.mutinack.statistics.Histogram;
  */
 public final class DuplexRead implements HasInterval<Integer> {
 
-	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(DuplexRead.class);
 
 	private final MutinackGroup groupSettings;
@@ -1002,6 +1002,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 				ExtendedSAMRecord r = bottomStrandRecords.get(i);
 				if (candidate.removeConcurringRead(r) != noEntryValue) {
 					nRemoved++;
+					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+						logger.info("Removed support for " + candidate + " by read " + r);
+					}
 				}
 				Assert.isFalse(reads.containsKey(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
@@ -1009,6 +1012,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 			for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
 				ExtendedSAMRecord r = topStrandRecords.get(i);
 				if (candidate.removeConcurringRead(r) != noEntryValue) {
+					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+						logger.info("Removed support for " + candidate + " by read " + r);
+					}
 					nRemoved++;
 				}
 				Assert.isFalse(reads.containsKey(r));

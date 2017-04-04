@@ -109,7 +109,7 @@ public class Util {
 		}
 	}
 
-	public static @NonNull List<@NonNull SequenceLocation> parseListLocations(List<String> l,
+	public static @NonNull List<@NonNull SequenceLocation> parseListStartStopLocations(List<String> l,
 			Map<String, Integer> indexContigNameReverseMap) {
 		return l.stream().flatMap
 			(s -> {
@@ -120,11 +120,9 @@ public class Util {
 				}
 				final SequenceLocation start, stop;
 				try {
-					start = SequenceLocation.parse(startStop[0],
-					indexContigNameReverseMap);
+					start = SequenceLocation.parse(startStop[0], indexContigNameReverseMap);
 					stop = startStop.length == 1 ? start :
-					SequenceLocation.parse(startStop[1],
-						indexContigNameReverseMap);
+						SequenceLocation.parse(startStop[1], indexContigNameReverseMap);
 				} catch (RuntimeException e) {
 					throw new ParseRTException("Error parsing start/stop positions in " +
 						s, e);

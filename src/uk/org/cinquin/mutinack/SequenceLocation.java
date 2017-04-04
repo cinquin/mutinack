@@ -288,7 +288,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 		int position;
 		try {
-			position = Integer.parseInt(split[1]);
+			position = Integer.parseInt(split[1]) - 1;
 		} catch (Exception e) {
 			throw new ParseRTException("Could not parse number in location " + location, e);
 		}
