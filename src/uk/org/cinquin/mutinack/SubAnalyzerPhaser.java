@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,6 +58,7 @@ import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
+import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -414,6 +416,9 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 	}
 
+	private final static Set<PositionAssay> SISTER_SAMPLE_ASSAY_SET = Collections.singleton(
+		PositionAssay.PRESENT_IN_SISTER_SAMPLE);
+
 	private static void processAndReportCandidates(
 			final @NonNull Parameters param,
 			final @NonNull Collection<@NonNull LocationExaminationResults> locationExamResults,
@@ -636,6 +641,19 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 			}//End loop over subAnalyzers
 		}//End loop over mutation candidates
+
+		final boolean moreThan1Q2IgnoringSisterSamples =
+			candidateSequences.
+			count(c -> c.getMutationType() != MutationType.WILDTYPE &&
+				c.getQuality().getValueIgnoring(SISTER_SAMPLE_ASSAY_SET).atLeast(GOOD)) > 1;
+		//TODO Should do multiple passes over candidate set, and add MULTIPLE_Q2_AT_POS before
+		//updating coverage statistics
+		if (moreThan1Q2IgnoringSisterSamples) {
+			csla.moreThan1Q2MutantAcrossSamples = true;
+			candidateSequences.forEach(c ->
+				c.getQuality().addUnique(PositionAssay.MULTIPLE_Q2_AT_POS, Quality.DUBIOUS));
+		}
+
 	}
 
 	private static void outputCandidate(

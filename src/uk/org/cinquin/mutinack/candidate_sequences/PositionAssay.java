@@ -52,7 +52,13 @@ public enum PositionAssay implements AssayInfo {
 
 	MIN_DUPLEXES_SISTER_SAMPLE,
 
-	PRESENT_IN_SISTER_SAMPLE;
+	PRESENT_IN_SISTER_SAMPLE,
+
+	/**
+	 * Multiple candidates at position that would reach Q2 (ignoring whether they
+	 * are found multiple times across sister samples)
+	 */
+	MULTIPLE_Q2_AT_POS;
 
 	public final static boolean COMPUTE_MAX_DPLX_Q_IGNORING_DISAG = false;
 
