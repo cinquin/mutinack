@@ -19,11 +19,12 @@ package uk.org.cinquin.mutinack.output;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -39,13 +40,13 @@ public final class LocationExaminationResults implements Serializable {
 	private static final long serialVersionUID = -2966237959317593137L;
 
 	@JsonIgnore //Already listed in LocationAnalysis
-	public transient Collection<CandidateSequenceI> analyzedCandidateSequences;
+	public transient ImmutableSet<CandidateSequenceI> analyzedCandidateSequences;
 	public int nGoodOrDubiousDuplexes = 0;
 	public int nGoodDuplexesIgnoringDisag = 0;
 	public int nGoodDuplexes = 0;
 	public int strandCoverageImbalance;
 	public int nMissingStrands;
-	public List<@NonNull Integer> alleleFrequencies;
+	public MutableIntList alleleFrequencies;
 	public final transient @NonNull
 		MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
 		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable

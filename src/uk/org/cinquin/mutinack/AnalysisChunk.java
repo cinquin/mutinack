@@ -16,12 +16,15 @@
  */
 package uk.org.cinquin.mutinack;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Phaser;
 
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.list.ParallelListIterable;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+
+import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 
 public class AnalysisChunk {
 	int contig;
@@ -31,7 +34,9 @@ public class AnalysisChunk {
 	int pauseAtPosition;
 	int lastProcessedPosition;
 	@Nullable Phaser phaser;
-	final List<@NonNull SubAnalyzer> subAnalyzers = new ArrayList<>();
+	final MutableList<@NonNull SubAnalyzer> subAnalyzers = Lists.mutable.empty();
+	final ParallelListIterable<@NonNull SubAnalyzer> subAnalyzersParallel =
+		subAnalyzers.asParallel(StaticStuffToAvoidMutating.getExecutorService(), 1);
 	public @NonNull final MutinackGroup groupSettings;
 	public final int nParameterSets;
 

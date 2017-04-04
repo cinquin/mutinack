@@ -56,6 +56,9 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -551,7 +554,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public void examineAtLoc(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull THashSet<@NonNull CandidateSequenceI> candidateSet,
+			@NonNull ImmutableSet<@NonNull CandidateSequenceI> candidateSet,
 			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
@@ -576,7 +579,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@SuppressWarnings({"ReferenceEquality"})
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull THashSet<@NonNull CandidateSequenceI> candidateSet,
+			@NonNull ImmutableSet<@NonNull CandidateSequenceI> candidateSet,
 			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
@@ -983,12 +986,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 		//Now remove support given to non-consensus candidate mutations by this duplex
 		final boolean atrocious = dq.getNonNullValue().atMost(ATROCIOUS);
 		if (!param.filterOpticalDuplicates || top != null || bottom != null)
-		candidateSet.forEach(candidate -> {
-			Assert.isFalse(top == null && bottom == null);
+		candidateSet.each(candidate -> {
+			//Assert.isFalse(top == null && bottom == null);
 			if (!atrocious &&
 					(bottom == null || candidate.equals(bottom.candidate)) &&
 					(top == null || candidate.equals(top.candidate))) {
-				return true;
+				return;
 			}
 
 			final @NonNull TObjectIntMap<ExtendedSAMRecord> reads =
@@ -1036,7 +1039,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 					candidate.getQuality().add(PositionAssay.DISAG_THAT_MISSED_Q2, GOOD);
 				}
 			}
-			return true;
+			return;
 		});
 
 		if (dq.getValueIgnoring(ignorePhred).atLeast(GOOD)) {
@@ -1085,7 +1088,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		stats.duplexTotalRecords.insert(totalNRecords);
 
 		totalNRecords = topStrandRecords.size() + bottomStrandRecords.size();
-		List<ExtendedSAMRecord> allDuplexRecords = new ArrayList<>(totalNRecords);
+		MutableList<ExtendedSAMRecord> allDuplexRecords = new FastList<>(totalNRecords);
 		allDuplexRecords.addAll(topStrandRecords);
 		allDuplexRecords.addAll(bottomStrandRecords);
 
@@ -1094,12 +1097,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 			markDuplicates(param, stats, allDuplexRecords);
 		}
 
-		final boolean alreadyVisitedForStats = allDuplexRecords.stream().anyMatch(
+		final boolean alreadyVisitedForStats = allDuplexRecords.anySatisfy(
 				r -> r.duplexAlreadyVisitedForStats);
 
 		if (!alreadyVisitedForStats) {
-			allDuplexRecords.forEach(r -> r.duplexAlreadyVisitedForStats = true);
-			stats.duplexinsertSize.insert(Math.abs(allDuplexRecords.iterator().next().getInsertSize()));
+			allDuplexRecords.each(r -> r.duplexAlreadyVisitedForStats = true);
+			stats.duplexinsertSize.insert(Math.abs(allDuplexRecords.get(0).getInsertSize()));
 		}
 
 		int i = 0;
@@ -1138,7 +1141,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 
 
-		final int inferredSize = Math.abs(allDuplexRecords.iterator().next().getInsertSize());
+		final int inferredSize = Math.abs(allDuplexRecords.get(0).getInsertSize());
 		if (inferredSize < 130) {
 			stats.duplexInsert100_130AverageNClipped.insert(averageNClipped);
 		} else if (inferredSize < 180) {
@@ -1147,9 +1150,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	}
 
-	public void markDuplicates(Parameters param, AnalysisStats stats, List<ExtendedSAMRecord> reads) {
+	public void markDuplicates(Parameters param, AnalysisStats stats, MutableList<ExtendedSAMRecord> reads) {
 		reads.sort(Comparator.comparing(ExtendedSAMRecord::getxLoc));
-		reads.forEach(r -> {
+		reads.each(r -> {
 			r.visitedForOptDups = false;
 			r.opticalDuplicate = false;
 			r.hasOpticalDuplicates = false;

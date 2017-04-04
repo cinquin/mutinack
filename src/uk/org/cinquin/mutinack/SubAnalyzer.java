@@ -58,8 +58,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -114,7 +118,7 @@ public final class SubAnalyzer {
 			new THashMap<>(1_000);
 	int truncateProcessingAt = Integer.MAX_VALUE;
 	int startProcessingAt = 0;
-	List<@NonNull DuplexRead> analyzedDuplexes;
+	MutableList<@NonNull DuplexRead> analyzedDuplexes;
 	float[] averageClipping;
 	int averageClippingOffset = Integer.MAX_VALUE;
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
@@ -239,7 +243,7 @@ public final class SubAnalyzer {
 			}
 			final List<@NonNull DuplexRead> resultDuplexes = new ArrayList<>(3_000);
 			loadAll(fromPosition, toPosition, resultDuplexes);
-			analyzedDuplexes = resultDuplexes;
+			analyzedDuplexes = Lists.mutable.withAll(resultDuplexes);
 		} finally {
 			if (NONTRIVIAL_ASSERTIONS) {
 				threadCount.decrementAndGet();
@@ -689,14 +693,14 @@ public final class SubAnalyzer {
 		final THashSet<CandidateSequenceI> candidateSet0 = candidateSequences.get(location);
 		if (candidateSet0 == null) {
 			stats.nPosUncovered.increment(location);
-			result.analyzedCandidateSequences = Collections.emptyList();
+			result.analyzedCandidateSequences = Sets.immutable.empty();
 			return result;
 		}
-		final THashSet<CandidateSequenceI> candidateSet =
+		final ImmutableSet<CandidateSequenceI> candidateSet =
 //			DebugLogControl.COSTLY_ASSERTIONS ?
 //				Collections.unmodifiableSet(candidateSet0)
 //			:
-				candidateSet0;
+				Sets.immutable.ofAll(candidateSet0);
 
 		//Retrieve relevant duplex reads
 		//It is necessary not to duplicate the duplex reads, hence the use of a set
@@ -707,7 +711,7 @@ public final class SubAnalyzer {
 		final TCustomHashSet<DuplexRead> duplexReads =
 			new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 
-		for (CandidateSequenceI candidate: candidateSet) {
+		candidateSet.forEach(candidate -> {
 			candidate.getQuality().reset();
 			candidate.getDuplexes().clear();//Should have no effect
 			candidate.restoreConcurringReads();
@@ -723,7 +727,7 @@ public final class SubAnalyzer {
 				return true;
 			});
 			duplexReads.addAll(candidateDuplexReads);
-		}
+		});
 
 		//Allocate here to avoid repeated allocation in DuplexRead::examineAtLoc
 		final CandidateCounter topCounter = new CandidateCounter(candidateSet, location);
@@ -810,22 +814,20 @@ public final class SubAnalyzer {
 			}));
 		}
 
-		byte wildtypeBase = 'X';
-
-		final int totalReadsAtPosition = candidateSet.stream().
-			mapToInt(c -> c.getNonMutableConcurringReads().size()).sum();
+		final int totalReadsAtPosition = (int) candidateSet.sumOfInt(
+			c -> c.getNonMutableConcurringReads().size());
 
 		final TByteArrayList allPhredQualitiesAtPosition = new TByteArrayList(500);
-		int nWrongPairsAtPosition = 0;
-		int nPairsAtPosition = 0;
+		final SettableInteger nWrongPairsAtPosition = new SettableInteger(0);
+		final SettableInteger nPairsAtPosition = new SettableInteger(0);
 
-		for (CandidateSequenceI candidate: candidateSet) {
+		candidateSet.forEach(candidate -> {
 			candidate.addPhredScoresToList(allPhredQualitiesAtPosition);
-			nPairsAtPosition += candidate.getNonMutableConcurringReads().size();
+			nPairsAtPosition.addAndGet(candidate.getNonMutableConcurringReads().size());
 			candidate.setnWrongPairs((int) candidate.getNonMutableConcurringReads().keySet().stream().
 				filter(ExtendedSAMRecord::formsWrongPair).count());
-			nWrongPairsAtPosition += candidate.getnWrongPairs();
-		}
+			nWrongPairsAtPosition.addAndGet(candidate.getnWrongPairs());
+		});
 
 		final int nPhredQualities = allPhredQualitiesAtPosition.size();
 		allPhredQualitiesAtPosition.sort();
@@ -837,7 +839,7 @@ public final class SubAnalyzer {
 		}
 		stats.medianPositionPhredQuality.insert(positionMedianPhred);
 
-		if (nWrongPairsAtPosition / ((float) nPairsAtPosition) > param.maxFractionWrongPairsAtPosition) {
+		if (nWrongPairsAtPosition.get() / ((float) nPairsAtPosition.get()) > param.maxFractionWrongPairsAtPosition) {
 			positionQualities.addUnique(FRACTION_WRONG_PAIRS_AT_POS, DUBIOUS);
 			stats.nFractionWrongPairsAtPositionTooHigh.increment(location);
 		}
@@ -846,13 +848,15 @@ public final class SubAnalyzer {
 		int totalGoodDuplexes, totalGoodOrDubiousDuplexes,
 			totalGoodDuplexesIgnoringDisag, totalAllDuplexes;
 
-		for (CandidateSequenceI candidate: candidateSet) {
+		Handle<Byte> wildtypeBase = new Handle<>((byte) 'X');
+
+		candidateSet.forEach(candidate -> {
 			candidate.getQuality().addAllUnique(positionQualities);
 			processCandidateQualityStep1(candidate, location, result, positionMedianPhred, positionQualities);
 			if (candidate.getMutationType().isWildtype()) {
-				wildtypeBase = candidate.getWildtypeSequence();
+				wildtypeBase.set(candidate.getWildtypeSequence());
 			}
-		}
+		});
 
 		boolean leave = false;
 		final boolean qualityOKBeforeTopAllele =
@@ -937,12 +941,9 @@ public final class SubAnalyzer {
 			stats.nPosDuplexCandidatesForDisagreementQ2.acceptSkip0(location, result.disagQ2Coverage);
 			stats.nPosDuplexCandidatesForDisagreementQ1.acceptSkip0(location, result.disagOneStrandedCoverage);
 			if (param.computeRawMismatches) {
-				candidateSet.stream().flatMap(c -> c.getRawMismatchesQ2().stream()).
-					forEach(result.rawMismatchesQ2::add);
-				candidateSet.stream().flatMap(c -> c.getRawInsertionsQ2().stream()).
-					forEach(result.rawInsertionsQ2::add);
-				candidateSet.stream().flatMap(c -> c.getRawDeletionsQ2().stream()).
-					forEach(result.rawDeletionsQ2::add);
+				candidateSet.forEach(c -> c.getRawMismatchesQ2().forEach(result.rawMismatchesQ2::add));
+				candidateSet.forEach(c -> c.getRawInsertionsQ2().forEach(result.rawInsertionsQ2::add));
+				candidateSet.forEach(c -> c.getRawDeletionsQ2().forEach(result.rawDeletionsQ2::add));
 			}
 		}
 
@@ -967,7 +968,7 @@ public final class SubAnalyzer {
 
 		if (maxQuality.atMost(POOR)) {
 			stats.nPosQualityPoor.increment(location);
-			switch (wildtypeBase) {
+			switch (wildtypeBase.get()) {
 				case 'A' : stats.nPosQualityPoorA.increment(location); break;
 				case 'T' : stats.nPosQualityPoorT.increment(location); break;
 				case 'G' : stats.nPosQualityPoorG.increment(location); break;
@@ -1000,32 +1001,33 @@ public final class SubAnalyzer {
 		});
 	}
 
-	private boolean lowMutFreq(Mutation mut, THashSet<CandidateSequenceI> candidateSet, int nGOrDDuplexes) {
+	private boolean lowMutFreq(Mutation mut, ImmutableSet<CandidateSequenceI> candidateSet, int nGOrDDuplexes) {
 		Objects.requireNonNull(mut);
 		Handle<Boolean> result = new Handle<>(true);
-		candidateSet.forEach((CandidateSequenceI c) -> {
+		candidateSet.detect((CandidateSequenceI c) -> {
 			Mutation cMut = c.getMutation();
 			if (cMut.equals(mut)) {
 				if (c.getnGoodOrDubiousDuplexes() > param.maxMutFreqForDisag * nGOrDDuplexes) {
 					result.set(false);
 				}
-				return false;
+				return true;
 			}
-			return true;
+			return false;
 		});
 		return result.get();
 	}
 
 	private @Nullable Quality getAlleleFrequencyQuality(
-			THashSet<CandidateSequenceI> candidateSet,
+			ImmutableSet<CandidateSequenceI> candidateSet,
 			LocationExaminationResults result) {
-		result.alleleFrequencies = streamTopTwoCandidatesnGDP(candidateSet).
-			mapToObj(i -> (int) (i * 10f / result.nGoodOrDubiousDuplexes)).
-			collect(Collectors.toCollection(() -> new ArrayList<>(2)));
-		while(result.alleleFrequencies.size() < 2) {
-			result.alleleFrequencies.add(0, 99);
+		MutableIntList frequencyList = candidateSet.collectInt(c ->
+				(int) (c.getnGoodOrDubiousDuplexes() * 10f / result.nGoodOrDubiousDuplexes)).
+			toList().sortThis();
+		result.alleleFrequencies = frequencyList;
+		while (frequencyList.size() < 2) {
+			frequencyList.addAtIndex(0, 99);
 		}
-		int topAlleleFrequency = result.alleleFrequencies.get(1);
+		int topAlleleFrequency = frequencyList.getLast();
 		if (!(topAlleleFrequency >= param.minTopAlleleFreqQ2 * 10 &&
 				topAlleleFrequency <= param.maxTopAlleleFreqQ2 * 10)) {
 			return DUBIOUS;
@@ -1051,18 +1053,17 @@ public final class SubAnalyzer {
 		candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
 		candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
 
-		candidate.setDuplexes(candidate.getNonMutableConcurringReads().keySet().stream().
-			map(r -> r.duplexRead).
-			filter(d -> {
-				boolean nonNull = d != null;
-				if (nonNull && d.invalid) {
-					throw new AssertionFailedException();
-				}
-				return nonNull;
-			}).
-			collect(uniqueValueCollector()));//Collect *unique* duplexes
-
-		candidate.setnDuplexes(candidate.getDuplexes().size());
+		final THashSet<DuplexRead> candidateDuplexes = new THashSet<>();
+		candidate.getNonMutableConcurringReads().forEachKey(r -> {
+			DuplexRead dr = r.duplexRead;
+			if (dr != null) {
+				Assert.isFalse(dr.invalid);
+				candidateDuplexes.add(dr);
+			}
+			return true;
+		});
+		candidate.setDuplexes(candidateDuplexes);
+		candidate.setnDuplexes(candidateDuplexes.size());
 
 		if (candidate.getnDuplexes() == 0) {
 			candidate.getQuality().addUnique(NO_DUPLEXES, ATROCIOUS);
@@ -1071,13 +1072,14 @@ public final class SubAnalyzer {
 		if (param.verbosity > 2) {
 			candidate.getIssues().clear();//This *must* be done to avoid interference
 			//between parameter sets, in parameter exploration runs
-			candidate.getDuplexes().forEach(d -> {
+			candidateDuplexes.forEach(d -> {
 				candidate.getIssues().put(d, d.localAndGlobalQuality.toLong());
+				return true;
 			});
 		}
 
 		final Quality posQMin =	positionQualities.getValue(true);
-		final @NonNull Quality maxDuplexQ = candidate.getDuplexes().stream().
+		final @NonNull Quality maxDuplexQ = candidateDuplexes.stream().
 			map(dr -> {
 				if (posQMin != null) {
 					dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
@@ -1091,13 +1093,15 @@ public final class SubAnalyzer {
 				candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
 				break;
 			case "NQ1Duplexes":
-				final long countQ1Duplexes = candidate.getNonMutableConcurringReads().keySet().stream().
-				map(c -> c.duplexRead).
-				collect(uniqueValueCollector()).stream().
-				filter(d -> d != null && d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).
-				atLeast(GOOD)).
-				count();
-				if (countQ1Duplexes >= param.minQ1Duplexes) {
+				SettableInteger countQ1Duplexes = new SettableInteger(0);
+				candidateDuplexes.forEach(d -> {
+					if (d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).
+							atLeast(GOOD)) {
+						countQ1Duplexes.incrementAndGet();
+					}
+					return true;
+				});
+				if (countQ1Duplexes.get() >= param.minQ1Duplexes) {
 					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
 				}
 				break;
@@ -1106,15 +1110,18 @@ public final class SubAnalyzer {
 		}
 
 		if (PositionAssay.COMPUTE_MAX_DPLX_Q_IGNORING_DISAG) {
-			candidate.getDuplexes().stream().
+			candidateDuplexes.stream().
 			map(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality, true)).
 			max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
 		}
 
 		candidate.resetLigSiteDistances();
 		if (maxDuplexQ.atLeast(DUBIOUS)) {
-			candidate.getDuplexes().stream().filter(dr -> dr.localAndGlobalQuality.getValue().atLeast(maxDuplexQ)).
-			forEach(d -> candidate.acceptLigSiteDistance(d.getMaxDistanceToLigSite()));
+			candidateDuplexes.forEach(dr -> {
+				if (dr.localAndGlobalQuality.getValue().atLeast(maxDuplexQ)) {
+					candidate.acceptLigSiteDistance(dr.getMaxDistanceToLigSite());
+				}
+			});
 		}
 
 	}
@@ -1234,15 +1241,9 @@ public final class SubAnalyzer {
 		}
 	}
 
-	private static IntStream streamTopTwoCandidatesnGDP(
-			Collection<CandidateSequenceI> candidateSequences) {
-		return candidateSequences.stream().mapToInt(CandidateSequenceI::getnGoodOrDubiousDuplexes).
-			sorted().skip(Math.max(0, candidateSequences.size() - 2));
-	}
-
 	@SuppressWarnings("ReferenceEquality")
 	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
-			Set<CandidateSequenceI> candidateSet) {
+			ImmutableSet<CandidateSequenceI> candidateSet) {
 		for (DuplexRead duplexRead: duplexReads) {
 			for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
 				if (r.duplexRead != duplexRead) {
@@ -1258,7 +1259,7 @@ public final class SubAnalyzer {
 			}
 		}
 
-		for (CandidateSequenceI c: candidateSet) {
+		candidateSet.each(c -> {
 			Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 				c.getMutableConcurringReads().keySet()));
 			Set<DuplexRead> duplexesSupportingC = c.getNonMutableConcurringReads().keySet().stream().
@@ -1269,11 +1270,11 @@ public final class SubAnalyzer {
 					}
 					return d;
 				}).filter(Objects::nonNull).collect(uniqueValueCollector());//Collect *unique* duplexes
-			for (CandidateSequenceI c2: candidateSet) {
+			candidateSet.each(c2 -> {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 					c.getMutableConcurringReads().keySet()));
 				if (c2 == c) {
-					continue;
+					return;
 				}
 				if (c2.equals(c)) {
 					throw new AssertionFailedException();
@@ -1290,8 +1291,8 @@ public final class SubAnalyzer {
 							" associated with candidates " + c + " and " + c2);
 					}
 				});
-			}
-		}
+			});
+		});
 		return null;
 	}
 

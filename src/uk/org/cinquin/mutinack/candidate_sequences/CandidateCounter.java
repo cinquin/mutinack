@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.jdt.annotation.NonNull;
 
 import gnu.trove.map.hash.THashMap;
@@ -29,7 +30,7 @@ import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
-	private final @NonNull THashSet<CandidateSequenceI> candidates;
+	private final @NonNull ImmutableSet<@NonNull CandidateSequenceI> candidates;
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
@@ -39,7 +40,7 @@ public final class CandidateCounter {
 
 	public long nPhreds, sumPhreds;
 
-	public CandidateCounter(@NonNull THashSet<CandidateSequenceI> candidates,
+	public CandidateCounter(@NonNull ImmutableSet<@NonNull CandidateSequenceI> candidates,
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
@@ -61,7 +62,8 @@ public final class CandidateCounter {
 		}
 		sumPhreds = 0;
 		nPhreds = 0;
-		candidates.forEach(candidate -> {
+		//Avoid default interface forEach implementation
+		candidates.each(candidate -> {
 			for (int i = records.size() - 1; i >= 0; --i) {
 				final ExtendedSAMRecord r = records.get(i);
 				if (r.isOpticalDuplicate()) {
@@ -90,7 +92,6 @@ public final class CandidateCounter {
 					}
 				}
 			}//End loop over records
-			return true;
 		}//End loop over candidates
 		);
 	}

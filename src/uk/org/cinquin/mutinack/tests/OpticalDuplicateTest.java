@@ -17,10 +17,10 @@
 
 package uk.org.cinquin.mutinack.tests;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.jdt.annotation.NonNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -92,7 +92,7 @@ public class OpticalDuplicateTest {
 		dr.leftAlignmentStart = e1.getLocation();
 
 		param.opticalDuplicateDistance = 10;
-		List<ExtendedSAMRecord> reads = Arrays.asList(e1, e2, e3, e4, e5, e6, e7, e8, e9);
+		MutableList<ExtendedSAMRecord> reads = Lists.mutable.of(e1, e2, e3, e4, e5, e6, e7, e8, e9);
 		dr.totalNRecords = reads.size();
 		Collections.shuffle(reads);
 		dr.markDuplicates(param, stats, reads);

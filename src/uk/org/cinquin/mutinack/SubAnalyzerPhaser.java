@@ -32,7 +32,6 @@ import static uk.org.cinquin.mutinack.qualities.Quality.POOR;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
@@ -49,6 +48,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.collections.api.RichIterable;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.list.ListIterable;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -186,7 +192,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 					for (GenomeFeatureTester tester: excludeBEDs) {
 						if (tester.test(location)) {
-							analysisChunk.subAnalyzers/*.parallelStream()*/.
+							analysisChunk.subAnalyzers.
 								forEach(sa -> {
 									sa.candidateSequences.remove(location);
 									sa.stats.nPosExcluded.add(location, 1);
@@ -224,7 +230,8 @@ public class SubAnalyzerPhaser extends Phaser {
 				logger.trace("Going from " + saveLastProcessedPosition + " to " + analysisChunk.lastProcessedPosition + " for chunk " + analysisChunk);
 			}
 
-			analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
+			analysisChunk.subAnalyzersParallel.
+				forEach(subAnalyzer -> {
 
 				final int localLastProcessedPosition = analysisChunk.lastProcessedPosition;
 				subAnalyzer.candidateSequences.retainEntries((key, value) ->
@@ -254,7 +261,8 @@ public class SubAnalyzerPhaser extends Phaser {
 				nIterations++;
 				final SequenceLocation lowerBound =
 					new SequenceLocation(contigIndex, contigName, analysisChunk.lastProcessedPosition);
-				analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
+				analysisChunk.subAnalyzers.
+				forEach(subAnalyzer -> {
 					subAnalyzer.candidateSequences.retainEntries((key, val) -> {
 						Assert.isTrue(key.contigIndex == contigIndex,
 							"Problem with contig indices, " + key + ' ' + key.contigIndex +
@@ -266,7 +274,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			Assert.noException(() -> {
 				//Check no sequences have been left behind
-				analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
+				analysisChunk.subAnalyzersParallel.
+				forEach(subAnalyzer -> {
 					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName,
 						analysisChunk.lastProcessedPosition);
 					subAnalyzer.candidateSequences.keySet()/*.parallelStream()*/.forEach(
@@ -315,7 +324,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		//without causing structural modifications, obviating the need for synchronization
 		analysisChunk.subAnalyzers.forEach(sa -> locationExamResultsMap0.put(sa, null));
 
-		analysisChunk.subAnalyzers.parallelStream().forEach(sa -> {
+		analysisChunk.subAnalyzersParallel.forEach(sa -> {
 			LocationExaminationResults results = sa.examineLocation(location);
 			if (NONTRIVIAL_ASSERTIONS) {
 				for (CandidateSequenceI c: results.analyzedCandidateSequences) {
@@ -332,8 +341,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			:
 				locationExamResultsMap0;
 
-		final Collection<@NonNull LocationExaminationResults> locationExamResults =
-			locationExamResultsMap.values();
+		final ListIterable<@NonNull LocationExaminationResults> locationExamResults = Lists.immutable.
+			withAll(locationExamResultsMap.values());
 
 		final int dubiousOrGoodInAllInputsAtPos = new IntMinMax<LocationExaminationResults>().
 			acceptMin(locationExamResults,
@@ -351,7 +360,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		final Handle<Boolean> tooHighCoverage = new Handle<>(false);
 		final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
 
-		analysisChunk.subAnalyzers.parallelStream().forEach(
+		analysisChunk.subAnalyzers.forEach(
 			sa -> registerAndAnalyzeCoverage(
 				Objects.requireNonNull(locationExamResultsMap.get(sa)),
 				tooHighCoverage,
@@ -365,13 +374,12 @@ public class SubAnalyzerPhaser extends Phaser {
 				repetitiveBEDs)
 		);
 
-		List<CandidateSequenceI> mutantCandidates = locationExamResults.stream().
-			map(c -> c.analyzedCandidateSequences).
-			flatMap(Collection::stream).filter(c -> {
+		RichIterable<CandidateSequenceI> mutantCandidates = locationExamResults.
+			flatCollect(c -> c.analyzedCandidateSequences).
+			select(c -> {
 				boolean isMutant = !c.getMutationType().isWildtype();
 				return isMutant;
-			}).
-			collect(Collectors.toList());
+			});
 
 		final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
 			(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
@@ -382,8 +390,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		//locationExamResults is not empty
 		final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
 			acceptMin(locationExamResults, cl -> {
-				List<@NonNull Integer> freq =
-					((LocationExaminationResults) cl).alleleFrequencies;
+				MutableIntList freq = ((LocationExaminationResults) cl).alleleFrequencies;
 				if (freq != null) {
 					return ((LocationExaminationResults) cl).alleleFrequencies.get(1);
 				} else {
@@ -421,7 +428,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 	private static void processAndReportCandidates(
 			final @NonNull Parameters param,
-			final @NonNull Collection<@NonNull LocationExaminationResults> locationExamResults,
+			final @NonNull ListIterable<@NonNull LocationExaminationResults> locationExamResults,
 			final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap,
 			final @NonNull SequenceLocation location,
 			final boolean randomlySelected,
@@ -434,59 +441,57 @@ public class SubAnalyzerPhaser extends Phaser {
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate
 		) throws IOException {
 
+		final RichIterable<CandidateSequenceI> candidateSequences = locationExamResults.
+			flatCollect(l -> l.analyzedCandidateSequences);
+
 		//Refilter also allowing Q1 candidates to compare output of different
 		//analyzers
-		final List<CandidateSequenceI> allQ1Q2CandidatesWithHidden = locationExamResults.stream().
-			map(l -> l.analyzedCandidateSequences).
-			flatMap(Collection::stream).
-			filter(c -> {
+		final RichIterable<CandidateSequenceI> allQ1Q2CandidatesWithHidden = candidateSequences.
+			select(c -> {
 				Assert.isTrue(c.getLocation().distanceOnSameContig(location) == 0);
-				return c.getQuality().getNonNullValue().greaterThan(POOR);}).
-			collect(Collectors.toList());
+				return c.getQuality().getNonNullValue().greaterThan(POOR);});
 
-		final List<CandidateSequenceI> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.stream().
-			filter(c -> !c.isHidden()).
-			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
-			collect(Collectors.toList());
+		final MutableList<CandidateSequenceI> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.
+			select(c -> !c.isHidden()).
+			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			asUnmodifiable();
 
-		final List<CandidateSequenceI> allCandidatesIncludingDisag = locationExamResults.stream().
-			map(l -> l.analyzedCandidateSequences).
-			flatMap(Collection::stream).
-			filter(c -> c.getQuality().getNonNullValue().greaterThan(POOR) ||
+		final MutableList<CandidateSequenceI> allCandidatesIncludingDisag = candidateSequences.
+			select(c -> c.getQuality().getNonNullValue().greaterThan(POOR) ||
 				c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)).
-			filter(c -> !c.isHidden()).
-			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
-			collect(Collectors.toList());
+			select(c -> !c.isHidden()).
+			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			asUnmodifiable();
 
-		final List<CandidateSequenceI> distinctQ1Q2Candidates = allQ1Q2Candidates.stream().distinct().
+		final MutableList<CandidateSequenceI> distinctQ1Q2Candidates = allQ1Q2Candidates.distinct().
 			//Sorting might not be necessary
-			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
-			collect(Collectors.toList());
+			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			asUnmodifiable();
 
 		final List<CandidateSequenceI> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
-			stream().distinct().
-			//Sorting might not be necessary
-			sorted(Comparator.comparing(CandidateSequenceI::getMutationType)).
-			collect(Collectors.toList());
-
-		final List<DuplexDisagreement> allQ2DuplexDisagreements =
-			locationExamResults.stream().
-			flatMap(ler -> ler.disagreements.keySet().stream()).
-			filter(d -> d.quality.atLeast(GOOD)).//Filtering is a NOP right now since all disags are Q2
 			distinct().
-			collect(Collectors.toList());
+			//Sorting might not be necessary
+			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			asUnmodifiable();
+
+		final ImmutableList<@NonNull DuplexDisagreement> allQ2DuplexDisagreements =
+			locationExamResults.
+			flatCollect(ler -> ler.disagreements.keySet()).
+			select(d -> d.quality.atLeast(GOOD)).//Filtering is a NOP right now since all disags are Q2
+			distinct().
+			toImmutable();
 
 		final CrossSampleLocationAnalysis csla = new CrossSampleLocationAnalysis(location);
 
 		csla.randomlySelected = randomlySelected;
 		csla.lowTopAlleleFreq = lowTopAlleleFreq;
-		if (distinctQ1Q2Candidates.stream().noneMatch(c -> c.getMutationType().isWildtype())) {
+		if (distinctQ1Q2Candidates.noneSatisfy(c -> c.getMutationType().isWildtype())) {
 			csla.noWt = true;
 		}
 
 		final Map<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new IdentityHashMap<>(8);
-		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
-			flatMap(Collection::stream).filter(c -> c.getQuality().getNonNullValue().greaterThan(POOR)).
+		candidateSequences.
+			select(c -> c.getQuality().getNonNullValue().greaterThan(POOR)).
 			forEach(c->
 				nGoodOrDubiousDuplexes.computeIfAbsent(c.getOwningSubAnalyzer(), c0 -> new SettableInteger(0)).
 					addAndGet(c.getnGoodOrDubiousDuplexes())
@@ -498,20 +503,18 @@ public class SubAnalyzerPhaser extends Phaser {
 			filter(sa2 -> sa2 != sa).mapToInt(sa2 ->
 				Objects.requireNonNull(nGoodOrDubiousDuplexes.get(sa2)).get()).sum()));
 
-		locationExamResults.stream().map(l -> l.analyzedCandidateSequences).
-			flatMap(Collection::stream).forEach(c -> {
+		candidateSequences.forEach(c -> {
 				Integer i = nGoodOrDubiousDuplexesOthers.get(c.getOwningSubAnalyzer());
 				c.setnDuplexesSisterArm((i == null) ? 0 : i);
 			});
 
 		for (final CandidateSequenceI candidate: distinctQ1Q2CandidatesIncludingDisag) {
 
-			final int candidateCount = (int) allQ1Q2Candidates.stream().
-				filter(c -> c.equals(candidate)).count();
+			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
 
 			if (!candidate.getMutationType().isWildtype() &&
-				allQ1Q2Candidates.stream().filter(c -> c.equals(candidate) &&
-						(c.getQuality().getNonNullValue().atLeast(GOOD))).count() >= 2) {
+				allQ1Q2Candidates.count(c -> c.equals(candidate) &&
+						(c.getQuality().getNonNullValue().atLeast(GOOD))) >= 2) {
 				csla.twoOrMoreSamplesWithSameQ2MutationCandidate = true;
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
@@ -526,7 +529,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						//if analysis parameter dictates it, but check again in case a matching disagreement is
 						//present in another sample
 						candidate.getQuality().downgradeIfFalse(AT_LEAST_ONE_DISAG,
-								allQ2DuplexDisagreements.stream().noneMatch(
+								!allQ2DuplexDisagreements.anySatisfy(
 									disag -> disag.snd.equals(candidate.getMutation()) ||
 									disag.fst.equals(candidate.getMutation())))
 						)
@@ -554,26 +557,25 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				}
 
-				analysisChunk.subAnalyzers.stream().
-					filter(sa -> Objects.requireNonNull(locationExamResultsMap.get(sa)).
+				analysisChunk.subAnalyzers.select(sa -> Objects.requireNonNull(locationExamResultsMap.get(sa)).
 						analyzedCandidateSequences.contains(candidate)).
 					forEach(sa -> {
 						final LocationExaminationResults examResults =
 							Objects.requireNonNull(locationExamResultsMap.get(sa));
 						final AnalysisStats stats0 = sa.stats;
 						stats0.nReadsAtPosWithSomeCandidateForQ2UniqueMutation.insert(
-							examResults.analyzedCandidateSequences.
-							stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
+							(int) examResults.analyzedCandidateSequences.sumOfInt(
+								c -> c.getNonMutableConcurringReads().size()));
 						stats0.nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation.insert(
-							examResults.analyzedCandidateSequences.
-							stream().mapToInt(CandidateSequenceI::getnGoodOrDubiousDuplexes).sum());
+							(int) examResults.analyzedCandidateSequences.
+							sumOfInt(CandidateSequenceI::getnGoodOrDubiousDuplexes));
 					});
 			}//End Q2 candidate
 
 			boolean oneSampleNoWt = false;
 			for (LocationExaminationResults results: locationExamResults) {
-				if (results.analyzedCandidateSequences.stream().
-						noneMatch(c -> c.getMutationType().isWildtype() && c.getnGoodOrDubiousDuplexes() > 0)) {
+				if (results.analyzedCandidateSequences.
+						noneSatisfy(c -> c.getMutationType().isWildtype() && c.getnGoodOrDubiousDuplexes() > 0)) {
 					oneSampleNoWt = true;
 					break;
 				}
@@ -594,7 +596,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				final @NonNull LocationExaminationResults examResults =
 					Objects.requireNonNull(locationExamResultsMap.get(sa));
 				final List<CandidateSequenceI> l = examResults.analyzedCandidateSequences.
-					stream().filter(c -> c.equals(candidate)).collect(Collectors.toList());
+					select(c -> c.equals(candidate)).toList();
 
 				final CandidateSequenceI matchingSACandidate;
 				final int nCandidates = l.size();
@@ -734,11 +736,15 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 		}
 
-		if (examResults.alleleFrequencies != null) {
-			stats.alleleFrequencies.accept(location, examResults.alleleFrequencies);
+		MutableIntList alleleFrequencies = examResults.alleleFrequencies;
+		if (alleleFrequencies != null) {
+			List<Integer> freq = new FastList<>(2);
+			freq.add(alleleFrequencies.get(alleleFrequencies.size() - 2));
+			freq.add(alleleFrequencies.getLast());
+			stats.alleleFrequencies.accept(location, freq);
 		}
 
-		for (CandidateSequenceI c: examResults.analyzedCandidateSequences) {
+		examResults.analyzedCandidateSequences.each(c -> {
 			if (c.getQuality().getNonNullValue().atLeast(GOOD)) {
 				if (c.getMutationType().isWildtype()) {
 					stats.wtQ2CandidateQ1Q2Coverage.insert(examResults.nGoodOrDubiousDuplexes);
@@ -774,7 +780,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				}
 			}
-		}
+		});
 
 		final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
 
@@ -801,10 +807,10 @@ public class SubAnalyzerPhaser extends Phaser {
 				>= stats.analysisParameters.minNumberDuplexesSisterArm
 			) {
 
-			examResults.analyzedCandidateSequences.stream().filter(c -> !c.isHidden()).
-				flatMap(c -> c.getDuplexes().stream()).
-				filter(dr -> dr.localAndGlobalQuality.getNonNullValue().atLeast(GOOD)).
-				map(DuplexRead::getMaxDistanceToLigSite).
+			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).
+				flatCollect(c -> c.getDuplexes()).
+				collectIf(dr -> dr.localAndGlobalQuality.getNonNullValue().atLeast(GOOD),
+					DuplexRead::getMaxDistanceToLigSite).
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
@@ -817,11 +823,11 @@ public class SubAnalyzerPhaser extends Phaser {
 			//XXX The following includes all candidates at *all* positions considered in
 			//processing chunk
 			stats.nReadsAtPosQualityQ2OthersQ1Q2.insert(
-					examResults.analyzedCandidateSequences.
-					stream().mapToInt(c -> c.getNonMutableConcurringReads().size()).sum());
+					(int) examResults.analyzedCandidateSequences.sumOfInt(
+						c -> c.getNonMutableConcurringReads().size()));
 			stats.nQ1Q2AtPosQualityQ2OthersQ1Q2.insert(
-					examResults.analyzedCandidateSequences.
-					stream().mapToInt(CandidateSequenceI::getnGoodOrDubiousDuplexes).sum());
+					(int) examResults.analyzedCandidateSequences.sumOfInt(
+						CandidateSequenceI::getnGoodOrDubiousDuplexes));
 
 			if (stats.analysisParameters.variableBarcodeLength == 0) {
 				stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));
@@ -954,10 +960,10 @@ public class SubAnalyzerPhaser extends Phaser {
 			final boolean clipPairOverlap,
 			final @NonNull AtomicInteger dn
 		) {
-		analysisChunk.subAnalyzers/*.parallelStream()*/.forEach(subAnalyzer -> {
+		analysisChunk.subAnalyzersParallel.forEach(subAnalyzer -> {
 			//If outputting an alignment populated with fields identifying the duplexes,
 			//fill in the fields here
-			subAnalyzer.analyzedDuplexes.parallelStream().forEach(duplexRead -> {
+			subAnalyzer.analyzedDuplexes.forEach(duplexRead -> {
 			//for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
 				boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
 					duplexRead.maxInsertSize > 10_000;
