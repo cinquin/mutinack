@@ -60,10 +60,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.list.primitive.MutableFloatList;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -1017,19 +1018,26 @@ public final class SubAnalyzer {
 		return result.get();
 	}
 
+	private static float divideWithNanToZero(float f1, float f2) {
+		return f2 == 0f ? 0 : f1 / f2;
+	}
+
 	private @Nullable Quality getAlleleFrequencyQuality(
 			ImmutableSet<CandidateSequenceI> candidateSet,
 			LocationExaminationResults result) {
-		MutableIntList frequencyList = candidateSet.collectInt(c ->
-				(int) (c.getnGoodOrDubiousDuplexes() * 10f / result.nGoodOrDubiousDuplexes)).
-			toList().sortThis();
+		MutableFloatList frequencyList = candidateSet.collectFloat(c ->
+				divideWithNanToZero(c.getnGoodOrDubiousDuplexes(), result.nGoodOrDubiousDuplexes),
+				new FloatArrayList(Math.max(2, candidateSet.size()))).//Need second argument to collectInt
+				//to avoid collecting into a set
+			sortThis();
 		result.alleleFrequencies = frequencyList;
 		while (frequencyList.size() < 2) {
-			frequencyList.addAtIndex(0, 99);
+			frequencyList.addAtIndex(0, Float.NaN);
 		}
-		int topAlleleFrequency = frequencyList.getLast();
-		if (!(topAlleleFrequency >= param.minTopAlleleFreqQ2 * 10 &&
-				topAlleleFrequency <= param.maxTopAlleleFreqQ2 * 10)) {
+
+		float topAlleleFrequency = frequencyList.getLast();
+		if (!(topAlleleFrequency >= param.minTopAlleleFreqQ2 &&
+				topAlleleFrequency <= param.maxTopAlleleFreqQ2)) {
 			return DUBIOUS;
 		}
 		return null;

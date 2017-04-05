@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jdo.annotations.PersistenceCapable;
 
-import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.list.primitive.MutableFloatList;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -46,7 +46,7 @@ public final class LocationExaminationResults implements Serializable {
 	public int nGoodDuplexes = 0;
 	public int strandCoverageImbalance;
 	public int nMissingStrands;
-	public MutableIntList alleleFrequencies;
+	public MutableFloatList alleleFrequencies;
 	public final transient @NonNull
 		MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
 		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable

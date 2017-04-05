@@ -52,7 +52,7 @@ import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.list.primitive.MutableFloatList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.jdt.annotation.NonNull;
@@ -388,13 +388,14 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		@SuppressWarnings("null")//getMin cannot return null as long as
 		//locationExamResults is not empty
-		final int minTopAlleleFreq = new ObjMinMax<>(99, 99, Integer::compareTo).
+		final float minTopAlleleFreq = new ObjMinMax<>(Float.MAX_VALUE, - Float.MAX_VALUE, Float::compareTo).
 			acceptMin(locationExamResults, cl -> {
-				MutableIntList freq = ((LocationExaminationResults) cl).alleleFrequencies;
+				MutableFloatList freq = ((LocationExaminationResults) cl).alleleFrequencies;
 				if (freq != null) {
-					return ((LocationExaminationResults) cl).alleleFrequencies.get(1);
+					float f = ((LocationExaminationResults) cl).alleleFrequencies.getLast();
+					return Float.isNaN(f) ? Float.MAX_VALUE : f;
 				} else {
-					return 99;
+					return Float.MAX_VALUE;
 				}
 			}).getMin();
 
@@ -694,6 +695,10 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 	}
 
+	private static float nanTo99(float f) {
+		return Float.isNaN(f) ? 9.9f : f;
+	}
+
 	private static void registerAndAnalyzeCoverage(
 			final @NonNull LocationExaminationResults examResults,
 			final @NonNull Handle<Boolean> tooHighCoverage,
@@ -736,11 +741,11 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 		}
 
-		MutableIntList alleleFrequencies = examResults.alleleFrequencies;
+		MutableFloatList alleleFrequencies = examResults.alleleFrequencies;
 		if (alleleFrequencies != null) {
 			List<Integer> freq = new FastList<>(2);
-			freq.add(alleleFrequencies.get(alleleFrequencies.size() - 2));
-			freq.add(alleleFrequencies.getLast());
+			freq.add((int) (10f * nanTo99(alleleFrequencies.get(alleleFrequencies.size() - 2))));
+			freq.add((int) (10f * nanTo99(alleleFrequencies.getLast())));
 			stats.alleleFrequencies.accept(location, freq);
 		}
 
@@ -900,8 +905,8 @@ public class SubAnalyzerPhaser extends Phaser {
 						(d.hasAWtStrand ? "" : (d.getFst() != null ? d.getFst().mutationType : "-")) + '\t' +
 						examResults.duplexInsertSize10thP + '\t' +
 						examResults.duplexInsertSize90thP + '\t' +
-						examResults.alleleFrequencies.get(0) + '\t' +
-						examResults.alleleFrequencies.get(1) + '\t' +
+						(int) (10 * examResults.alleleFrequencies.get(0)) + '\t' +
+						(int) (10 * examResults.alleleFrequencies.get(1)) + '\t' +
 						mediumLengthFloatFormatter.get().format(d.probCollision) + '\t' +
 						mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + '\t' +
 						entry.getValue().size() + '\t' +

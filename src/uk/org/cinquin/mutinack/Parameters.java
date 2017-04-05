@@ -464,8 +464,8 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawMismatches = true;
 
-	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value divided by 10 are reported and marked with a % sign", required = false)
-	public int topAlleleFreqReport = 3;
+	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value are reported and marked with a % sign", required = false)
+	public float topAlleleFreqReport = 0.3f;
 
 	@Parameter(names = "-minTopAlleleFreqQ2", description = "Only positions where the frequency of the top allele is at least this high can contribute Q2 candidates", required = false)
 	public float minTopAlleleFreqQ2 = 0;
@@ -1182,7 +1182,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + (terminateImmediatelyUponError ? 1231 : 1237);
 		result = prime * result + (terminateUponOutputFileError ? 1231 : 1237);
 		result = prime * result + timeoutSeconds;
-		result = prime * result + topAlleleFreqReport;
+		result = prime * result + Float.floatToIntBits(topAlleleFreqReport);
 		result = prime * result + ((traceFields == null) ? 0 : traceFields.hashCode());
 		result = prime * result + variableBarcodeLength;
 		result = prime * result + verbosity;
