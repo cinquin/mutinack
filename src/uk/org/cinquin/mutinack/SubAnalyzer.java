@@ -519,22 +519,32 @@ public final class SubAnalyzer {
 			if (barcodeMatch) {
 				if (r.getInferredInsertSize() >= 0) {
 					if (r.getFirstOfPairFlag()) {
-						Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
+						if (param.enableCostlyAssertions) {
+							Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
+						}
 						duplexRead.topStrandRecords.add(rExtended);
 					} else {
-						Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
+						if (param.enableCostlyAssertions) {
+							Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
+						}
 						duplexRead.bottomStrandRecords.add(rExtended);
 					}
 				} else {
 					if (r.getFirstOfPairFlag()) {
-						Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
+						if (param.enableCostlyAssertions) {
+							Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
+						}
 						duplexRead.bottomStrandRecords.add(rExtended);
 					} else {
-						Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
+						if (param.enableCostlyAssertions) {
+							Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
+						}
 						duplexRead.topStrandRecords.add(rExtended);
 					}
 				}
-				Assert.noException(duplexRead::assertAllBarcodesEqual);
+				if (param.enableCostlyAssertions) {
+					Assert.noException(duplexRead::assertAllBarcodesEqual);
+				}
 				rExtended.duplexRead = duplexRead;
 				//stats.nVariableBarcodeMatchAfterPositionCheck.increment(location);
 				foundDuplexRead = true;
@@ -583,7 +593,9 @@ public final class SubAnalyzer {
 					duplexRead.bottomStrandRecords.add(rExtended);
 				}
 
-				Assert.noException(duplexRead::assertAllBarcodesEqual);
+				if (param.enableCostlyAssertions) {
+					Assert.noException(duplexRead::assertAllBarcodesEqual);
+				}
 
 				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
@@ -612,7 +624,9 @@ public final class SubAnalyzer {
 					duplexRead.bottomStrandRecords.add(rExtended);
 				}
 
-				Assert.noException(duplexRead::assertAllBarcodesEqual);
+				if (param.enableCostlyAssertions) {
+					Assert.noException(duplexRead::assertAllBarcodesEqual);
+				}
 
 				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
