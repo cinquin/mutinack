@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
+import org.eclipse.collections.api.set.MutableSet;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -85,7 +87,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private transient TObjectLongHashMap<DuplexRead> issues;
 	private @Nullable StringBuilder supplementalMessage;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
-	private transient @Nullable Collection<@NonNull DuplexRead> duplexes;
+	private transient @Nullable MutableSet<@NonNull DuplexRead> duplexes;
 	private int nGoodDuplexes;
 	private int nGoodDuplexesIgnoringDisag;
 	private int nGoodOrDubiousDuplexes;
@@ -429,15 +431,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@SuppressWarnings("null")
 	@Override
-	public @NonNull Collection<@NonNull DuplexRead> getDuplexes() {
+	public @NonNull MutableSet<@NonNull DuplexRead> getDuplexes() {
 		if (duplexes == null) {
-			 duplexes = new ArrayList<>();
+			 duplexes = Sets.mutable.empty();
 		}
 		return duplexes;
 	}
 
 	@Override
-	public void setDuplexes(@NonNull Collection<@NonNull DuplexRead> duplexes) {
+	public void setDuplexes(@NonNull MutableSet<@NonNull DuplexRead> duplexes) {
 		this.duplexes = duplexes;
 	}
 

@@ -33,7 +33,6 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -90,10 +89,10 @@ public class Util {
 		return o;
 	}
 
-	public static<T> @NonNull Set<T> getDuplicates(Collection<T> collection) {
+	public static<T> @NonNull Set<T> getDuplicates(Iterable<T> iterable) {
 		Set<T> set = new HashSet<>();
 		Set<T> result = new HashSet<>();
-		for (T t: collection) {
+		for (T t: iterable) {
 			if (!set.add(t)) {
 				result.add(t);
 			}

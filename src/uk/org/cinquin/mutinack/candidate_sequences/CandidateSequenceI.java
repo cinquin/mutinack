@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 import java.io.Serializable;
 import java.util.Collection;
 
+import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -66,8 +67,8 @@ public interface CandidateSequenceI extends Serializable {
 	void setnGoodOrDubiousDuplexes(int nGoodOrDubiousDuplexes);
 	int getnGoodDuplexes();
 	void setnGoodDuplexes(int nGoodDuplexes);
-	Collection<@NonNull DuplexRead> getDuplexes();
-	void setDuplexes(@NonNull Collection<@NonNull DuplexRead> duplexes);
+	MutableSet<@NonNull DuplexRead> getDuplexes();
+	void setDuplexes(@NonNull MutableSet<@NonNull DuplexRead> duplexes);
 	@NonNull TObjectIntMap<ExtendedSAMRecord> getMutableConcurringReads();
 	@NonNull TObjectIntMap<ExtendedSAMRecord> getNonMutableConcurringReads();
 	StringBuilder getSupplementalMessage();

@@ -61,7 +61,9 @@ import java.util.stream.Collectors;
 
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
+import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
@@ -825,8 +827,14 @@ public final class SubAnalyzer {
 		candidateSet.forEach(candidate -> {
 			candidate.addPhredScoresToList(allPhredQualitiesAtPosition);
 			nPairsAtPosition.addAndGet(candidate.getNonMutableConcurringReads().size());
-			candidate.setnWrongPairs((int) candidate.getNonMutableConcurringReads().keySet().stream().
-				filter(ExtendedSAMRecord::formsWrongPair).count());
+			SettableInteger count = new SettableInteger(0);
+			candidate.getNonMutableConcurringReads().forEachKey(r -> {
+				if (r.formsWrongPair()) {
+					count.incrementAndGet();
+				}
+				return true;
+			});
+			candidate.setnWrongPairs(count.get());
 			nWrongPairsAtPosition.addAndGet(candidate.getnWrongPairs());
 		});
 
@@ -873,19 +881,18 @@ public final class SubAnalyzer {
 				if (leave) {
 					candidate.getQuality().addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, DUBIOUS);
 				}
-				@NonNull Map<Quality, List<DuplexRead>> map = candidate.getDuplexes().stream().collect(
-					Collectors.groupingBy(dr -> dr.localAndGlobalQuality.getValue()));
+				@NonNull MutableSetMultimap<Quality, DuplexRead> map = candidate.getDuplexes().
+					groupBy(dr -> dr.localAndGlobalQuality.getValue());
 				if (param.enableCostlyAssertions) {
-					map.forEach((k, v) -> Assert.isTrue(Util.getDuplicates(v).isEmpty()));
-					Assert.isTrue(map.values().stream().mapToInt(v -> v.size()).sum() == candidate.getDuplexes().size());
+					map.forEachKeyMultiValues((k, v) -> Assert.isTrue(Util.getDuplicates(v).isEmpty()));
+					Assert.isTrue(map.multiValuesView().collectInt(v -> v.size()).sum() == candidate.getDuplexes().size());
 				}
-				@Nullable List<DuplexRead> gd = map.get(GOOD);
+				@Nullable MutableSet<DuplexRead> gd = map.get(GOOD);
 				candidate.setnGoodDuplexes(gd == null ? 0 : gd.size());
-				@Nullable List<DuplexRead> db = map.get(DUBIOUS);
+				@Nullable MutableSet<DuplexRead> db = map.get(DUBIOUS);
 				candidate.setnGoodOrDubiousDuplexes(candidate.getnGoodDuplexes() + (db == null ? 0 : db.size()));
-				candidate.setnGoodDuplexesIgnoringDisag((int) candidate.getDuplexes().stream().
-					filter(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD))
-					.count());
+				candidate.setnGoodDuplexesIgnoringDisag(candidate.getDuplexes().
+					count(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD)));
 
 				maxQuality = max(candidate.getQuality().getValue(), maxQuality);
 				totalAllDuplexes += candidate.getnDuplexes();
@@ -1061,7 +1068,7 @@ public final class SubAnalyzer {
 		candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
 		candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
 
-		final THashSet<DuplexRead> candidateDuplexes = new THashSet<>();
+		final MutableSet<DuplexRead> candidateDuplexes = Sets.mutable.empty();
 		candidate.getNonMutableConcurringReads().forEachKey(r -> {
 			DuplexRead dr = r.duplexRead;
 			if (dr != null) {
@@ -1082,7 +1089,6 @@ public final class SubAnalyzer {
 			//between parameter sets, in parameter exploration runs
 			candidateDuplexes.forEach(d -> {
 				candidate.getIssues().put(d, d.localAndGlobalQuality.toLong());
-				return true;
 			});
 		}
 
@@ -1107,7 +1113,6 @@ public final class SubAnalyzer {
 							atLeast(GOOD)) {
 						countQ1Duplexes.incrementAndGet();
 					}
-					return true;
 				});
 				if (countQ1Duplexes.get() >= param.minQ1Duplexes) {
 					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
@@ -1171,22 +1176,19 @@ public final class SubAnalyzer {
 			final StringBuilder supplementalMessage = new StringBuilder();
 			final Map<String, Integer> stringCounts = new HashMap<>(100);
 
-			candidate.getNonMutableConcurringReads().keySet().stream().map(er -> {
-					String other = er.record.getMateReferenceName();
-					if (er.record.getReferenceName().equals(other))
-						return "";
-					else
-						return other + ':' + er.getMateAlignmentStart();
-				}).forEach(s -> {
-					if ("".equals(s))
-						return;
+			candidate.getNonMutableConcurringReads().forEachKey(er -> {
+				String other = er.record.getMateReferenceName();
+				if (!er.record.getReferenceName().equals(other)) {
+					String s = other + ':' + er.getMateAlignmentStart();
 					Integer found = stringCounts.get(s);
 					if (found == null){
 						stringCounts.put(s, 1);
 					} else {
 						stringCounts.put(s, found + 1);
 					}
-				});
+				}
+				return true;
+			});
 
 			final Optional<String> mates = stringCounts.entrySet().stream().map(entry -> entry.getKey() +
 				((entry.getValue() == 1) ? "" : (" (" + entry.getValue() + " repeats)")) + "; ").
@@ -1211,10 +1213,8 @@ public final class SubAnalyzer {
 			final NumberFormat nf = DoubleAdderFormatter.nf.get();
 
 			@SuppressWarnings("null")
-			final boolean hasNoMate = candidate.getNonMutableConcurringReads().keySet().stream().
-				map(er -> er.record.getMateReferenceName() == null).//XXX Clarify under what circumstances,
-				//if any, getMateReferenceName could return null
-				reduce(false, Boolean::logicalOr);
+			final boolean hasNoMate = candidate.getNonMutableConcurringReads().forEachKey(
+				er -> er.record.getMateReferenceName() != null);
 
 			if (localMaxInsertSize > param.maxInsertSize) {
 				supplementalMessage.append("one predicted insert size is " +
