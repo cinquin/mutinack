@@ -33,7 +33,6 @@ import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.MEDIAN_P
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.NO_DUPLEXES;
 import static uk.org.cinquin.mutinack.misc_util.DebugLogControl.NONTRIVIAL_ASSERTIONS;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
-import static uk.org.cinquin.mutinack.misc_util.collections.TroveSetCollector.uniqueValueCollector;
 import static uk.org.cinquin.mutinack.qualities.Quality.ATROCIOUS;
 import static uk.org.cinquin.mutinack.qualities.Quality.DUBIOUS;
 import static uk.org.cinquin.mutinack.qualities.Quality.GOOD;
@@ -67,6 +66,7 @@ import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
+import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -1106,14 +1106,14 @@ public final class SubAnalyzer {
 		}
 
 		final Quality posQMin =	positionQualities.getValue(true);
-		final @NonNull Quality maxDuplexQ = candidateDuplexes.stream().
-			map(dr -> {
-				if (posQMin != null) {
-					dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
-				}
-				return dr.localAndGlobalQuality.getValue();
-			}).
-			max(Quality::compareTo).orElse(ATROCIOUS);
+		Handle<Quality> maxDuplexQHandle = new Handle<>(ATROCIOUS);
+		candidateDuplexes.each(dr -> {
+			if (posQMin != null) {
+				dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
+			}
+			maxDuplexQHandle.set(Quality.max(maxDuplexQHandle.get(), dr.localAndGlobalQuality.getValue()));
+			});
+		final @NonNull Quality maxDuplexQ = maxDuplexQHandle.get();
 
 		switch(param.candidateQ2Criterion) {
 			case "1Q2Duplex":
@@ -1283,14 +1283,16 @@ public final class SubAnalyzer {
 		candidateSet.each(c -> {
 			Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 				c.getMutableConcurringReads().keySet()));
-			Set<DuplexRead> duplexesSupportingC = c.getNonMutableConcurringReads().keySet().stream().
-				map(r -> {
+
+			Set<DuplexRead> duplexesSupportingC = new UnifiedSet<>(30);
+			c.getNonMutableConcurringReads().forEachKey(r -> {
 					DuplexRead d = r.duplexRead;
-					if (d != null && d.invalid) {
-						throw new AssertionFailedException();
+					if (d != null) {
+						Assert.isFalse(d.invalid);
+						duplexesSupportingC.add(d);
 					}
-					return d;
-				}).filter(Objects::nonNull).collect(uniqueValueCollector());//Collect *unique* duplexes
+					return true;
+				});//Collect *unique* duplexes
 			candidateSet.each(c2 -> {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 					c.getMutableConcurringReads().keySet()));

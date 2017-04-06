@@ -18,10 +18,10 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.Map;
 
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gnu.trove.map.hash.THashMap;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 
@@ -29,7 +29,7 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 public final class CandidateBuilder {
 
 	private final @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequence> candidates
-		= new THashMap<>(300);
+		= new UnifiedMap<>(300);
 	private final boolean negativeStrand;
 
 	public CandidateBuilder add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {

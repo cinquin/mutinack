@@ -17,13 +17,12 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
+import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
 
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -34,9 +33,9 @@ public final class CandidateCounter {
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
-	public final @NonNull THashMap<@NonNull CandidateSequence, @NonNull CandidateDuplexEval>
+	public final @NonNull UnifiedMap<@NonNull CandidateSequence, @NonNull CandidateDuplexEval>
 		candidateCounts;
-	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
+	public final UnifiedSet<ExtendedSAMRecord> keptRecords;
 
 	public long nPhreds, sumPhreds;
 
@@ -44,8 +43,8 @@ public final class CandidateCounter {
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
-		keptRecords = new THashSet<>();
-		candidateCounts = new THashMap<>(5);
+		keptRecords = new UnifiedSet<>();
+		candidateCounts = new UnifiedMap<>(5);
 	}
 
 	public void reset() {

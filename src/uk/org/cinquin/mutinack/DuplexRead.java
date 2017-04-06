@@ -59,6 +59,7 @@ import java.util.function.Supplier;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -67,7 +68,6 @@ import contrib.edu.stanford.nlp.util.Interval;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDuplexEval;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
@@ -612,14 +612,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 		IntMinMax<CandidateDuplexEval> ir1 = new IntMinMax<>();
 		bottomCounter.candidateCounts.forEachValue(si -> {
 			ir1.acceptMax(si.count, si);
-			return true;
 		});
 		bottom = ir1.getKeyMax();
 
 		IntMinMax<CandidateDuplexEval> ir2 = new IntMinMax<>();
 		topCounter.candidateCounts.forEachValue(si -> {
 			ir2.acceptMax(si.count, si);
-			return true;
 		});
 		top = ir2.getKeyMax();
 
@@ -1238,7 +1236,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			markIndices(reads, param.computeAllReadDistances ? 1_000_000_000 : param.opticalDuplicateDistance);
 		}
 
-		Set<ExtendedSAMRecord> duplicateSet = new THashSet<>();
+		Set<ExtendedSAMRecord> duplicateSet = new UnifiedSet<>();
 		final ExtendedSAMRecord firstRead = reads.get(readIndex);
 		duplicateSet.add(firstRead);
 		List<ExtendedSAMRecord> toVisit = new ArrayList<>();
