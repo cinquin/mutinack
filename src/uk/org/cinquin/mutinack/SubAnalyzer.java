@@ -90,7 +90,6 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDeletion;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -117,7 +116,7 @@ public final class SubAnalyzer {
 	@NonNull Parameters param;
 	@NonNull AnalysisStats stats;//Will in fact be null until set in SubAnalyzerPhaser but that's OK
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);
-	final @NonNull THashMap<SequenceLocation, THashSet<CandidateSequenceI>> candidateSequences =
+	final @NonNull THashMap<SequenceLocation, THashSet<CandidateSequence>> candidateSequences =
 			new THashMap<>(1_000);
 	int truncateProcessingAt = Integer.MAX_VALUE;
 	int startProcessingAt = 0;
@@ -216,13 +215,13 @@ public final class SubAnalyzer {
 	 * @param location
 	 * @return
 	 */
-	private CandidateSequenceI insertCandidateAtPosition(@NonNull CandidateSequenceI candidate,
+	private CandidateSequence insertCandidateAtPosition(@NonNull CandidateSequence candidate,
 			@NonNull SequenceLocation location) {
 
 		//No need for synchronization since we should not be
 		//concurrently inserting two candidates at the same position
-		THashSet<CandidateSequenceI> candidates = candidateSequences.computeIfAbsent(location, k -> new THashSet<>(2));
-		CandidateSequenceI candidateMapValue = candidates.get(candidate);
+		THashSet<CandidateSequence> candidates = candidateSequences.computeIfAbsent(location, k -> new THashSet<>(2));
+		CandidateSequence candidateMapValue = candidates.get(candidate);
 		if (candidateMapValue == null) {
 			boolean added = candidates.add(candidate);
 			Assert.isTrue(added);
@@ -707,13 +706,13 @@ public final class SubAnalyzer {
 	private LocationExaminationResults examineLocation0(final @NonNull SequenceLocation location) {
 		final LocationExaminationResults result = new LocationExaminationResults();
 
-		final THashSet<CandidateSequenceI> candidateSet0 = candidateSequences.get(location);
+		final THashSet<CandidateSequence> candidateSet0 = candidateSequences.get(location);
 		if (candidateSet0 == null) {
 			stats.nPosUncovered.increment(location);
 			result.analyzedCandidateSequences = Sets.immutable.empty();
 			return result;
 		}
-		final ImmutableSet<CandidateSequenceI> candidateSet =
+		final ImmutableSet<CandidateSequence> candidateSet =
 //			DebugLogControl.COSTLY_ASSERTIONS ?
 //				Collections.unmodifiableSet(candidateSet0)
 //			:
@@ -891,7 +890,7 @@ public final class SubAnalyzer {
 			totalGoodDuplexes = 0;
 			totalGoodOrDubiousDuplexes = 0;
 			totalGoodDuplexesIgnoringDisag = 0;
-			for (CandidateSequenceI candidate: candidateSet) {
+			for (CandidateSequence candidate: candidateSet) {
 				if (leave) {
 					candidate.getQuality().addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, DUBIOUS);
 				}
@@ -969,7 +968,7 @@ public final class SubAnalyzer {
 			}
 		}
 
-		for (CandidateSequenceI candidate: candidateSet) {
+		for (CandidateSequence candidate: candidateSet) {
 			candidate.setTotalAllDuplexes(totalAllDuplexes);
 			candidate.setTotalGoodDuplexes(totalGoodDuplexes);
 			candidate.setTotalGoodOrDubiousDuplexes(totalGoodOrDubiousDuplexes);
@@ -1023,10 +1022,10 @@ public final class SubAnalyzer {
 		});
 	}
 
-	private boolean lowMutFreq(Mutation mut, ImmutableSet<CandidateSequenceI> candidateSet, int nGOrDDuplexes) {
+	private boolean lowMutFreq(Mutation mut, ImmutableSet<CandidateSequence> candidateSet, int nGOrDDuplexes) {
 		Objects.requireNonNull(mut);
 		Handle<Boolean> result = new Handle<>(true);
-		candidateSet.detect((CandidateSequenceI c) -> {
+		candidateSet.detect((CandidateSequence c) -> {
 			Mutation cMut = c.getMutation();
 			if (cMut.equals(mut)) {
 				if (c.getnGoodOrDubiousDuplexes() > param.maxMutFreqForDisag * nGOrDDuplexes) {
@@ -1044,7 +1043,7 @@ public final class SubAnalyzer {
 	}
 
 	private @Nullable Quality getAlleleFrequencyQuality(
-			ImmutableSet<CandidateSequenceI> candidateSet,
+			ImmutableSet<CandidateSequence> candidateSet,
 			LocationExaminationResults result) {
 		MutableFloatList frequencyList = candidateSet.collectFloat(c ->
 				divideWithNanToZero(c.getnGoodOrDubiousDuplexes(), result.nGoodOrDubiousDuplexes),
@@ -1066,7 +1065,7 @@ public final class SubAnalyzer {
 
 	@SuppressWarnings("null")
 	private void processCandidateQualityStep1(
-			final CandidateSequenceI candidate,
+			final CandidateSequence candidate,
 			final @NonNull SequenceLocation location,
 			final LocationExaminationResults result,
 			final byte positionMedianPhred,
@@ -1154,7 +1153,7 @@ public final class SubAnalyzer {
 	}
 
 	private void processCandidateQualityStep2(
-			final CandidateSequenceI candidate,
+			final CandidateSequence candidate,
 			final @NonNull SequenceLocation location,
 			final LocationExaminationResults result,
 			final byte positionMedianPhred,
@@ -1265,7 +1264,7 @@ public final class SubAnalyzer {
 
 	@SuppressWarnings("ReferenceEquality")
 	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
-			ImmutableSet<CandidateSequenceI> candidateSet) {
+			ImmutableSet<CandidateSequence> candidateSet) {
 		for (DuplexRead duplexRead: duplexReads) {
 			for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
 				if (r.duplexRead != duplexRead) {
@@ -1539,7 +1538,7 @@ public final class SubAnalyzer {
 						final byte [] insertedSequence = Arrays.copyOfRange(readBases,
 							readEndOfPreviousAlignment + 1, readPosition);
 
-						final CandidateSequenceI candidate = new CandidateSequence(
+						final CandidateSequence candidate = new CandidateSequence(
 							this,
 							INSERTION,
 							insertedSequence,
@@ -1641,7 +1640,7 @@ public final class SubAnalyzer {
 						for (int i = 1; i < deletionLength; i++) {
 							SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 								extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
-							CandidateSequenceI hiddenCandidate = new CandidateDeletion(
+							CandidateSequence hiddenCandidate = new CandidateDeletion(
 								this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE,
 								location, deletionEnd);
 							hiddenCandidate.setHidden(true);
@@ -1658,7 +1657,7 @@ public final class SubAnalyzer {
 							readLocalCandidates.add(hiddenCandidate, location2);
 						}
 
-						final CandidateSequenceI candidate = new CandidateDeletion(this,
+						final CandidateSequence candidate = new CandidateDeletion(this,
 							deletedSequence, location, extendedRec, distance,
 							location, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 								extendedRec.getLocation().getContigName(), refPosition));
@@ -1790,7 +1789,7 @@ public final class SubAnalyzer {
 
 					final byte[] mutSequence = byteArrayMap.get(readBases[readPosition]);
 
-					final CandidateSequenceI candidate = new CandidateSequence(this,
+					final CandidateSequence candidate = new CandidateSequence(this,
 						SUBSTITUTION, mutSequence, location, extendedRec, distance);
 
 					if (!extendedRec.formsWrongPair()) {
@@ -1811,7 +1810,7 @@ public final class SubAnalyzer {
 						readLocalCandidates.add(candidate, location);
 					}
 					if (locationPH != null) {
-						final CandidateSequenceI candidate2 = new CandidateSequence(this,
+						final CandidateSequence candidate2 = new CandidateSequence(this,
 							WILDTYPE, null, locationPH, extendedRec, distance);
 						if (!extendedRec.formsWrongPair()) {
 							candidate2.acceptLigSiteDistance(distance);
@@ -1878,7 +1877,7 @@ public final class SubAnalyzer {
 						insertCandidateAtRegularPosition = false;
 					}
 				}
-				final CandidateSequenceI candidate = new CandidateSequence(this,
+				final CandidateSequence candidate = new CandidateSequence(this,
 					WILDTYPE, null, location, extendedRec, -distance);
 				if (!extendedRec.formsWrongPair()) {
 					candidate.acceptLigSiteDistance(-distance);
@@ -1888,7 +1887,7 @@ public final class SubAnalyzer {
 					readLocalCandidates.add(candidate, location);
 				}
 				if (locationPH != null) {
-					final CandidateSequenceI candidate2 = new CandidateSequence(this,
+					final CandidateSequence candidate2 = new CandidateSequence(this,
 						WILDTYPE, null, locationPH, extendedRec, -distance);
 					if (!extendedRec.formsWrongPair()) {
 						candidate2.acceptLigSiteDistance(-distance);

@@ -63,7 +63,6 @@ import contrib.uk.org.lidalia.slf4jext.Level;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
@@ -327,7 +326,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		analysisChunk.subAnalyzersParallel.forEach(sa -> {
 			LocationExaminationResults results = sa.examineLocation(location);
 			if (NONTRIVIAL_ASSERTIONS) {
-				for (CandidateSequenceI c: results.analyzedCandidateSequences) {
+				for (CandidateSequence c: results.analyzedCandidateSequences) {
 					Assert.isTrue(c.getOwningAnalyzer() == sa.analyzer);
 				}
 			}
@@ -374,7 +373,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				repetitiveBEDs)
 		);
 
-		RichIterable<CandidateSequenceI> mutantCandidates = locationExamResults.
+		RichIterable<CandidateSequence> mutantCandidates = locationExamResults.
 			flatCollect(c -> c.analyzedCandidateSequences).
 			select(c -> {
 				boolean isMutant = !c.getMutationType().isWildtype();
@@ -383,7 +382,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
 			(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
-			acceptMax(mutantCandidates, c -> ((CandidateSequenceI) c).getQuality().getValue()).
+			acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getValue()).
 			getMax());
 
 		@SuppressWarnings("null")//getMin cannot return null as long as
@@ -442,37 +441,37 @@ public class SubAnalyzerPhaser extends Phaser {
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate
 		) throws IOException {
 
-		final RichIterable<CandidateSequenceI> candidateSequences = locationExamResults.
+		final RichIterable<CandidateSequence> candidateSequences = locationExamResults.
 			flatCollect(l -> l.analyzedCandidateSequences);
 
 		//Refilter also allowing Q1 candidates to compare output of different
 		//analyzers
-		final RichIterable<CandidateSequenceI> allQ1Q2CandidatesWithHidden = candidateSequences.
+		final RichIterable<CandidateSequence> allQ1Q2CandidatesWithHidden = candidateSequences.
 			select(c -> {
 				Assert.isTrue(c.getLocation().distanceOnSameContig(location) == 0);
 				return c.getQuality().getNonNullValue().greaterThan(POOR);});
 
-		final MutableList<CandidateSequenceI> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.
+		final MutableList<CandidateSequence> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.
 			select(c -> !c.isHidden()).
-			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
 			asUnmodifiable();
 
-		final MutableList<CandidateSequenceI> allCandidatesIncludingDisag = candidateSequences.
+		final MutableList<CandidateSequence> allCandidatesIncludingDisag = candidateSequences.
 			select(c -> c.getQuality().getNonNullValue().greaterThan(POOR) ||
 				c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)).
 			select(c -> !c.isHidden()).
-			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
 			asUnmodifiable();
 
-		final MutableList<CandidateSequenceI> distinctQ1Q2Candidates = allQ1Q2Candidates.distinct().
+		final MutableList<CandidateSequence> distinctQ1Q2Candidates = allQ1Q2Candidates.distinct().
 			//Sorting might not be necessary
-			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
 			asUnmodifiable();
 
-		final List<CandidateSequenceI> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
+		final List<CandidateSequence> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
 			distinct().
 			//Sorting might not be necessary
-			toSortedList(Comparator.comparing(CandidateSequenceI::getMutationType)).
+			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
 			asUnmodifiable();
 
 		final ImmutableList<@NonNull DuplexDisagreement> allQ2DuplexDisagreements =
@@ -509,7 +508,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				c.setnDuplexesSisterArm((i == null) ? 0 : i);
 			});
 
-		for (final CandidateSequenceI candidate: distinctQ1Q2CandidatesIncludingDisag) {
+		for (final CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
 
 			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
 
@@ -569,7 +568,7 @@ public class SubAnalyzerPhaser extends Phaser {
 								c -> c.getNonMutableConcurringReads().size()));
 						stats0.nQ1Q2AtPosWithSomeCandidateForQ2UniqueMutation.insert(
 							(int) examResults.analyzedCandidateSequences.
-							sumOfInt(CandidateSequenceI::getnGoodOrDubiousDuplexes));
+							sumOfInt(CandidateSequence::getnGoodOrDubiousDuplexes));
 					});
 			}//End Q2 candidate
 
@@ -596,10 +595,10 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				final @NonNull LocationExaminationResults examResults =
 					Objects.requireNonNull(locationExamResultsMap.get(sa));
-				final List<CandidateSequenceI> l = examResults.analyzedCandidateSequences.
+				final List<CandidateSequence> l = examResults.analyzedCandidateSequences.
 					select(c -> c.equals(candidate)).toList();
 
-				final CandidateSequenceI matchingSACandidate;
+				final CandidateSequence matchingSACandidate;
 				final int nCandidates = l.size();
 				if (nCandidates > 1) {
 					throw new AssertionFailedException();
@@ -615,7 +614,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				if (!sa.stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(csla,
 						Util.serializeAndDeserialize(examResults))).
 					setCrossSampleLocationAnalysis(csla).candidates.add(
-							(CandidateSequence) Util.serializeAndDeserialize(matchingSACandidate))) {
+							Util.serializeAndDeserialize(matchingSACandidate))) {
 						throw new AssertionFailedException();
 				}
 
@@ -661,7 +660,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 	private static void outputCandidate(
 			final @NonNull Mutinack analyzer,
-			final @NonNull CandidateSequenceI candidate,
+			final @NonNull CandidateSequence candidate,
 			final @NonNull SequenceLocation location,
 			final @NonNull AnalysisStats stats,
 			final @NonNull String baseOutput0,
@@ -832,7 +831,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						c -> c.getNonMutableConcurringReads().size()));
 			stats.nQ1Q2AtPosQualityQ2OthersQ1Q2.insert(
 					(int) examResults.analyzedCandidateSequences.sumOfInt(
-						CandidateSequenceI::getnGoodOrDubiousDuplexes));
+						CandidateSequence::getnGoodOrDubiousDuplexes));
 
 			if (stats.analysisParameters.variableBarcodeLength == 0) {
 				stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));

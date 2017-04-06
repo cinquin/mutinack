@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.DuplexDisagreement;
 import uk.org.cinquin.mutinack.DuplexRead;
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
+import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 
@@ -40,7 +40,7 @@ public final class LocationExaminationResults implements Serializable {
 	private static final long serialVersionUID = -2966237959317593137L;
 
 	@JsonIgnore //Already listed in LocationAnalysis
-	public transient ImmutableSet<CandidateSequenceI> analyzedCandidateSequences;
+	public transient ImmutableSet<CandidateSequence> analyzedCandidateSequences;
 	public int nGoodOrDubiousDuplexes = 0;
 	public int nGoodDuplexesIgnoringDisag = 0;
 	public int nGoodDuplexes = 0;

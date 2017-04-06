@@ -70,7 +70,7 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDuplexEval;
-import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
+import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -554,7 +554,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public void examineAtLoc(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull ImmutableSet<@NonNull CandidateSequenceI> candidateSet,
+			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
 			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
@@ -579,7 +579,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@SuppressWarnings({"ReferenceEquality"})
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull ImmutableSet<@NonNull CandidateSequenceI> candidateSet,
+			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
 			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
@@ -879,7 +879,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			final Mutation actualMutant = (!m1.mutationType.isWildtype()) ? m1 : m2;
 			final Mutation wildtype = (actualMutant == m1) ? m2 : m1;
 
-			final CandidateSequenceI mutantCandidate;
+			final CandidateSequence mutantCandidate;
 			final CandidateDuplexEval mutantEval;
 			if (actualMutant == m1) {
 				mutantCandidate = top.candidate;

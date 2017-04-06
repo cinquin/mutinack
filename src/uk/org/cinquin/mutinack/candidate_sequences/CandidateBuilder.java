@@ -28,23 +28,23 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 
 public final class CandidateBuilder {
 
-	private final @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequenceI> candidates
+	private final @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequence> candidates
 		= new THashMap<>(300);
 	private final boolean negativeStrand;
 
-	public CandidateBuilder add(@NonNull CandidateSequenceI c, @NonNull SequenceLocation l) {
+	public CandidateBuilder add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
 		if (negativeStrand) {
 			c.incrementNegativeStrandCount(1);
 		} else {
 			c.incrementPositiveStrandCount(1);
 		}
-		@Nullable CandidateSequenceI previousCandidate = candidates.get(l);
+		@Nullable CandidateSequence previousCandidate = candidates.get(l);
 		Assert.isNull(previousCandidate);
 		candidates.put(l, c);
 		return this;
 	}
 
-	public @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequenceI> build() {
+	public @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequence> build() {
 		return candidates;
 	}
 

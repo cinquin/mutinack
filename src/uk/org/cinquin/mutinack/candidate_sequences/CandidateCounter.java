@@ -30,17 +30,17 @@ import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
-	private final @NonNull ImmutableSet<@NonNull CandidateSequenceI> candidates;
+	private final @NonNull ImmutableSet<@NonNull CandidateSequence> candidates;
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
-	public final @NonNull THashMap<@NonNull CandidateSequenceI, @NonNull CandidateDuplexEval>
+	public final @NonNull THashMap<@NonNull CandidateSequence, @NonNull CandidateDuplexEval>
 		candidateCounts;
 	public final Set<@NonNull ExtendedSAMRecord> keptRecords;
 
 	public long nPhreds, sumPhreds;
 
-	public CandidateCounter(@NonNull ImmutableSet<@NonNull CandidateSequenceI> candidates,
+	public CandidateCounter(@NonNull ImmutableSet<@NonNull CandidateSequence> candidates,
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
