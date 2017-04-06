@@ -98,6 +98,7 @@ import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.Pair;
+import uk.org.cinquin.mutinack.misc_util.SettableDouble;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.HashingStrategies;
@@ -751,9 +752,9 @@ public final class SubAnalyzer {
 		final CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
 
 		int[] insertSizes = new int [duplexReads.size()];
-		double averageCollisionProb = 0;
-		int index = 0;
-		for (DuplexRead duplexRead: duplexReads) {
+		SettableDouble averageCollisionProbS = new SettableDouble(0d);
+		SettableInteger index = new SettableInteger(0);
+		duplexReads.forEach(duplexRead -> {
 			Assert.isFalse(duplexRead.invalid);
 			Assert.isTrue(duplexRead.averageNClipped >= 0);
 			Assert.isTrue(param.variableBarcodeLength > 0 ||
@@ -769,29 +770,30 @@ public final class SubAnalyzer {
 				analyzer,
 				param,
 				stats);
-			if (index < insertSizes.length) {
+			if (index.get() < insertSizes.length) {
 				//Check in case array size was capped (for future use; it is
 				//never capped currently)
-				insertSizes[index] = duplexRead.maxInsertSize;
-				index++;
+				insertSizes[index.get()] = duplexRead.maxInsertSize;
+				index.incrementAndGet();
 			}
 
-			averageCollisionProb += duplexRead.probAtLeastOneCollision;
+			averageCollisionProbS.addAndGet(duplexRead.probAtLeastOneCollision);
 			if (param.variableBarcodeLength == 0 && !duplexRead.missingStrand) {
 				stats.duplexCollisionProbabilityWhen2Strands.insert((int)
 					(1_000f * duplexRead.probAtLeastOneCollision));
 			}
-		}
+		});
 		if (param.enableCostlyAssertions) {
 			Assert.noException(() -> checkDuplexAndCandidates(duplexReads, candidateSet));
 		}
 
-		if (index > 0) {
-			Arrays.parallelSort(insertSizes, 0, index);
-			result.duplexInsertSize10thP = insertSizes[(int) (index * 0.1f)];
-			result.duplexInsertSize90thP = insertSizes[(int) (index * 0.9f)];
+		if (index.get() > 0) {
+			Arrays.parallelSort(insertSizes, 0, index.get());
+			result.duplexInsertSize10thP = insertSizes[(int) (index.get() * 0.1f)];
+			result.duplexInsertSize90thP = insertSizes[(int) (index.get() * 0.9f)];
 		}
 
+		double averageCollisionProb = averageCollisionProbS.get();
 		averageCollisionProb /= duplexReads.size();
 		if (param.variableBarcodeLength == 0) {
 			stats.duplexCollisionProbability.insert((int) (1_000d * averageCollisionProb));
