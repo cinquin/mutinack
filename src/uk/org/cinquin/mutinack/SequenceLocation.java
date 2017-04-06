@@ -132,10 +132,6 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	public final boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
-			return false;
-		if (!(obj instanceof SequenceLocation))
-			return false;
 		SequenceLocation other = (SequenceLocation) obj;
 		if (!referenceGenomesEqual(other)) {
 			return false;
@@ -228,6 +224,9 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	private static final ThreadLocal<NumberFormat> nf = ThreadLocal.withInitial(() -> new DecimalFormat("00,000,000"));
 
 	private boolean referenceGenomesEqual(SequenceLocation other) {
+		if (other == null) {
+			return false;
+		}
 		if (referenceGenome == null) {
 			if (other.referenceGenome != null) {
 				return false;
