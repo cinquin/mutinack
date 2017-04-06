@@ -265,16 +265,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof CandidateSequence)) {
-			return false;
-		}
+		CandidateSequence other = (CandidateSequence) obj;
 		/*if (obj instanceof CandidateDeletion) {
 			return false;
 		}*/
-		CandidateSequence other = (CandidateSequence) obj;
 		if (getMutationType() != other.getMutationType()) {
 			return false;
 		}
