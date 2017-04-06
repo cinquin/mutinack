@@ -55,16 +55,7 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 		return result;
 	}
 
-	@Override
-	public final int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + deletionEnd.hashCode();
-		result = prime * result + deletionStart.hashCode();
-		return result;
-	}
-
-	@Override
+	/*@Override
 	public final boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -81,7 +72,7 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 			"Two deletions with same span but different sequences: " +
 			new String(getSequence()) + " vs " + new String(other.getSequence()) + "; " + this + "; " + other);
 		return true;
-	}
+	}*/
 
 	public CandidateDeletion(@NonNull SubAnalyzer subAnalyzer,
 			byte @Nullable[] sequence,

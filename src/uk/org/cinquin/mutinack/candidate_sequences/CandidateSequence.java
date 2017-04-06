@@ -120,7 +120,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Final @Persistent private @NonNull MutationType mutationType;
 	@Final @Persistent @JsonSerialize(using = ByteArrayStringSerializer.class)
 		private byte @Nullable[] sequence;
-	@JsonIgnore private int hashCode;
+	@JsonIgnore private final int hashCode;
 	@JsonSerialize(using = ByteStringSerializer.class)
 		private byte wildtypeSequence;
 	private final transient @NonNull ExtendedSAMRecord initialConcurringRead;
@@ -208,6 +208,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.location = null;
 		this.initialLigationSiteD = -1;
 		this.initialConcurringRead = null;
+		hashCode = computeHashCode();
 	}
 
 	public CandidateSequence(@NonNull SubAnalyzer owningSubAnalyzer, @NonNull MutationType mutationType,
@@ -222,6 +223,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.location = location;
 		this.initialConcurringRead = initialConcurringRead;
 		this.initialLigationSiteD = initialLigationSiteD;
+		hashCode = computeHashCode();
 	}
 
 	@Override
@@ -246,23 +248,20 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public int hashCode() {
-		if (hashCode == 0) {
-			computeHashCode();
-		}
+	public final int hashCode() {
 		return hashCode;
 	}
 
-	private void computeHashCode() {
+	private int computeHashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + getMutationType().hashCode();
 		result = prime * result + Arrays.hashCode(getSequence());
-		hashCode = result;
+		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public final boolean equals(Object obj) {
 		if (this == obj) {
 			return true;
 		}
@@ -272,9 +271,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (!(obj instanceof CandidateSequence)) {
 			return false;
 		}
-		if (obj instanceof CandidateDeletion) {
+		/*if (obj instanceof CandidateDeletion) {
 			return false;
-		}
+		}*/
 		CandidateSequence other = (CandidateSequence) obj;
 		if (getMutationType() != other.getMutationType()) {
 			return false;
