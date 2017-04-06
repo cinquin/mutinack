@@ -71,7 +71,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.net.sf.picard.reference.ReferenceSequence;
-import contrib.net.sf.samtools.AlignmentBlock;
+import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
@@ -91,6 +91,7 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDeletion;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
@@ -1435,7 +1436,7 @@ public final class SubAnalyzer {
 			}
 		}
 
-		for (AlignmentBlock block: rec.getAlignmentBlocks()) {
+		for (ExtendedAlignmentBlock block: extendedRec.getAlignmentBlocks()) {
 			processAlignmentBlock(location,
 				locationInterningSet,
 				readLocalCandidates,
@@ -1465,7 +1466,7 @@ public final class SubAnalyzer {
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ReferenceSequence ref,
 			final boolean notRnaSeq,
-			final AlignmentBlock block,
+			final ExtendedAlignmentBlock block,
 			final @NonNull ExtendedSAMRecord extendedRec,
 			final SAMRecord rec,
 			final int insertSize,
@@ -1607,9 +1608,11 @@ public final class SubAnalyzer {
 					int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, param.ignoreFirstNBasesQ1);
 					int distance = Math.min(distance0, distance1) + 1;
 
+					final boolean isIntron = block.previousCigarOperator == CigarOperator.N;
+
 					final boolean Q1reject = distance < 0;
 
-					if (Q1reject) {
+					if (!isIntron && Q1reject) {
 						if (!extendedRec.formsWrongPair()) {
 							stats.rejectedIndelDistanceToLigationSite.insert(-distance);
 							stats.nCandidateIndelBeforeFirstNBases.increment(location);
@@ -1620,9 +1623,9 @@ public final class SubAnalyzer {
 						distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
 						distance = Math.min(distance0, distance1) + 1;
 
-						stats.nCandidateDeletions.increment(location);
+						if (!isIntron) stats.nCandidateDeletions.increment(location);
 						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-							logger.info("Deletion at position " + readPosition + " for read " + rec.getReadName() +
+							logger.info("Deletion or intron at position " + readPosition + " for read " + rec.getReadName() +
 								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
 								"; insert size: " + insertSize + ')');
 						}
@@ -1633,34 +1636,36 @@ public final class SubAnalyzer {
 						final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 							extendedRec.getLocation().getContigName(), location.position + deletionLength);
 
-						final byte @NonNull[] deletedSequence =
-								Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
+						final byte @Nullable[] deletedSequence = isIntron ? null :
+							Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
 
 						//Add hidden mutations to all locations covered by deletion
 						//So disagreements between deletions that have only overlapping
 						//spans are detected.
-						for (int i = 1; i < deletionLength; i++) {
-							SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-								extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
-							CandidateSequence hiddenCandidate = new CandidateDeletion(
-								this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE,
-								location, deletionEnd);
-							hiddenCandidate.setHidden(true);
-							hiddenCandidate.setInsertSize(insertSize);
-							hiddenCandidate.setInsertSizeNoBarcodeAccounting(false);
-							hiddenCandidate.setPositionInRead(readPosition);
-							hiddenCandidate.setReadEL(effectiveReadLength);
-							hiddenCandidate.setReadName(extendedRec.getFullName());
-							hiddenCandidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-							hiddenCandidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-							hiddenCandidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-							hiddenCandidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-							hiddenCandidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-							readLocalCandidates.add(hiddenCandidate, location2);
+						if (!isIntron) {
+							for (int i = 1; i < deletionLength; i++) {
+								SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
+									extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
+								CandidateSequence hiddenCandidate = new CandidateDeletion(
+									this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE, MutationType.DELETION,
+									location, deletionEnd);
+								hiddenCandidate.setHidden(true);
+								hiddenCandidate.setInsertSize(insertSize);
+								hiddenCandidate.setInsertSizeNoBarcodeAccounting(false);
+								hiddenCandidate.setPositionInRead(readPosition);
+								hiddenCandidate.setReadEL(effectiveReadLength);
+								hiddenCandidate.setReadName(extendedRec.getFullName());
+								hiddenCandidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
+								hiddenCandidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
+								hiddenCandidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
+								hiddenCandidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
+								hiddenCandidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
+								readLocalCandidates.add(hiddenCandidate, location2);
+							}
 						}
 
 						final CandidateSequence candidate = new CandidateDeletion(this,
-							deletedSequence, location, extendedRec, distance,
+							deletedSequence, location, extendedRec, distance, isIntron ? MutationType.INTRON : MutationType.DELETION,
 							location, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 								extendedRec.getLocation().getContigName(), refPosition));
 
@@ -1679,22 +1684,22 @@ public final class SubAnalyzer {
 						candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
 						candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
 						readLocalCandidates.add(candidate, location);
-						extendedRec.nReferenceDisagreements++;
+						if (!isIntron) extendedRec.nReferenceDisagreements++;
 
-						if (param.computeRawMismatches) {
+						if (!isIntron && param.computeRawMismatches) {
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 								new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
 									new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
 								:
 									new ComparablePair<>(byteMap.get(deletedSequence[0]),
 										new String(deletedSequence).toUpperCase());
-							stats.rawDeletionsQ1.accept(location, mutationPair);
-							stats.rawDeletionLengthQ1.insert(deletedSequence.length);
-							if (meetsQ2Thresholds(extendedRec) &&
-								baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-								!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
+								stats.rawDeletionsQ1.accept(location, mutationPair);
+								stats.rawDeletionLengthQ1.insert(deletedSequence.length);
+								if (meetsQ2Thresholds(extendedRec) &&
+									baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+									!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 									candidate.getMutableRawDeletionsQ2().add(mutationPair);
-							}
+								}
 						}
 					}
 				}//End of deletion case

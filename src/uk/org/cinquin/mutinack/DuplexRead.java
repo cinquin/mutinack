@@ -965,6 +965,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 						case SUBSTITUTION:
 							stats.substDisagDistanceToLigationSite.insert(maxDistanceToLig);
 							break;
+						case INTRON:
+							//TODO Alignment problem? Report in new stats
+							break;
 						case WILDTYPE:
 							throw new AssertionFailedException();
 						default:

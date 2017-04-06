@@ -153,6 +153,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 		topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		alleleFrequencies = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
+		topBottomIntronDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		topBottomInsDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		codingStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		templateStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
@@ -558,6 +559,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomDelDisagreementsQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomIntronDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins

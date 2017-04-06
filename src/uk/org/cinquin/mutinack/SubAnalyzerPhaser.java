@@ -382,7 +382,10 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
 			(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
-			acceptMax(mutantCandidates, c -> ((CandidateSequence) c).getQuality().getValue()).
+			acceptMax(mutantCandidates, c -> {
+				CandidateSequence c0 = (CandidateSequence) c;
+				return c0.getMutationType().reportable() ? c0.getQuality().getValue() : Quality.ATROCIOUS;
+			}).
 			getMax());
 
 		@SuppressWarnings("null")//getMin cannot return null as long as
@@ -941,6 +944,9 @@ public class SubAnalyzerPhaser extends Phaser {
 							stats.templateStrandDelQ2.accept(location, d);
 						else
 							stats.codingStrandDelQ2.accept(location, d);});
+					break;
+				case INTRON:
+					stats.topBottomDelDisagreementsQ2.accept(location, d);
 					break;
 				case INSERTION:
 					stats.topBottomInsDisagreementsQ2.accept(location, d);

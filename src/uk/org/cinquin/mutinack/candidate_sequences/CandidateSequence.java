@@ -285,6 +285,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			case DELETION:
 				result = "-" + new String(getSequence()) + "-";
 				break;
+			case INTRON:
+				result = "-INTRON-";
+				break;
 			case INSERTION:
 				result = "^" + new String(getSequence()) + "^";
 				break;

@@ -17,7 +17,6 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.io.Serializable;
-import java.util.Arrays;
 
 import javax.jdo.annotations.Discriminator;
 import javax.jdo.annotations.DiscriminatorStrategy;
@@ -74,14 +73,18 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 		return true;
 	}*/
 
-	public CandidateDeletion(@NonNull SubAnalyzer subAnalyzer,
+	public CandidateDeletion(
+			@NonNull SubAnalyzer subAnalyzer,
 			byte @Nullable[] sequence,
 			@NonNull SequenceLocation location,
 			@NonNull ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD,
-			@NonNull SequenceLocation deletionStart, @NonNull SequenceLocation deletionEnd) {
-		super(subAnalyzer, MutationType.DELETION, sequence, location, initialConcurringRead,
+			@NonNull MutationType mutationType,
+			@NonNull SequenceLocation deletionStart,
+			@NonNull SequenceLocation deletionEnd) {
+		super(subAnalyzer, mutationType, sequence, location, initialConcurringRead,
 			initialLigationSiteD);
+		Assert.isTrue(mutationType == MutationType.DELETION || mutationType == MutationType.INTRON);
 		Assert.isTrue(deletionStart.contigIndex == deletionEnd.contigIndex);
 		this.deletionStart = deletionStart;
 		this.deletionEnd = deletionEnd;

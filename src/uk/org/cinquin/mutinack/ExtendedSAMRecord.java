@@ -37,6 +37,7 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectByteHashMap;
+import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
@@ -620,5 +621,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public float getAveragePhred() {
 		return averagePhred;
+	}
+
+	public List<ExtendedAlignmentBlock> getAlignmentBlocks() {
+		return ExtendedAlignmentBlock.getAlignmentBlocks(record.getCigar(), record.getAlignmentStart(), "read cigar");
 	}
 }

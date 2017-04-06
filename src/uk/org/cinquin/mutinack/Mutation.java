@@ -160,6 +160,8 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 				return "wt " + new String(new byte[] {wildtype});
 			case DELETION:
 				return "del " + mutationSequenceString();
+			case INTRON:
+				return "int";
 			case INSERTION:
 				return "ins " + mutationSequenceString();
 			case SUBSTITUTION:
