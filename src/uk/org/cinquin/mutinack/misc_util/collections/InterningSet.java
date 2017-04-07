@@ -1,7 +1,10 @@
 package uk.org.cinquin.mutinack.misc_util.collections;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import gnu.trove.set.hash.THashSet;
 
+@NotThreadSafe
 public class InterningSet<T> extends THashSet<T> {
 	public InterningSet(int i) {
 		super(i);
