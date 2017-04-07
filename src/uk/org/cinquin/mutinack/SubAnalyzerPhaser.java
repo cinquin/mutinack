@@ -50,11 +50,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.collections.api.RichIterable;
-import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
+import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -445,51 +446,27 @@ public class SubAnalyzerPhaser extends Phaser {
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate
 		) throws IOException {
 
-		final RichIterable<CandidateSequence> candidateSequences = locationExamResults.
-			flatCollect(l -> l.analyzedCandidateSequences);
+		final MutableList<CandidateSequence> candidateSequences = locationExamResults.
+			flatCollect(l -> l.analyzedCandidateSequences, new FastList<>()).
+			sortThis(Comparator.comparing(CandidateSequence::getMutationType));
 
 		//Refilter also allowing Q1 candidates to compare output of different
 		//analyzers
-		final RichIterable<CandidateSequence> allQ1Q2CandidatesWithHidden = candidateSequences.
+		final MutableList<CandidateSequence> allQ1Q2Candidates = candidateSequences.
 			select(c -> {
 				Assert.isTrue(c.getLocation().distanceOnSameContig(location) == 0);
-				return c.getQuality().getNonNullValue().greaterThan(POOR);});
+				return c.getQuality().getNonNullValue().greaterThan(POOR) && !c.isHidden();
+				}, new FastList<>());
 
-		final MutableList<CandidateSequence> allQ1Q2Candidates = allQ1Q2CandidatesWithHidden.
-			select(c -> !c.isHidden()).
-			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
-			asUnmodifiable();
-
-		final MutableList<CandidateSequence> allCandidatesIncludingDisag = candidateSequences.
-			select(c -> c.getQuality().getNonNullValue().greaterThan(POOR) ||
-				c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)).
-			select(c -> !c.isHidden()).
-			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
-			asUnmodifiable();
-
-		final MutableList<CandidateSequence> distinctQ1Q2Candidates = allQ1Q2Candidates.distinct().
-			//Sorting might not be necessary
-			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
-			asUnmodifiable();
-
-		final List<CandidateSequence> distinctQ1Q2CandidatesIncludingDisag = allCandidatesIncludingDisag.
-			distinct().
-			//Sorting might not be necessary
-			toSortedList(Comparator.comparing(CandidateSequence::getMutationType)).
-			asUnmodifiable();
-
-		final ImmutableList<@NonNull DuplexDisagreement> allQ2DuplexDisagreements =
+		final RichIterable<@NonNull DuplexDisagreement> allQ2DuplexDisagreements = //Distinct disagreements
 			locationExamResults.
 			flatCollect(ler -> ler.disagreements.keySet()).
-			select(d -> d.quality.atLeast(GOOD)).//Filtering is a NOP right now since all disags are Q2
-			distinct().
-			toImmutable();
+			select(d -> d.quality.atLeast(GOOD), Sets.mutable.empty());//Filtering is a NOP right now since all disags are Q2
 
 		final CrossSampleLocationAnalysis csla = new CrossSampleLocationAnalysis(location);
-
 		csla.randomlySelected = randomlySelected;
 		csla.lowTopAlleleFreq = lowTopAlleleFreq;
-		if (distinctQ1Q2Candidates.noneSatisfy(c -> c.getMutationType().isWildtype())) {
+		if (allQ1Q2Candidates.noneSatisfy(c -> c.getMutationType().isWildtype())) {
 			csla.noWt = true;
 		}
 
@@ -512,7 +489,10 @@ public class SubAnalyzerPhaser extends Phaser {
 				c.setnDuplexesSisterArm((i == null) ? 0 : i);
 			});
 
-		for (final CandidateSequence candidate: distinctQ1Q2CandidatesIncludingDisag) {
+		//Loop over *distinct* candidates (hence collection into a set) that meet criteria
+		candidateSequences.select(c -> !c.isHidden() && (c.getQuality().getNonNullValue().greaterThan(POOR) ||
+			c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)), Sets.mutable.empty()).
+		each(Procedures.throwing(candidate -> {
 
 			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
 
@@ -646,7 +626,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						examResults);
 				}
 			}//End loop over subAnalyzers
-		}//End loop over mutation candidates
+		}));//End loop over mutation candidates
 
 		final boolean moreThan1Q2IgnoringSisterSamples =
 			candidateSequences.
