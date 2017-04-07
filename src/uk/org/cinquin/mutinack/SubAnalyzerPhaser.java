@@ -520,7 +520,13 @@ public class SubAnalyzerPhaser extends Phaser {
 					)
 					) {
 
-				csla.nDuplexesUniqueQ2MutationCandidate.add(candidate.getnGoodOrDubiousDuplexes());
+				//Exclude duplexes whose reads all have an unmapped mate from the count
+				//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
+				//may cause an overestimate of that number
+				int concurringDuplexes = candidate.getDuplexes().count(d ->
+					d.localAndGlobalQuality.getNonNullValue().atLeast(Quality.DUBIOUS) &&
+					!d.allDuplexRecords.allSatisfy(r -> r.record.getMateUnmappedFlag()));
+				csla.nDuplexesUniqueQ2MutationCandidate.add(concurringDuplexes);
 
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
