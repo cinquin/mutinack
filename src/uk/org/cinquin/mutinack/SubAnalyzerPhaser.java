@@ -31,6 +31,7 @@ import static uk.org.cinquin.mutinack.qualities.Quality.POOR;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -897,6 +898,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					:
 						stats.noWtDisagreementWriter;
 				if (tpdw != null) {
+					NumberFormat formatter = mediumLengthFloatFormatter.get();
 					tpdw.append(location.getContigName() + '\t' +
 						(location.position + 1) + '\t' + (location.position + 1) + '\t' +
 						(mutant.mutationType == SUBSTITUTION ?
@@ -907,10 +909,10 @@ public class SubAnalyzerPhaser extends Phaser {
 						(d.hasAWtStrand ? "" : (d.getFst() != null ? d.getFst().mutationType : "-")) + '\t' +
 						examResults.duplexInsertSize10thP + '\t' +
 						examResults.duplexInsertSize90thP + '\t' +
-						(int) (10 * examResults.alleleFrequencies.get(0)) + '\t' +
-						(int) (10 * examResults.alleleFrequencies.get(1)) + '\t' +
-						mediumLengthFloatFormatter.get().format(d.probCollision) + '\t' +
-						mediumLengthFloatFormatter.get().format(examResults.probAtLeastOneCollision) + '\t' +
+						formatter.format(examResults.alleleFrequencies.get(0)) + '\t' +
+						formatter.format(examResults.alleleFrequencies.get(1)) + '\t' +
+						formatter.format(d.probCollision) + '\t' +
+						formatter.format(examResults.probAtLeastOneCollision) + '\t' +
 						entry.getValue().size() + '\t' +
 						((stats.analysisParameters.verbosity < 2) ? "" :
 						entry.getValue().stream().limit(20).map(dp ->

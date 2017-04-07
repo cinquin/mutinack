@@ -815,8 +815,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			getMedianPhredAtPosition() + "\t" +
 			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + "\t" +
 			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + "\t" +
-			examResults.alleleFrequencies.get(0) + "\t" +
-			examResults.alleleFrequencies.get(1) + "\t" +
+			formatter.format(examResults.alleleFrequencies.get(0)) + "\t" +
+			formatter.format(examResults.alleleFrequencies.get(1)) + "\t" +
 			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
 			);
 
