@@ -268,6 +268,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		String readName = record.getReadName();
 		int endFirstChunk = nthIndexOf(readName, ':', 5);
+		//Interning below required for equality checks performed in optical duplicate detection
 		runAndTile = record.getReadName().substring(0, endFirstChunk).intern();
 		byte[] readNameBytes = readName.getBytes();
 
