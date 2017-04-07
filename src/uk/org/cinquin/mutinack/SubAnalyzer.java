@@ -1267,18 +1267,12 @@ public final class SubAnalyzer {
 	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
 			ImmutableSet<CandidateSequence> candidateSet) {
 		for (DuplexRead duplexRead: duplexReads) {
-			for (ExtendedSAMRecord r: duplexRead.bottomStrandRecords) {
+			duplexRead.allDuplexRecords.each(r -> {
 				if (r.duplexRead != duplexRead) {
 					throw new AssertionFailedException("Read " + r + " associated with duplexes " +
 						r.duplexRead + " and " + duplexRead);
 				}
-			}
-			for (ExtendedSAMRecord r: duplexRead.topStrandRecords) {
-				if (r.duplexRead != duplexRead) {
-					throw new AssertionFailedException("Read " + r + " associated with duplexes " +
-						r.duplexRead + " and " + duplexRead);
-				}
-			}
+			});
 		}
 
 		candidateSet.each(c -> {
@@ -1309,7 +1303,7 @@ public final class SubAnalyzer {
 					}
 					DuplexRead d = r.duplexRead;
 					if (d != null && duplexesSupportingC.contains(d)) {
-						boolean disowned = !d.topStrandRecords.contains(r) && !d.bottomStrandRecords.contains(r);
+						boolean disowned = !d.allDuplexRecords.contains(r);
 
 						throw new AssertionFailedException(disowned + " Duplex " + d +
 							" associated with candidates " + c + " and " + c2);

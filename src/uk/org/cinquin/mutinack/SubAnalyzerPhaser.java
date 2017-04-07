@@ -966,7 +966,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 				final int randomIndexForDuplexName = dn.incrementAndGet();
 
-				final int nReads = duplexRead.bottomStrandRecords.size() + duplexRead.topStrandRecords.size();
+				final int nReads = duplexRead.allDuplexRecords.size();
 				final Quality minDuplexQuality = duplexRead.minQuality;
 				final Quality maxDuplexQuality = duplexRead.maxQuality;
 				Handle<String> topOrBottom = new Handle<>();

@@ -105,7 +105,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
 	public final @NonNull MutableList<@NonNull ExtendedSAMRecord> topStrandRecords = new FastList<>(100),
 			bottomStrandRecords = new FastList<>(100);
-	public final LazyIterable<ExtendedSAMRecord> allDuplexRecords =
+	public final LazyIterable<@NonNull ExtendedSAMRecord> allDuplexRecords =
 		new LazyIterableAdapter<>(topStrandRecords).concatenate(bottomStrandRecords);
 	public int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
@@ -202,9 +202,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	void computeGlobalProperties() {
 		//TODO compute consensus insert size instead of extremes
 		final IntMinMax<ExtendedSAMRecord> insertSizeStats = new IntMinMax<ExtendedSAMRecord>().
-			acceptMinMax(bottomStrandRecords,
-				er -> Math.abs(((ExtendedSAMRecord) er).getInsertSize())).
-			acceptMinMax(topStrandRecords,
+			acceptMinMax(allDuplexRecords,
 				er -> Math.abs(((ExtendedSAMRecord) er).getInsertSize()));
 
 		maxInsertSize = insertSizeStats.getMax();
@@ -320,22 +318,15 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 
 	public int getMinMedianPhred() {
-		int result = Integer.MAX_VALUE;
-		for (ExtendedSAMRecord r: topStrandRecords) {
+		SettableInteger result = new SettableInteger(Integer.MAX_VALUE);
+		allDuplexRecords.each(r -> {
 			int i = r.medianPhred;
-			if (i < result) {
-				result = i;
+			if (i < result.get()) {
+				result.set(i);
 			}
-		}
+		});
 
-		for (ExtendedSAMRecord r: bottomStrandRecords) {
-			int i = r.medianPhred;
-			if (i < result) {
-				result = i;
-			}
-		}
-
-		return result;
+		return result.get();
 	}
 
 	@Override
@@ -991,31 +982,18 @@ public final class DuplexRead implements HasInterval<Integer> {
 				candidate.getMutableConcurringReads();
 
 			final int noEntryValue = reads.getNoEntryValue();
-			@SuppressWarnings("unused")
-			int nRemoved = 0;
+			SettableInteger nRemoved = new SettableInteger(0);
 
-			for (int i = bottomStrandRecords.size() - 1; i >= 0; --i) {
-				ExtendedSAMRecord r = bottomStrandRecords.get(i);
+			allDuplexRecords.each(r -> {
 				if (candidate.removeConcurringRead(r) != noEntryValue) {
-					nRemoved++;
+					nRemoved.incrementAndGet();
 					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
 						logger.info("Removed support for " + candidate + " by read " + r);
 					}
 				}
 				Assert.isFalse(reads.containsKey(r));
 				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
-			}
-			for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
-				ExtendedSAMRecord r = topStrandRecords.get(i);
-				if (candidate.removeConcurringRead(r) != noEntryValue) {
-					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-						logger.info("Removed support for " + candidate + " by read " + r);
-					}
-					nRemoved++;
-				}
-				Assert.isFalse(reads.containsKey(r));
-				Assert.isFalse(candidate.getNonMutableConcurringReads().containsKey(r));
-			}
+			});
 
 			if (duplexDisagreement != null && duplexDisagreement.quality.atLeast(GOOD) &&
 					param.Q2DisagCapsMatchingMutationQuality &&
@@ -1080,7 +1058,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		stats.duplexTotalRecords.insert(totalNRecords);
 
-		totalNRecords = topStrandRecords.size() + bottomStrandRecords.size();
+		totalNRecords = allDuplexRecords.size();
 
 		if (param.filterOpticalDuplicates) {
 			//Side effect: allDuplexRecords sorted by x position
