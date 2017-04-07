@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -78,7 +77,7 @@ public final class SimpleCounter<T> {
 
 	private static final int BASES_SPAN = 't' - 'A' + 1;
 
-	public static byte @NonNull[] getBarcodeConsensus(Stream<byte[]> records,
+	public static byte @NonNull[] getBarcodeConsensus(Iterable<byte[]> records,
 			int barcodeLength) {
 		//Use hand-implemented 2D array instead of Java multidimensional array
 		//to minimize number of objects created

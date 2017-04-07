@@ -44,7 +44,6 @@ import static uk.org.cinquin.mutinack.qualities.Quality.min;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -56,8 +55,11 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.lazy.LazyIterableAdapter;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
@@ -101,8 +103,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private final MutinackGroup groupSettings;
 	public byte @NonNull[] leftBarcode, rightBarcode;
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
-	public final @NonNull List<@NonNull ExtendedSAMRecord> topStrandRecords = new ArrayList<>(100),
-			bottomStrandRecords = new ArrayList<>(100);
+	public final @NonNull MutableList<@NonNull ExtendedSAMRecord> topStrandRecords = new FastList<>(100),
+			bottomStrandRecords = new FastList<>(100);
+	public final LazyIterable<ExtendedSAMRecord> allDuplexRecords =
+		new LazyIterableAdapter<>(topStrandRecords).concatenate(bottomStrandRecords);
 	public int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
@@ -143,10 +147,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	void assertAllBarcodesEqual() {
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
-			final Collection<ExtendedSAMRecord> allDuplexRecords =
-					new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
-			allDuplexRecords.addAll(topStrandRecords);
-			allDuplexRecords.addAll(bottomStrandRecords);
 			allDuplexRecords.forEach(r -> {
 				if (!r.duplexLeft()) {
 					if (!basesEqual(rightBarcode, r.variableBarcode, true, 0)) {
@@ -176,26 +176,18 @@ public final class DuplexRead implements HasInterval<Integer> {
 	 * @return True if the barcodes have changed
 	 */
 	boolean computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
-		final Collection<@NonNull ExtendedSAMRecord> allDuplexRecords =
-				new ArrayList<>(topStrandRecords.size() + bottomStrandRecords.size());
-		allDuplexRecords.addAll(topStrandRecords);
-		allDuplexRecords.addAll(bottomStrandRecords);
 		totalNRecords = allDuplexRecords.size();
 		final byte @NonNull[] newLeft, newRight;
 		if (allReadsSameBarcode) {
-			newLeft = (allDuplexRecords.stream().
-					filter(rExt -> rExt.record.getInferredInsertSize() >= 0).
-					findAny().map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
-			newRight = (allDuplexRecords.stream().
-					filter(rExt -> rExt.record.getInferredInsertSize() < 0).
-					findAny().map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
+			newLeft = (allDuplexRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() >= 0).
+					map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
+			newRight = (allDuplexRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() < 0).
+					map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
 		} else {
-			newLeft = SimpleCounter.getBarcodeConsensus(allDuplexRecords.stream().
-					filter(rExt -> rExt.record.getInferredInsertSize() >= 0).
-					map(r -> r.variableBarcode), barcodeLength);
-			newRight = SimpleCounter.getBarcodeConsensus(allDuplexRecords.stream().
-					filter(rExt -> rExt.record.getInferredInsertSize() < 0).
-					map(r -> r.variableBarcode), barcodeLength);
+			newLeft = SimpleCounter.getBarcodeConsensus(allDuplexRecords.collectIf(
+				rExt -> rExt.record.getInferredInsertSize() >= 0, r -> r.variableBarcode), barcodeLength);
+			newRight = SimpleCounter.getBarcodeConsensus(allDuplexRecords.collectIf(
+				rExt -> rExt.record.getInferredInsertSize() < 0, r -> r.variableBarcode), barcodeLength);
 		}
 
 		computeGlobalProperties();
@@ -1089,9 +1081,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 		stats.duplexTotalRecords.insert(totalNRecords);
 
 		totalNRecords = topStrandRecords.size() + bottomStrandRecords.size();
-		MutableList<ExtendedSAMRecord> allDuplexRecords = new FastList<>(totalNRecords);
-		allDuplexRecords.addAll(topStrandRecords);
-		allDuplexRecords.addAll(bottomStrandRecords);
 
 		if (param.filterOpticalDuplicates) {
 			//Side effect: allDuplexRecords sorted by x position
@@ -1103,7 +1092,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		if (!alreadyVisitedForStats) {
 			allDuplexRecords.each(r -> r.duplexAlreadyVisitedForStats = true);
-			stats.duplexinsertSize.insert(Math.abs(allDuplexRecords.get(0).getInsertSize()));
+			stats.duplexinsertSize.insert(Math.abs(allDuplexRecords.getFirst().getInsertSize()));
 		}
 
 		int i = 0;
@@ -1142,7 +1131,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 
 
-		final int inferredSize = Math.abs(allDuplexRecords.get(0).getInsertSize());
+		final int inferredSize = Math.abs(allDuplexRecords.getFirst().getInsertSize());
 		if (inferredSize < 130) {
 			stats.duplexInsert100_130AverageNClipped.insert(averageNClipped);
 		} else if (inferredSize < 180) {
@@ -1151,7 +1140,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	}
 
-	public void markDuplicates(Parameters param, AnalysisStats stats, MutableList<ExtendedSAMRecord> reads) {
+	public void markDuplicates(Parameters param, AnalysisStats stats, Iterable<ExtendedSAMRecord> reads0) {
+		MutableList<ExtendedSAMRecord> reads = Lists.mutable.ofAll(reads0);
 		reads.sort(Comparator.comparing(ExtendedSAMRecord::getxLoc));
 		reads.each(r -> {
 			r.visitedForOptDups = false;

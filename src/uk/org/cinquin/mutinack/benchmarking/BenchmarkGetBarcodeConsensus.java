@@ -49,7 +49,7 @@ public class BenchmarkGetBarcodeConsensus {
 	*/
 	@Fork(jvmArgsAppend = {MAX_MEM, G1})
 	public byte[] benchmarkCurrentImplementation() {
-		return SimpleCounter.getBarcodeConsensus(barcodes.stream(), 4);
+		return SimpleCounter.getBarcodeConsensus(barcodes, 4);
 	}
 
 	@Benchmark
@@ -100,7 +100,7 @@ public class BenchmarkGetBarcodeConsensus {
 	*/
 	@Fork(jvmArgsAppend = {MAX_MEM, G1})
 	public byte[] benchmarkCurrentImplementationLongList() {
-		return SimpleCounter.getBarcodeConsensus(longerBarcodeList.stream(), 4);
+		return SimpleCounter.getBarcodeConsensus(longerBarcodeList, 4);
 	}
 
 	@Benchmark
@@ -148,7 +148,7 @@ public class BenchmarkGetBarcodeConsensus {
 	*/
 	@Fork(jvmArgsAppend = {MAX_MEM, PARALLEL_GC_1, PARALLEL_GC_2})
 	public byte[] benchmarkCurrentImplementationPGC() {
-		return SimpleCounter.getBarcodeConsensus(barcodes.stream(), 4);
+		return SimpleCounter.getBarcodeConsensus(barcodes, 4);
 	}
 
 	@Benchmark
@@ -192,7 +192,7 @@ public class BenchmarkGetBarcodeConsensus {
 	*/
 	@Fork(jvmArgsAppend = {MAX_MEM, PARALLEL_GC_1, PARALLEL_GC_2})
 	public byte[] benchmarkCurrentImplementationLongListPGC() {
-		return SimpleCounter.getBarcodeConsensus(longerBarcodeList.stream(), 4);
+		return SimpleCounter.getBarcodeConsensus(longerBarcodeList, 4);
 	}
 
 	@Benchmark
