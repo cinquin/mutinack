@@ -55,6 +55,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -1478,6 +1479,18 @@ public final class SubAnalyzer {
 			final SettableInteger readEndOfPreviousAlignment0,
 			final SettableInteger returnValue) {
 
+		final Consumer<CandidateSequence> fillInCandidateInfo = candidate -> {
+			candidate.setInsertSize(insertSize);
+			candidate.setReadEL(effectiveReadLength);
+			candidate.setReadName(extendedRec.getFullName());
+			candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
+			candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
+			candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
+			candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
+			candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
+			candidate.setInsertSizeNoBarcodeAccounting(false);
+		};
+
 		int refPosition = block.getReferenceStart() - 1;
 		int readPosition = block.getReadStart() - 1;
 		final int nBlockBases = block.getLength();
@@ -1615,6 +1628,7 @@ public final class SubAnalyzer {
 				}
 				if (goodToInsert || forceCandidateInsertion) {
 					processSubstitution(
+						fillInCandidateInfo,
 						location,
 						locationPH,
 						readPosition,
@@ -1730,20 +1744,21 @@ public final class SubAnalyzer {
 	}
 
 	private void processSubstitution(
-		final @NonNull SequenceLocation location,
-		final @Nullable SequenceLocation locationPH,
-		final int readPosition,
-		final int refPosition,
-		final CandidateBuilder readLocalCandidates,
-		final @NonNull ExtendedSAMRecord extendedRec,
-		final int insertSize,
-		final boolean readOnNegativeStrand,
-		final byte[] readBases,
-		final byte[] refBases,
-		final byte[] baseQualities,
-		final int effectiveReadLength,
-		final boolean forceCandidateInsertion,
-		final Handle<Boolean> insertCandidateAtRegularPosition) {
+			final Consumer<CandidateSequence> candidateFiller,
+			final @NonNull SequenceLocation location,
+			final @Nullable SequenceLocation locationPH,
+			final int readPosition,
+			final int refPosition,
+			final CandidateBuilder readLocalCandidates,
+			final @NonNull ExtendedSAMRecord extendedRec,
+			final int insertSize,
+			final boolean readOnNegativeStrand,
+			final byte[] readBases,
+			final byte[] refBases,
+			final byte[] baseQualities,
+			final int effectiveReadLength,
+			final boolean forceCandidateInsertion,
+			final Handle<Boolean> insertCandidateAtRegularPosition) {
 
 		int distance = 0;
 
@@ -1786,16 +1801,8 @@ public final class SubAnalyzer {
 		if (!extendedRec.formsWrongPair()) {
 			candidate.acceptLigSiteDistance(distance);
 		}
-		candidate.setInsertSize(insertSize);
-		candidate.setInsertSizeNoBarcodeAccounting(false);
+		candidateFiller.accept(candidate);
 		candidate.setPositionInRead(readPosition);
-		candidate.setReadEL(effectiveReadLength);
-		candidate.setReadName(extendedRec.getFullName());
-		candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-		candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-		candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-		candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-		candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
 		candidate.setWildtypeSequence(wildType);
 		candidate.addBasePhredScore(baseQualities[readPosition]);
 		extendedRec.nReferenceDisagreements++;
