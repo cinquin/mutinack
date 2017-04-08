@@ -136,7 +136,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int insertSize = -1;
 	private int positionInRead = -1;
 	private int readEL = -1;
-	private boolean insertSizeNoBarcodeAccounting = false;
 	@Nullable private String readName;
 	private int readAlignmentStart = -1;
 	private int mateReadAlignmentStart = -1;
@@ -939,15 +938,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setReadEL(int readEL) {
 		this.readEL = readEL;
-	}
-
-	public boolean isInsertSizeNoBarcodeAccounting() {
-		return insertSizeNoBarcodeAccounting;
-	}
-
-	@Override
-	public void setInsertSizeNoBarcodeAccounting(boolean insertSizeNoBarcodeAccounting) {
-		this.insertSizeNoBarcodeAccounting = insertSizeNoBarcodeAccounting;
 	}
 
 	public String getReadName() {

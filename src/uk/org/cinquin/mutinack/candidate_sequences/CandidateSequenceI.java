@@ -125,7 +125,6 @@ public interface CandidateSequenceI extends Serializable {
 	void setReadAlignmentEnd(int refAlignmentEnd);
 	void setMateReadAlignmentEnd(int mateRefAlignmentEnd);
 	void setRefPositionOfMateLigationSite(int refPositionOfMateLigationSite);
-	void setInsertSizeNoBarcodeAccounting(boolean b);
 	void setHidden(boolean b);
 	void addBasePhredScore(byte b);
 	byte getMedianPhredScore();

@@ -1488,7 +1488,6 @@ public final class SubAnalyzer {
 			candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
 			candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
 			candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-			candidate.setInsertSizeNoBarcodeAccounting(false);
 		};
 
 		int refPosition = block.getReferenceStart() - 1;
