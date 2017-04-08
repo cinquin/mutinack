@@ -1531,6 +1531,7 @@ public final class SubAnalyzer {
 							"; insert size: " + insertSize + ')');
 					}
 					forceCandidateInsertion = processInsertion(
+						fillInCandidateInfo,
 						readPosition,
 						refPosition,
 						readEndOfPreviousAlignment,
@@ -1547,7 +1548,9 @@ public final class SubAnalyzer {
 				else if (refPosition < refEndOfPreviousAlignment + 1) {
 					throw new AssertionFailedException("Alignment block misordering");
 				} else {
-					processDeletion(location,
+					processDeletion(
+						fillInCandidateInfo,
+						location,
 						ref,
 						block,
 						readPosition,
@@ -1646,6 +1649,7 @@ public final class SubAnalyzer {
 				}//End of mismatched read case
 			} else {
 				processWildtypeBase(
+					fillInCandidateInfo,
 					location,
 					locationPH,
 					readPosition,
@@ -1664,6 +1668,7 @@ public final class SubAnalyzer {
 	}
 
 	private void processWildtypeBase(
+		final Consumer<CandidateSequence> candidateFiller,
 		final @NonNull SequenceLocation location,
 		final @Nullable SequenceLocation locationPH,
 		final int readPosition,
@@ -1841,6 +1846,7 @@ public final class SubAnalyzer {
 	}
 
 	private void processDeletion(
+		final Consumer<CandidateSequence> candidateFiller,
 		final @NonNull SequenceLocation location,
 		final @NonNull ReferenceSequence ref,
 		final ExtendedAlignmentBlock block,
@@ -1911,17 +1917,9 @@ public final class SubAnalyzer {
 					CandidateSequence hiddenCandidate = new CandidateDeletion(
 						this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE, MutationType.DELETION,
 						newLocation, deletionEnd);
+					candidateFiller.accept(hiddenCandidate);
 					hiddenCandidate.setHidden(true);
-					hiddenCandidate.setInsertSize(insertSize);
-					hiddenCandidate.setInsertSizeNoBarcodeAccounting(false);
 					hiddenCandidate.setPositionInRead(readPosition);
-					hiddenCandidate.setReadEL(effectiveReadLength);
-					hiddenCandidate.setReadName(extendedRec.getFullName());
-					hiddenCandidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-					hiddenCandidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-					hiddenCandidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-					hiddenCandidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-					hiddenCandidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
 					hiddenCandidate = readLocalCandidates.add(hiddenCandidate, location2);
 					hiddenCandidate = null;
 				}
@@ -1936,16 +1934,8 @@ public final class SubAnalyzer {
 				candidate.acceptLigSiteDistance(distance);
 			}
 
-			candidate.setInsertSize(insertSize);
-			candidate.setInsertSizeNoBarcodeAccounting(false);
+			candidateFiller.accept(candidate);
 			candidate.setPositionInRead(readPosition);
-			candidate.setReadEL(effectiveReadLength);
-			candidate.setReadName(extendedRec.getFullName());
-			candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-			candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-			candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-			candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-			candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
 			if (!isIntron) extendedRec.nReferenceDisagreements++;
 
 			if (!isIntron && param.computeRawMismatches) {
@@ -1970,6 +1960,7 @@ public final class SubAnalyzer {
 	}
 
 	private boolean processInsertion(
+			final Consumer<CandidateSequence> candidateFiller,
 			final int readPosition,
 			final int refPosition,
 			final int readEndOfPreviousAlignment,
@@ -2020,16 +2011,8 @@ public final class SubAnalyzer {
 				candidate.acceptLigSiteDistance(distance);
 			}
 
-			candidate.setInsertSize(insertSize);
+			candidateFiller.accept(candidate);
 			candidate.setPositionInRead(readPosition);
-			candidate.setReadEL(effectiveReadLength);
-			candidate.setReadName(extendedRec.getFullName());
-			candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-			candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-			candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-			candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-			candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-			candidate.setInsertSizeNoBarcodeAccounting(false);
 
 			if (param.computeRawMismatches) {
 				final byte wildType = readBases[readEndOfPreviousAlignment];
