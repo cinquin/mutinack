@@ -1562,10 +1562,12 @@ public final class SubAnalyzer {
 				forceCandidateInsertion = false;
 			}
 			Handle<Boolean> insertCandidateAtRegularPosition = new Handle<>(true);
-			final SequenceLocation locationPH = notRnaSeq && i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
-				SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-					extendedRec.getLocation().getContigName(), refPosition, true)
-				: null;
+			final SequenceLocation locationPH =
+				i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
+					SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
+						extendedRec.getLocation().getContigName(), refPosition, true)
+				:
+					null;
 
 			location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 				extendedRec.getLocation().getContigName(), refPosition);
@@ -1629,71 +1631,102 @@ public final class SubAnalyzer {
 						insertCandidateAtRegularPosition);
 				}//End of mismatched read case
 			} else {
-				//Wildtype read
-				int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
-				if (distance >= 0) {
-					if (!extendedRec.formsWrongPair()) {
-						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
-						if (distance <= 0 && insertCandidateAtRegularPosition.get()) {
-							stats.wtRejectedDistanceToLigationSite.insert(-distance);
-						}
-					}
-					if (!forceCandidateInsertion) {
-						continue;
-					} else {
-						insertCandidateAtRegularPosition.set(false);
-					}
-				} else {
-					if (!extendedRec.formsWrongPair() && distance < -150) {
-						throw new AssertionFailedException("Distance problem 1 at read position " + readPosition +
-							" and refPosition " + refPosition + ' ' + extendedRec.toString() +
-							" in analyzer" + analyzer.inputBam.getAbsolutePath() +
-							"; distance is " + distance + "");
-					}
-					distance = extendedRec.tooCloseToBarcode(readPosition, 0);
-					if (!extendedRec.formsWrongPair() && insertCandidateAtRegularPosition.get()) {
-						stats.wtAcceptedBaseDistanceToLigationSite.insert(-distance);
-					}
-				}
-
-				if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - param.ignoreLastNBases) ||
-					(readOnNegativeStrand && readPosition < param.ignoreLastNBases))) {
-					if (insertCandidateAtRegularPosition.get()) {
-						stats.nCandidateWildtypeAfterLastNBases.increment(location);
-					}
-					if (!forceCandidateInsertion) {
-						continue;
-					} else {
-						insertCandidateAtRegularPosition.set(false);
-					}
-				}
-				CandidateSequence candidate = new CandidateSequence(this,
-					WILDTYPE, null, location, extendedRec, -distance);
-				if (!extendedRec.formsWrongPair()) {
-					candidate.acceptLigSiteDistance(-distance);
-				}
-				candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-				candidate.addBasePhredScore(baseQualities[readPosition]);
-				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
-						ExtendedSAMRecord.PHRED_NO_ENTRY) {
-					logger.warn("Recording Phred score multiple times at same position " + location);
-				}
-				if (insertCandidateAtRegularPosition.get()) {
-					candidate = readLocalCandidates.add(candidate, location);
-					candidate = null;
-				}
-				if (locationPH != null) {
-					CandidateSequence candidate2 = new CandidateSequence(this,
-						WILDTYPE, null, locationPH, extendedRec, -distance);
-					if (!extendedRec.formsWrongPair()) {
-						candidate2.acceptLigSiteDistance(-distance);
-					}
-					candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-					candidate2 = readLocalCandidates.add(candidate2, locationPH);
-					candidate2 = null;
-				}
+				processWildtypeBase(
+					location,
+					locationPH,
+					readPosition,
+					refPosition,
+					readLocalCandidates,
+					extendedRec,
+					readOnNegativeStrand,
+					readBases,
+					refBases,
+					baseQualities,
+					effectiveReadLength,
+					forceCandidateInsertion,
+					insertCandidateAtRegularPosition);
 			}//End of wildtype case
 		}//End of loop over alignment bases
+	}
+
+	private void processWildtypeBase(
+		final @NonNull SequenceLocation location,
+		final @Nullable SequenceLocation locationPH,
+		final int readPosition,
+		final int refPosition,
+		final CandidateBuilder readLocalCandidates,
+		final @NonNull ExtendedSAMRecord extendedRec,
+		final boolean readOnNegativeStrand,
+		final byte[] readBases,
+		final byte[] refBases,
+		final byte[] baseQualities,
+		final int effectiveReadLength,
+		final boolean forceCandidateInsertion,
+		final Handle<Boolean> insertCandidateAtRegularPosition) {
+
+		//Wildtype read
+		int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
+		if (distance >= 0) {
+			if (!extendedRec.formsWrongPair()) {
+				distance = extendedRec.tooCloseToBarcode(readPosition, 0);
+				if (distance <= 0 && insertCandidateAtRegularPosition.get()) {
+					stats.wtRejectedDistanceToLigationSite.insert(-distance);
+				}
+			}
+			if (!forceCandidateInsertion) {
+				return;
+			} else {
+				insertCandidateAtRegularPosition.set(false);
+			}
+		} else {
+			if (!extendedRec.formsWrongPair() && distance < -150) {
+				throw new AssertionFailedException("Distance problem 1 at read position " + readPosition +
+					" and refPosition " + refPosition + ' ' + extendedRec.toString() +
+					" in analyzer" + analyzer.inputBam.getAbsolutePath() +
+					"; distance is " + distance + "");
+			}
+			distance = extendedRec.tooCloseToBarcode(readPosition, 0);
+			if (!extendedRec.formsWrongPair() && insertCandidateAtRegularPosition.get()) {
+				stats.wtAcceptedBaseDistanceToLigationSite.insert(-distance);
+			}
+		}
+
+		if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - param.ignoreLastNBases) ||
+			(readOnNegativeStrand && readPosition < param.ignoreLastNBases))) {
+			if (insertCandidateAtRegularPosition.get()) {
+				stats.nCandidateWildtypeAfterLastNBases.increment(location);
+			}
+			if (!forceCandidateInsertion) {
+				return;
+			} else {
+				insertCandidateAtRegularPosition.set(false);
+			}
+		}
+		CandidateSequence candidate = new CandidateSequence(this,
+			WILDTYPE, null, location, extendedRec, -distance);
+		if (!extendedRec.formsWrongPair()) {
+			candidate.acceptLigSiteDistance(-distance);
+		}
+		candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
+		candidate.addBasePhredScore(baseQualities[readPosition]);
+		if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
+				ExtendedSAMRecord.PHRED_NO_ENTRY) {
+			logger.warn("Recording Phred score multiple times at same position " + location);
+		}
+		if (insertCandidateAtRegularPosition.get()) {
+			candidate = readLocalCandidates.add(candidate, location);
+			candidate = null;
+		}
+		if (locationPH != null) {
+			CandidateSequence candidate2 = new CandidateSequence(this,
+				WILDTYPE, null, locationPH, extendedRec, -distance);
+			if (!extendedRec.formsWrongPair()) {
+				candidate2.acceptLigSiteDistance(-distance);
+			}
+			candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
+			candidate2 = readLocalCandidates.add(candidate2, locationPH);
+			candidate2 = null;
+		}
 	}
 
 	private void processSubstitution(
@@ -1808,7 +1841,7 @@ public final class SubAnalyzer {
 		final int refPosition,
 		final int readEndOfPreviousAlignment,
 		final int refEndOfPreviousAlignment,
-		InterningSet<@NonNull SequenceLocation> locationInterningSet,
+		final InterningSet<@NonNull SequenceLocation> locationInterningSet,
 		final CandidateBuilder readLocalCandidates,
 		final @NonNull ExtendedSAMRecord extendedRec,
 		final int insertSize,
@@ -1934,7 +1967,7 @@ public final class SubAnalyzer {
 			final int refPosition,
 			final int readEndOfPreviousAlignment,
 			final int refEndOfPreviousAlignment,
-			InterningSet<@NonNull SequenceLocation> locationInterningSet,
+			final InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ExtendedSAMRecord extendedRec,
 			final int insertSize,
