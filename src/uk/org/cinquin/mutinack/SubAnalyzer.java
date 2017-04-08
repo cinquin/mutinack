@@ -1517,7 +1517,7 @@ public final class SubAnalyzer {
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
 							"; insert size: " + insertSize + ')');
 					}
-					processInsertion(
+					forceCandidateInsertion = processInsertion(
 						readPosition,
 						refPosition,
 						readEndOfPreviousAlignment,
@@ -1535,114 +1535,23 @@ public final class SubAnalyzer {
 				else if (refPosition < refEndOfPreviousAlignment + 1) {
 					throw new AssertionFailedException("Alignment block misordering");
 				} else {
-					//Deletion or skipped region ("N" in Cigar)
-					if (refPosition > refBases.length - 1) {
-						logger.warn("Ignoring rest of read after base mapped at " + refPosition +
-							", beyond the end of " + ref.getName());
-						return;
-					}
-
-					int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, param.ignoreFirstNBasesQ1);
-					int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, param.ignoreFirstNBasesQ1);
-					int distance = Math.min(distance0, distance1) + 1;
-
-					final boolean isIntron = block.previousCigarOperator == CigarOperator.N;
-
-					final boolean Q1reject = distance < 0;
-
-					if (!isIntron && Q1reject) {
-						if (!extendedRec.formsWrongPair()) {
-							stats.rejectedIndelDistanceToLigationSite.insert(-distance);
-							stats.nCandidateIndelBeforeFirstNBases.increment(location);
-						}
-						logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + ' ' + extendedRec.getFullName());
-					} else {
-						distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
-						distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
-						distance = Math.min(distance0, distance1) + 1;
-
-						if (!isIntron) stats.nCandidateDeletions.increment(location);
-						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-							logger.info("Deletion or intron at position " + readPosition + " for read " + rec.getReadName() +
-								" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-								"; insert size: " + insertSize + ')');
-						}
-
-						final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
-						location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-							extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1);
-						final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-							extendedRec.getLocation().getContigName(), location.position + deletionLength);
-
-						final byte @Nullable[] deletedSequence = isIntron ? null :
-							Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
-
-						//Add hidden mutations to all locations covered by deletion
-						//So disagreements between deletions that have only overlapping
-						//spans are detected.
-						if (!isIntron) {
-							for (int i = 1; i < deletionLength; i++) {
-								SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-									extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
-								CandidateSequence hiddenCandidate = new CandidateDeletion(
-									this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE, MutationType.DELETION,
-									location, deletionEnd);
-								hiddenCandidate.setHidden(true);
-								hiddenCandidate.setInsertSize(insertSize);
-								hiddenCandidate.setInsertSizeNoBarcodeAccounting(false);
-								hiddenCandidate.setPositionInRead(readPosition);
-								hiddenCandidate.setReadEL(effectiveReadLength);
-								hiddenCandidate.setReadName(extendedRec.getFullName());
-								hiddenCandidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-								hiddenCandidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-								hiddenCandidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-								hiddenCandidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-								hiddenCandidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-								hiddenCandidate = readLocalCandidates.add(hiddenCandidate, location2);
-								hiddenCandidate = null;
-							}
-						}
-
-						CandidateSequence candidate = new CandidateDeletion(this,
-							deletedSequence, location, extendedRec, distance, isIntron ? MutationType.INTRON : MutationType.DELETION,
-							location, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-								extendedRec.getLocation().getContigName(), refPosition));
-
-						if (!extendedRec.formsWrongPair()) {
-							candidate.acceptLigSiteDistance(distance);
-						}
-
-						candidate.setInsertSize(insertSize);
-						candidate.setInsertSizeNoBarcodeAccounting(false);
-						candidate.setPositionInRead(readPosition);
-						candidate.setReadEL(effectiveReadLength);
-						candidate.setReadName(extendedRec.getFullName());
-						candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-						candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-						candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-						candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-						candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-						if (!isIntron) extendedRec.nReferenceDisagreements++;
-
-						if (!isIntron && param.computeRawMismatches) {
-							Objects.requireNonNull(deletedSequence);
-							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
-								new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
-									new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
-								:
-									new ComparablePair<>(byteMap.get(deletedSequence[0]),
-										new String(deletedSequence).toUpperCase());
-								stats.rawDeletionsQ1.accept(location, mutationPair);
-								stats.rawDeletionLengthQ1.insert(deletedSequence.length);
-								if (meetsQ2Thresholds(extendedRec) &&
-										baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-										!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
-									candidate.getMutableRawDeletionsQ2().add(mutationPair);
-								}
-						}
-						candidate = readLocalCandidates.add(candidate, location);
-						candidate = null;
-					}
+					processDeletion(location,
+						ref,
+						block,
+						readPosition,
+						refPosition,
+						readEndOfPreviousAlignment,
+						refEndOfPreviousAlignment,
+						locationInterningSet,
+						readLocalCandidates,
+						extendedRec,
+						rec,
+						insertSize,
+						readOnNegativeStrand,
+						readBases,
+						refBases,
+						baseQualities,
+						effectiveReadLength);
 				}//End of deletion case
 			}//End of case with accepted indel
 		}//End of case where there was a previous alignment block
@@ -1854,6 +1763,136 @@ public final class SubAnalyzer {
 				}
 			}//End of wildtype case
 		}//End of loop over alignment bases
+	}
+
+	private void processDeletion(
+		final @NonNull SequenceLocation location,
+		final @NonNull ReferenceSequence ref,
+		final ExtendedAlignmentBlock block,
+		final int readPosition,
+		final int refPosition,
+		final int readEndOfPreviousAlignment,
+		final int refEndOfPreviousAlignment,
+		InterningSet<@NonNull SequenceLocation> locationInterningSet,
+		final CandidateBuilder readLocalCandidates,
+		final @NonNull ExtendedSAMRecord extendedRec,
+		final SAMRecord rec,
+		final int insertSize,
+		final boolean readOnNegativeStrand,
+		final byte[] readBases,
+		final byte[] refBases,
+		final byte[] baseQualities,
+		final int effectiveReadLength) {
+
+		//Deletion or skipped region ("N" in Cigar)
+		if (refPosition > refBases.length - 1) {
+			logger.warn("Ignoring rest of read after base mapped at " + refPosition +
+				", beyond the end of " + ref.getName());
+			return;
+		}
+
+		int distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, param.ignoreFirstNBasesQ1);
+		int distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, param.ignoreFirstNBasesQ1);
+		int distance = Math.min(distance0, distance1) + 1;
+
+		final boolean isIntron = block.previousCigarOperator == CigarOperator.N;
+
+		final boolean Q1reject = distance < 0;
+
+		if (!isIntron && Q1reject) {
+			if (!extendedRec.formsWrongPair()) {
+				stats.rejectedIndelDistanceToLigationSite.insert(-distance);
+				stats.nCandidateIndelBeforeFirstNBases.increment(location);
+			}
+			logger.trace("Ignoring deletion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + ' ' + extendedRec.getFullName());
+		} else {
+			distance0 = -extendedRec.tooCloseToBarcode(readPosition - 1, 0);
+			distance1 = -extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment + 1, 0);
+			distance = Math.min(distance0, distance1) + 1;
+
+			if (!isIntron) stats.nCandidateDeletions.increment(location);
+			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+				logger.info("Deletion or intron at position " + readPosition + " for read " + rec.getReadName() +
+					" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
+					"; insert size: " + insertSize + ')');
+			}
+
+			final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
+			final @NonNull SequenceLocation newLocation =
+				SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
+					extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1);
+			final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
+				extendedRec.getLocation().getContigName(), newLocation.position + deletionLength);
+
+			final byte @Nullable[] deletedSequence = isIntron ? null :
+				Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
+
+			//Add hidden mutations to all locations covered by deletion
+			//So disagreements between deletions that have only overlapping
+			//spans are detected.
+			if (!isIntron) {
+				for (int i = 1; i < deletionLength; i++) {
+					SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
+						extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
+					CandidateSequence hiddenCandidate = new CandidateDeletion(
+						this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE, MutationType.DELETION,
+						newLocation, deletionEnd);
+					hiddenCandidate.setHidden(true);
+					hiddenCandidate.setInsertSize(insertSize);
+					hiddenCandidate.setInsertSizeNoBarcodeAccounting(false);
+					hiddenCandidate.setPositionInRead(readPosition);
+					hiddenCandidate.setReadEL(effectiveReadLength);
+					hiddenCandidate.setReadName(extendedRec.getFullName());
+					hiddenCandidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
+					hiddenCandidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
+					hiddenCandidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
+					hiddenCandidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
+					hiddenCandidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
+					hiddenCandidate = readLocalCandidates.add(hiddenCandidate, location2);
+					hiddenCandidate = null;
+				}
+			}
+
+			CandidateSequence candidate = new CandidateDeletion(this,
+				deletedSequence, newLocation, extendedRec, distance, isIntron ? MutationType.INTRON : MutationType.DELETION,
+				newLocation, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
+					extendedRec.getLocation().getContigName(), refPosition));
+
+			if (!extendedRec.formsWrongPair()) {
+				candidate.acceptLigSiteDistance(distance);
+			}
+
+			candidate.setInsertSize(insertSize);
+			candidate.setInsertSizeNoBarcodeAccounting(false);
+			candidate.setPositionInRead(readPosition);
+			candidate.setReadEL(effectiveReadLength);
+			candidate.setReadName(extendedRec.getFullName());
+			candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
+			candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
+			candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
+			candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
+			candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
+			if (!isIntron) extendedRec.nReferenceDisagreements++;
+
+			if (!isIntron && param.computeRawMismatches) {
+				Objects.requireNonNull(deletedSequence);
+				final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
+					new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
+						new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
+					:
+						new ComparablePair<>(byteMap.get(deletedSequence[0]),
+							new String(deletedSequence).toUpperCase());
+					stats.rawDeletionsQ1.accept(newLocation, mutationPair);
+					stats.rawDeletionLengthQ1.insert(deletedSequence.length);
+					if (meetsQ2Thresholds(extendedRec) &&
+							baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+							!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
+						candidate.getMutableRawDeletionsQ2().add(mutationPair);
+					}
+			}
+			candidate = readLocalCandidates.add(candidate, newLocation);
+			candidate = null;
+		}
 	}
 
 	private boolean processInsertion(
