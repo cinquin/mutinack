@@ -734,7 +734,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 
 		if (maxInsertSize == 0) {
-			dq.addUnique(INSERT_SIZE, POOR);
+			dq.addUnique(INSERT_SIZE, DUBIOUS);
 		} else if (maxInsertSize < param.minInsertSize || minInsertSize > param.maxInsertSize) {
 			dq.addUnique(INSERT_SIZE, DUBIOUS);
 		}
