@@ -7,7 +7,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.qualities.Quality;
 
-public abstract class CustomEnumQualityMap<K extends Enum<K>> extends CustomEnumToEnumMap<K, Quality> {
+public abstract class CustomEnumQualityMap<K extends Enum<K>> extends CustomEnumToEnumMap<K, @NonNull Quality> {
 
 	private static final long serialVersionUID = -8624899797963564208L;
 
@@ -67,12 +67,12 @@ public abstract class CustomEnumQualityMap<K extends Enum<K>> extends CustomEnum
 	}
 
 	@Override
-	public Class<Quality> getValueType() {
+	public Class<@NonNull Quality> getValueType() {
 		return Quality.class;
 	}
 
 	@Override
-	public void setValueType(Class<Quality> valueType) {
+	public void setValueType(Class<@NonNull Quality> valueType) {
 		Assert.isTrue(valueType == Quality.class);
 	}
 

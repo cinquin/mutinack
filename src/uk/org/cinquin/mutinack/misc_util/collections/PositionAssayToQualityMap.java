@@ -3,15 +3,18 @@ package uk.org.cinquin.mutinack.misc_util.collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.qualities.Quality;
 
-public class PositionAssayToQualityMap extends CustomEnumQualityMap<PositionAssay> {
+public class PositionAssayToQualityMap extends CustomEnumQualityMap<@NonNull PositionAssay> {
 
 	private static final long serialVersionUID = -3853025218998690278L;
 
-	private static final PositionAssay[] KEY_UNIVERSE = CustomEnumToEnumMap.getUniverse(PositionAssay.class);
+	private static final @NonNull PositionAssay[] KEY_UNIVERSE =
+		CustomEnumToEnumMap.getUniverse(PositionAssay.class);
 
 	static {
 		Assert.isTrue(KEY_UNIVERSE.length <= MAX_KEY_UNIVERSE_LENGTH);
@@ -22,17 +25,17 @@ public class PositionAssayToQualityMap extends CustomEnumQualityMap<PositionAssa
 	}
 
 	@Override
-	public void setKeyType(Class<PositionAssay> keyType) {
+	public void setKeyType(Class<@NonNull PositionAssay> keyType) {
 		Assert.isTrue(keyType == PositionAssay.class);
 	}
 
 	@Override
-	public Class<PositionAssay> getKeyType() {
+	public Class<@NonNull PositionAssay> getKeyType() {
 		return PositionAssay.class;
 	}
 
 	@Override
-	protected PositionAssay[] getKeyUniverse() {
+	protected @NonNull PositionAssay[] getKeyUniverse() {
 		return KEY_UNIVERSE;
 	}
 
