@@ -216,7 +216,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			@NonNull SequenceLocation location, @NonNull ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {
 		this.owningSubAnalyzer = owningSubAnalyzer;
-		this.sampleName = owningSubAnalyzer.analyzer.name;
+		this.sampleName = owningSubAnalyzer == null ? null : owningSubAnalyzer.analyzer.name;
 		Assert.isFalse(mutationType == MutationType.UNKNOWN);
 		this.mutationType = Objects.requireNonNull(mutationType);
 		this.sequence = sequence;
