@@ -23,12 +23,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.edu.stanford.nlp.util.HasInterval;
 import contrib.edu.stanford.nlp.util.Interval;
 import contrib.net.sf.samtools.CigarElement;
+import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
@@ -398,6 +401,38 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 	}
 
+	private int intronAdjustment(final int readPosition, boolean reverse) {
+
+		int nReadBases = 0;
+		int intronBases = 0;
+
+		MutableList<CigarElement> cigarElements = Lists.mutable.withAll(record.getCigar().getCigarElements());
+		if (reverse) {
+			cigarElements.reverseThis();
+		}
+
+		for (CigarElement e: cigarElements) {
+			CigarOperator operator = e.getOperator();
+			int truncatedLength = operator.consumesReadBases() ?
+					Math.min(e.getLength(), readPosition - nReadBases)
+				:
+					e.getLength();
+			if (operator.consumesReadBases()) {
+				nReadBases += truncatedLength;
+			}
+			if (operator == CigarOperator.N) {
+				intronBases += e.getLength();
+			}
+			if (nReadBases == readPosition) {
+				break;
+			}
+		}
+
+		Assert.isTrue(nReadBases == readPosition);
+
+		return intronBases;
+	}
+
 	private static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
 
 	public int tooCloseToBarcode(int readPosition, int ignoreFirstNBases) {
@@ -554,6 +589,30 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			return NO_MATE_POSITION;
 		}
 		return nonNullify(mate).getUnclippedEnd();
+	}
+
+	public int getOffsetUnclippedEnd() {
+		return record.getUnclippedEnd() - 1 - intronAdjustment(16, true);
+	}
+
+	public int getOffsetUnclippedStart() {
+		return record.getUnclippedStart() - 1 + intronAdjustment(16, false);
+	}
+
+	public int getMateOffsetUnclippedEnd() {
+		checkMate();
+		if (mate == null) {
+			return NO_MATE_POSITION;
+		}
+		return nonNullify(mate).getOffsetUnclippedEnd();
+	}
+
+	public int getMateOffsetUnclippedStart() {
+		checkMate();
+		if (mate == null) {
+			return NO_MATE_POSITION;
+		}
+		return nonNullify(mate).getOffsetUnclippedStart();
 	}
 
 	public int getUnclippedEnd() {

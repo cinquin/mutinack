@@ -270,8 +270,8 @@ public final class SubAnalyzer {
 							if (nLeftBehind.incrementAndGet() == 0) {
 								logger.error("Sequences left behind before " + truncateProcessingAt);
 							}
-							return Integer.toString(read.record.getAlignmentStart()) + '-' +
-								Integer.toString(read.record.getAlignmentEnd()); })
+							return Integer.toString(read.getAlignmentStart()) + '-' +
+								Integer.toString(read.getAlignmentEnd()); })
 						.collect(Collectors.joining("; "));
 				if (!s.equals("")) {
 					logger.error(s);
@@ -566,12 +566,12 @@ public final class SubAnalyzer {
 					new DuplexRead(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 			if (matchToLeft) {
 				duplexRead.setPositions(
-						rExtended.getUnclippedStart(),
-						rExtended.getMateUnclippedEnd());
+						rExtended.getOffsetUnclippedStart(),
+						rExtended.getMateOffsetUnclippedEnd());
 			} else {
 				duplexRead.setPositions(
-						rExtended.getMateUnclippedStart(),
-						rExtended.getUnclippedEnd());
+						rExtended.getMateOffsetUnclippedStart(),
+						rExtended.getOffsetUnclippedEnd());
 			}
 
 			duplexKeeper.add(duplexRead);
@@ -600,16 +600,16 @@ public final class SubAnalyzer {
 
 				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getUnclippedStart()));
+						rExtended.getReferenceName(), rExtended.getOffsetUnclippedStart()));
 				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getUnclippedEnd()));
+						rExtended.getReferenceName(), rExtended.getOffsetUnclippedEnd()));
 				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getMateUnclippedStart()));
+						rExtended.getReferenceName(), rExtended.getMateOffsetUnclippedStart()));
 				duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getMateUnclippedEnd()));
+						rExtended.getReferenceName(), rExtended.getMateOffsetUnclippedEnd()));
 			} else {//Read on positive strand
 
 				if (rExtended.getMateAlignmentStart() == rExtended.getAlignmentStart()) {
@@ -631,16 +631,16 @@ public final class SubAnalyzer {
 
 				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getUnclippedStart()));
+						r.getReferenceName(), rExtended.getOffsetUnclippedStart()));
 				duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getUnclippedEnd()));
+						r.getReferenceName(), rExtended.getOffsetUnclippedEnd()));
 				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getMateUnclippedStart()));
+						r.getReferenceName(), rExtended.getMateOffsetUnclippedStart()));
 				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
 					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getMateUnclippedEnd()));
+						r.getReferenceName(), rExtended.getMateOffsetUnclippedEnd()));
 			}
 
 			Assert.isFalse(
