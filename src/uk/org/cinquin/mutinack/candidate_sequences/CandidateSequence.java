@@ -776,7 +776,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		if (getnMatchingCandidatesOtherSamples() > 1) {
 			qualityKD = Stream.concat(Stream.of(PositionAssay.PRESENT_IN_SISTER_SAMPLE.toString()),
-				qualityKD);
+				qualityKD);//TODO This is redundant now
 		}
 
 		String qualityKDString = qualityKD.collect(Collectors.joining(","));

@@ -23,7 +23,7 @@ public class CrossSampleLocationAnalysis implements Serializable {
 	public boolean twoOrMoreSamplesWithSameQ2MutationCandidate;
 	public boolean oneSampleNoWt;
 	public boolean noWt;
-	public boolean moreThan1Q2MutantAcrossSamples = false;
+	public boolean multipleQ2MutantsAtSamePos = false;
 
 	@Final
 	public List<Integer> nDuplexesUniqueQ2MutationCandidate = new ArrayList<>();
@@ -48,13 +48,13 @@ public class CrossSampleLocationAnalysis implements Serializable {
 			result.append('!');
 		}
 
-		if (!nDuplexesUniqueQ2MutationCandidate.isEmpty() && !moreThan1Q2MutantAcrossSamples) {
+		if (!nDuplexesUniqueQ2MutationCandidate.isEmpty() && !multipleQ2MutantsAtSamePos) {
 			result.append('*').
 				append(nDuplexesUniqueQ2MutationCandidate.stream().map(String::valueOf).
 					collect(Collectors.joining("_")));
 		}
 
-		if (moreThan1Q2MutantAcrossSamples) {
+		if (multipleQ2MutantsAtSamePos) {
 			result.append('-');
 		}
 

@@ -53,6 +53,7 @@ import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
+import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
@@ -76,6 +77,7 @@ import uk.org.cinquin.mutinack.misc_util.ObjMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.collections.PositionAssayToQualityMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.CrossSampleLocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationAnalysis;
@@ -484,9 +486,35 @@ public class SubAnalyzerPhaser extends Phaser {
 				c.setnDuplexesSisterArm((i == null) ? 0 : i);
 			});
 
-		//Loop over *distinct* candidates (hence collection into a set) that meet criteria
-		candidateSequences.select(c -> !c.isHidden() && (c.getQuality().getNonNullValue().greaterThan(POOR) ||
-			c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)), Sets.mutable.empty()).
+		MutableSet<CandidateSequence> distinctCandidates = candidateSequences.select(c -> !c.isHidden() && (c.getQuality().getNonNullValue().greaterThan(POOR) ||
+			c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)), Sets.mutable.empty());
+			//Collect into a set to get uniqueness
+
+		PositionAssayToQualityMap extraPositionQualities = new PositionAssayToQualityMap();
+
+		distinctCandidates.each(candidate -> {
+			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
+			if (!candidate.getMutationType().isWildtype() && candidateCount > 1) {
+				extraPositionQualities.put(PositionAssay.PRESENT_IN_SISTER_SAMPLE, Quality.DUBIOUS);
+			}
+		});
+
+		final boolean multipleQ2Mutations =
+			distinctCandidates.
+			count(c -> !c.getMutationType().isWildtype() &&
+				//Following doesn't do anything at this point since PRESENT_IN_SISTER_SAMPLE has not been set
+				c.getQuality().getValueIgnoring(SISTER_SAMPLE_ASSAY_SET).atLeast(GOOD)) > 1;
+		if (multipleQ2Mutations) {
+			csla.multipleQ2MutantsAtSamePos = true;
+			extraPositionQualities.put(PositionAssay.MULTIPLE_Q2_MUT_AT_POS, Quality.DUBIOUS);
+		}
+
+		if (!extraPositionQualities.isEmpty()) {
+			candidateSequences.forEach(c ->
+				extraPositionQualities.forEach((a, q) -> c.getQuality().addUnique(a, q)));
+		}
+
+		distinctCandidates.
 		each(Procedures.throwing(candidate -> {
 
 			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
@@ -631,19 +659,6 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 			}//End loop over subAnalyzers
 		}));//End loop over mutation candidates
-
-		final boolean moreThan1Q2IgnoringSisterSamples =
-			candidateSequences.
-			count(c -> c.getMutationType() != MutationType.WILDTYPE &&
-				c.getQuality().getValueIgnoring(SISTER_SAMPLE_ASSAY_SET).atLeast(GOOD)) > 1;
-		//TODO Should do multiple passes over candidate set, and add MULTIPLE_Q2_AT_POS before
-		//updating coverage statistics
-		if (moreThan1Q2IgnoringSisterSamples) {
-			csla.moreThan1Q2MutantAcrossSamples = true;
-			candidateSequences.forEach(c ->
-				c.getQuality().addUnique(PositionAssay.MULTIPLE_Q2_AT_POS, Quality.DUBIOUS));
-		}
-
 	}
 
 	private static void outputCandidate(
