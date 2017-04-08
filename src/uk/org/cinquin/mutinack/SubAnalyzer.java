@@ -1682,7 +1682,6 @@ public final class SubAnalyzer {
 		final boolean forceCandidateInsertion,
 		final Handle<Boolean> insertCandidateAtRegularPosition) {
 
-		//Wildtype read
 		int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
 		if (distance >= 0) {
 			if (!extendedRec.formsWrongPair()) {
@@ -1841,9 +1840,9 @@ public final class SubAnalyzer {
 			candidate2 = readLocalCandidates.add(candidate2, locationPH);
 			candidate2 = null;
 		}
-
 	}
 
+	//Deletion or skipped region ("N" in Cigar)
 	private void processDeletion(
 		final Consumer<CandidateSequence> candidateFiller,
 		final @NonNull SequenceLocation location,
@@ -1863,7 +1862,6 @@ public final class SubAnalyzer {
 		final byte[] baseQualities,
 		final int effectiveReadLength) {
 
-		//Deletion or skipped region ("N" in Cigar)
 		if (refPosition > refBases.length - 1) {
 			logger.warn("Ignoring rest of read after base mapped at " + refPosition +
 				", beyond the end of " + ref.getName());
