@@ -17,6 +17,11 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+
+import javax.annotation.CheckReturnValue;
 
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
@@ -28,27 +33,39 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 
 public final class CandidateBuilder {
 
-	private final @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequence> candidates
-		= new UnifiedMap<>(300);
+	private final Map<@NonNull SequenceLocation, @NonNull CandidateSequence> candidates;
+	private final BiFunction<@NonNull SequenceLocation, @NonNull CandidateSequence, @NonNull CandidateSequence> function;
 	private final boolean negativeStrand;
 
-	public CandidateBuilder add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
+	@CheckReturnValue
+	public CandidateSequence add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
 		if (negativeStrand) {
 			c.incrementNegativeStrandCount(1);
 		} else {
 			c.incrementPositiveStrandCount(1);
 		}
-		@Nullable CandidateSequence previousCandidate = candidates.get(l);
-		Assert.isNull(previousCandidate);
-		candidates.put(l, c);
-		return this;
+		if (function != null) {
+			return function.apply(l, c);
+		} else {
+			@Nullable CandidateSequence previousCandidate = candidates.get(l);
+			Assert.isNull(previousCandidate);
+			candidates.put(l, c);
+			return c;
+		}
 	}
 
 	public @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequence> build() {
-		return candidates;
+		return Objects.requireNonNull(candidates);
 	}
 
-	public CandidateBuilder(boolean negativeStrand) {
+	public CandidateBuilder(boolean negativeStrand,
+			BiFunction<@NonNull SequenceLocation, @NonNull CandidateSequence, @NonNull CandidateSequence> consumer) {
 		this.negativeStrand = negativeStrand;
+		this.function = consumer;
+		if (consumer == null) {
+			candidates = new UnifiedMap<>(300);
+		} else {
+			candidates = null;
+		}
 	}
 }

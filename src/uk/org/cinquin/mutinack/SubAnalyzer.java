@@ -217,7 +217,7 @@ public final class SubAnalyzer {
 	 * @param location
 	 * @return
 	 */
-	private CandidateSequence insertCandidateAtPosition(@NonNull CandidateSequence candidate,
+	private @NonNull CandidateSequence insertCandidateAtPosition(@NonNull CandidateSequence candidate,
 			@NonNull SequenceLocation location) {
 
 		//No need for synchronization since we should not be
@@ -1362,7 +1362,8 @@ public final class SubAnalyzer {
 			return -1;
 		}
 
-		final CandidateBuilder readLocalCandidates = new CandidateBuilder(rec.getReadNegativeStrandFlag());
+		final CandidateBuilder readLocalCandidates = new CandidateBuilder(rec.getReadNegativeStrandFlag(),
+			param.enableCostlyAssertions ? null : (k, v) -> insertCandidateAtPosition(v, k));
 
 		final int insertSize = extendedRec.getInsertSize();
 		final int insertSizeAbs = Math.abs(insertSize);
@@ -1452,7 +1453,9 @@ public final class SubAnalyzer {
 				returnValue);
 		}
 
-		readLocalCandidates.build().forEach((k, v) -> insertCandidateAtPosition(v, k));
+		if (param.enableCostlyAssertions) {
+			readLocalCandidates.build().forEach((k, v) -> insertCandidateAtPosition(v, k));
+		}
 
 		return returnValue.get();
 	}
@@ -1537,7 +1540,7 @@ public final class SubAnalyzer {
 						final byte [] insertedSequence = Arrays.copyOfRange(readBases,
 							readEndOfPreviousAlignment + 1, readPosition);
 
-						final CandidateSequence candidate = new CandidateSequence(
+						CandidateSequence candidate = new CandidateSequence(
 							this,
 							INSERTION,
 							insertedSequence,
@@ -1582,10 +1585,11 @@ public final class SubAnalyzer {
 						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
 							logger.info("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
 						}
-						readLocalCandidates.add(candidate, location);
+						candidate = readLocalCandidates.add(candidate, location);
+						candidate = null;
 						forceCandidateInsertion = true;
 						if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-							logger.info("Added candidate at " + location + "; readLocalCandidates now " + readLocalCandidates.build());
+							logger.info("Added candidate at " + location /*+ "; readLocalCandidates now " + readLocalCandidates.build()*/);
 						}
 						extendedRec.nReferenceDisagreements++;
 					}
@@ -1656,11 +1660,12 @@ public final class SubAnalyzer {
 								hiddenCandidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
 								hiddenCandidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
 								hiddenCandidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-								readLocalCandidates.add(hiddenCandidate, location2);
+								hiddenCandidate = readLocalCandidates.add(hiddenCandidate, location2);
+								hiddenCandidate = null;
 							}
 						}
 
-						final CandidateSequence candidate = new CandidateDeletion(this,
+						CandidateSequence candidate = new CandidateDeletion(this,
 							deletedSequence, location, extendedRec, distance, isIntron ? MutationType.INTRON : MutationType.DELETION,
 							location, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 								extendedRec.getLocation().getContigName(), refPosition));
@@ -1679,7 +1684,6 @@ public final class SubAnalyzer {
 						candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
 						candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
 						candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
-						readLocalCandidates.add(candidate, location);
 						if (!isIntron) extendedRec.nReferenceDisagreements++;
 
 						if (!isIntron && param.computeRawMismatches) {
@@ -1697,6 +1701,8 @@ public final class SubAnalyzer {
 									candidate.getMutableRawDeletionsQ2().add(mutationPair);
 								}
 						}
+						candidate = readLocalCandidates.add(candidate, location);
+						candidate = null;
 					}
 				}//End of deletion case
 			}//End of case with accepted indel
@@ -1792,7 +1798,7 @@ public final class SubAnalyzer {
 
 					final byte[] mutSequence = byteArrayMap.get(readBases[readPosition]);
 
-					final CandidateSequence candidate = new CandidateSequence(this,
+					CandidateSequence candidate = new CandidateSequence(this,
 						SUBSTITUTION, mutSequence, location, extendedRec, distance);
 
 					if (!extendedRec.formsWrongPair()) {
@@ -1809,18 +1815,6 @@ public final class SubAnalyzer {
 					candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
 					candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
 					candidate.setWildtypeSequence(wildType);
-					if (insertCandidateAtRegularPosition) {
-						readLocalCandidates.add(candidate, location);
-					}
-					if (locationPH != null) {
-						final CandidateSequence candidate2 = new CandidateSequence(this,
-							WILDTYPE, null, locationPH, extendedRec, distance);
-						if (!extendedRec.formsWrongPair()) {
-							candidate2.acceptLigSiteDistance(distance);
-						}
-						candidate2.setWildtypeSequence(wildType);
-						readLocalCandidates.add(candidate2, locationPH);
-					}
 					candidate.addBasePhredScore(baseQualities[readPosition]);
 					extendedRec.nReferenceDisagreements++;
 					if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
@@ -1839,6 +1833,20 @@ public final class SubAnalyzer {
 							!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 								candidate.getMutableRawMismatchesQ2().add(mutationPair);
 						}
+					}
+					if (insertCandidateAtRegularPosition) {
+						candidate = readLocalCandidates.add(candidate, location);
+						candidate = null;
+					}
+					if (locationPH != null) {
+						CandidateSequence candidate2 = new CandidateSequence(this,
+							WILDTYPE, null, locationPH, extendedRec, distance);
+						if (!extendedRec.formsWrongPair()) {
+							candidate2.acceptLigSiteDistance(distance);
+						}
+						candidate2.setWildtypeSequence(wildType);
+						candidate2 = readLocalCandidates.add(candidate2, locationPH);
+						candidate2 = null;
 					}
 				}//End of mismatched read case
 			} else {
@@ -1880,28 +1888,30 @@ public final class SubAnalyzer {
 						insertCandidateAtRegularPosition = false;
 					}
 				}
-				final CandidateSequence candidate = new CandidateSequence(this,
+				CandidateSequence candidate = new CandidateSequence(this,
 					WILDTYPE, null, location, extendedRec, -distance);
 				if (!extendedRec.formsWrongPair()) {
 					candidate.acceptLigSiteDistance(-distance);
 				}
 				candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
+				candidate.addBasePhredScore(baseQualities[readPosition]);
+				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
+						ExtendedSAMRecord.PHRED_NO_ENTRY) {
+					logger.warn("Recording Phred score multiple times at same position " + location);
+				}
 				if (insertCandidateAtRegularPosition) {
-					readLocalCandidates.add(candidate, location);
+					candidate = readLocalCandidates.add(candidate, location);
+					candidate = null;
 				}
 				if (locationPH != null) {
-					final CandidateSequence candidate2 = new CandidateSequence(this,
+					CandidateSequence candidate2 = new CandidateSequence(this,
 						WILDTYPE, null, locationPH, extendedRec, -distance);
 					if (!extendedRec.formsWrongPair()) {
 						candidate2.acceptLigSiteDistance(-distance);
 					}
 					candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-					readLocalCandidates.add(candidate2, locationPH);
-				}
-				candidate.addBasePhredScore(baseQualities[readPosition]);
-				if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
-						ExtendedSAMRecord.PHRED_NO_ENTRY) {
-					logger.warn("Recording Phred score multiple times at same position " + location);
+					candidate2 = readLocalCandidates.add(candidate2, locationPH);
+					candidate2 = null;
 				}
 			}//End of wildtype case
 		}//End of loop over alignment bases
