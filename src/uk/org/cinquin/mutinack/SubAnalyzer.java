@@ -1576,9 +1576,9 @@ public final class SubAnalyzer {
 							stats.rawInsertionLengthQ1.insert(insertedSequence.length);
 
 							if (meetsQ2Thresholds(extendedRec) &&
-								baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-								!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
-									candidate.getMutableRawInsertionsQ2().add(mutationPair);
+									baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+									!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
+								candidate.getMutableRawInsertionsQ2().add(mutationPair);
 							}
 						}
 
@@ -1696,8 +1696,8 @@ public final class SubAnalyzer {
 								stats.rawDeletionsQ1.accept(location, mutationPair);
 								stats.rawDeletionLengthQ1.insert(deletedSequence.length);
 								if (meetsQ2Thresholds(extendedRec) &&
-									baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-									!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
+										baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+										!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 									candidate.getMutableRawDeletionsQ2().add(mutationPair);
 								}
 						}
@@ -1829,9 +1829,9 @@ public final class SubAnalyzer {
 								byteMap.get(mutation));
 						stats.rawMismatchesQ1.accept(location, mutationPair);
 						if (meetsQ2Thresholds(extendedRec) &&
-							baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-							!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
-								candidate.getMutableRawMismatchesQ2().add(mutationPair);
+								baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+								!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
+							candidate.getMutableRawMismatchesQ2().add(mutationPair);
 						}
 					}
 					if (insertCandidateAtRegularPosition) {
