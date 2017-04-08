@@ -1687,6 +1687,7 @@ public final class SubAnalyzer {
 						if (!isIntron) extendedRec.nReferenceDisagreements++;
 
 						if (!isIntron && param.computeRawMismatches) {
+							Objects.requireNonNull(deletedSequence);
 							final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
 								new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
 									new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
