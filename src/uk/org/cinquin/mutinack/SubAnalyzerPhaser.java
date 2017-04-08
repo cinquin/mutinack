@@ -518,9 +518,12 @@ public class SubAnalyzerPhaser extends Phaser {
 				//Exclude duplexes whose reads all have an unmapped mate from the count
 				//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
 				//may cause an overestimate of that number
+				//Also exclude duplexes with clipping greater than maxConcurringDuplexClipping
 				int concurringDuplexes = candidate.getDuplexes().count(d ->
 					d.localAndGlobalQuality.getNonNullValue().atLeast(Quality.DUBIOUS) &&
-					!d.allDuplexRecords.allSatisfy(r -> r.record.getMateUnmappedFlag()));
+					d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
+					d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
+						r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping));
 				csla.nDuplexesUniqueQ2MutationCandidate.add(concurringDuplexes);
 
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
