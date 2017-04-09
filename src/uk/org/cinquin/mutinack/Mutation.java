@@ -33,7 +33,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 
 	private static final long serialVersionUID = 6679657529214343514L;
 	public final @NonNull MutationType mutationType;
-	private final byte wildtype;
+	public final byte wildtype;
 	@JsonSerialize(using = ByteArrayStringSerializer.class)
 	public final byte[] mutationSequence;
 	private Boolean templateStrand;

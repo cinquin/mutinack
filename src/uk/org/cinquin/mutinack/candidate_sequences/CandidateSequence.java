@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -129,6 +130,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private final transient SubAnalyzer owningSubAnalyzer;
 	@Final private String sampleName;
 	private boolean hidden = false;
+	private Boolean negativeCodingStrand;
 
 	@JsonIgnore private transient Mutation mutation;
 
@@ -210,9 +212,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		hashCode = computeHashCode();
 	}
 
-	public CandidateSequence(@NonNull SubAnalyzer owningSubAnalyzer, @NonNull MutationType mutationType,
+	@SuppressWarnings("null")
+	public CandidateSequence(
+			@NonNull SubAnalyzer owningSubAnalyzer,
+			@NonNull MutationType mutationType,
 			byte @Nullable[] sequence,
-			@NonNull SequenceLocation location, @NonNull ExtendedSAMRecord initialConcurringRead,
+			@NonNull SequenceLocation location,
+			@NonNull ExtendedSAMRecord initialConcurringRead,
 			int initialLigationSiteD) {
 		this.owningSubAnalyzer = owningSubAnalyzer;
 		this.sampleName = owningSubAnalyzer == null ? null : owningSubAnalyzer.analyzer.name;
@@ -291,8 +297,14 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				result = "^" + new String(getSequence()) + "^";
 				break;
 			case SUBSTITUTION:
-				result = new String(new byte[] {getWildtypeSequence()}) +
-				"->" + new String(getSequence());
+				if (Boolean.TRUE.equals(getNegativeCodingStrand())) {
+					@NonNull Mutation rc = getMutation().reverseComplement();
+					result = new String(new byte[] {rc.wildtype}) +
+						"->" + new String(rc.mutationSequence);
+				} else {
+					result = new String(new byte[] {getWildtypeSequence()}) +
+						"->" + new String(getSequence());
+				}
 				break;
 			case WILDTYPE:
 				result = "wt";
@@ -639,6 +651,16 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public void mergeWith(@NonNull CandidateSequenceI candidate) {
 		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s"/*,
 				this, candidate, candidate.getNonMutableConcurringReads()*/);
+		final Boolean ncs = getNegativeCodingStrand();
+		final Boolean ncsOther = candidate.getNegativeCodingStrand();
+		if (ncs != null && ncsOther != null && !ncs.equals(ncsOther)) {
+			throw new IllegalArgumentException("At location " + location + ", candidates " + this +
+				" and " + candidate +
+				"disagree on template strand orientation: " + ncs + " vs " + ncsOther);
+		}
+		if (ncs == null) {
+			setNegativeCodingStrand(ncsOther);
+		}
 		getMutableConcurringReads().putAll(candidate.getNonMutableConcurringReads());
 		candidate.addPhredScoresToList(getPhredScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
@@ -797,6 +819,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			getInsertSizeAtPos90thP() + "\t" +
 			getMinDistanceToLigSite() + "\t" +
 			getMaxDistanceToLigSite() + "\t" +
+			Optional.ofNullable(negativeCodingStrand).map(String::valueOf).orElse("?") + '\t' +
 			formatter.format(getMeanDistanceToLigSite()) + "\t" +
 			formatter.format(getProbCollision()) + "\t" +
 			getPositionInRead() + "\t" +
@@ -992,6 +1015,16 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setRefPositionOfMateLigationSite(int refPositionOfMateLigationSite) {
 		this.refPositionOfMateLigationSite = refPositionOfMateLigationSite;
+	}
+
+	@Override
+	public Boolean getNegativeCodingStrand() {
+		return negativeCodingStrand;
+	}
+
+	@Override
+	public void setNegativeCodingStrand(@Nullable Boolean negativeCodingStrand) {
+		this.negativeCodingStrand = negativeCodingStrand;
 	}
 
 }

@@ -1364,6 +1364,7 @@ public final class SubAnalyzer {
 		}
 
 		final CandidateBuilder readLocalCandidates = new CandidateBuilder(rec.getReadNegativeStrandFlag(),
+			analyzer.codingStrandTester,
 			param.enableCostlyAssertions ? null : (k, v) -> insertCandidateAtPosition(v, k));
 
 		final int insertSize = extendedRec.getInsertSize();

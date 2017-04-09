@@ -18,7 +18,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 import javax.annotation.CheckReturnValue;
@@ -28,6 +28,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 
 
@@ -36,6 +37,7 @@ public final class CandidateBuilder {
 	private final Map<@NonNull SequenceLocation, @NonNull CandidateSequence> candidates;
 	private final BiFunction<@NonNull SequenceLocation, @NonNull CandidateSequence, @NonNull CandidateSequence> function;
 	private final boolean negativeStrand;
+	private final @Nullable GenomeFeatureTester codingStrandTester;
 
 	@CheckReturnValue
 	public CandidateSequence add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
@@ -44,24 +46,37 @@ public final class CandidateBuilder {
 		} else {
 			c.incrementPositiveStrandCount(1);
 		}
+		final CandidateSequence returned;
 		if (function != null) {
-			return function.apply(l, c);
+			returned = function.apply(l, c);
 		} else {
 			@Nullable CandidateSequence previousCandidate = candidates.get(l);
 			Assert.isNull(previousCandidate);
 			candidates.put(l, c);
-			return c;
+			returned = c;
 		}
+		if (returned == c && codingStrandTester != null) {//This is the first candidate inserted at this location
+			@SuppressWarnings("null")
+			final Boolean negativeCodingStrand = Optional.ofNullable(codingStrandTester).
+				flatMap(tester -> tester.getNegativeStrand(l)).
+				orElse(null);
+
+			c.setNegativeCodingStrand(negativeCodingStrand);
+		}
+		return returned;
 	}
 
 	public @NonNull Map<@NonNull SequenceLocation, @NonNull CandidateSequence> build() {
 		return Objects.requireNonNull(candidates);
 	}
 
-	public CandidateBuilder(boolean negativeStrand,
+	public CandidateBuilder(
+			boolean negativeStrand,
+			@Nullable GenomeFeatureTester codingStrandTester,
 			BiFunction<@NonNull SequenceLocation, @NonNull CandidateSequence, @NonNull CandidateSequence> consumer) {
 		this.negativeStrand = negativeStrand;
 		this.function = consumer;
+		this.codingStrandTester = codingStrandTester;
 		if (consumer == null) {
 			candidates = new UnifiedMap<>(300);
 		} else {

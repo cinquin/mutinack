@@ -128,5 +128,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setHidden(boolean b);
 	void addBasePhredScore(byte b);
 	byte getMedianPhredScore();
+	@Nullable Boolean getNegativeCodingStrand();
+	void setNegativeCodingStrand(@Nullable Boolean negativeCodingStrand);
 
 }
