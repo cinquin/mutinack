@@ -16,13 +16,9 @@
  */
 package uk.org.cinquin.mutinack.misc_util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
@@ -51,6 +47,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.nustaq.serialization.FSTConfiguration;
 
 import contrib.net.sf.samtools.AbstractBAMFileIndex;
 import contrib.net.sf.samtools.BAMIndexMetaData;
@@ -520,15 +517,8 @@ public class Util {
 
 	public static @Nullable Throwable getSerializationThrowable(Object o) {
 		//NullOutputStream os = NullOutputStream.NULL_OUTPUT_STREAM;
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
-			try(ObjectOutputStream out = new ObjectOutputStream(bos)) {
-				out.writeObject(o);
-			}
-			try(ObjectInputStream in = new ObjectInputStream(
-					new ByteArrayInputStream(bos.toByteArray()))) {
-				in.readObject();
-			}
+			conf.asObject(conf.asByteArray(o));
 		} catch (Throwable e) {
 			return e;
 		}
@@ -546,21 +536,12 @@ public class Util {
 		}
 	}
 
+	private static final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
+
 	@SuppressWarnings({ "null", "unchecked" })
 	public static<T> @NonNull T serializeAndDeserialize(T o) {
-		final ByteArrayOutputStream os = new ByteArrayOutputStream();
 		final @NonNull T result;
-		try(ObjectOutputStream out = new ObjectOutputStream(os)) {
-			out.writeObject(o);
-			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(os.toByteArray()));
-			try {
-				result = (T) in.readObject();
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException(e);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		result = (T) conf.asObject(conf.asByteArray(o));
 		if (result == null) throw new AssertionFailedException();
 		return result;
 	}
