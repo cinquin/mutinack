@@ -158,7 +158,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 
 	public static @NonNull SequenceLocation get(InterningSet<@NonNull SequenceLocation> interningSet,
 			int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
-		//TODO Since escape analysis probably cannot remove the allocation below (to be verified;
+		//TODO Since escape analysis does not remove the allocation below (as shown by HotSpot logs;
 		//removing the allocation would need to be done only for objects not already present in the set),
 		//create a custom method to retrieve pre-existing objects from the set based only on the
 		//constructor parameters (without instantiating a temporary object).
