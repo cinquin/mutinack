@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IntSummaryStatistics;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -478,6 +481,16 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			}
 			return singletonConcurringRead;
 		}
+	}
+
+	public void forEachConcurringRead(Consumer<ExtendedSAMRecord> consumer) {
+		getNonMutableConcurringReads().forEachKey(er -> {consumer.accept(er); return true;});
+	}
+
+	public IntSummaryStatistics getConcurringReadSummaryStatistics(ToIntFunction<ExtendedSAMRecord> stat) {
+		IntSummaryStatistics stats = new IntSummaryStatistics();
+		forEachConcurringRead(er -> stats.accept(stat.applyAsInt(er)));
+		return stats;
 	}
 
 	private transient @Nullable TObjectIntHashMap<ExtendedSAMRecord> originalConcurringReads;

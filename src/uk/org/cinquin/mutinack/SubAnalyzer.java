@@ -1213,13 +1213,13 @@ public final class SubAnalyzer {
 
 			final String hasMateOnOtherChromosome = mates.isPresent() ? mates.get() : "";
 
-			final IntSummaryStatistics insertSizeStats = candidate.getNonMutableConcurringReads().keySet().stream().
-				mapToInt(er -> Math.abs(er.getInsertSize())).summaryStatistics();
+			IntSummaryStatistics insertSizeStats = candidate.getConcurringReadSummaryStatistics(er ->
+				Math.abs(er.getInsertSize()));
 			final int localMaxInsertSize = insertSizeStats.getMax();
 			final int localMinInsertSize = insertSizeStats.getMin();
 
-			candidate.setMinInsertSize(localMinInsertSize);
-			candidate.setMaxInsertSize(localMaxInsertSize);
+			candidate.setMinInsertSize(insertSizeStats.getMin());
+			candidate.setMaxInsertSize(insertSizeStats.getMax());
 
 			if (localMaxInsertSize < param.minInsertSize || localMinInsertSize > param.maxInsertSize) {
 				candidate.getQuality().add(PositionAssay.INSERT_SIZE, DUBIOUS);
@@ -1243,8 +1243,9 @@ public final class SubAnalyzer {
 					nf.format(localMinInsertSize)).append("; ");
 			}
 
-			candidate.setAverageMappingQuality((int) candidate.getNonMutableConcurringReads().keySet().stream().
-				mapToInt(r -> r.record.getMappingQuality()).summaryStatistics().getAverage());
+			IntSummaryStatistics mappingQualities = candidate.getConcurringReadSummaryStatistics(er ->
+				er.record.getMappingQuality());
+			candidate.setAverageMappingQuality((int) mappingQualities.getAverage());
 
 			if (!"".equals(hasMateOnOtherChromosome)) {
 				supplementalMessage.append("pair elements map to other chromosomes: " + hasMateOnOtherChromosome).append("; ");
