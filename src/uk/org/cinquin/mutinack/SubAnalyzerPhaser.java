@@ -35,7 +35,6 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,6 +52,7 @@ import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
+import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.collections.impl.factory.Lists;
@@ -317,8 +317,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull SequenceLocation location
 		) throws IOException {
 
-		final @NonNull Map<SubAnalyzer, LocationExaminationResults> locationExamResultsMap0 =
-			new IdentityHashMap<>();
+		final @NonNull UnifiedMap<SubAnalyzer, LocationExaminationResults> locationExamResultsMap0 =
+			new UnifiedMap<>();
 		//Fill the map so that at next step values can be modified concurrently
 		//without causing structural modifications, obviating the need for synchronization
 		analysisChunk.subAnalyzers.forEach(sa -> locationExamResultsMap0.put(sa, null));
@@ -334,9 +334,9 @@ public class SubAnalyzerPhaser extends Phaser {
 		});
 
 		@SuppressWarnings("null")
-		final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap =
+		final @NonNull MutableMap<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap =
 			param.enableCostlyAssertions ?
-				Collections.unmodifiableMap(locationExamResultsMap0)
+				locationExamResultsMap0.asUnmodifiable()
 			:
 				locationExamResultsMap0;
 
@@ -708,7 +708,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull Handle<Boolean> mutationToAnnotate,
 			final @NonNull AnalysisStats stats,
 			final @NonNull SequenceLocation location,
-			final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> analyzerCandidateLists,
+			final @NonNull MutableMap<SubAnalyzer, @NonNull LocationExaminationResults> analyzerCandidateLists,
 			final @NonNull Mutinack a,
 			final @NonNull ConcurrentMap<Pair<SequenceLocation, String>,
 				@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate,
@@ -810,9 +810,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		if ((!localTooHighCoverage) &&
 				examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation &&
 				examResults.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation &&
-				analyzerCandidateLists.entrySet().stream().filter(e -> e.getKey().analyzer != a).
-				mapToInt(e -> e.getValue().nGoodOrDubiousDuplexes).sum()
-				>= stats.analysisParameters.minNumberDuplexesSisterArm
+				sumOtherGoodOrDubiousDuplexes(analyzerCandidateLists, a) >= stats.analysisParameters.minNumberDuplexesSisterArm
 			) {
 
 			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).
@@ -841,6 +839,15 @@ public class SubAnalyzerPhaser extends Phaser {
 				stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));
 			}
 		}
+	}
+
+	private static int sumOtherGoodOrDubiousDuplexes(
+			@NonNull MutableMap<SubAnalyzer, @NonNull LocationExaminationResults> analyzerCandidateLists,
+			Mutinack a) {
+		SettableInteger sum = new SettableInteger(0);
+		analyzerCandidateLists.forEachKeyValue((k, v) -> {
+			if (k.analyzer != a) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
+		return sum.get();
 	}
 
 	private static void registerOutputDisagreements(
