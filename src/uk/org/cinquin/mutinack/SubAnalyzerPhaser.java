@@ -58,6 +58,7 @@ import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -467,19 +468,19 @@ public class SubAnalyzerPhaser extends Phaser {
 			csla.noWt = true;
 		}
 
-		final Map<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new IdentityHashMap<>(8);
-		candidateSequences.
-			select(c -> c.getQuality().getNonNullValue().greaterThan(POOR)).
-			forEach(c->
-				nGoodOrDubiousDuplexes.computeIfAbsent(c.getOwningSubAnalyzer(), c0 -> new SettableInteger(0)).
-					addAndGet(c.getnGoodOrDubiousDuplexes())
-			);
+		final UnifiedMap<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new UnifiedMap<>(8);
+		candidateSequences.each(c -> {
+			if (c.getQuality().getNonNullValue().greaterThan(POOR))
+				nGoodOrDubiousDuplexes.getIfAbsentPut(c.getOwningSubAnalyzer(), () -> new SettableInteger(0)).
+					addAndGet(c.getnGoodOrDubiousDuplexes());
+		});
 
-		final Map<SubAnalyzer, Integer> nGoodOrDubiousDuplexesOthers = new IdentityHashMap<>(8);
-		nGoodOrDubiousDuplexes.forEach((sa, count) -> nGoodOrDubiousDuplexesOthers.put(sa,
-			nGoodOrDubiousDuplexes.keySet().stream().
-			filter(sa2 -> sa2 != sa).mapToInt(sa2 ->
-				Objects.requireNonNull(nGoodOrDubiousDuplexes.get(sa2)).get()).sum()));
+		final UnifiedMap<SubAnalyzer, Integer> nGoodOrDubiousDuplexesOthers = new UnifiedMap<>(8);
+		nGoodOrDubiousDuplexes.forEachKey(sa -> {
+			SettableInteger sum = new SettableInteger(0);
+			nGoodOrDubiousDuplexes.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.get());});
+			nGoodOrDubiousDuplexesOthers.put(sa, sum.get());
+		});
 
 		candidateSequences.forEach(c -> {
 				Integer i = nGoodOrDubiousDuplexesOthers.get(c.getOwningSubAnalyzer());
