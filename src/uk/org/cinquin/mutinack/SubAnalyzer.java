@@ -111,6 +111,7 @@ import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
+import uk.org.cinquin.mutinack.statistics.MultiCounter;
 
 public final class SubAnalyzer {
 	private static final Logger logger = LoggerFactory.getLogger(SubAnalyzer.class);
@@ -1816,17 +1817,9 @@ public final class SubAnalyzer {
 			logger.warn("Recording Phred score multiple times at same position " + location);
 		}
 		if (param.computeRawMismatches && insertCandidateAtRegularPosition.get()) {
-			final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
-				new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
-					byteMap.get(Mutation.complement(mutation))) :
-				new ComparablePair<>(byteMap.get(wildType),
-					byteMap.get(mutation));
-			stats.rawMismatchesQ1.accept(location, mutationPair);
-			if (meetsQ2Thresholds(extendedRec) &&
-					baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-					!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
-				candidate.getMutableRawMismatchesQ2().add(mutationPair);
-			}
+			registerRawMismatch(location, extendedRec, baseQualities, readPosition,
+				distance, readOnNegativeStrand, candidate.getMutableRawMismatchesQ2(), stats.rawMismatchesQ1,
+				getFromByteMap(wildType, readOnNegativeStrand), getFromByteMap(mutation, readOnNegativeStrand));
 		}
 		if (insertCandidateAtRegularPosition.get()) {
 			candidate = readLocalCandidates.add(candidate, location);
@@ -1842,6 +1835,37 @@ public final class SubAnalyzer {
 			candidate2 = readLocalCandidates.add(candidate2, locationPH);
 			candidate2 = null;
 		}
+	}
+
+	private static String getFromByteMap(byte b, boolean reverseComplement) {
+		return reverseComplement ? byteMap.get(Mutation.complement(b)) : byteMap.get(b);
+	}
+
+	private void registerRawMismatch(
+			@NonNull SequenceLocation location,
+			@NonNull ExtendedSAMRecord extendedRec,
+			byte [] baseQualities,
+			int readPosition,
+			int distance,
+			boolean readOnNegativeStrand,
+			Collection<ComparablePair<String, String>> mismatches,
+			MultiCounter<ComparablePair<String, String>> q1Stats,
+			String wildType,
+			String mutation) {
+
+		final ComparablePair<String, String> mutationPair = new ComparablePair<>(wildType, mutation);
+		q1Stats.accept(location, mutationPair);
+		if (meetsQ2Thresholds(extendedRec) &&
+				baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+				!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
+			mismatches.add(mutationPair);
+		}
+
+	}
+
+	private static String toUpperCase(byte @NonNull [] deletedSequence, boolean readOnNegativeStrand) {
+		@NonNull String s = new String(deletedSequence).toUpperCase();
+		return readOnNegativeStrand ? Mutation.reverseComplement(s) : s;
 	}
 
 	//Deletion or skipped region ("N" in Cigar)
@@ -1939,19 +1963,13 @@ public final class SubAnalyzer {
 
 			if (!isIntron && param.computeRawMismatches) {
 				Objects.requireNonNull(deletedSequence);
-				final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
-					new ComparablePair<>(byteMap.get(Mutation.complement(deletedSequence[0])),
-						new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
-					:
-						new ComparablePair<>(byteMap.get(deletedSequence[0]),
-							new String(deletedSequence).toUpperCase());
-					stats.rawDeletionsQ1.accept(newLocation, mutationPair);
-					stats.rawDeletionLengthQ1.insert(deletedSequence.length);
-					if (meetsQ2Thresholds(extendedRec) &&
-							baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-							!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
-						candidate.getMutableRawDeletionsQ2().add(mutationPair);
-					}
+				stats.rawDeletionLengthQ1.insert(deletedSequence.length);
+
+				registerRawMismatch(newLocation, extendedRec, baseQualities, readPosition,
+					distance, readOnNegativeStrand, candidate.getMutableRawDeletionsQ2(), stats.rawDeletionsQ1,
+					getFromByteMap(deletedSequence[0], readOnNegativeStrand),
+					toUpperCase(deletedSequence, readOnNegativeStrand));
+
 			}
 			candidate = readLocalCandidates.add(candidate, newLocation);
 			candidate = null;
@@ -1995,7 +2013,7 @@ public final class SubAnalyzer {
 			distance = Math.max(distance0, distance1);
 			distance = -distance + 1;
 
-			final byte [] insertedSequence = Arrays.copyOfRange(readBases,
+			final byte @NonNull [] insertedSequence = Arrays.copyOfRange(readBases,
 				readEndOfPreviousAlignment + 1, readPosition);
 
 			CandidateSequence candidate = new CandidateSequence(
@@ -2014,21 +2032,11 @@ public final class SubAnalyzer {
 			candidate.setPositionInRead(readPosition);
 
 			if (param.computeRawMismatches) {
-				final byte wildType = readBases[readEndOfPreviousAlignment];
-				final ComparablePair<String, String> mutationPair = readOnNegativeStrand ?
-					new ComparablePair<>(byteMap.get(Mutation.complement(wildType)),
-						new String(new Mutation(candidate).reverseComplement().mutationSequence).toUpperCase())
-					:
-					new ComparablePair<>(byteMap.get(wildType),
-						new String(insertedSequence).toUpperCase());
-				stats.rawInsertionsQ1.accept(location, mutationPair);
 				stats.rawInsertionLengthQ1.insert(insertedSequence.length);
-
-				if (meetsQ2Thresholds(extendedRec) &&
-						baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
-						!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
-					candidate.getMutableRawInsertionsQ2().add(mutationPair);
-				}
+				registerRawMismatch(location, extendedRec, baseQualities, readPosition,
+					distance, readOnNegativeStrand, candidate.getMutableRawInsertionsQ2(), stats.rawInsertionsQ1,
+					getFromByteMap(readBases[readEndOfPreviousAlignment], readOnNegativeStrand),
+					toUpperCase(insertedSequence, readOnNegativeStrand));
 			}
 
 			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
