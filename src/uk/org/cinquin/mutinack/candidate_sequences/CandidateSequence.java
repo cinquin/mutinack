@@ -485,8 +485,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public int removeConcurringRead(@NonNull ExtendedSAMRecord er) {
 		if (originalConcurringReads == null) {
-			@NonNull TObjectIntHashMap<ExtendedSAMRecord> mutable = getMutableConcurringReads();
-			originalConcurringReads = new TObjectIntHashMap<>(mutable.size());
+			@NonNull TObjectIntMap<ExtendedSAMRecord> mutable = getMutableConcurringReads();
+			originalConcurringReads = new TObjectIntHashMap<>(mutable.size(), 0.5f, NO_ENTRY_VALUE);
 			originalConcurringReads.putAll(mutable);
 		}
 		return getMutableConcurringReads().remove(er);

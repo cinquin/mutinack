@@ -26,6 +26,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
@@ -69,7 +70,7 @@ public final class CandidateCounter {
 					continue;
 				}
 				final int ligSiteDistance = candidate.getNonMutableConcurringReads().get(r);
-				if (ligSiteDistance != candidate.getNonMutableConcurringReads().getNoEntryValue()) {
+				if (ligSiteDistance != SingletonObjectIntMap.NO_ENTRY_VALUE) {
 					byte phredScore = r.basePhredScores.get(location);
 					if (phredScore != ExtendedSAMRecord.PHRED_NO_ENTRY) {
 						sumPhreds += phredScore;
