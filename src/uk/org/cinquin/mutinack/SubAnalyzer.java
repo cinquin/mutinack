@@ -1608,29 +1608,14 @@ public final class SubAnalyzer {
 				final boolean tooLate = readOnNegativeStrand ? readPosition < param.ignoreLastNBases :
 					readPosition > (rec.getReadLength() - 1) - param.ignoreLastNBases;
 
-				int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
+				boolean goodToInsert = checkSubstDistance(
+					readPosition,
+					location,
+					tooLate,
+					insertCandidateAtRegularPosition,
+					extendedRec)
+					&& !tooLate;
 
-				boolean goodToInsert = distance < 0 && !tooLate;
-
-				if (distance >= 0) {
-					if (!extendedRec.formsWrongPair()) {
-						distance = extendedRec.tooCloseToBarcode(readPosition, 0);
-						if (distance <= 0 && insertCandidateAtRegularPosition.get()) {
-							stats.rejectedSubstDistanceToLigationSite.insert(-distance);
-							stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
-						}
-					}
-					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-						logger.info("Ignoring subst too close to barcode for read " + rec.getReadName());
-					}
-					insertCandidateAtRegularPosition.set(false);
-				} else if (tooLate && insertCandidateAtRegularPosition.get()) {
-					stats.nCandidateSubstitutionsAfterLastNBases.increment(location);
-					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-						logger.info("Ignoring subst too close to read end for read " + rec.getReadName());
-					}
-					insertCandidateAtRegularPosition.set(false);
-				}
 				if (goodToInsert || forceCandidateInsertion) {
 					processSubstitution(
 						fillInCandidateInfo,
@@ -1667,6 +1652,35 @@ public final class SubAnalyzer {
 					insertCandidateAtRegularPosition);
 			}//End of wildtype case
 		}//End of loop over alignment bases
+	}
+
+	private boolean checkSubstDistance(
+			int readPosition,
+			@NonNull SequenceLocation location,
+			boolean tooLate,
+			Handle<Boolean> insertCandidateAtRegularPosition,
+			ExtendedSAMRecord extendedRec) {
+		int distance = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
+		if (distance >= 0) {
+			if (!extendedRec.formsWrongPair()) {
+				distance = extendedRec.tooCloseToBarcode(readPosition, 0);
+				if (distance <= 0 && insertCandidateAtRegularPosition.get()) {
+					stats.rejectedSubstDistanceToLigationSite.insert(-distance);
+					stats.nCandidateSubstitutionsBeforeFirstNBases.increment(location);
+				}
+			}
+			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+				logger.info("Ignoring subst too close to barcode for read " + extendedRec.getFullName());
+			}
+			insertCandidateAtRegularPosition.set(false);
+		} else if (tooLate && insertCandidateAtRegularPosition.get()) {
+			stats.nCandidateSubstitutionsAfterLastNBases.increment(location);
+			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+				logger.info("Ignoring subst too close to read end for read " + extendedRec.getFullName());
+			}
+			insertCandidateAtRegularPosition.set(false);
+		}
+		return distance < 0;
 	}
 
 	private void processWildtypeBase(
