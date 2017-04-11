@@ -55,7 +55,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -1357,9 +1356,6 @@ public final class SubAnalyzer {
 
 		final SAMRecord rec = extendedRec.record;
 
-		final byte[] readBases = rec.getReadBases();
-		final byte[] refBases = ref.getBases();
-		final byte[] baseQualities = rec.getBaseQualities();
 		final int effectiveReadLength = extendedRec.effectiveLength;
 		if (effectiveReadLength == 0) {
 			return -1;
@@ -1438,19 +1434,15 @@ public final class SubAnalyzer {
 		}
 
 		for (ExtendedAlignmentBlock block: extendedRec.getAlignmentBlocks()) {
-			processAlignmentBlock(location,
+			processAlignmentBlock(
+				location,
 				locationInterningSet,
 				readLocalCandidates,
 				ref,
-				!param.rnaSeq,
 				block,
 				extendedRec,
 				rec,
-				insertSize,
 				readOnNegativeStrand,
-				readBases,
-				refBases,
-				baseQualities,
 				effectiveReadLength,
 				refEndOfPreviousAlignment,
 				readEndOfPreviousAlignment,
@@ -1464,33 +1456,42 @@ public final class SubAnalyzer {
 		return returnValue.get();
 	}
 
-	private void processAlignmentBlock(@NonNull SequenceLocation location,
+	private void processAlignmentBlock(
+			@NonNull SequenceLocation location,
 			InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ReferenceSequence ref,
-			final boolean notRnaSeq,
 			final ExtendedAlignmentBlock block,
 			final @NonNull ExtendedSAMRecord extendedRec,
 			final SAMRecord rec,
-			final int insertSize,
 			final boolean readOnNegativeStrand,
-			final byte[] readBases,
-			final byte[] refBases,
-			final byte[] baseQualities,
 			final int effectiveReadLength,
 			final SettableInteger refEndOfPreviousAlignment0,
 			final SettableInteger readEndOfPreviousAlignment0,
 			final SettableInteger returnValue) {
 
-		final Consumer<CandidateSequence> fillInCandidateInfo = candidate -> {
-			candidate.setInsertSize(insertSize);
-			candidate.setReadEL(effectiveReadLength);
-			candidate.setReadName(extendedRec.getFullName());
-			candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
-			candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
-			candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
-			candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
-			candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
+		final CandidateFiller fillInCandidateInfo = new CandidateFiller() {
+			@Override
+			public void accept(CandidateSequence candidate) {
+				candidate.setInsertSize(extendedRec.getInsertSize());
+				candidate.setReadEL(effectiveReadLength);
+				candidate.setReadName(extendedRec.getFullName());
+				candidate.setReadAlignmentStart(extendedRec.getRefAlignmentStart());
+				candidate.setMateReadAlignmentStart(extendedRec.getMateRefAlignmentStart());
+				candidate.setReadAlignmentEnd(extendedRec.getRefAlignmentEnd());
+				candidate.setMateReadAlignmentEnd(extendedRec.getMateRefAlignmentEnd());
+				candidate.setRefPositionOfMateLigationSite(extendedRec.getRefPositionOfMateLigationSite());
+			}
+
+			@Override
+			public void fillInPhred(CandidateSequence candidate, SequenceLocation location1, int readPosition) {
+				final byte quality = rec.getBaseQualities()[readPosition];
+				candidate.addBasePhredScore(quality);
+				if (extendedRec.basePhredScores.put(location1, quality) !=
+						ExtendedSAMRecord.PHRED_NO_ENTRY) {
+					logger.warn("Recording Phred score multiple times at same position " + location1);
+				}
+			}
 		};
 
 		int refPosition = block.getReferenceStart() - 1;
@@ -1517,7 +1518,7 @@ public final class SubAnalyzer {
 
 			final boolean tooLate = (readOnNegativeStrand ?
 				(insertion ? readPosition <= param.ignoreLastNBases : readPosition < param.ignoreLastNBases) :
-				readPosition > rec.getReadLength() - param.ignoreLastNBases) && notRnaSeq;
+				readPosition > rec.getReadLength() - param.ignoreLastNBases) && !param.rnaSeq;
 
 			if (tooLate) {
 				if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
@@ -1529,8 +1530,7 @@ public final class SubAnalyzer {
 					stats.nCandidateInsertions.increment(location);
 					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
 						logger.info("Insertion at position " + readPosition + " for read " + rec.getReadName() +
-							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-							"; insert size: " + insertSize + ')');
+							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand);
 					}
 					forceCandidateInsertion = processInsertion(
 						fillInCandidateInfo,
@@ -1541,10 +1541,7 @@ public final class SubAnalyzer {
 						locationInterningSet,
 						readLocalCandidates,
 						extendedRec,
-						insertSize,
 						readOnNegativeStrand,
-						readBases,
-						baseQualities,
 						effectiveReadLength);
 				}
 				else if (refPosition < refEndOfPreviousAlignment + 1) {
@@ -1561,19 +1558,16 @@ public final class SubAnalyzer {
 						refEndOfPreviousAlignment,
 						locationInterningSet,
 						readLocalCandidates,
-						extendedRec,
-						insertSize,
-						readOnNegativeStrand,
-						readBases,
-						refBases,
-						baseQualities,
-						effectiveReadLength);
+						extendedRec);
 				}//End of deletion case
 			}//End of case with accepted indel
 		}//End of case where there was a previous alignment block
 
 		refEndOfPreviousAlignment0.set(refPosition + (nBlockBases - 1));
 		readEndOfPreviousAlignment0.set(readPosition + (nBlockBases - 1));
+
+		final byte [] readBases = rec.getReadBases();
+		final byte [] baseQualities = rec.getBaseQualities();
 
 		for (int i = 0; i < nBlockBases; i++, readPosition++, refPosition++) {
 			if (i == 1) {
@@ -1598,12 +1592,13 @@ public final class SubAnalyzer {
 					continue;
 				}
 			}
-			if (refPosition > refBases.length - 1) {
+			if (refPosition > ref.length() - 1) {
 				logger.warn("Ignoring base mapped at " + refPosition + ", beyond the end of " + ref.getName());
 				continue;
 			}
 			stats.nCandidateSubstitutionsConsidered.increment(location);
-			if (readBases[readPosition] != StringUtil.toUpperCase(refBases[refPosition]) /*Mismatch*/) {
+			byte wildType = StringUtil.toUpperCase(ref.getBases()[refPosition]);
+			if (readBases[readPosition] != wildType) {/*Mismatch*/
 
 				final boolean tooLate = readOnNegativeStrand ? readPosition < param.ignoreLastNBases :
 					readPosition > (rec.getReadLength() - 1) - param.ignoreLastNBases;
@@ -1622,14 +1617,10 @@ public final class SubAnalyzer {
 						location,
 						locationPH,
 						readPosition,
-						refPosition,
 						readLocalCandidates,
 						extendedRec,
-						insertSize,
 						readOnNegativeStrand,
-						readBases,
-						refBases,
-						baseQualities,
+						wildType,
 						effectiveReadLength,
 						forceCandidateInsertion,
 						insertCandidateAtRegularPosition);
@@ -1641,17 +1632,19 @@ public final class SubAnalyzer {
 					locationPH,
 					readPosition,
 					refPosition,
+					wildType,
 					readLocalCandidates,
 					extendedRec,
 					readOnNegativeStrand,
-					readBases,
-					refBases,
-					baseQualities,
-					effectiveReadLength,
 					forceCandidateInsertion,
 					insertCandidateAtRegularPosition);
 			}//End of wildtype case
 		}//End of loop over alignment bases
+	}
+
+	private interface CandidateFiller {
+		void accept(CandidateSequence candidate);
+		void fillInPhred(CandidateSequence candidate, SequenceLocation location, int readPosition);
 	}
 
 	private boolean checkSubstDistance(
@@ -1684,18 +1677,15 @@ public final class SubAnalyzer {
 	}
 
 	private void processWildtypeBase(
-		final Consumer<CandidateSequence> candidateFiller,
+		final CandidateFiller candidateFiller,
 		final @NonNull SequenceLocation location,
 		final @Nullable SequenceLocation locationPH,
 		final int readPosition,
 		final int refPosition,
+		byte wildType,
 		final CandidateBuilder readLocalCandidates,
 		final @NonNull ExtendedSAMRecord extendedRec,
 		final boolean readOnNegativeStrand,
-		final byte[] readBases,
-		final byte[] refBases,
-		final byte[] baseQualities,
-		final int effectiveReadLength,
 		final boolean forceCandidateInsertion,
 		final Handle<Boolean> insertCandidateAtRegularPosition) {
 
@@ -1725,7 +1715,7 @@ public final class SubAnalyzer {
 			}
 		}
 
-		if (((!readOnNegativeStrand && readPosition > readBases.length - 1 - param.ignoreLastNBases) ||
+		if (((!readOnNegativeStrand && readPosition > extendedRec.record.getReadLength() - 1 - param.ignoreLastNBases) ||
 			(readOnNegativeStrand && readPosition < param.ignoreLastNBases))) {
 			if (insertCandidateAtRegularPosition.get()) {
 				stats.nCandidateWildtypeAfterLastNBases.increment(location);
@@ -1741,12 +1731,8 @@ public final class SubAnalyzer {
 		if (!extendedRec.formsWrongPair()) {
 			candidate.acceptLigSiteDistance(-distance);
 		}
-		candidate.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
-		candidate.addBasePhredScore(baseQualities[readPosition]);
-		if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
-				ExtendedSAMRecord.PHRED_NO_ENTRY) {
-			logger.warn("Recording Phred score multiple times at same position " + location);
-		}
+		candidate.setWildtypeSequence(wildType);
+		candidateFiller.fillInPhred(candidate, location, readPosition);
 		if (insertCandidateAtRegularPosition.get()) {
 			candidate = readLocalCandidates.add(candidate, location);
 			candidate = null;
@@ -1757,40 +1743,34 @@ public final class SubAnalyzer {
 			if (!extendedRec.formsWrongPair()) {
 				candidate2.acceptLigSiteDistance(-distance);
 			}
-			candidate2.setWildtypeSequence(StringUtil.toUpperCase(refBases[refPosition]));
+			candidate2.setWildtypeSequence(wildType);
 			candidate2 = readLocalCandidates.add(candidate2, locationPH);
 			candidate2 = null;
 		}
 	}
 
 	private void processSubstitution(
-			final Consumer<CandidateSequence> candidateFiller,
+			final CandidateFiller candidateFiller,
 			final @NonNull SequenceLocation location,
 			final @Nullable SequenceLocation locationPH,
 			final int readPosition,
-			final int refPosition,
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ExtendedSAMRecord extendedRec,
-			final int insertSize,
 			final boolean readOnNegativeStrand,
-			final byte[] readBases,
-			final byte[] refBases,
-			final byte[] baseQualities,
+			final byte wildType,
 			final int effectiveReadLength,
 			final boolean forceCandidateInsertion,
 			final Handle<Boolean> insertCandidateAtRegularPosition) {
 
-		int distance = 0;
-
 		if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
 			logger.info("Substitution at position " + readPosition + " for read " + extendedRec.record.getReadName() +
 				" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-				"; insert size: " + insertSize + ')');
+				"; insert size: " + extendedRec.getInsertSize() + ')');
 		}
 
-		final byte wildType = StringUtil.toUpperCase(refBases[refPosition]);
-		final byte mutation = StringUtil.toUpperCase(readBases[readPosition]);
-		switch (mutation) {
+		final byte mutation = extendedRec.record.getReadBases()[readPosition];
+		final byte mutationUC = StringUtil.toUpperCase(mutation);
+		switch (mutationUC) {
 			case 'A':
 				stats.nCandidateSubstitutionsToA.increment(location); break;
 			case 'T':
@@ -1808,15 +1788,13 @@ public final class SubAnalyzer {
 				}
 				break;
 			default:
-				throw new AssertionFailedException("Unexpected letter: " + StringUtil.toUpperCase(readBases[readPosition]));
+				throw new AssertionFailedException("Unexpected letter: " + mutationUC);
 		}
 
-		distance = -extendedRec.tooCloseToBarcode(readPosition, 0);
-
-		final byte[] mutSequence = byteArrayMap.get(readBases[readPosition]);
+		final int distance = -extendedRec.tooCloseToBarcode(readPosition, 0);
 
 		CandidateSequence candidate = new CandidateSequence(this,
-			SUBSTITUTION, mutSequence, location, extendedRec, distance);
+			SUBSTITUTION, byteArrayMap.get(mutation), location, extendedRec, distance);
 
 		if (!extendedRec.formsWrongPair()) {
 			candidate.acceptLigSiteDistance(distance);
@@ -1824,16 +1802,12 @@ public final class SubAnalyzer {
 		candidateFiller.accept(candidate);
 		candidate.setPositionInRead(readPosition);
 		candidate.setWildtypeSequence(wildType);
-		candidate.addBasePhredScore(baseQualities[readPosition]);
+		candidateFiller.fillInPhred(candidate, location, readPosition);
 		extendedRec.nReferenceDisagreements++;
-		if (extendedRec.basePhredScores.put(location, baseQualities[readPosition]) !=
-				ExtendedSAMRecord.PHRED_NO_ENTRY) {
-			logger.warn("Recording Phred score multiple times at same position " + location);
-		}
 		if (param.computeRawMismatches && insertCandidateAtRegularPosition.get()) {
-			registerRawMismatch(location, extendedRec, baseQualities, readPosition,
-				distance, readOnNegativeStrand, candidate.getMutableRawMismatchesQ2(), stats.rawMismatchesQ1,
-				getFromByteMap(wildType, readOnNegativeStrand), getFromByteMap(mutation, readOnNegativeStrand));
+			registerRawMismatch(location, extendedRec, readPosition,
+				distance, candidate.getMutableRawMismatchesQ2(), stats.rawMismatchesQ1,
+				getFromByteMap(wildType, readOnNegativeStrand), getFromByteMap(mutationUC, readOnNegativeStrand));
 		}
 		if (insertCandidateAtRegularPosition.get()) {
 			candidate = readLocalCandidates.add(candidate, location);
@@ -1856,21 +1830,19 @@ public final class SubAnalyzer {
 	}
 
 	private void registerRawMismatch(
-			@NonNull SequenceLocation location,
-			@NonNull ExtendedSAMRecord extendedRec,
-			byte [] baseQualities,
-			int readPosition,
-			int distance,
-			boolean readOnNegativeStrand,
-			Collection<ComparablePair<String, String>> mismatches,
-			MultiCounter<ComparablePair<String, String>> q1Stats,
-			String wildType,
-			String mutation) {
+			final @NonNull SequenceLocation location,
+			final @NonNull ExtendedSAMRecord extendedRec,
+			final int readPosition,
+			final int distance,
+			final Collection<ComparablePair<String, String>> mismatches,
+			final MultiCounter<ComparablePair<String, String>> q1Stats,
+			final String wildType,
+			final String mutation) {
 
 		final ComparablePair<String, String> mutationPair = new ComparablePair<>(wildType, mutation);
 		q1Stats.accept(location, mutationPair);
 		if (meetsQ2Thresholds(extendedRec) &&
-				baseQualities[readPosition] >= param.minBasePhredScoreQ2 &&
+			extendedRec.record.getBaseQualities()[readPosition] >= param.minBasePhredScoreQ2 &&
 				!extendedRec.formsWrongPair() && distance > param.ignoreFirstNBasesQ2) {
 			mismatches.add(mutationPair);
 		}
@@ -1884,7 +1856,7 @@ public final class SubAnalyzer {
 
 	//Deletion or skipped region ("N" in Cigar)
 	private void processDeletion(
-		final Consumer<CandidateSequence> candidateFiller,
+		final CandidateFiller candidateFiller,
 		final @NonNull SequenceLocation location,
 		final @NonNull ReferenceSequence ref,
 		final ExtendedAlignmentBlock block,
@@ -1894,15 +1866,9 @@ public final class SubAnalyzer {
 		final int refEndOfPreviousAlignment,
 		final InterningSet<@NonNull SequenceLocation> locationInterningSet,
 		final CandidateBuilder readLocalCandidates,
-		final @NonNull ExtendedSAMRecord extendedRec,
-		final int insertSize,
-		final boolean readOnNegativeStrand,
-		final byte[] readBases,
-		final byte[] refBases,
-		final byte[] baseQualities,
-		final int effectiveReadLength) {
+		final @NonNull ExtendedSAMRecord extendedRec) {
 
-		if (refPosition > refBases.length - 1) {
+		if (refPosition > ref.length() - 1) {
 			logger.warn("Ignoring rest of read after base mapped at " + refPosition +
 				", beyond the end of " + ref.getName());
 			return;
@@ -1929,9 +1895,7 @@ public final class SubAnalyzer {
 
 			if (!isIntron) stats.nCandidateDeletions.increment(location);
 			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-				logger.info("Deletion or intron at position " + readPosition + " for read " + extendedRec.record.getReadName() +
-					" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand +
-					"; insert size: " + insertSize + ')');
+				logger.info("Deletion or intron at position " + readPosition + " for read " + extendedRec.record.getReadName());
 			}
 
 			final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
@@ -1979,10 +1943,11 @@ public final class SubAnalyzer {
 				Objects.requireNonNull(deletedSequence);
 				stats.rawDeletionLengthQ1.insert(deletedSequence.length);
 
-				registerRawMismatch(newLocation, extendedRec, baseQualities, readPosition,
-					distance, readOnNegativeStrand, candidate.getMutableRawDeletionsQ2(), stats.rawDeletionsQ1,
-					getFromByteMap(deletedSequence[0], readOnNegativeStrand),
-					toUpperCase(deletedSequence, readOnNegativeStrand));
+				final boolean negativeStrand = extendedRec.getReadNegativeStrandFlag();
+				registerRawMismatch(newLocation, extendedRec, readPosition,
+					distance, candidate.getMutableRawDeletionsQ2(), stats.rawDeletionsQ1,
+					getFromByteMap(deletedSequence[0], negativeStrand),
+					toUpperCase(deletedSequence, negativeStrand));
 
 			}
 			candidate = readLocalCandidates.add(candidate, newLocation);
@@ -1991,7 +1956,7 @@ public final class SubAnalyzer {
 	}
 
 	private boolean processInsertion(
-			final Consumer<CandidateSequence> candidateFiller,
+			final CandidateFiller candidateFiller,
 			final int readPosition,
 			final int refPosition,
 			final int readEndOfPreviousAlignment,
@@ -1999,10 +1964,7 @@ public final class SubAnalyzer {
 			final InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ExtendedSAMRecord extendedRec,
-			final int insertSize,
 			final boolean readOnNegativeStrand,
-			final byte[] readBases,
-			final byte[] baseQualities,
 			final int effectiveReadLength) {
 
 		boolean forceCandidateInsertion = false;
@@ -2027,6 +1989,7 @@ public final class SubAnalyzer {
 			distance = Math.max(distance0, distance1);
 			distance = -distance + 1;
 
+			final byte [] readBases = extendedRec.record.getReadBases();
 			final byte @NonNull [] insertedSequence = Arrays.copyOfRange(readBases,
 				readEndOfPreviousAlignment + 1, readPosition);
 
@@ -2047,8 +2010,8 @@ public final class SubAnalyzer {
 
 			if (param.computeRawMismatches) {
 				stats.rawInsertionLengthQ1.insert(insertedSequence.length);
-				registerRawMismatch(location, extendedRec, baseQualities, readPosition,
-					distance, readOnNegativeStrand, candidate.getMutableRawInsertionsQ2(), stats.rawInsertionsQ1,
+				registerRawMismatch(location, extendedRec, readPosition,
+					distance, candidate.getMutableRawInsertionsQ2(), stats.rawInsertionsQ1,
 					getFromByteMap(readBases[readEndOfPreviousAlignment], readOnNegativeStrand),
 					toUpperCase(insertedSequence, readOnNegativeStrand));
 			}
