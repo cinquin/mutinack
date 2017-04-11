@@ -40,6 +40,7 @@ public final class CandidateBuilder {
 	private final @Nullable GenomeFeatureTester codingStrandTester;
 
 	@CheckReturnValue
+	@SuppressWarnings("ReferenceEquality")
 	public CandidateSequence add(@NonNull CandidateSequence c, @NonNull SequenceLocation l) {
 		if (negativeStrand) {
 			c.incrementNegativeStrandCount(1);
@@ -55,6 +56,7 @@ public final class CandidateBuilder {
 			candidates.put(l, c);
 			returned = c;
 		}
+		//Reference equality check on line below is as intended
 		if (returned == c && codingStrandTester != null) {//This is the first candidate inserted at this location
 			@SuppressWarnings("null")
 			final Boolean negativeCodingStrand = Optional.ofNullable(codingStrandTester).
