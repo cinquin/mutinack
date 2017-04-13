@@ -276,8 +276,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 		int result = 1;
 		result = prime * result + ((leftAlignmentEnd == null) ? 0 : leftAlignmentEnd.hashCode());
 		result = prime * result + ((leftAlignmentStart == null) ? 0 : leftAlignmentStart.hashCode());
-		result = prime * result + Arrays.hashCode(leftBarcode);
-		result = prime * result + Arrays.hashCode(rightBarcode);
+		result = prime * result + System.identityHashCode(leftBarcode);//OK because of interning
+		result = prime * result + System.identityHashCode(rightBarcode);
 		result = prime * result + ((rightAlignmentEnd == null) ? 0 : rightAlignmentEnd.hashCode());
 		result = prime * result + ((rightAlignmentStart == null) ? 0 : rightAlignmentStart.hashCode());
 		return result;
@@ -287,22 +287,20 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public final boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (!(obj instanceof DuplexRead))
-			return false;
 		DuplexRead other = (DuplexRead) obj;
 		if (leftAlignmentEnd == null) {
 			if (other.leftAlignmentEnd != null)
 				return false;
 		} else if (!leftAlignmentEnd.equals(other.leftAlignmentEnd))
 			return false;
+		if (leftBarcode != other.leftBarcode)//OK because of interning
+			return false;
+		if (rightBarcode != other.rightBarcode)//OK because of interning
+			return false;
 		if (leftAlignmentStart == null) {
 			if (other.leftAlignmentStart != null)
 				return false;
 		} else if (!leftAlignmentStart.equals(other.leftAlignmentStart))
-			return false;
-		if (!Arrays.equals(leftBarcode, other.leftBarcode))
-			return false;
-		if (!Arrays.equals(rightBarcode, other.rightBarcode))
 			return false;
 		if (rightAlignmentEnd == null) {
 			if (other.rightAlignmentEnd != null)
