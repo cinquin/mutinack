@@ -38,7 +38,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 	public final byte[] mutationSequence;
 	private Boolean templateStrand;
 
-	public static final Mutation UNKNOWN_STATUS = new Mutation(MutationType.UNKNOWN,
+	public static final @NonNull Mutation UNKNOWN_STATUS = new Mutation(MutationType.UNKNOWN,
 		(byte) 0, false, null, Optional.empty());
 
 	public Mutation(@NonNull MutationType mutationType, byte wildtype, boolean negativeStrand,

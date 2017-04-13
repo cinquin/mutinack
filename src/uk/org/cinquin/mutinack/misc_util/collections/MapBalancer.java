@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -144,7 +145,7 @@ public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Cl
 	/**
 	 * Breaks Map contract: does not return already-present value.
 	 */
-	public V put(K key, @Nullable V value) {
+	public V put(K key, @SuppressWarnings("null") @NonNull V value) {
 		if (terminated) {
 			throw new IllegalStateException();
 		}
@@ -180,7 +181,7 @@ public final class MapBalancer<@NonNull K, @Nullable V> implements Map<K, V>, Cl
 			throw new RuntimeException(storageException);
 		}
 		for (Entry< ? extends K, ? extends V> e: m.entrySet()) {
-			put(e.getKey(), e.getValue());
+			put(e.getKey(), Objects.requireNonNull(e.getValue()));
 		}
 	}
 

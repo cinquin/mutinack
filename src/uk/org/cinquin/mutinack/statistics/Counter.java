@@ -123,7 +123,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			accept(t, (double) l);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({ "unchecked", "rawtypes", "null" })
 	private void accept(@NonNull Object t, double d, int offset) {
 		@NonNull Object index = t;
 		boolean terminal = true;

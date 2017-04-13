@@ -1825,8 +1825,9 @@ public final class SubAnalyzer {
 		}
 	}
 
-	private static String getFromByteMap(byte b, boolean reverseComplement) {
-		return reverseComplement ? byteMap.get(Mutation.complement(b)) : byteMap.get(b);
+	private static @NonNull String getFromByteMap(byte b, boolean reverseComplement) {
+		String result = reverseComplement ? byteMap.get(Mutation.complement(b)) : byteMap.get(b);
+		return Objects.requireNonNull(result);
 	}
 
 	private void registerRawMismatch(
@@ -1836,8 +1837,8 @@ public final class SubAnalyzer {
 			final int distance,
 			final Collection<ComparablePair<String, String>> mismatches,
 			final MultiCounter<ComparablePair<String, String>> q1Stats,
-			final String wildType,
-			final String mutation) {
+			final @NonNull String wildType,
+			final @NonNull String mutation) {
 
 		final ComparablePair<String, String> mutationPair = new ComparablePair<>(wildType, mutation);
 		q1Stats.accept(location, mutationPair);
@@ -1849,7 +1850,7 @@ public final class SubAnalyzer {
 
 	}
 
-	private static String toUpperCase(byte @NonNull [] deletedSequence, boolean readOnNegativeStrand) {
+	private static @NonNull String toUpperCase(byte @NonNull [] deletedSequence, boolean readOnNegativeStrand) {
 		@NonNull String s = new String(deletedSequence).toUpperCase();
 		return readOnNegativeStrand ? Mutation.reverseComplement(s) : s;
 	}

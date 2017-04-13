@@ -22,7 +22,7 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
@@ -34,42 +34,44 @@ import uk.org.cinquin.final_annotation.Final;
 public class Pair<A,B> implements Serializable {
 
 	private static final long serialVersionUID = -1873509799696495621L;
-	@JsonIgnore @Final public A fst;
+	@JsonIgnore @Final public @NonNull A fst;
 	@JsonUnwrapped @Final public B snd;
 
-	protected Pair() {
-		fst = null;
-		snd = null;
-	}
-
-	public Pair(A first, @Nullable B second) {
+	public Pair(@NonNull A first, @NonNull B second) {
 		super();
 		this.fst = first;
 		this.snd = second;
 	}
 
+	@SuppressWarnings("null")
+	protected Pair() {
+		// This constructor exists for DataNucleus
+	}
+
 	@Override
 	public final int hashCode() {
-		int hashFirst = fst != null ? fst.hashCode() : 0;
-		int hashSecond = snd != null ? snd.hashCode() : 0;
+		int hashFirst = fst.hashCode();
+		int hashSecond = snd.hashCode();
 
 		return (hashFirst + hashSecond) * hashSecond + hashFirst;
 	}
 
 	@Override
 	public final boolean equals(Object other) {
-		if (other instanceof Pair) {
-			Pair<?, ?> otherPair = (Pair<?, ?>) other;
-			return
-				((  this.fst == otherPair.fst ||
-				( this.fst != null && otherPair.fst != null &&
-				this.fst.equals(otherPair.fst))) &&
-					(	this.snd == otherPair.snd ||
-					( this.snd != null && otherPair.snd != null &&
-					this.snd.equals(otherPair.snd))) );
+		if (this == other) {//Assumes that fst and snd do not change after pair is created
+			return true;
 		}
-
-		return false;
+		if (other == null || ! (other instanceof Pair)) {
+			return false;
+		}
+		Pair<?, ?> otherPair = (Pair<?, ?>) other;
+		if (!fst.equals(otherPair.fst)) {
+			return false;
+		}
+		if (!(snd.equals(otherPair.snd))) {
+			return false;
+		}
+		return true;
 	}
 
 	@Override

@@ -87,7 +87,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	final MutinackGroup groupSettings;
 	@Final @Persistent Set<String> mutinackVersions = new HashSet<>();
 	@Final @Persistent
-	public Map<String, String> inputBAMHashes = new HashMap<>();
+	public Map<@NonNull String, @NonNull String> inputBAMHashes = new HashMap<>();
 	@Final @Persistent @NonNull Parameters analysisParameters;
 	@Final @Persistent boolean forInsertions;
 	//Changed to Map instead of ConcurrentMap to please datanucleus

@@ -297,7 +297,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 		sortStatsListByDuplexLoadParams(stats);
 
-		final String inputHash = (inputBam.length() > param.computeHashForBAMSmallerThanInGB * Math.pow(1024,3)) ?
+		final @NonNull String inputHash = (inputBam.length() > param.computeHashForBAMSmallerThanInGB * Math.pow(1024,3)) ?
 				"too big"
 			:
 				BAMUtil.getHash(inputBam);
@@ -305,7 +305,7 @@ public class Mutinack implements Actualizable, Closeable {
 		stats.forEach(stat -> {
 			stat.approximateReadInsertSize = insertSizeProbSmooth;
 			stat.approximateReadInsertSizeRaw = insertSizeProbRaw;
-			stat.inputBAMHashes.put(inputBam.getPath(), inputHash);
+			stat.inputBAMHashes.put(Objects.requireNonNull(inputBam.getPath()), inputHash);
 		});
 		this.startDate = new Date();
 	}

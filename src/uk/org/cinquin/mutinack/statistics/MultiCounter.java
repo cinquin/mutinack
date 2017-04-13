@@ -123,7 +123,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 
 	public void addPredicate(String name,
 			@NonNull SerializablePredicate<SequenceLocation> predicate,
-			ICounterSeqLoc counter) {
+			@NonNull ICounterSeqLoc counter) {
 		seqLocCounters.put(name, new Pair<>(predicate, counter));
 	}
 

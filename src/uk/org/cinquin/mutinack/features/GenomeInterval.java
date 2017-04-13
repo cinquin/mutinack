@@ -17,6 +17,7 @@
 package uk.org.cinquin.mutinack.features;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -111,10 +112,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof GenomeInterval)) {
+		if (obj == null || !(obj instanceof GenomeInterval)) {
 			return false;
 		}
 		GenomeInterval other = (GenomeInterval) obj;
@@ -124,14 +122,10 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 		if (end != other.end) {
 			return false;
 		}
-		if (name == null) {
-			if (other.name != null) {
-				return false;
-			}
-		} else if (!name.equals(other.name)) {
+		if (start != other.start) {
 			return false;
 		}
-		if (start != other.start) {
+		if (!Objects.equals(name, other.name)) {
 			return false;
 		}
 		return true;

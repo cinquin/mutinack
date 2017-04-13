@@ -129,7 +129,7 @@ public class FunctionalTestRerun {
 				"No reference output specified for test GenericTest");
 			run.parameters.terminateImmediatelyUponError = false;
 			if (suppressAlignmentOutput) {
-				run.parameters.outputAlignmentFile = null;
+				run.parameters.outputAlignmentFile = Collections.emptyList();
 			}
 		}
 

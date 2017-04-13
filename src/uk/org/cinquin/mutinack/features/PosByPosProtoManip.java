@@ -511,7 +511,7 @@ public class PosByPosProtoManip {
 			builder2.setContigName(cnl.getContigName());
 
 			Map<String, ContigNumbers> mapArrays = inputs.stream().flatMap(c -> 
-					c.getContigNumbersList().stream().map(cnl2 -> new Pair<>(c.getSampleName(), cnl2))).
+					c.getContigNumbersList().stream().map(cnl2 -> new Pair<>(c.getSampleName(), Objects.requireNonNull(cnl2)))).
 				filter(cn -> cn.snd.getContigName().equals(cnl.getContigName())).
 				collect(Collectors.groupingBy(p -> p.fst, singletonCollector()));
 

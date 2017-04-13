@@ -4,7 +4,6 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 
 import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.misc_util.Assert;
@@ -22,7 +21,7 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 	//Not taken into account for equality
 	public double probCollision;
 
-	public DuplexDisagreement(@Nullable Mutation first, @NonNull Mutation second,
+	public DuplexDisagreement(@NonNull Mutation first, @NonNull Mutation second,
 			boolean hasAWtStrand, Quality quality) {
 		super(first, second);
 		this.hasAWtStrand = hasAWtStrand;
