@@ -30,6 +30,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.edu.stanford.nlp.util.HasInterval;
 import contrib.edu.stanford.nlp.util.Interval;
+import contrib.net.sf.samtools.Cigar;
 import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
 import contrib.net.sf.samtools.SAMRecord;
@@ -67,6 +68,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public final @NonNull SequenceLocation location;
 	final int medianPhred;
 	final float averagePhred;
+	final Cigar cigar;
 	/**
 	 * Length of read ignoring trailing Ns.
 	 */
@@ -164,6 +166,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.extSAMCache = extSAMCache;
 		this.name = fullName;
 		this.record = rec;
+		this.cigar = rec.getCigar();
 		this.location = location;
 		hashCode = fullName.hashCode();
 		mateName = getReadFullName(rec, true);
@@ -363,7 +366,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		if (refPosition <= getAlignmentStart()) {
 			return refPosition - getUnclippedStart();
 		}
-		List<CigarElement> cElmnts = record.getCigar().getCigarElements();
+		List<CigarElement> cElmnts = getCigar().getCigarElements();
 		final int nElmnts = cElmnts.size();
 		int ceIndex = 0;
 		int nReadBasesProcessed = getAlignmentStart() - getUnclippedStart();
@@ -401,12 +404,16 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 	}
 
+	public Cigar getCigar() {
+		return cigar;
+	}
+
 	private int intronAdjustment(final int readPosition, boolean reverse) {
 
 		int nReadBases = 0;
 		int intronBases = 0;
 
-		MutableList<CigarElement> cigarElements = Lists.mutable.withAll(record.getCigar().getCigarElements());
+		MutableList<CigarElement> cigarElements = Lists.mutable.withAll(getCigar().getCigarElements());
 		if (reverse) {
 			cigarElements.reverseThis();
 		}
@@ -683,6 +690,6 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public List<ExtendedAlignmentBlock> getAlignmentBlocks() {
-		return ExtendedAlignmentBlock.getAlignmentBlocks(record.getCigar(), record.getAlignmentStart(), "read cigar");
+		return ExtendedAlignmentBlock.getAlignmentBlocks(getCigar(), record.getAlignmentStart(), "read cigar");
 	}
 }
