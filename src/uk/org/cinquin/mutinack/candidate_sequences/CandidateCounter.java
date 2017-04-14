@@ -20,9 +20,9 @@ import java.util.List;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
-import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
 
+import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -36,7 +36,7 @@ public final class CandidateCounter {
 	public int minBasePhredScore = 0;
 	public final @NonNull UnifiedMap<@NonNull CandidateSequence, @NonNull CandidateDuplexEval>
 		candidateCounts;
-	public final UnifiedSet<ExtendedSAMRecord> keptRecords;
+	public final THashSet<ExtendedSAMRecord> keptRecords;
 
 	public long nPhreds, sumPhreds;
 
@@ -44,7 +44,7 @@ public final class CandidateCounter {
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
-		keptRecords = new UnifiedSet<>();
+		keptRecords = new THashSet<>();
 		candidateCounts = new UnifiedMap<>(5);
 	}
 
