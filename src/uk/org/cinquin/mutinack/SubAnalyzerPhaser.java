@@ -250,7 +250,6 @@ public class SubAnalyzerPhaser extends Phaser {
 				final int maxInsertSize = param.maxInsertSize;
 				subAnalyzer.extSAMCache.retainEntries((key, val) ->
 					val.getAlignmentStart() + maxInsertSize > localPauseAt);
-				subAnalyzer.extSAMCache.compact();
 				if (outputReads) {
 					subAnalyzer.writeOutputReads();
 				}
