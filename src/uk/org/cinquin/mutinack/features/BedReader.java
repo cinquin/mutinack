@@ -35,6 +35,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -295,6 +296,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 	public void forEach(SequenceLocation loc, Predicate<GenomeInterval> keepGoingPredicate) {
 		contigTrees.get(loc.contigIndex).forEach(loc.position, keepGoingPredicate);
+	}
+
+	public void forEach(Consumer<GenomeInterval> action) {
+		contigTrees.forEach(tree -> tree.forEach(action));
 	}
 
 	@Override

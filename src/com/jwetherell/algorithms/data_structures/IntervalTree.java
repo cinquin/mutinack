@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -140,6 +141,10 @@ public class IntervalTree<T> implements Serializable {
 
 	public boolean forEach(long index, Predicate<T> keepGoingPredicate) {
 		return root.forEach(index, keepGoingPredicate);
+	}
+
+	public void forEach(Consumer<T> consumer) {
+		root.forEach(consumer);
 	}
 
 	/**
@@ -281,6 +286,16 @@ public class IntervalTree<T> implements Serializable {
 
 		public boolean contains(long index) {
 			return forEach(index, i -> false);
+		}
+
+		public void forEach(Consumer<T> consumer) {
+			overlap.forEach(id -> id.set.forEach(consumer));
+			if (left != null) {
+				left.forEach(consumer);
+			}
+			if (right != null) {
+				right.forEach(consumer);
+			}
 		}
 
 		 /** Stabbing query
@@ -506,7 +521,6 @@ public class IntervalTree<T> implements Serializable {
 		 *
 		 * @return Unmodifiable collection of data objects
 		 */
-		@SuppressWarnings("null")
 		public @NonNull Set<T> getData() {
 			return Collections.unmodifiableSet(this.set);
 		}

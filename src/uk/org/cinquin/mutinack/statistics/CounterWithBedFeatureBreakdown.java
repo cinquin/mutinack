@@ -78,6 +78,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 		this.bedFeatures = bedFeatures;
 		supplementaryInfoProvider = bedFeatures::getSuppInfo;
 		this.refSeqToOfficialGeneName = refSeqToOfficialGeneName;
+		bedFeatures.forEach(f -> counter.initialize(f));
 	}
 
 	@Override
@@ -110,12 +111,15 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 		StringBuilder result = new StringBuilder();
 		double[] coverage = counter.getCounts().entrySet().stream().
 				mapToDouble(e -> ((DoubleAdderFormatter) e.getValue()).sum()).
+				filter(d -> d != 0).
 				sorted().toArray();
-		result.append("median = ").append(DoubleAdderFormatter.
-				formatDouble(coverage[coverage.length/2])).append("; mean = ");
+		result.append("medianNon0 = ").append(DoubleAdderFormatter.
+				formatDouble(coverage[coverage.length/2])).append("; meanNon0 = ");
 		result.append(formatterTL.get().format(
 				counter.getCounts().entrySet().stream().mapToDouble(e ->
-					((DoubleAdderFormatter) e.getValue()).sum()).average().getAsDouble()));
+					((DoubleAdderFormatter) e.getValue()).sum()).
+				filter(d -> d!= 0).
+				average().getAsDouble()));
 		result.append('\n');
 		return result.toString();
 	}

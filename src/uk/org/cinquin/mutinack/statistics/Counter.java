@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -32,9 +33,9 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 import gnu.trove.map.hash.THashMap;
 import uk.org.cinquin.mutinack.MutinackGroup;
+import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
-import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 /**
@@ -108,6 +109,10 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			accept(t, 1d);
 	}
 
+	public void initialize(@NonNull GenomeInterval f) {
+		accept(f, daf -> {}, 0);
+	}
+
 	void acceptVarArgs(long n, @NonNull Object ... indices) {
 		if (on)
 			accept(Arrays.asList(indices), n);
@@ -125,7 +130,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes", "null" })
-	private void accept(@NonNull Object t, double d, int offset) {
+	private void accept(@NonNull Object t, Consumer<DoubleAdderFormatter> action, int offset) {
 		@NonNull Object index = t;
 		boolean terminal = true;
 		final List<@NonNull Object> list;
@@ -148,14 +153,14 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 						((Counter) preExistingValue).setKeyNamePrintingProcessor(nameProcessors.subList(1, nameProcessors.size()));
 						isMultidimensionalCounter = true;
 					}
-					map.put(index, Util.nonNullify(preExistingValue));
+					map.put(index, preExistingValue);
 				}
 			}
 		}
 		if (terminal) {
-			((DoubleAdderFormatter) preExistingValue).add(d);
+			action.accept((DoubleAdderFormatter) preExistingValue);
 		} else {
-			((Counter<Object>) preExistingValue).accept(Objects.requireNonNull(list), d, offset + 1);
+			((Counter<Object>) preExistingValue).accept(Objects.requireNonNull(list), action, offset + 1);
 		}
 	}
 
@@ -166,7 +171,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	public void accept(@NonNull Object t, double d) {
 		if (!on)
 				return;
-		accept(t, d, 0);
+		accept(t, daf -> daf.add(d), 0);
 	}
 
 	/* (non-Javadoc)
@@ -278,4 +283,5 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		map.values().stream().filter(o -> o instanceof Actualizable).
 			forEach(a -> ((Actualizable) a).actualize());
 	}
+
 }

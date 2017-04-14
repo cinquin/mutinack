@@ -1,2 +1,2 @@
-test_breakdown.bed: median = 0.588; mean = 5.882E-1
+test_breakdown.bed: medianNon0 = 0.588; meanNon0 = 5.882E-1
 
