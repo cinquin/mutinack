@@ -105,9 +105,6 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		if (this == obj) {
 			return true;
 		}
-		if (!(obj instanceof ExtendedSAMRecord)) {
-			return false;
-		}
 		return name.equals(((ExtendedSAMRecord) obj).name);
 	}
 
