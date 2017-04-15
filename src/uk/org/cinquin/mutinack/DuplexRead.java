@@ -1118,6 +1118,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public void markDuplicates(Parameters param, AnalysisStats stats, Iterable<ExtendedSAMRecord> reads0) {
 		MutableList<ExtendedSAMRecord> reads = Lists.mutable.ofAll(reads0);
+		final int nReads = reads.size();
 		reads.sort(Comparator.comparing(ExtendedSAMRecord::getxLoc));
 		reads.each(r -> {
 			r.visitedForOptDups = false;
@@ -1129,14 +1130,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 		int maxxIndex = 0;
 		SettableInteger nDuplicates = new SettableInteger(0);
 		final int bandWidth = param.computeAllReadDistances ? 1_000_000_000 : param.opticalDuplicateDistance;
-		for (int recordIndex = 0; recordIndex < totalNRecords; recordIndex++) {
+		for (int recordIndex = 0; recordIndex < nReads; recordIndex++) {
 			final ExtendedSAMRecord record = reads.get(recordIndex);
 			Assert.isTrue(!((record.opticalDuplicate || record.hasOpticalDuplicates) ^ record.visitedForOptDups));
 			if (record.opticalDuplicate || record.hasOpticalDuplicates) {
 				continue;
 			}
 			final int x = record.xLoc;
-			while (maxxIndex < totalNRecords - 1 && reads.get(maxxIndex + 1).xLoc < x + bandWidth) {
+			while (maxxIndex < nReads - 1 && reads.get(maxxIndex + 1).xLoc < x + bandWidth) {
 				maxxIndex++;
 			}
 			final int finalRecordIndex = recordIndex;
