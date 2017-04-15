@@ -52,7 +52,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@JsonIgnore
 	protected final boolean sortByValue;
 	@JsonUnwrapped
-	private final @NonNull THashMap<Object, @NonNull Object> map = new THashMap<>();
+	private final @NonNull THashMap<Object, @NonNull Object> map = new THashMap<>(4, 0.1f);
 	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
 	@JsonIgnore
