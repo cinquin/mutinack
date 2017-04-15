@@ -43,6 +43,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectByteHashMap;
 import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
@@ -410,37 +411,42 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	private int intronAdjustment(final int readPosition, boolean reverse) {
 
-		int nReadBases = 0;
-		int intronBases = 0;
+		if (!groupSettings.isRnaSeq()) {
+			return 0;
+		}
+
+		SettableInteger nReadBases = new SettableInteger(0);
+		SettableInteger intronBases = new SettableInteger(0);
 
 		MutableList<CigarElement> cigarElements = Lists.mutable.withAll(getCigar().getCigarElements());
 		if (reverse) {
 			cigarElements.reverseThis();
 		}
 
-		for (CigarElement e: cigarElements) {
+		cigarElements.detect(e -> {
 			CigarOperator operator = e.getOperator();
 			int truncatedLength = operator.consumesReadBases() ?
-					Math.min(e.getLength(), readPosition - nReadBases)
+					Math.min(e.getLength(), readPosition - nReadBases.get())
 				:
 					e.getLength();
 			if (operator.consumesReadBases()) {
-				nReadBases += truncatedLength;
+				nReadBases.addAndGet(truncatedLength);
 			}
 			if (operator == CigarOperator.N) {
-				intronBases += e.getLength();
+				intronBases.addAndGet(e.getLength());
 			}
-			if (nReadBases == readPosition) {
-				break;
+			if (nReadBases.get() == readPosition) {
+				return true;
 			}
-		}
+			return false;
+		});
 
-		Assert.isTrue(nReadBases == readPosition);
+		Assert.isTrue(nReadBases.get() == readPosition);
 
-		return intronBases;
+		return intronBases.get();
 	}
 
-	private static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
+	public static final int NO_MATE_POSITION = Integer.MAX_VALUE - 1000;
 
 	public int tooCloseToBarcode(int readPosition, int ignoreFirstNBases) {
 

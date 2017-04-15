@@ -76,7 +76,8 @@ public class MutinackGroup implements Closeable, Serializable {
 	public int INTERVAL_SLOP;
 	public int BIN_SIZE = 10_000;
 
-	public MutinackGroup() {
+	public MutinackGroup(boolean rnaSeq) {
+		this.rnaSeq = rnaSeq;
 	}
 
 	private static void checkSet(String var, int previousVal, int newVal) {
@@ -117,6 +118,8 @@ public class MutinackGroup implements Closeable, Serializable {
 	);
 
 	public boolean terminateImmediatelyUponError = true;
+
+	private final boolean rnaSeq;
 
 	public static String forceKeeperType = null;
 
@@ -174,5 +177,9 @@ public class MutinackGroup implements Closeable, Serializable {
 				terminateAnalysis = true;
 			}
 		}
+	}
+
+	public boolean isRnaSeq() {
+		return rnaSeq;
 	}
 }

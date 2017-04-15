@@ -34,7 +34,7 @@ public class CounterTest {
 		//TODO Should update this test to read the counter's contents, once an
 		//API for that is put together, and not just check String output
 		@SuppressWarnings("resource")
-		Counter<Object> c = new Counter<>(false, new MutinackGroup());
+		Counter<Object> c = new Counter<>(false, new MutinackGroup(false));
 		SerializableFunction<Object, Object> map = (o -> o.equals(3) ? "trois" : o);
 		c.setKeyNamePrintingProcessor(Arrays.asList(null, map, null));
 		c.accept(Arrays.asList(new Object[] {2,3,4}), 10);

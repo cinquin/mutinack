@@ -578,7 +578,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 		}
 
-		final MutinackGroup groupSettings = new MutinackGroup();
+		final MutinackGroup groupSettings = new MutinackGroup(param.rnaSeq);
 		groupSettings.registerInterruptSignalProcessor();
 		groupSettings.PROCESSING_CHUNK = param.processingChunk;
 		groupSettings.INTERVAL_SLOP = param.alignmentPositionMismatchAllowed;

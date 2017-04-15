@@ -367,7 +367,7 @@ public class PosByPosProtoManip {
 		String output = argValues.output;
 
 		@SuppressWarnings("resource")
-		Counter<Integer> counter = new Counter<>(false, new MutinackGroup());
+		Counter<Integer> counter = new Counter<>(false, new MutinackGroup(false));
 
 		int nPos = 0;
 

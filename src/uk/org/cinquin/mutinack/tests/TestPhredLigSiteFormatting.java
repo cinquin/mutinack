@@ -49,7 +49,7 @@ public class TestPhredLigSiteFormatting {
 	@SuppressWarnings("static-method")
 	@Test
 	public void test() throws JsonGenerationException, JsonMappingException, IOException {
-		try (MutinackGroup settings = new MutinackGroup()) {
+		try (MutinackGroup settings = new MutinackGroup(false)) {
 			settings.setContigNames(new ArrayList<@NonNull String>() {
 				private static final long serialVersionUID = 6273864437450331956L;
 

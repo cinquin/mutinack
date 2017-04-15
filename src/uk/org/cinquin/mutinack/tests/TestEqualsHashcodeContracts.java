@@ -51,10 +51,10 @@ public class TestEqualsHashcodeContracts {
 	@Test
 	public void parametersJobEquals() {
 		EqualsVerifier.forClass(Parameters.class).withPrefabValues(
-				MutinackGroup.class, new MutinackGroup(), new MutinackGroup()).
+				MutinackGroup.class, new MutinackGroup(false), new MutinackGroup(false)).
 				suppress(Warning.NONFINAL_FIELDS).verify();
 		EqualsVerifier.forClass(Job.class).withPrefabValues(
-			MutinackGroup.class, new MutinackGroup(), new MutinackGroup()).
+			MutinackGroup.class, new MutinackGroup(false), new MutinackGroup(false)).
 			suppress(Warning.NONFINAL_FIELDS).verify();
 	}
 }
