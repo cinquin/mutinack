@@ -24,6 +24,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 public interface DuplexKeeper {
 	@NonNull List<DuplexRead> getOverlapping(DuplexRead d);
+	@NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop);
 	@NonNull Iterable<DuplexRead> getStartingAtPosition(int position);
 	@NonNull Iterable<DuplexRead> getIterable();
 	void forEach(Consumer<? super DuplexRead> consumer);

@@ -59,6 +59,14 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		return overlappingDuplexes;
 	}
 
+	@Override
+	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
+		List<DuplexRead> result = new ArrayList<>();
+		getOverlapping(d.getIntervalWithSlop(shift, slop), result);
+		return result;
+	}
+
+
 	private final List<DuplexRead> duplexesAtPosition0 = new ArrayList<>(10_000);
 	private final List<DuplexRead> duplexesAtPosition1 = new ArrayList<>(10_000);
 

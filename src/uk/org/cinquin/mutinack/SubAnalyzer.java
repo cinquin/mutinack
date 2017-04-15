@@ -452,6 +452,9 @@ public final class SubAnalyzer {
 			}
 		});
 
+		insertDuplexGroupSizeStats(cleanedUpDuplexes, 0, stats.duplexLocalGroupSize);
+		insertDuplexGroupSizeStats(cleanedUpDuplexes, 15, stats.duplexLocalShiftedGroupSize);
+
 		for (int i = 0; i < averageClipping.length; i++) {
 			int n = duplexNumber[i];
 			if (n == 0) {
@@ -461,6 +464,42 @@ public final class SubAnalyzer {
 			}
 		}
 	}//End loadAll
+
+	private static void insertDuplexGroupSizeStats(DuplexKeeper keeper, int offset, Histogram stats) {
+		keeper.forEach(duplexRead -> {
+			duplexRead.assignedToLocalGroup = duplexRead.position0 == ExtendedSAMRecord.NO_MATE_POSITION ||
+				duplexRead.position3 == ExtendedSAMRecord.NO_MATE_POSITION;//Ignore duplexes from reads that
+			//have a missing mate
+		});
+		keeper.forEach(duplexRead -> {
+			if (!duplexRead.assignedToLocalGroup) {
+				int groupSize = countDuplexesInWindow(duplexRead, keeper, offset, 5);
+				stats.insert(groupSize);
+				duplexRead.assignedToLocalGroup = true;
+			}
+		});
+	}
+
+	private static int countDuplexesInWindow(DuplexRead d, DuplexKeeper dk, int offset, int windowWidth) {
+		SettableInteger result = new SettableInteger(0);
+		dk.getOverlappingWithSlop(d, offset, windowWidth).forEach(od -> {
+			if (od.assignedToLocalGroup) {
+				return;
+			}
+			int distance1 = od.position3 - (d.position3 + offset);
+			if (Math.abs(distance1) <= windowWidth) {
+				Assert.isTrue(Math.abs(distance1) <= windowWidth + Math.abs(offset));
+				int distance2 = od.position0 - (d.position0 + offset);
+				if (Math.abs(distance2) <= windowWidth) {
+					od.assignedToLocalGroup = true;
+					if (distance1 != 0 && distance2 != 0) {
+						result.incrementAndGet();
+					}
+				}
+			}
+		});
+		return result.get();
+	}
 
 	private void loadRead(@NonNull ExtendedSAMRecord rExtended, @NonNull DuplexKeeper duplexKeeper,
 			AlignmentExtremetiesDistance ed, InterningSet<SequenceLocation> sequenceLocationCache,

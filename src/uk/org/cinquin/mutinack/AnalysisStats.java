@@ -668,6 +668,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram nReadsAtPosWithSomeCandidateForQ2UniqueMutation = new Histogram(500);
 
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram duplexLocalGroupSize = new Histogram(500);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram duplexLocalShiftedGroupSize = new Histogram(500);
+
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram nQ1Q2AtPosQualityQ2OthersQ1Q2 = new Histogram(500);

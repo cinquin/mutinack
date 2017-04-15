@@ -111,6 +111,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
 	boolean invalid = false;//Only used for debugging
+	boolean assignedToLocalGroup = false;
 	public int nReadsWrongPair = 0;
 	public int maxInsertSize = -1;
 	private int minInsertSize = -1;
@@ -131,7 +132,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	float referenceDisagreementRate;
 	int averageNClipped = -1;
 	int position0;
-	private int position3;
+	int position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	private final boolean leftBarcodeNegativeStrand;
 	private final boolean rightBarcodeNegativeStrand;
@@ -342,11 +343,15 @@ public final class DuplexRead implements HasInterval<Integer> {
 	@Override
 	public Interval<Integer> getInterval() {
 		if (interval == null) {
-			interval = Interval.toInterval(leftAlignmentStart != null ? (leftAlignmentStart.position - groupSettings.INTERVAL_SLOP) : 0,
-					leftAlignmentEnd != null ? leftAlignmentEnd.position + groupSettings.INTERVAL_SLOP : Integer.MAX_VALUE);
-			Assert.isNonNull(interval);
+			interval = getIntervalWithSlop(0, groupSettings.INTERVAL_SLOP);
 		}
 		return interval;
+	}
+
+	public Interval<Integer> getIntervalWithSlop(int shift, int slop) {
+		Interval<Integer> result = Interval.toInterval(leftAlignmentStart != null ? (leftAlignmentStart.position + shift - slop) : 0,
+					leftAlignmentEnd != null ? leftAlignmentEnd.position + shift + slop : Integer.MAX_VALUE);
+		return result;
 	}
 
 	private static void registerMismatches(@NonNull SequenceLocation location, int nMismatches,

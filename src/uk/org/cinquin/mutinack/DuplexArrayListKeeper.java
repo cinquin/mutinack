@@ -37,6 +37,11 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 		return this;
 	}
 
+	@Override
+	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
+		return this;
+	}
+
 	private final transient List<DuplexRead> duplexesAtPosition = new ArrayList<>(10_000);
 	@Override
 	/**

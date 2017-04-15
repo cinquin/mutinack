@@ -17,6 +17,7 @@
 
 package uk.org.cinquin.mutinack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -28,6 +29,20 @@ public class DuplexHashMapKeeper extends TIntObjectListHashMap<DuplexRead> imple
 	@Override
 	public @NonNull List<DuplexRead> getOverlapping(DuplexRead d) {
 		return getList(d.position0);
+	}
+
+	@Override
+	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
+		List<DuplexRead> result = new ArrayList<>();
+		for (int i = d.position0 + shift - slop; i <=  d.position0 + shift + slop; i++) {
+			getList(i).forEach(d2 -> {
+				if (Math.abs(d2.position3 - d.position3) <= slop) {
+					result.add(d2);
+				}
+			});
+			result.addAll(getList(i));
+		}
+		return result;
 	}
 
 	@Override
