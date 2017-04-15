@@ -408,16 +408,15 @@ public final class SubAnalyzer {
 				param.variableBarcodeLength));
 		}
 
-		//Group duplexes by alignment start (or equivalent)
-		TIntObjectHashMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
-			(1_000, 0.5f, -999);
-		cleanedUpDuplexes.forEach(dr -> {
-			List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.position0,
-				(Supplier<List<DuplexRead>>) ArrayList::new);
-			list.add(dr);
-		});
-
 		if (param.variableBarcodeLength == 0) {
+			//Group duplexes by alignment start (or equivalent)
+			TIntObjectHashMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
+				(1_000, 0.5f, -999);
+			cleanedUpDuplexes.forEach(dr -> {
+				List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.position0,
+					(Supplier<List<DuplexRead>>) ArrayList::new);
+				list.add(dr);
+			});
 			final double @NonNull[] insertSizeProb =
 				Objects.requireNonNull(analyzer.insertSizeProbSmooth);
 			duplexPositions.forEachValue(list -> {
