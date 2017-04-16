@@ -277,7 +277,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				forEach(subAnalyzer -> {
 					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName,
 						analysisChunk.lastProcessedPosition);
-					subAnalyzer.candidateSequences.keySet()/*.parallelStream()*/.forEach(
+					subAnalyzer.candidateSequences.forEach(
 							e -> {
 								Assert.isFalse(e.contigIndex != contigIndex);
 								Assert.isFalse(e.compareTo(lowerBound) < 0/*,
