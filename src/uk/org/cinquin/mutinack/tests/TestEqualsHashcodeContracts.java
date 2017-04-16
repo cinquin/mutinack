@@ -37,14 +37,16 @@ public class TestEqualsHashcodeContracts {
 	@Ignore//Fails because hashCode does not rely on referenceGenome, which is by design
 	public void seqLocEqualsContract1() {
 		EqualsVerifier.forClass(SequenceLocation.class).withCachedHashCode(
-				"hash", "computeHash", new SequenceLocation(0, "", 0)).verify();
+				"hash", "computeHash", new SequenceLocation(0, "", 0)).suppress(Warning.NULL_FIELDS).verify();
 	}
 
 	@Test
 	public void duplexReadEqualsContract1() {
-		EqualsVerifier.forClass(DuplexRead.class).withPrefabValues(
-				Thread.class, new Thread(), new Thread()).
-				suppress(Warning.NONFINAL_FIELDS).verify();
+		EqualsVerifier.forClass(DuplexRead.class).
+			suppress(Warning.NONFINAL_FIELDS).
+			suppress(Warning.NULL_FIELDS).
+			withPrefabValues(Thread.class, new Thread(), new Thread()).
+			verify();
 	}
 
 	@SuppressWarnings({ "resource" })
