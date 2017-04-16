@@ -55,7 +55,7 @@ public class TestEqualsHashcodeContractsParametrized {
 
 	@Test
 	public void defaultEqualsContractTest() {
-		EqualsVerifier.forClass(clazz).suppress(Warning.NONFINAL_FIELDS).verify();
+		EqualsVerifier.forClass(clazz).suppress(Warning.NONFINAL_FIELDS).suppress(Warning.NULL_FIELDS).verify();
 	}
 
 }
