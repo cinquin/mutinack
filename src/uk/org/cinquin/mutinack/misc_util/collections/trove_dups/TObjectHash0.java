@@ -112,7 +112,7 @@ abstract public class TObjectHash0<T> extends THash0 {
 	 * @return false if the loop over the set terminated because
 	 *         the procedure returned false for some value.
 	 */
-	@SuppressWarnings({"unchecked"})
+	@SuppressWarnings({"unchecked", "FunctionalInterfaceClash"})
 	public boolean forEach(TObjectProcedure<? super T> procedure) {
 		Object[] set = _set;
 		for (int i = 0; i < set.length; i++) {
@@ -125,7 +125,7 @@ abstract public class TObjectHash0<T> extends THash0 {
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "FunctionalInterfaceClash"})
 	public void forEach(Consumer<? super T> consumer) {
 		Object[] set = _set;
 		for (int i = 0; i < set.length; i++) {

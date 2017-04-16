@@ -630,6 +630,7 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
 
 
       @Override
+      @SuppressWarnings("OperatorPrecedence")
 			public boolean removeElement(V value) {
           Object[] values = _values;
           Object[] set = _set;
