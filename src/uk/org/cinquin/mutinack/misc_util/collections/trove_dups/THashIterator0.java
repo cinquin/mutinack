@@ -29,10 +29,10 @@ import gnu.trove.iterator.TIterator;
  * <p>You may, of course, use the hasNext(), next() idiom too if
  * you aren't in a performance critical spot.</p>
  */
-public abstract class THashIterator0<V> implements TIterator, Iterator<V> {
+public abstract class THashIterator0<E, V> implements TIterator, Iterator<V> {
 
 
-    private final TObjectHash0<V> _object_hash;
+    private final TObjectHash0<E> _object_hash;
 
     /** the data structure this iterator traverses */
     protected final THash0 _hash;
@@ -52,7 +52,7 @@ public abstract class THashIterator0<V> implements TIterator, Iterator<V> {
      *
      * @param hash the object
      */
-    protected THashIterator0( TObjectHash0<V> hash ) {
+    protected THashIterator0( TObjectHash0<E> hash ) {
         _hash = hash;
         _expectedSize = _hash.size();
         _index = _hash.capacity();

@@ -12,7 +12,7 @@ import gnu.trove.impl.hash.TObjectHash;
  * @version $Id: TObjectHashIterator.java,v 1.1.2.4 2009/10/09 01:44:34 robeden Exp $
  */
 
-public class TObjectHashIterator0<E> extends THashIterator0<E> {
+public class TObjectHashIterator0<E, V> extends THashIterator0<E, V> {
 
     protected final TObjectHash0<E> _objectHash;
 
@@ -25,12 +25,12 @@ public class TObjectHashIterator0<E> extends THashIterator0<E> {
 
     @Override
 		@SuppressWarnings("unchecked")
-    protected E objectAtIndex( int index ) {
+    protected V objectAtIndex( int index ) {
         Object obj = _objectHash._set[index];
         if ( obj == TObjectHash.FREE || obj == TObjectHash.REMOVED ) {
             return null;
         }
-        return (E) obj;
+        return (V) obj;
     }
 
 } // TObjectHashIterator

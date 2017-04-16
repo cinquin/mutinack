@@ -14,6 +14,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gnu.trove.function.TObjectFunction;
 import gnu.trove.impl.HashFunctions;
 import gnu.trove.map.TMap;
@@ -251,16 +253,16 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
   }
 
 
-  private final class EqProcedure<K, V> implements TObjectObjectProcedure<K, V> {
-      private final Map<K, V> _otherMap;
+  private final class EqProcedure<K2, V2> implements TObjectObjectProcedure<K2, V2> {
+      private final Map<K2, V2> _otherMap;
 
-      EqProcedure(Map<K, V> otherMap) {
+      EqProcedure(Map<K2, V2> otherMap) {
           _otherMap = otherMap;
       }
 
 
       @Override
-			public final boolean execute(K key, V value) {
+			public final boolean execute(K2 key, V2 value) {
           // Check to make sure the key is there. This avoids problems that come up with
           // null values. Since it is only caused in that cause, only do this when the
           // value is null (to avoid extra work).
@@ -268,7 +270,7 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
               return false;
           }
 
-          V oValue = _otherMap.get(key);
+          V2 oValue = _otherMap.get(key);
           return oValue == value || (oValue != null &&
                   THashMap0.this.equals(oValue, value));
       }
@@ -518,7 +520,7 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
    * @return a <code>Collection</code> value
    */
   @Override
-	public Collection<V> values() {
+	public @NonNull Collection<V> values() {
       return new ValueView();
   }
 
@@ -611,9 +613,8 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
   protected class ValueView extends MapBackedView<V> {
 
       @Override
-			@SuppressWarnings({"unchecked"})
       public Iterator<V> iterator() {
-          return new TObjectHashIterator0(THashMap0.this) {
+          return new TObjectHashIterator0<K, V>(THashMap0.this) {
               @Override
 							protected V objectAtIndex(int index) {
                   return _values[index];
@@ -652,7 +653,7 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
    */
   protected class EntryView extends MapBackedView<Map.Entry<K, V>> {
 
-      private final class EntryIterator extends TObjectHashIterator0 {
+      private final class EntryIterator extends TObjectHashIterator0<K, Map.Entry<K, V>> {
 
           EntryIterator(THashMap0<K, V> map) {
               super(map);
@@ -668,7 +669,6 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
 
 
       @Override
-			@SuppressWarnings({"unchecked"})
       public Iterator<Map.Entry<K, V>> iterator() {
           return new EntryIterator(THashMap0.this);
       }
@@ -924,7 +924,7 @@ public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction
 			public boolean equals(Object o) {
           if (o instanceof Map.Entry) {
               Map.Entry<K, V> e1 = this;
-              Map.Entry e2 = (Map.Entry) o;
+              Map.Entry<?, ?> e2 = (Map.Entry<?, ?>) o;
               return (THashMap0.this.equals(e1.getKey(), e2.getKey()))
                       && (THashMap0.this.equals(e1.getValue(), e1.getValue()));
           }
