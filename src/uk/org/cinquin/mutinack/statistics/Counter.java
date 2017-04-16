@@ -51,7 +51,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@JsonIgnore
 	protected final boolean sortByValue;
 	@JsonUnwrapped
-	private final @NonNull Map<Object, @NonNull Object> map = new THashMap<>();
+	private final @NonNull THashMap<Object, @NonNull Object> map = new THashMap<>();
 	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
 	@JsonIgnore
@@ -90,12 +90,13 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void setKeyNamePrintingProcessor(List<SerializableFunction<Object, Object>> l) {
 		nameProcessors = l;
-		for (Object v: map.values()) {
+		map.forEachValue(v -> {
 			if (v instanceof Counter) {
 				((Counter) v).setKeyNamePrintingProcessor(
 						new ArrayList<>(l.subList(1, l.size())));
 			}
-		}
+			return true;
+		});
 	}
 
 	/* (non-Javadoc)
