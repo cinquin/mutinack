@@ -45,7 +45,9 @@ public class Pair<A,B> implements Serializable {
 
 	@SuppressWarnings("null")
 	protected Pair() {
-		// This constructor exists for DataNucleus
+		// This constructor only exists for DataNucleus
+		fst = null;
+		snd = null;
 	}
 
 	@Override
