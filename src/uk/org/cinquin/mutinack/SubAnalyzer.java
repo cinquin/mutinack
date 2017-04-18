@@ -774,7 +774,12 @@ public final class SubAnalyzer {
 			candidate.restoreConcurringReads();
 			final Set<DuplexRead> candidateDuplexReads =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
+			List<ExtendedSAMRecord> discarded = Lists.mutable.empty();
 			candidate.getNonMutableConcurringReads().forEachEntry((r, c) -> {
+				if (r.discarded) {
+					discarded.add(r);
+					return true;
+				}
 				@Nullable DuplexRead d = r.duplexRead;
 				if (d != null) {
 					candidateDuplexReads.add(d);
@@ -783,6 +788,7 @@ public final class SubAnalyzer {
 				}
 				return true;
 			});
+			discarded.forEach(candidate.getMutableConcurringReads()::remove);
 			duplexReads.addAll(candidateDuplexReads);
 		});
 
@@ -1333,6 +1339,7 @@ public final class SubAnalyzer {
 
 			Set<DuplexRead> duplexesSupportingC = new UnifiedSet<>(30);
 			c.getNonMutableConcurringReads().forEachKey(r -> {
+					Assert.isFalse(r.discarded);
 					DuplexRead d = r.duplexRead;
 					if (d != null) {
 						Assert.isFalse(d.invalid);
@@ -1353,6 +1360,7 @@ public final class SubAnalyzer {
 					if (r.isOpticalDuplicate()) {
 						return;
 					}
+					Assert.isFalse(r.discarded);
 					DuplexRead d = r.duplexRead;
 					if (d != null && duplexesSupportingC.contains(d)) {
 						boolean disowned = !d.allDuplexRecords.contains(r);

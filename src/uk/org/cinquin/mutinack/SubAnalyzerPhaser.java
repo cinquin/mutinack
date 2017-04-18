@@ -248,8 +248,13 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				final int localPauseAt = analysisChunk.pauseAtPosition;
 				final int maxInsertSize = param.maxInsertSize;
-				subAnalyzer.extSAMCache.retainEntries((key, val) ->
-					val.getAlignmentStart() + maxInsertSize > localPauseAt);
+				subAnalyzer.extSAMCache.retainEntries((key, val) -> {
+					final boolean keep = val.getAlignmentStart() + maxInsertSize > localPauseAt;
+					if (!keep) {
+						val.discarded = true;
+					}
+					return keep;
+				});
 				if (outputReads) {
 					subAnalyzer.writeOutputReads();
 				}

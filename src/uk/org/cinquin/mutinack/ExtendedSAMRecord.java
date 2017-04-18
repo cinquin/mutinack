@@ -56,6 +56,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	static final Logger logger = LoggerFactory.getLogger(ExtendedSAMRecord.class);
 
+	public boolean discarded = false;
 	private final @NonNull Map<String, ExtendedSAMRecord> extSAMCache;
 	public final @NonNull SAMRecord record;
 	private final @NonNull String name;
