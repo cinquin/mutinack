@@ -1306,8 +1306,7 @@ public final class SubAnalyzer {
 	}
 
 	@SuppressWarnings("ReferenceEquality")
-	private static Runnable checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
-			ImmutableSet<CandidateSequence> candidateSet) {
+	private static void checkDuplexes(Iterable<DuplexRead> duplexReads) {
 		for (DuplexRead duplexRead: duplexReads) {
 			duplexRead.allDuplexRecords.each(r -> {
 				if (r.duplexRead != duplexRead) {
@@ -1316,6 +1315,17 @@ public final class SubAnalyzer {
 				}
 			});
 		}
+		@NonNull Set<DuplexRead> duplicates = Util.getDuplicates(duplexReads);
+		if (!duplicates.isEmpty()) {
+			throw new AssertionFailedException("Duplicate duplexes: " + duplicates);
+		}
+	}
+
+	@SuppressWarnings("ReferenceEquality")
+	private static void checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
+			ImmutableSet<CandidateSequence> candidateSet) {
+
+		checkDuplexes(duplexReads);
 
 		candidateSet.each(c -> {
 			Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
@@ -1353,7 +1363,6 @@ public final class SubAnalyzer {
 				});
 			});
 		});
-		return null;
 	}
 
 	private boolean checkConstantBarcode(byte[] bases, boolean allowN, int nAllowableMismatches) {
