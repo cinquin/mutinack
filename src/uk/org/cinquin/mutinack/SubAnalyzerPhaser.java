@@ -121,7 +121,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			int contigIndex,
 			@NonNull List<GenomeFeatureTester> excludeBEDs,
 			@NonNull List<@NonNull BedReader> repetitiveBEDs,
-		int PROCESSING_CHUNK) {
+			int PROCESSING_CHUNK) {
 		this.param = param;
 		this.analysisChunk = analysisChunk;
 		this.groupSettings = analysisChunk.groupSettings;
