@@ -346,7 +346,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	@Override
 	public String toString() {
-		return name + ": " + "startNoBC: " + getAlignmentStart() +
+		return (discarded ? "DISCARDED" : "" ) + name + ": " + "startNoBC: " + getAlignmentStart() +
 			"; endNoBC: " + getAlignmentEnd() +
 			"; alignmentStart: " + (getReadNegativeStrandFlag() ? "-" : "+") + getAlignmentStart() +
 			"; alignmentEnd: " + getAlignmentEnd() +
