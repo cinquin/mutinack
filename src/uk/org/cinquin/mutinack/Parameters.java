@@ -1084,6 +1084,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + (Q2DisagCapsMatchingMutationQuality ? 1231 : 1237);
 		result = prime * result + (acceptNInBarCode ? 1231 : 1237);
 		result = prime * result + alignmentPositionMismatchAllowed;
+		result = prime * result + (allowMissingSupplementaryFlag ? 1231 : 1237);
 		result = prime * result + ((annotateMutationsInFile == null) ? 0 : annotateMutationsInFile.hashCode());
 		result = prime * result + ((annotateMutationsOutputFile == null) ? 0 : annotateMutationsOutputFile.hashCode());
 		result = prime * result + ((auxOutputFileBaseName == null) ? 0 : auxOutputFileBaseName.hashCode());
@@ -1091,7 +1092,9 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((bedDisagreementOrienter == null) ? 0 : bedDisagreementOrienter.hashCode());
 		result = prime * result + ((bedFeatureSuppInfoFile == null) ? 0 : bedFeatureSuppInfoFile.hashCode());
 		result = prime * result + ((candidateQ2Criterion == null) ? 0 : candidateQ2Criterion.hashCode());
+		result = prime * result + (clipPairOverlap ? 1231 : 1237);
 		result = prime * result + (collapseFilteredReads ? 1231 : 1237);
+		result = prime * result + (computeAllReadDistances ? 1231 : 1237);
 		result = prime * result + (computeRawMismatches ? 1231 : 1237);
 		result = prime * result + constantBarcode.hashCode();
 		result = prime * result + ((contigByContigParallelization == null) ? 0 : contigByContigParallelization.hashCode());
@@ -1102,6 +1105,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + Float.floatToIntBits(dropReadProbability);
 		result = prime * result + (enableCostlyAssertions ? 1231 : 1237);
 		result = prime * result + ((excludeRegionsInBED == null) ? 0 : excludeRegionsInBED.hashCode());
+		result = prime * result + (filterOpticalDuplicates ? 1231 : 1237);
 		result = prime * result + ((forceOutputAtPositions == null) ? 0 : forceOutputAtPositions.hashCode());
 		result = prime * result + ((forceOutputAtPositionsFile == null) ? 0 : forceOutputAtPositionsFile.hashCode());
 		result = prime * result + (help ? 1231 : 1237);
@@ -1113,18 +1117,23 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + (ignoreZeroInsertSizeReads ? 1231 : 1237);
 		result = prime * result + ((inputReads == null) ? 0 : inputReads.hashCode());
 		result = prime * result + ((intersectAlignment == null) ? 0 : intersectAlignment.hashCode());
+		result = prime * result + (jiggle ? 1231 : 1237);
 		result = prime * result + ((keysFile == null) ? 0 : keysFile.hashCode());
 		result = prime * result + (lenientSamValidation ? 1231 : 1237);
 		result = prime * result + (logReadIssuesInOutputBam ? 1231 : 1237);
 		result = prime * result + maxAverageBasesClipped;
 		result = prime * result + maxAverageClippingOfAllCoveringDuplexes;
+		result = prime * result + maxConcurringDuplexClipping;
 		result = prime * result + Float.floatToIntBits(maxFractionWrongPairsAtPosition);
 		result = prime * result + maxInsertSize;
+		result = prime * result + Float.floatToIntBits(maxMutFreqForDisag);
 		result = prime * result + ((maxNDuplexes == null) ? 0 : maxNDuplexes.hashCode());
 		result = prime * result + maxParallelContigs;
 		result = prime * result + maxThreadsPerPool;
+		result = prime * result + Float.floatToIntBits(maxTopAlleleFreqQ2);
 		result = prime * result + minBasePhredScoreQ1;
 		result = prime * result + minBasePhredScoreQ2;
+		result = prime * result + minCandidateMedianPhredScore;
 		result = prime * result + Float.floatToIntBits(minConsensusThresholdQ1);
 		result = prime * result + Float.floatToIntBits(minConsensusThresholdQ2);
 		result = prime * result + minInsertSize;
@@ -1141,13 +1150,15 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + minReadsPerStrandForDisagreement;
 		result = prime * result + minReadsPerStrandQ1;
 		result = prime * result + minReadsPerStrandQ2;
+		result = prime * result + Float.floatToIntBits(minTopAlleleFreqQ2);
 		result = prime * result + nConstantBarcodeMismatchesAllowed;
 		result = prime * result + (int) (nRecordsToProcess ^ (nRecordsToProcess >>> 32));
 		result = prime * result + nVariableBarcodeMismatchesAllowed;
+		result = prime * result + noParallelizationOfContigsBelow;
 		result = prime * result + (noStatusMessages ? 1231 : 1237);
+		result = prime * result + opticalDuplicateDistance;
 		result = prime * result + ((originalReadFile1 == null) ? 0 : originalReadFile1.hashCode());
 		result = prime * result + ((originalReadFile2 == null) ? 0 : originalReadFile2.hashCode());
-		result = prime * result + outputAlignmentFile.hashCode();
 		result = prime * result + (outputCoverageBed ? 1231 : 1237);
 		result = prime * result + (outputCoverageProto ? 1231 : 1237);
 		result = prime * result + (outputDuplexDetails ? 1231 : 1237);
@@ -1163,6 +1174,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((recordRunsTo == null) ? 0 : recordRunsTo.hashCode());
 		result = prime * result + ((refSeqToOfficialGeneName == null) ? 0 : refSeqToOfficialGeneName.hashCode());
 		result = prime * result + ((referenceGenome == null) ? 0 : referenceGenome.hashCode());
+		result = prime * result + ((referenceGenomeShortName == null) ? 0 : referenceGenomeShortName.hashCode());
 		result = prime * result + ((referenceOutput == null) ? 0 : referenceOutput.hashCode());
 		result = prime * result + ((repetiveRegionBED == null) ? 0 : repetiveRegionBED.hashCode());
 		result = prime * result + ((reportBreakdownForBED == null) ? 0 : reportBreakdownForBED.hashCode());
@@ -1171,6 +1183,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((reportStatsForNotBED == null) ? 0 : reportStatsForNotBED.hashCode());
 		result = prime * result + (requireMatchInAlignmentEnd ? 1231 : 1237);
 		result = prime * result + (rnaSeq ? 1231 : 1237);
+		result = prime * result + ((runBatchName == null) ? 0 : runBatchName.hashCode());
 		result = prime * result + ((runName == null) ? 0 : runName.hashCode());
 		result = prime * result + ((sampleNames == null) ? 0 : sampleNames.hashCode());
 		result = prime * result + ((saveBEDBreakdownTo == null) ? 0 : saveBEDBreakdownTo.hashCode());
@@ -1184,15 +1197,13 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + ((startWorker == null) ? 0 : startWorker.hashCode());
 		result = prime * result + ((stopAtPositions == null) ? 0 : stopAtPositions.hashCode());
 		result = prime * result + ((submitToServer == null) ? 0 : submitToServer.hashCode());
-		result = prime * result + (terminateImmediatelyUponError ? 1231 : 1237);
-		result = prime * result + (terminateUponOutputFileError ? 1231 : 1237);
 		result = prime * result + timeoutSeconds;
 		result = prime * result + Float.floatToIntBits(topAlleleFreqReport);
-		result = prime * result + ((traceFields == null) ? 0 : traceFields.hashCode());
 		result = prime * result + variableBarcodeLength;
 		result = prime * result + verbosity;
 		result = prime * result + (version ? 1231 : 1237);
 		result = prime * result + ((workingDirectory == null) ? 0 : workingDirectory.hashCode());
+		result = prime * result + (writeBothStrands ? 1231 : 1237);
 		return result;
 	}
 
@@ -1219,6 +1230,8 @@ public final class Parameters implements Serializable, Cloneable {
 		if (acceptNInBarCode != other.acceptNInBarCode)
 			return false;
 		if (alignmentPositionMismatchAllowed != other.alignmentPositionMismatchAllowed)
+			return false;
+		if (allowMissingSupplementaryFlag != other.allowMissingSupplementaryFlag)
 			return false;
 		if (annotateMutationsInFile == null) {
 			if (other.annotateMutationsInFile != null)
@@ -1255,7 +1268,11 @@ public final class Parameters implements Serializable, Cloneable {
 				return false;
 		} else if (!candidateQ2Criterion.equals(other.candidateQ2Criterion))
 			return false;
+		if (clipPairOverlap != other.clipPairOverlap)
+			return false;
 		if (collapseFilteredReads != other.collapseFilteredReads)
+			return false;
+		if (computeAllReadDistances != other.computeAllReadDistances)
 			return false;
 		if (computeRawMismatches != other.computeRawMismatches)
 			return false;
@@ -1286,6 +1303,8 @@ public final class Parameters implements Serializable, Cloneable {
 			if (other.excludeRegionsInBED != null)
 				return false;
 		} else if (!excludeRegionsInBED.equals(other.excludeRegionsInBED))
+			return false;
+		if (filterOpticalDuplicates != other.filterOpticalDuplicates)
 			return false;
 		if (forceOutputAtPositions == null) {
 			if (other.forceOutputAtPositions != null)
@@ -1321,6 +1340,8 @@ public final class Parameters implements Serializable, Cloneable {
 				return false;
 		} else if (!intersectAlignment.equals(other.intersectAlignment))
 			return false;
+		if (jiggle != other.jiggle)
+			return false;
 		if (keysFile == null) {
 			if (other.keysFile != null)
 				return false;
@@ -1334,10 +1355,14 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (maxAverageClippingOfAllCoveringDuplexes != other.maxAverageClippingOfAllCoveringDuplexes)
 			return false;
+		if (maxConcurringDuplexClipping != other.maxConcurringDuplexClipping)
+			return false;
 		if (Float.floatToIntBits(maxFractionWrongPairsAtPosition) != Float.floatToIntBits(
 			other.maxFractionWrongPairsAtPosition))
 			return false;
 		if (maxInsertSize != other.maxInsertSize)
+			return false;
+		if (Float.floatToIntBits(maxMutFreqForDisag) != Float.floatToIntBits(other.maxMutFreqForDisag))
 			return false;
 		if (maxNDuplexes == null) {
 			if (other.maxNDuplexes != null)
@@ -1348,9 +1373,13 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (maxThreadsPerPool != other.maxThreadsPerPool)
 			return false;
+		if (Float.floatToIntBits(maxTopAlleleFreqQ2) != Float.floatToIntBits(other.maxTopAlleleFreqQ2))
+			return false;
 		if (minBasePhredScoreQ1 != other.minBasePhredScoreQ1)
 			return false;
 		if (minBasePhredScoreQ2 != other.minBasePhredScoreQ2)
+			return false;
+		if (minCandidateMedianPhredScore != other.minCandidateMedianPhredScore)
 			return false;
 		if (Float.floatToIntBits(minConsensusThresholdQ1) != Float.floatToIntBits(other.minConsensusThresholdQ1))
 			return false;
@@ -1387,13 +1416,19 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (minReadsPerStrandQ2 != other.minReadsPerStrandQ2)
 			return false;
+		if (Float.floatToIntBits(minTopAlleleFreqQ2) != Float.floatToIntBits(other.minTopAlleleFreqQ2))
+			return false;
 		if (nConstantBarcodeMismatchesAllowed != other.nConstantBarcodeMismatchesAllowed)
 			return false;
 		if (nRecordsToProcess != other.nRecordsToProcess)
 			return false;
 		if (nVariableBarcodeMismatchesAllowed != other.nVariableBarcodeMismatchesAllowed)
 			return false;
+		if (noParallelizationOfContigsBelow != other.noParallelizationOfContigsBelow)
+			return false;
 		if (noStatusMessages != other.noStatusMessages)
+			return false;
+		if (opticalDuplicateDistance != other.opticalDuplicateDistance)
 			return false;
 		if (originalReadFile1 == null) {
 			if (other.originalReadFile1 != null)
@@ -1404,8 +1439,6 @@ public final class Parameters implements Serializable, Cloneable {
 			if (other.originalReadFile2 != null)
 				return false;
 		} else if (!originalReadFile2.equals(other.originalReadFile2))
-			return false;
-		if (!outputAlignmentFile.equals(other.outputAlignmentFile))
 			return false;
 		if (outputCoverageBed != other.outputCoverageBed)
 			return false;
@@ -1449,6 +1482,11 @@ public final class Parameters implements Serializable, Cloneable {
 				return false;
 		} else if (!referenceGenome.equals(other.referenceGenome))
 			return false;
+		if (referenceGenomeShortName == null) {
+			if (other.referenceGenomeShortName != null)
+				return false;
+		} else if (!referenceGenomeShortName.equals(other.referenceGenomeShortName))
+			return false;
 		if (referenceOutput == null) {
 			if (other.referenceOutput != null)
 				return false;
@@ -1479,6 +1517,11 @@ public final class Parameters implements Serializable, Cloneable {
 		if (requireMatchInAlignmentEnd != other.requireMatchInAlignmentEnd)
 			return false;
 		if (rnaSeq != other.rnaSeq)
+			return false;
+		if (runBatchName == null) {
+			if (other.runBatchName != null)
+				return false;
+		} else if (!runBatchName.equals(other.runBatchName))
 			return false;
 		if (runName == null) {
 			if (other.runName != null)
@@ -1533,18 +1576,9 @@ public final class Parameters implements Serializable, Cloneable {
 				return false;
 		} else if (!submitToServer.equals(other.submitToServer))
 			return false;
-		if (terminateImmediatelyUponError != other.terminateImmediatelyUponError)
-			return false;
-		if (terminateUponOutputFileError != other.terminateUponOutputFileError)
-			return false;
 		if (timeoutSeconds != other.timeoutSeconds)
 			return false;
-		if (topAlleleFreqReport != other.topAlleleFreqReport)
-			return false;
-		if (traceFields == null) {
-			if (other.traceFields != null)
-				return false;
-		} else if (!traceFields.equals(other.traceFields))
+		if (Float.floatToIntBits(topAlleleFreqReport) != Float.floatToIntBits(other.topAlleleFreqReport))
 			return false;
 		if (variableBarcodeLength != other.variableBarcodeLength)
 			return false;
@@ -1556,6 +1590,8 @@ public final class Parameters implements Serializable, Cloneable {
 			if (other.workingDirectory != null)
 				return false;
 		} else if (!workingDirectory.equals(other.workingDirectory))
+			return false;
+		if (writeBothStrands != other.writeBothStrands)
 			return false;
 		return true;
 	}
