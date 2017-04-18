@@ -179,8 +179,8 @@ public class Mutinack implements Actualizable, Closeable {
 			"meanDistanceLigSite", "probCollision", "positionInRead", "readEffectiveLength",
 			"nameOfOneRead", "readAlignmentStart", "mateAlignmentStart", "readAlignmentEnd",
 			"mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtPosition",
-			"minInsertSize", "maxInsertSize", "secondHighestAlleleFrequencyX10",
-			"highestAlleleFrequencyX10", "supplementalMessage"
+			"minInsertSize", "maxInsertSize", "secondHighestAlleleFrequency",
+			"highestAlleleFrequency", "supplementalMessage"
 	));
 	private volatile static ExecutorService contigThreadPool;
 
