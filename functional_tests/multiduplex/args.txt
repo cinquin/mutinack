@@ -1,0 +1,1 @@
+${CHRI} -startAtPosition chrI:3,000 -stopAtPosition chrI:15,000 -inputReads alignment-1/alignment-1.bam -sampleName alignment1
