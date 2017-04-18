@@ -525,8 +525,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
 
 			if (!candidate.getMutationType().isWildtype() &&
-				allQ1Q2Candidates.count(c -> c.equals(candidate) &&
-						(c.getQuality().getNonNullValue().atLeast(GOOD))) >= 2) {
+					allQ1Q2Candidates.count(c -> c.equals(candidate) &&
+					(c.getQuality().getNonNullValue().atLeast(GOOD))) >= 2) {
 				csla.twoOrMoreSamplesWithSameQ2MutationCandidate = true;
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
