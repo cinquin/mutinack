@@ -790,6 +790,9 @@ public final class SubAnalyzer {
 				return true;
 			});
 			discarded.forEach(candidate.getMutableConcurringReads()::remove);
+			if (param.enableCostlyAssertions) {
+				checkDuplexes(candidateDuplexReads);
+			}
 			duplexReads.addAll(candidateDuplexReads);
 		});
 
