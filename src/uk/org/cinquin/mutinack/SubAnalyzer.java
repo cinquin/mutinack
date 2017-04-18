@@ -65,6 +65,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
@@ -246,9 +247,9 @@ public final class SubAnalyzer {
 			if (toPosition < fromPosition) {
 				throw new IllegalArgumentException("Going from " + fromPosition + " to " + toPosition);
 			}
-			final List<@NonNull DuplexRead> resultDuplexes = new ArrayList<>(3_000);
+			final MutableList<@NonNull DuplexRead> resultDuplexes = new FastList<>(3_000);
 			loadAll(fromPosition, toPosition, resultDuplexes);
-			analyzedDuplexes = Lists.mutable.withAll(resultDuplexes);
+			analyzedDuplexes = resultDuplexes;
 		} finally {
 			if (NONTRIVIAL_ASSERTIONS) {
 				threadCount.decrementAndGet();
