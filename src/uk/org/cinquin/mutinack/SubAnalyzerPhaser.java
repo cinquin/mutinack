@@ -519,8 +519,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				extraPositionQualities.forEach((a, q) -> c.getQuality().addUnique(a, q)));
 		}
 
-		distinctCandidates.
-		each(Procedures.throwing(candidate -> {
+		distinctCandidates.each(Procedures.throwing(candidate -> {
 
 			final int candidateCount = allQ1Q2Candidates.count(c -> c.equals(candidate));
 
