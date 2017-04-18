@@ -150,7 +150,7 @@
       <fileset dir="lib_unjarred"> <exclude name="**/.DS_Store"/> <exclude name="**/*.RSA"/> <exclude name="**/*.DSA"/> <exclude name="**/*.SF"/> <include name="**/*.class"/> <include name="log4j.properties"/></fileset>
     </jar>
   </target>
- <target name="datanucleus_enhance" depends="" description="DataNucleus enhancement">
+ <target name="datanucleus_enhance" depends="build" description="DataNucleus enhancement">
   <path id="datanucleus.path"> <pathelement location="lib_build_run_test/datanucleus-core-5.0.7-SNAPSHOT.jar"/> </path>
    <taskdef name="datanucleusenhancer" classpathref="datanucleus.path"
                classname="org.datanucleus.enhancer.EnhancerTask" />
