@@ -473,8 +473,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 						Math.abs(distance3) <= param.alignmentPositionMismatchAllowed &&
 						Math.abs(distance4) <= param.alignmentPositionMismatchAllowed) {
 
-					final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, true);
-					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, true);
+					final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, param.acceptNInBarCode);
+					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, param.acceptNInBarCode);
 
 					if (leftMismatches > 0) {
 						registerMismatches(requireNonNull(duplex1.roughLocation), leftMismatches,
