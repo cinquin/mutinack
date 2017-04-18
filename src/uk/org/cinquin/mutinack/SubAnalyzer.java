@@ -55,6 +55,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -858,28 +859,7 @@ public final class SubAnalyzer {
 		}
 
 		if (param.enableCostlyAssertions) {
-			Assert.noException(() -> duplexReads.forEach(duplexRead -> {
-				for (int i = duplexRead.topStrandRecords.size() - 1; i >= 0; --i) {
-					ExtendedSAMRecord r = duplexRead.topStrandRecords.get(i);
-					if (r.duplexRead != duplexRead) {
-						throw new AssertionFailedException();
-					}
-					if (duplexRead.bottomStrandRecords.contains(r)) {
-						throw new AssertionFailedException();
-					}
-				}
-
-				for (int i = duplexRead.bottomStrandRecords.size() - 1; i >= 0; --i) {
-					ExtendedSAMRecord r = duplexRead.bottomStrandRecords.get(i);
-					if (r.duplexRead != duplexRead) {
-						throw new AssertionFailedException();
-					}
-					if (duplexRead.topStrandRecords.contains(r)) {
-						throw new AssertionFailedException();
-					}
-				}
-				return true;
-			}));
+			Assert.noException(() -> duplexReads.forEach((Consumer<DuplexRead>) DuplexRead::checkReadOwnership));
 		}
 
 		final int totalReadsAtPosition = (int) candidateSet.sumOfInt(

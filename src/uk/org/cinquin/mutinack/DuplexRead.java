@@ -1285,4 +1285,28 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return position3;
 	}
 
+	@SuppressWarnings("ReferenceEquality")
+	public boolean checkReadOwnership() {
+		for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
+			ExtendedSAMRecord r = topStrandRecords.get(i);
+			if (r.duplexRead != this) {
+				throw new AssertionFailedException();
+			}
+			if (bottomStrandRecords.contains(r)) {
+				throw new AssertionFailedException();
+			}
+		}
+
+		for (int i = bottomStrandRecords.size() - 1; i >= 0; --i) {
+			ExtendedSAMRecord r = bottomStrandRecords.get(i);
+			if (r.duplexRead != this) {
+				throw new AssertionFailedException();
+			}
+			if (topStrandRecords.contains(r)) {
+				throw new AssertionFailedException();
+			}
+		}
+		return true;
+	}
+
 }
