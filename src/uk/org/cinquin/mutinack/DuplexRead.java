@@ -1072,7 +1072,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 		totalNRecords = allDuplexRecords.size();
 
 		if (param.filterOpticalDuplicates) {
-			//Side effect: allDuplexRecords sorted by x position
 			markDuplicates(param, stats, allDuplexRecords);
 		}
 
