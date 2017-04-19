@@ -1135,6 +1135,7 @@ public final class SubAnalyzer {
 
 		final MutableSet<DuplexRead> candidateDuplexes = Sets.mutable.empty();
 		candidate.getNonMutableConcurringReads().forEachKey(r -> {
+			Assert.isFalse(r.discarded);
 			DuplexRead dr = r.duplexRead;
 			if (dr != null) {
 				Assert.isFalse(dr.invalid);
