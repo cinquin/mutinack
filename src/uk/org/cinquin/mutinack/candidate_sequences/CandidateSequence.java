@@ -453,7 +453,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.duplexes = duplexes;
 	}
 
-	private static final int NO_ENTRY_VALUE = SingletonObjectIntMap.NO_ENTRY_VALUE;
+	public static final int NO_ENTRY_VALUE = SingletonObjectIntMap.NO_ENTRY_VALUE;
 
 	@SuppressWarnings("null")
 	@Override
