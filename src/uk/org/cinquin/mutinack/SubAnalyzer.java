@@ -1361,9 +1361,9 @@ public final class SubAnalyzer {
 					throw new AssertionFailedException();
 				}
 				c2.getNonMutableConcurringReads().keySet().forEach(r -> {
-					if (r.isOpticalDuplicate()) {
-						return;
-					}
+					//if (r.isOpticalDuplicate()) {
+					//	return;
+					//}
 					Assert.isFalse(r.discarded);
 					DuplexRead d = r.duplexRead;
 					if (d != null && duplexesSupportingC.contains(d)) {
