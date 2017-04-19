@@ -118,6 +118,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float probCollision = Float.NaN;
 	private int nDuplexesSisterArm = -1;
 	private int nMatchingCandidatesOtherSamples = -1;
+	private int smallestDuplexAlignmentOffset = -1;
 
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
@@ -154,6 +155,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		setMaxDistanceToLigSite(Integer.MIN_VALUE);
 		setMeanDistanceToLigSite(Float.NaN);
 		setnDistancesToLigSite(0);
+		setSmallestDuplexAlignmentOffset(-1);
 	}
 
 	@Override
@@ -852,6 +854,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + "\t" +
 			formatter.format(examResults.alleleFrequencies.get(0)) + "\t" +
 			formatter.format(examResults.alleleFrequencies.get(1)) + "\t" +
+			getSmallestDuplexAlignmentOffset() + "\t" +
 			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
 			);
 
@@ -1038,6 +1041,16 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setNegativeCodingStrand(@Nullable Boolean negativeCodingStrand) {
 		this.negativeCodingStrand = negativeCodingStrand;
+	}
+
+	@Override
+	public int getSmallestDuplexAlignmentOffset() {
+		return smallestDuplexAlignmentOffset;
+	}
+
+	@Override
+	public void setSmallestDuplexAlignmentOffset(int smallestOffset) {
+		smallestDuplexAlignmentOffset = smallestOffset;
 	}
 
 }
