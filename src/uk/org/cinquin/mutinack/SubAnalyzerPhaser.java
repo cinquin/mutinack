@@ -245,13 +245,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				final int localPauseAt = analysisChunk.pauseAtPosition;
 				final int maxInsertSize = param.maxInsertSize;
-				if (param.rnaSeq) {
-					subAnalyzer.extSAMCache.retainEntries((key, val) ->
-						val.getAlignmentEnd() + maxInsertSize > localPauseAt);
-				} else {
-					subAnalyzer.extSAMCache.retainEntries((key, val) ->
-						val.getAlignmentStart() + maxInsertSize > localPauseAt);
-				}
+				subAnalyzer.extSAMCache.retainEntries((key, val) ->
+					val.getAlignmentStart() + maxInsertSize > localPauseAt);
 				subAnalyzer.extSAMCache.compact();
 				if (outputReads) {
 					subAnalyzer.writeOutputReads();
