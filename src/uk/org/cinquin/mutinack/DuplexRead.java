@@ -120,6 +120,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	float minFracTopCandidate = Float.MAX_VALUE;
 	private Boolean topStrandIsNegative;//Use Boolean just to make sure an NPE is generated
 	//if property is accessed before it has been computed
+	int lastExaminedPosition = -1;
 
 	/**
 	 * Quality factoring in number of reads for top or bottom strand, percent consensus for
@@ -555,6 +556,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		try {
 			examineAtLoc1(location, result, candidateSet, assaysToIgnoreForDisagreementQuality,
 				topCounter, bottomCounter, analyzer, param, stats);
+			lastExaminedPosition = location.position;
 		} finally {
 			if (result.threadCount.decrementAndGet() != 0) {
 				throw new AssertionFailedException();

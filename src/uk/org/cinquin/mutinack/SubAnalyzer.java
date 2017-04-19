@@ -833,8 +833,10 @@ public final class SubAnalyzer {
 					(1_000f * duplexRead.probAtLeastOneCollision));
 			}
 		});
+
 		if (param.enableCostlyAssertions) {
 			Assert.noException(() -> checkDuplexAndCandidates(duplexReads, candidateSet));
+			candidateSet.forEach(candidate -> checkCandidateDupNoQ(candidate, location));
 		}
 
 		if (index.get() > 0) {
@@ -1093,6 +1095,24 @@ public final class SubAnalyzer {
 			return DUBIOUS;
 		}
 		return null;
+	}
+
+	private static void checkCandidateDupNoQ(CandidateSequence candidate, SequenceLocation location) {
+		candidate.getNonMutableConcurringReads().forEachKey(r -> {
+			DuplexRead dr = r.duplexRead;
+			if (dr != null) {
+				if (dr.lastExaminedPosition != location.position) {
+					throw new AssertionFailedException("Last examined position is " + dr.lastExaminedPosition +
+						" instead of " + location.position + " for duplex " + dr);
+				}
+				if (r.discarded) {
+					throw new AssertionFailedException("Discarded read " + r + " in duplex " + dr);
+				}
+				Assert.isTrue(dr.localAndGlobalQuality.getQuality(DuplexAssay.QUALITY_AT_POSITION) == null);
+				Assert.isFalse(dr.invalid);
+			}
+			return true;
+		});
 	}
 
 	@SuppressWarnings("null")
