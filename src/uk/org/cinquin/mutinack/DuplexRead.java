@@ -970,12 +970,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 			result.disagreements.addAt(duplexDisagreement, this);
 		}
 
-		if (param.filterOpticalDuplicates) {
-			candidateSet.each(candidate -> {
-				candidate.getMutableConcurringReads().retainEntries((r, i) -> !r.isOpticalDuplicate());
-			});
-		}
-
 		localAndGlobalQuality = dq;
 
 		//Now remove support given to non-consensus candidate mutations by this duplex

@@ -777,10 +777,15 @@ public final class SubAnalyzer {
 			final Set<DuplexRead> candidateDuplexReads =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			List<ExtendedSAMRecord> discarded = Lists.mutable.empty();
-			candidate.getNonMutableConcurringReads().forEachEntry((r, c) -> {
+			candidate.getMutableConcurringReads().retainEntries((r, c) -> {
 				if (r.discarded) {
 					discarded.add(r);
-					return true;
+					return false;
+				}
+				if (param.filterOpticalDuplicates) {
+					if (r.isOpticalDuplicate()) {
+						return false;
+					}
 				}
 				@Nullable DuplexRead d = r.duplexRead;
 				if (d != null) {
