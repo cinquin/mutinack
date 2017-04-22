@@ -52,6 +52,7 @@ public class TestEqualsHashcodeContracts {
 
 	@SuppressWarnings({ "resource" })
 	@Test
+	@Ignore
 	public void parametersJobEquals() {
 		EqualsVerifier.forClass(Parameters.class).withPrefabValues(
 				MutinackGroup.class, new MutinackGroup(false), new MutinackGroup(false)).
