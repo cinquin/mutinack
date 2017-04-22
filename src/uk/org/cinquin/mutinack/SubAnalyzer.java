@@ -1188,6 +1188,8 @@ public final class SubAnalyzer {
 				if (countQ1Duplexes.get() >= param.minQ1Duplexes &&
 						candidate.getNonMutableConcurringReads().size() >= param.minTotalReadsForNQ1Duplexes) {
 					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
+				} else {
+					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, DUBIOUS);
 				}
 				break;
 			default:
