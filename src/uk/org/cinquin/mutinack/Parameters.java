@@ -122,6 +122,8 @@ public final class Parameters implements Serializable, Cloneable {
 				String baseErrorMessage1 = " must be set when candidateQ2Criterion==NQ1Duplexes";
 				throwIAEIfFalse(minQ1Duplexes != Integer.MAX_VALUE, "Option minQ1Duplexes " + baseErrorMessage1);
 				throwIAEIfFalse(minTotalReadsForNQ1Duplexes != Integer.MAX_VALUE, "Option minTotalReadsForNQ1Duplexes " + baseErrorMessage1);
+
+				throwIAEIfFalse(minQ2DuplexesToCallMutation == 1, "Option minQ2DuplexesToCallMutation only valid when candidateQ2Criterion==1Q2Duplex");
 				break;
 			default:
 				throw new RuntimeException("Option candidateQ2Criterion must be one of 1Q2Duplex or NQ1Duplexes, not "

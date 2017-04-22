@@ -532,7 +532,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			} else if (candidateCount == 1 &&//Mutant candidate shows up only once (and therefore in only 1 analyzer)
 					!candidate.getMutationType().isWildtype() &&
 					candidate.getQuality().getNonNullValue().atLeast(GOOD) &&
-					candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation &&
+					(!param.candidateQ2Criterion.equals("1Q2Duplex") || candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation) &&
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
 					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE, !tooHighCoverage) &&
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
