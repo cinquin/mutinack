@@ -393,17 +393,19 @@ public final class SubAnalyzer {
 		//and left/right consensus that differ by at most
 		//param.nVariableBarcodeMismatchesAllowed
 
-		final DuplexKeeper cleanedUpDuplexes =
-			param.nVariableBarcodeMismatchesAllowed > 0 ?
-				DuplexRead.groupDuplexes(
+		final DuplexKeeper cleanedUpDuplexes;
+		if (param.nVariableBarcodeMismatchesAllowed > 0 && duplexKeeper.size() < analyzer.maxNDuplexes) {
+			cleanedUpDuplexes = DuplexRead.groupDuplexes(
 					duplexKeeper,
 					duplex -> duplex.computeConsensus(false, param.variableBarcodeLength),
 					() -> getDuplexKeeper(fallBackOnIntervalTree),
 					param,
 					stats,
-					0)
-			:
-				duplexKeeper;
+					0);
+		} else {
+			cleanedUpDuplexes = duplexKeeper;
+			cleanedUpDuplexes.forEach(DuplexRead::computeGlobalProperties);
+		}
 
 		if (param.nVariableBarcodeMismatchesAllowed == 0) {
 			cleanedUpDuplexes.forEach(d -> d.computeConsensus(true,
