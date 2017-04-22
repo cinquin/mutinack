@@ -1,0 +1,1 @@
+There are 2 Q1 duplexes with the mutation, and minQ1Duplexe is set to 3, so the mutation should not be promoted to Q2.

@@ -1,0 +1,1 @@
+8 total reads support mutation, and minTotalReadsForNQ1Duplexes is set to 9, so mutation should not be promoted to Q2.

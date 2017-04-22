@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+set -o pipefail
+source ../../../bash_json_functions
+
+ ./jq --slurp --raw-output 'map(.samples) | .[] | map(select(.name=="test")) | map(.stats) | flatten | map(select(.analysisParameters.minQ1Duplexes == 2)) | map(select(.name == "main_stats")) | map({candidates: (.detections["chrX:07,382,420"].candidates)} | .[] | map(select(.mutationType=="DELETION")) | map(.goodCandidateForUniqueMutation))' ${1}stats.json > ${1}filtered.json
+#| map(.candidates) | .[] | map(select(.mutationType == "DELETION"))
+compare_jsons ${1}filtered.json Q2_mutation.json_preserve
+touch run.out.check custom_check
