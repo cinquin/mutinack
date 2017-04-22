@@ -135,6 +135,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Final private String sampleName;
 	private boolean hidden = false;
 	private Boolean negativeCodingStrand;
+	private @Persistent boolean goodCandidateForUniqueMutation;
 
 	@JsonIgnore private transient Mutation mutation;
 
@@ -156,6 +157,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		setMeanDistanceToLigSite(Float.NaN);
 		setnDistancesToLigSite(0);
 		setSmallestDuplexAlignmentOffset(-1);
+		setGoodCandidateForUniqueMutation(false);
 	}
 
 	@Override
@@ -1051,6 +1053,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setSmallestDuplexAlignmentOffset(int smallestOffset) {
 		smallestDuplexAlignmentOffset = smallestOffset;
+	}
+
+	public void setGoodCandidateForUniqueMutation(boolean b) {
+		goodCandidateForUniqueMutation = b;
 	}
 
 }

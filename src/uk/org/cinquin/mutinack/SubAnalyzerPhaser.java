@@ -582,6 +582,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					candidate.setSmallestDuplexAlignmentOffset(alignmentStarts.get(0));
 				}
 
+				candidate.setGoodCandidateForUniqueMutation(true);
+
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
 				stats.nPosCandidatesForUniqueMutation.accept(location, candidate.getnGoodDuplexes());
