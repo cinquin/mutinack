@@ -797,7 +797,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		Assert.isTrue(nDuplexesSisterArm > -1);
 		//TODO The following issues added below to qualityKD should just be retrieved from the
 		//qualities field instead of being recomputed
-		if (nDuplexesSisterArm < param.minNumberDuplexesSisterArm) {
+		if (nDuplexesSisterArm < param.minNumberDuplexesSisterSamples) {
 			qualityKD = Stream.concat(Stream.of(PositionAssay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
 				qualityKD);
 		}

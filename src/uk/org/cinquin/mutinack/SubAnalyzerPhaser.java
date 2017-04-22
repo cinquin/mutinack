@@ -536,7 +536,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
 					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE, !tooHighCoverage) &&
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
-						candidate.getnDuplexesSisterArm() >= param.minNumberDuplexesSisterArm) &&
+						candidate.getnDuplexesSisterArm() >= param.minNumberDuplexesSisterSamples) &&
 					(!param.Q2DisagCapsMatchingMutationQuality ||
 						(//Disagreements from the same sample will have already-downgraded mutation quality,
 						//if analysis parameter dictates it, but check again in case a matching disagreement is
@@ -837,7 +837,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		if ((!localTooHighCoverage) &&
 				examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation &&
 				examResults.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation &&
-				sumOtherGoodOrDubiousDuplexes(analyzerCandidateLists, a) >= stats.analysisParameters.minNumberDuplexesSisterArm
+				sumOtherGoodOrDubiousDuplexes(analyzerCandidateLists, a) >= stats.analysisParameters.minNumberDuplexesSisterSamples
 			) {
 
 			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).

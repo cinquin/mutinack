@@ -552,9 +552,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeAllReadDistances", description = "higher computational cost", required = false)
 	public boolean computeAllReadDistances = false;
 
-	@Parameter(names = "-minNumberDuplexesSisterArm", description = "Min number of duplexes in sister arm to call a candidate mutation unique; adjust this number to deal with heterozygous mutations", required = false)
+	@Parameter(names = {"-minNumberDuplexesSisterArm", "-minNumberDuplexesSisterSamples"}, description = "Min number of duplexes in sister arm to call a candidate mutation unique; adjust this number to deal with heterozygous mutations", required = false)
 	@OnlyUsedAfterDuplexGrouping
-	public int minNumberDuplexesSisterArm = 10;
+	public int minNumberDuplexesSisterSamples = 10;
 
 	@Parameter(names = "-minQ2DuplexesToCallMutation", description = "Min number of Q2 duplexes to call mutation (condition set by minQ1Q2DuplexesToCallMutation must also be met)", required = false)
 	@OnlyUsedAfterDuplexGrouping
@@ -1141,7 +1141,7 @@ public final class Parameters implements Serializable, Cloneable {
 		result = prime * result + minMappingQualityQ1;
 		result = prime * result + minMappingQualityQ2;
 		result = prime * result + minMedianPhredScoreAtPosition;
-		result = prime * result + minNumberDuplexesSisterArm;
+		result = prime * result + minNumberDuplexesSisterSamples;
 		result = prime * result + minQ1Duplexes;
 		result = prime * result + minQ1Q2DuplexesToCallMutation;
 		result = prime * result + minQ2DuplexesToCallMutation;
@@ -1398,7 +1398,7 @@ public final class Parameters implements Serializable, Cloneable {
 			return false;
 		if (minMedianPhredScoreAtPosition != other.minMedianPhredScoreAtPosition)
 			return false;
-		if (minNumberDuplexesSisterArm != other.minNumberDuplexesSisterArm)
+		if (minNumberDuplexesSisterSamples != other.minNumberDuplexesSisterSamples)
 			return false;
 		if (minQ1Duplexes != other.minQ1Duplexes)
 			return false;
