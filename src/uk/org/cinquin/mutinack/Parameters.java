@@ -114,14 +114,14 @@ public final class Parameters implements Serializable, Cloneable {
 
 		switch(candidateQ2Criterion) {
 			case "1Q2Duplex":
-				if (minQ1Duplexes != Integer.MAX_VALUE) {
-					throw new IllegalArgumentException("Option minQ1Duplexes only valid when candidateQ2Criterion==NQ1Duplexes");
-				}
+				String baseErrorMessage = " only valid when candidateQ2Criterion==NQ1Duplexes";
+				throwIAEIfFalse(minQ1Duplexes == Integer.MAX_VALUE, "Option minQ1Duplexes" + baseErrorMessage);
+				throwIAEIfFalse(minTotalReadsForNQ1Duplexes == Integer.MAX_VALUE, "Option minTotalReadsForNQ1Duplexes" + baseErrorMessage);
 				break;
 			case "NQ1Duplexes":
-				if (minQ1Duplexes == Integer.MAX_VALUE) {
-					throw new IllegalArgumentException("Option minQ1Duplexes must be set when candidateQ2Criterion==NQ1Duplexes");
-				}
+				String baseErrorMessage1 = " must be set when candidateQ2Criterion==NQ1Duplexes";
+				throwIAEIfFalse(minQ1Duplexes != Integer.MAX_VALUE, "Option minQ1Duplexes " + baseErrorMessage1);
+				throwIAEIfFalse(minTotalReadsForNQ1Duplexes != Integer.MAX_VALUE, "Option minTotalReadsForNQ1Duplexes " + baseErrorMessage1);
 				break;
 			default:
 				throw new RuntimeException("Option candidateQ2Criterion must be one of 1Q2Duplex or NQ1Duplexes, not "
@@ -161,6 +161,12 @@ public final class Parameters implements Serializable, Cloneable {
 			if (!(value instanceof Integer) && !(value instanceof Float) && !(value instanceof Boolean)) {
 				throw new IllegalArgumentException("Parameter " + paramName + " is not a number or boolean");
 			}
+		}
+	}
+
+	private static void throwIAEIfFalse(boolean b, String message) {
+		if (!b) {
+			throw new IllegalArgumentException(message);
 		}
 	}
 
@@ -426,9 +432,13 @@ public final class Parameters implements Serializable, Cloneable {
 	@OnlyUsedAfterDuplexGrouping
 	public String candidateQ2Criterion = "1Q2Duplex";
 
-	@Parameter(names = "-minQ1Duplexes", description = "If candidateQ2Criterion is set to NQ1Duplexes, allow mutation candidate to be Q2 when it has at least this many Q1 duplexes", required = false, hidden = true)
+	@Parameter(names = "-minQ1Duplexes", description = "If candidateQ2Criterion is set to NQ1Duplexes, allow mutation candidate to be Q2 if it has at least this many Q1 duplexes", required = false, hidden = true)
 	@OnlyUsedAfterDuplexGrouping
 	public int minQ1Duplexes = Integer.MAX_VALUE;
+
+	@Parameter(names = "-minTotalReadsForNQ1Duplexes", description = "If candidateQ2Criterion is set to NQ1Duplexes, allow mutation candidate to be Q2 if it has at least this many supporting reads", required = false, hidden = true)
+	@OnlyUsedAfterDuplexGrouping
+	public int minTotalReadsForNQ1Duplexes = Integer.MAX_VALUE;
 
 	/*@Parameter(names = "-promoteNSingleStrands", description = "Not yet functional, and probably never will be - Promote duplex that has just 1 original strand but at least this many reads to Q1", required = false, hidden = true)
 	public int promoteNSingleStrands = Integer.MAX_VALUE;
