@@ -114,10 +114,13 @@ public final class Parameters implements Serializable, Cloneable {
 
 		switch(candidateQ2Criterion) {
 			case "1Q2Duplex":
+				if (minQ1Duplexes != Integer.MAX_VALUE) {
+					throw new IllegalArgumentException("Option minQ1Duplexes only valid when candidateQ2Criterion==NQ1Duplexes");
+				}
 				break;
 			case "NQ1Duplexes":
 				if (minQ1Duplexes == Integer.MAX_VALUE) {
-					throw new IllegalArgumentException("Option minQ1Duplexes must be set for NQ1Duplexes mode");
+					throw new IllegalArgumentException("Option minQ1Duplexes must be set when candidateQ2Criterion==NQ1Duplexes");
 				}
 				break;
 			default:
