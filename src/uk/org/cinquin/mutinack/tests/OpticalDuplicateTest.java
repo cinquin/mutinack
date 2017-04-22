@@ -93,7 +93,6 @@ public class OpticalDuplicateTest {
 
 		param.opticalDuplicateDistance = 10;
 		MutableList<ExtendedSAMRecord> reads = Lists.mutable.of(e1, e2, e3, e4, e5, e6, e7, e8, e9);
-		dr.totalNRecords = reads.size();
 		Collections.shuffle(reads);
 		dr.markDuplicates(param, stats, reads);
 

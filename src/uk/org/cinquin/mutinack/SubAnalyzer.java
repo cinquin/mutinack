@@ -1052,8 +1052,7 @@ public final class SubAnalyzer {
 	private static void registerDuplexMinFracTopCandidate(Parameters param,
 			TCustomHashSet<DuplexRead> duplexReads, Histogram hist, SequenceLocation location) {
 		duplexReads.forEach(dr -> {
-			Assert.isFalse(dr.totalNRecords == -1);
-			if (dr.totalNRecords < 2 || dr.minFracTopCandidate == Float.MAX_VALUE) {
+			if (dr.allDuplexRecords.size() < 2 || dr.minFracTopCandidate == Float.MAX_VALUE) {
 				return true;
 			}
 			hist.insert((int) (dr.minFracTopCandidate * 10));

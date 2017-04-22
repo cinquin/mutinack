@@ -107,7 +107,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 			bottomStrandRecords = new FastList<>(100);
 	public final LazyIterable<@NonNull ExtendedSAMRecord> allDuplexRecords =
 		new LazyIterableAdapter<>(topStrandRecords).concatenate(bottomStrandRecords);
-	public int totalNRecords = -1;
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
 	boolean invalid = false;//Only used for debugging
@@ -178,7 +177,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 	 * @return True if the barcodes have changed
 	 */
 	boolean computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
-		totalNRecords = allDuplexRecords.size();
 		final byte @NonNull[] newLeft, newRight;
 		if (allReadsSameBarcode) {
 			newLeft = (allDuplexRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() >= 0).
@@ -408,7 +406,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private static final Comparator<DuplexRead> duplexCountQualComparator =
 		(d1, d2) -> {
 			int compResult;
-			compResult = Integer.compare(d2.totalNRecords, d1.totalNRecords);
+			compResult = Integer.compare(d2.allDuplexRecords.size(), d1.allDuplexRecords.size());
 			if (compResult != 0) {
 				return compResult;
 			}
@@ -1061,9 +1059,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	void analyzeForStats(Parameters param, AnalysisStats stats) {
 		Assert.isFalse(invalid);
 
-		stats.duplexTotalRecords.insert(totalNRecords);
-
-		totalNRecords = allDuplexRecords.size();
+		stats.duplexTotalRecords.insert(allDuplexRecords.size());
 
 		if (param.filterOpticalDuplicates) {
 			markDuplicates(param, stats, allDuplexRecords);
