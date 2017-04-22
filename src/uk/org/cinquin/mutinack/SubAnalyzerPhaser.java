@@ -209,9 +209,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 
 					try {
-						if (!param.rnaSeq) {
-							onAdvance1(location);
-						}
+						onAdvance1(location);
 						analysisChunk.lastProcessedPosition = position;
 						if (outputReads && statsIndex == 0) {//Only output reads once; note
 							//however that different parameter sets may lead to different duplex

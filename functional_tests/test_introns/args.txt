@@ -1,0 +1,1 @@
+-rnaSeq -collapseFilteredReads ${CHRIII} -startAtPosition chrIII:8,416,381 -stopAtPosition chrIII:8,616,444 -inputReads alignment-1/alignment-1.bam -sampleName test
