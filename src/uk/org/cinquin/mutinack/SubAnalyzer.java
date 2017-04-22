@@ -1306,7 +1306,7 @@ public final class SubAnalyzer {
 			}
 
 			if (hasNoMate) {
-				supplementalMessage.append("at least one read has no mate; ");
+				supplementalMessage.append("at least one read has no mate nearby; ");
 			}
 
 			if ("".equals(hasMateOnOtherChromosome) && !hasNoMate && has0PredictedInsertSize) {
