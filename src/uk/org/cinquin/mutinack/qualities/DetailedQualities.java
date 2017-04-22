@@ -26,8 +26,11 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import uk.org.cinquin.mutinack.candidate_sequences.AssayInfo;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.output.json.DetailedQualitiesSerializer;
 
 /**
  * Keeps track of a "min_assay" group, and a "max_assay" group.
@@ -41,6 +44,7 @@ import uk.org.cinquin.mutinack.misc_util.Handle;
  *
  * @param <T>
  */
+@JsonSerialize(using = DetailedQualitiesSerializer.class)
 public abstract class DetailedQualities<T extends Enum<T> & AssayInfo> implements Serializable {
 	private static final long serialVersionUID = -5423960175598403757L;
 
