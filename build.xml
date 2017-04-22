@@ -79,7 +79,7 @@
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
-                <exclude name="**/*.java"/>
+                <exclude name="**/*.java*"/>
                 <exclude name="contrib/net/sf/picard/vcf/"/>
             </fileset>
         </copy>
