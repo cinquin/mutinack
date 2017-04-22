@@ -1,0 +1,1 @@
+-rnaSeq ${CHRIV} -startAtPosition chrIV:00,365,756 -stopAtPosition chrIV:00,378,756 -inputReads alignment-1/alignment-1.bam -sampleName alignment1 -minNumberDuplexesSisterArm 0

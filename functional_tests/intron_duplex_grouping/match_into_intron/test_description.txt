@@ -1,0 +1,1 @@
+Verify that two sets of reads are grouped into the same duplex despite only 1 of those read alignments reaching over to the next exon. Alignment performed with gsnap-2017-03-17.

@@ -1,0 +1,1 @@
+chrIV:00,371,756	substitution	G->A	alignment1	0	1	1	2
