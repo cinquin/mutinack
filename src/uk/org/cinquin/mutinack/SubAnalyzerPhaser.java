@@ -558,7 +558,8 @@ public class SubAnalyzerPhaser extends Phaser {
 						d.localAndGlobalQuality.getNonNullValue().atLeast(Quality.DUBIOUS) &&
 						d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
 						d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
-						r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping);
+						r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping &&
+						d.allDuplexRecords.size() >= param.minConcurringDuplexReads);
 					if (good) {
 						alignmentStarts.add(d.position0);
 					}

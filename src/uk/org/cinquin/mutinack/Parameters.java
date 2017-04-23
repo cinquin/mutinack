@@ -559,6 +559,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@OnlyUsedAfterDuplexGrouping
 	public int maxConcurringDuplexClipping = maxAverageBasesClipped;
 
+	@Parameter(names = "-minConcurringDuplexReads", description = "Only duplexes that have at least this many reads are counted as concurring with a mutation",
+		required = false)
+	@OnlyUsedAfterDuplexGrouping
+	public int minConcurringDuplexReads = 1;
+
 	@Parameter(names = "-maxNDuplexes", description = "Positions whose number of Q1 or Q2 duplexes is above this threshold are ignored when computing mutation rates",
 		required = false)
 	public List<Integer> maxNDuplexes = new ArrayList<>();
