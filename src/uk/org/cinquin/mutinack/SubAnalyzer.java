@@ -135,7 +135,7 @@ public final class SubAnalyzer {
 		= new THashMap<>();
 	private final Random random;
 
-	private static final @NonNull Set<DuplexAssay>
+	static final @NonNull Set<DuplexAssay>
 		assaysToIgnoreForDisagreementQuality
 		= Collections.unmodifiableSet(EnumSet.copyOf(Collections.singletonList(DISAGREEMENT))),
 

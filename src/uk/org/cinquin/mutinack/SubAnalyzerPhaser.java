@@ -555,7 +555,9 @@ public class SubAnalyzerPhaser extends Phaser {
 				//Also exclude duplexes with clipping greater than maxConcurringDuplexClipping
 				int concurringDuplexes = candidate.getDuplexes().count(d -> {
 					boolean good =
-						d.localAndGlobalQuality.getNonNullValue().atLeast(Quality.DUBIOUS) &&
+						//d.localAndGlobalQuality.getNonNullValue().atLeast(Quality.DUBIOUS) &&
+						d.localAndGlobalQuality.getValueIgnoring(SubAnalyzer.assaysToIgnoreForDuplexNStrands).
+							atLeast(Quality.GOOD) &&
 						d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
 						d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
 						r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping &&
