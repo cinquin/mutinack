@@ -53,9 +53,9 @@ public class StatsCollector implements Serializable, Traceable, Actualizable {
 			}
 		}
 		LongAdderFormatter result = Util.nullableify(values.get(index));
-		if (result == null) {
+		if (result == null) {//Race condition can result in retrieval of null value
 			synchronized(values) {
-				result = Util.nullableify(values.get(index));
+				result = values.get(index);
 			}
 			Objects.requireNonNull(result);
 		}
