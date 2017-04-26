@@ -33,8 +33,10 @@ import java.util.stream.Stream;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
+import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -70,6 +72,7 @@ import uk.org.cinquin.mutinack.qualities.DetailedDuplexQualities;
 import uk.org.cinquin.mutinack.qualities.DetailedPositionQualities;
 import uk.org.cinquin.mutinack.qualities.DetailedQualities;
 import uk.org.cinquin.mutinack.qualities.Quality;
+import uk.org.cinquin.mutinack.statistics.Histogram;
 
 
 /**
@@ -118,7 +121,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float probCollision = Float.NaN;
 	private int nDuplexesSisterArm = -1;
 	private int nMatchingCandidatesOtherSamples = -1;
-	private int smallestDuplexAlignmentOffset = -1;
+	private int smallestConcurringDuplexDistance = -1;
+	private int largestConcurringDuplexDistance = -1;
 
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
@@ -156,7 +160,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		setMaxDistanceToLigSite(Integer.MIN_VALUE);
 		setMeanDistanceToLigSite(Float.NaN);
 		setnDistancesToLigSite(0);
-		setSmallestDuplexAlignmentOffset(-1);
+		smallestConcurringDuplexDistance = -1;
+		largestConcurringDuplexDistance = -1;
 		setGoodCandidateForUniqueMutation(false);
 	}
 
@@ -856,7 +861,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + "\t" +
 			formatter.format(examResults.alleleFrequencies.get(0)) + "\t" +
 			formatter.format(examResults.alleleFrequencies.get(1)) + "\t" +
-			getSmallestDuplexAlignmentOffset() + "\t" +
+			getSmallestConcurringDuplexDistance() + "\t" +
+			getLargestConcurringDuplexDistance() + "\t" +
 			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
 			);
 
@@ -1045,18 +1051,59 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.negativeCodingStrand = negativeCodingStrand;
 	}
 
-	@Override
-	public int getSmallestDuplexAlignmentOffset() {
-		return smallestDuplexAlignmentOffset;
+	public int getSmallestConcurringDuplexDistance() {
+		return smallestConcurringDuplexDistance;
 	}
 
-	@Override
-	public void setSmallestDuplexAlignmentOffset(int smallestOffset) {
-		smallestDuplexAlignmentOffset = smallestOffset;
+	public int getLargestConcurringDuplexDistance() {
+		return largestConcurringDuplexDistance;
 	}
 
 	public void setGoodCandidateForUniqueMutation(boolean b) {
 		goodCandidateForUniqueMutation = b;
+	}
+
+	@SuppressWarnings({"ReferenceEquality"})
+	public int getNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
+		MutableIntList alignmentStarts = IntLists.mutable.empty();
+
+		final DuplexRead supportingQ2 = getDuplexes().detect(d -> d.localAndGlobalQuality.getNonNullValue().
+			atLeast(Quality.GOOD));
+
+		if (Util.nullableify(supportingQ2) == null) {
+			return 0;
+		}
+
+		//Exclude duplexes whose reads all have an unmapped mate from the count
+		//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
+		//may cause an overestimate of that number
+		//Also exclude duplexes with clipping greater than maxConcurringDuplexClipping
+		final int nConcurringDuplexes = getDuplexes().count(d -> {
+			if (d == supportingQ2) {
+				return true;
+			}
+			boolean good =
+				d.allDuplexRecords.size() >= param.minConcurringDuplexReads &&
+				d.localAndGlobalQuality.getValueIgnoring(SubAnalyzer.assaysToIgnoreForDuplexNStrands).
+					atLeast(Quality.GOOD) &&
+				d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
+				d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
+					r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping);
+			if (good) {
+				final int distance = d.distanceTo(supportingQ2);
+				alignmentStarts.add(distance);
+				concurringDuplexDistances.insert(distance);
+			}
+			return good;
+		});
+
+		if (!alignmentStarts.isEmpty()) {
+			IntSummaryStatistics stats = alignmentStarts.summaryStatistics();
+			smallestConcurringDuplexDistance = stats.getMin();
+			largestConcurringDuplexDistance = stats.getMax();
+		}
+
+		return nConcurringDuplexes;
 	}
 
 }

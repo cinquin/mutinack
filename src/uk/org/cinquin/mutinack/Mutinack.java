@@ -180,7 +180,8 @@ public class Mutinack implements Actualizable, Closeable {
 			"nameOfOneRead", "readAlignmentStart", "mateAlignmentStart", "readAlignmentEnd",
 			"mateAlignmentEnd", "refPositionOfLigSite", "issuesList", "medianPhredAtPosition",
 			"minInsertSize", "maxInsertSize", "secondHighestAlleleFrequency",
-			"highestAlleleFrequency", "smallestDuplexAlignmentOffset", "supplementalMessage"
+			"highestAlleleFrequency", "smallestConcurringDuplexDistance", "largestConcurringDuplexDistance",
+			"supplementalMessage"
 	));
 	private volatile static ExecutorService contigThreadPool;
 

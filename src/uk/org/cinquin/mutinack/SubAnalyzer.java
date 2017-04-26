@@ -119,7 +119,7 @@ public final class SubAnalyzer {
 
 	public final @NonNull Mutinack analyzer;
 	@NonNull Parameters param;
-	@NonNull AnalysisStats stats;//Will in fact be null until set in SubAnalyzerPhaser but that's OK
+	@NonNull public AnalysisStats stats;//Will in fact be null until set in SubAnalyzerPhaser but that's OK
 	final @NonNull SettableInteger lastProcessablePosition = new SettableInteger(-1);
 	final @NonNull THashMap<SequenceLocation, THashSet<CandidateSequence>> candidateSequences =
 			new THashMap<>(1_000);
@@ -135,7 +135,7 @@ public final class SubAnalyzer {
 		= new THashMap<>();
 	private final Random random;
 
-	static final @NonNull Set<DuplexAssay>
+	public static final @NonNull Set<DuplexAssay>
 		assaysToIgnoreForDisagreementQuality
 		= Collections.unmodifiableSet(EnumSet.copyOf(Collections.singletonList(DISAGREEMENT))),
 
@@ -458,6 +458,14 @@ public final class SubAnalyzer {
 
 		insertDuplexGroupSizeStats(cleanedUpDuplexes, 0, stats.duplexLocalGroupSize);
 		insertDuplexGroupSizeStats(cleanedUpDuplexes, 15, stats.duplexLocalShiftedGroupSize);
+
+		if (cleanedUpDuplexes.size() < analyzer.maxNDuplexes) {
+			cleanedUpDuplexes.forEach(d1 -> {
+				cleanedUpDuplexes.forEach(d2 -> {
+					stats.duplexDistance.insert(d1.euclideanDistanceTo(d2));
+				});
+			});
+		}
 
 		for (int i = 0; i < averageClipping.length; i++) {
 			int n = duplexNumber[i];

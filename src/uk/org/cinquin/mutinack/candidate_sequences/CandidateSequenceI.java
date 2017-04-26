@@ -130,7 +130,5 @@ public interface CandidateSequenceI extends Serializable {
 	byte getMedianPhredScore();
 	@Nullable Boolean getNegativeCodingStrand();
 	void setNegativeCodingStrand(@Nullable Boolean negativeCodingStrand);
-	int getSmallestDuplexAlignmentOffset();
-	void setSmallestDuplexAlignmentOffset(int smallestOffset);
 
 }

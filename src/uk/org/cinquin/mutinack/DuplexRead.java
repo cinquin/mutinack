@@ -126,12 +126,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 	 * reads from a given strand. Minimum and maximum across all base positions in duplex.
 	*/
 	@NonNull Quality minQuality = MAXIMUM, maxQuality = MINIMUM;
-	DetailedQualities<DuplexAssay> localAndGlobalQuality;
+	public DetailedQualities<DuplexAssay> localAndGlobalQuality;
 	final @NonNull DetailedQualities<DuplexAssay> globalQuality = new DetailedDuplexQualities();
 	SequenceLocation roughLocation;
 	float referenceDisagreementRate;
 	int averageNClipped = -1;
-	int position0;
+	public int position0;
 	int position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	private final boolean leftBarcodeNegativeStrand;
@@ -268,6 +268,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public int distanceTo(DuplexRead d2) {
 		return Math.max(Math.abs(position0 - d2.position0), Math.abs(position3 - d2.position3));
+	}
+
+	public int euclideanDistanceTo(DuplexRead d2) {
+		return (int) Math.sqrt(squareInt(position0 - d2.position0) + squareInt(position3 - d2.position3));
+	}
+
+	private static int squareInt(int x) {
+		return x * x;
 	}
 
 	@Override

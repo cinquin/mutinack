@@ -52,13 +52,11 @@ import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
-import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
-import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
@@ -407,6 +405,14 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		final boolean lowTopAlleleFreq = minTopAlleleFreq < param.topAlleleFreqReport;
 
+		locationExamResults.flatCollect(c -> c.analyzedCandidateSequences).forEach(candidate -> {
+			if (candidate.getQuality().getNonNullValue().atLeast(Quality.GOOD)) {
+				final @NonNull AnalysisStats stats = Objects.requireNonNull(
+					candidate.getOwningSubAnalyzer().stats);
+				candidate.getNQ1PlusConcurringDuplexes(stats.concurringDuplexDistance, param);
+			}
+		});
+
 		final boolean forceReporting =
 			forceOutputAtLocations.get(location) != null ||
 			mutationToAnnotate.get() ||
@@ -547,46 +553,14 @@ public class SubAnalyzerPhaser extends Phaser {
 					)
 					) {
 
-				MutableIntList alignmentStarts = IntLists.mutable.empty();
+				final @NonNull AnalysisStats stats = Objects.requireNonNull(
+					candidate.getOwningSubAnalyzer().stats);
 
-				//Exclude duplexes whose reads all have an unmapped mate from the count
-				//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
-				//may cause an overestimate of that number
-				//Also exclude duplexes with clipping greater than maxConcurringDuplexClipping
-				int concurringDuplexes = candidate.getDuplexes().count(d -> {
-					boolean good =
-						//d.localAndGlobalQuality.getNonNullValue().atLeast(Quality.DUBIOUS) &&
-						d.localAndGlobalQuality.getValueIgnoring(SubAnalyzer.assaysToIgnoreForDuplexNStrands).
-							atLeast(Quality.GOOD) &&
-						d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
-						d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
-						r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping &&
-						d.allDuplexRecords.size() >= param.minConcurringDuplexReads);
-					if (good) {
-						alignmentStarts.add(d.position0);
-					}
-					return good;
-				});
-				csla.nDuplexesUniqueQ2MutationCandidate.add(concurringDuplexes);
-
-				if (!alignmentStarts.isEmpty()) {
-					alignmentStarts.sortThis();
-					for (int i = alignmentStarts.size() - 1; i >= 1; i--) {
-						int difference = alignmentStarts.get(i) - alignmentStarts.get(i - 1);
-						difference = difference == 0 ? Integer.MAX_VALUE : difference;
-						Assert.isTrue(difference >= 0);
-						alignmentStarts.set(i, difference);
-					}
-					alignmentStarts.set(0, Integer.MAX_VALUE);
-					alignmentStarts.sortThis();
-
-					candidate.setSmallestDuplexAlignmentOffset(alignmentStarts.get(0));
-				}
+				csla.nDuplexesUniqueQ2MutationCandidate.add(
+					candidate.getNQ1PlusConcurringDuplexes(stats.concurringMutationDuplexDistance, param));
 
 				candidate.setGoodCandidateForUniqueMutation(true);
 
-				final @NonNull AnalysisStats stats = Objects.requireNonNull(
-					candidate.getOwningSubAnalyzer().stats);
 				stats.nPosCandidatesForUniqueMutation.accept(location, candidate.getnGoodDuplexes());
 				stats.uniqueMutantQ2CandidateQ1Q2DCoverage.insert(candidate.getTotalGoodOrDubiousDuplexes());
 				if (!repetitiveBEDs.isEmpty()) {

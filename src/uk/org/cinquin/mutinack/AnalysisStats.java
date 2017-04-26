@@ -670,6 +670,18 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram duplexDistance = new Histogram(500);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram concurringMutationDuplexDistance = new Histogram(2_000);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram concurringDuplexDistance = new Histogram(2_000);
+
+	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram duplexLocalGroupSize = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
