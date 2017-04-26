@@ -114,13 +114,13 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 				filter(d -> d != 0).
 				sorted().toArray();
 		result.append("medianNon0 = ").append(DoubleAdderFormatter.
-				formatDouble(coverage[coverage.length/2])).append("; meanNon0 = ");
-		result.append(formatterTL.get().format(
+				formatDouble(coverage.length == 0 ? Double.NaN : coverage[coverage.length/2])).
+		append("; meanNon0 = ").append(formatterTL.get().format(
 				counter.getCounts().entrySet().stream().mapToDouble(e ->
 					((DoubleAdderFormatter) e.getValue()).sum()).
 				filter(d -> d!= 0).
-				average().getAsDouble()));
-		result.append('\n');
+				average().getAsDouble())).
+		append('\n');
 		return result.toString();
 	}
 
