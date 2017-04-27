@@ -84,7 +84,11 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 	}
 
 	public double @NonNull[] toProbabilityArray(boolean smoothen) {
-		final double @NonNull[] result = new double[maxSize];
+		return toProbabilityArray(smoothen, true);
+	}
+
+	public double @NonNull[] toProbabilityArray(boolean smoothen, boolean useMaxSize) {
+		final double @NonNull[] result = new double[useMaxSize ? maxSize : size()];
 
 		for (int i = size() - 1; i >= 0; i--) {
 			result[i] = get(i).sum();
