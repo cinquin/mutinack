@@ -69,11 +69,11 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	private static final Set<@NonNull String> missingContigNames = new HashSet<>();
 
 	@JsonIgnore
-	public final MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
+	public final transient MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
 	@JsonIgnore
-	private final List<IntervalTree<GenomeInterval>> contigTrees = new ArrayList<>();
+	private final transient List<IntervalTree<GenomeInterval>> contigTrees = new ArrayList<>();
 	@JsonIgnore
-	private final @NonNull Map<@NonNull String, @NonNull String> suppInfo;
+	private final transient @NonNull Map<@NonNull String, @NonNull String> suppInfo;
 	private final String readerName;
 
 	@Override

@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Serialized;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -62,7 +61,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	private final DoubleAdderFormatter adderForTotal = new DoubleAdderFormatter();
 
 	@JsonIgnore
-	private static final @NonNull SerializablePredicate<SequenceLocation> yes = l -> true;
+	private static final transient @NonNull SerializablePredicate<SequenceLocation> yes = l -> true;
 
 	@SuppressWarnings("rawtypes")
 	private interface SerializableComparator extends
@@ -86,8 +85,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 
 	@JsonIgnore
 	@SuppressWarnings("rawtypes")
-	@Serialized
-	private @Final Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
+	private @Final transient Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
 		printingSorter;
 
 	public MultiCounter(@Nullable SerializableSupplier<@NonNull ICounter<T>> factory1,
