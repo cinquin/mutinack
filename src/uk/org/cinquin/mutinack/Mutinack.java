@@ -33,6 +33,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
@@ -1223,6 +1224,15 @@ public class Mutinack implements Actualizable, Closeable {
 			outputJSON(param, analyzers);
 			if (!param.outputToDatabaseURL.isEmpty()) {
 				DatabaseOutput0.outputToDatabase(param, analyzers);
+			}
+			if (!param.outputSerializedTo.isEmpty()) {
+				RunResult root = getRunResult(param, analyzers);
+				try (FileOutputStream fos = new FileOutputStream(param.outputSerializedTo)) {
+					ObjectOutputStream oos = new ObjectOutputStream(fos);
+					oos.writeObject(root);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		};
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);

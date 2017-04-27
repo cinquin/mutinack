@@ -9,7 +9,7 @@ export BASEDIR := $(shell echo `pwd`)
 endif
 JACOCO := -javaagent:jacoco.jar=destfile=$(BASEDIR)/../target/jacoco.exec
 JVM_OPTIONS = -XX:-OmitStackTraceInFastThrow -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3
-MUTINACK_OPTIONS = -outputToDatabaseURL \"\"
+MUTINACK_OPTIONS = -outputToDatabaseURL \"\" -outputSerializedTo test.out.bin
 #MUTINACK_OPTIONS = -outputToDatabaseURL "jdbc:postgresql://localhost/mutinack_test_db"
 nailgun_port ?= 2113
 SUBMIT_TO_SERVER = -submitToServer localhost/mutinackTesting$(nailgun_port)

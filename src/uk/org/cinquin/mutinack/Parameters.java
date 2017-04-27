@@ -294,6 +294,12 @@ public final class Parameters implements Serializable, Cloneable {
 		required = false)
 	public @Column(length = 1_000) String outputJSONTo = "";
 
+	@FilePath
+	@IgnoreInHashcodeEquals
+	@Parameter(names = "-outputSerializedTo", description = "Path to which serialized Java object output should be written",
+		required = false)
+	public @Column(length = 1_000) String outputSerializedTo = "";
+
 	@Parameter(names = "-outputDuplexDetails", description = "For each reported mutation, give list of its reads and duplexes", required = false)
 	public boolean outputDuplexDetails = false;
 
