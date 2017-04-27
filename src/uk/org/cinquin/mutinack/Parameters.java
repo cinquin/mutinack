@@ -671,7 +671,7 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@NoDuplicates
 	@Parameter(names = "-sampleName", description = "Used to name samples in output file; can be repeated as many times as there are inputReads", required = false)
-	List<@NonNull String> sampleNames = new ArrayList<>();
+	public List<@NonNull String> sampleNames = new ArrayList<>();
 
 	@FilePathList
 	@NoDuplicates
