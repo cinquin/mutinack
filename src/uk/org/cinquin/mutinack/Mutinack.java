@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -1221,19 +1222,25 @@ public class Mutinack implements Actualizable, Closeable {
 				map(m -> m.getName() + ": " + m.getUsage().toString()).
 				collect(Collectors.joining(",")));
 
-			outputJSON(param, analyzers);
+			final List<Future<?>> futures = new ArrayList<>();
+			futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(() ->
+				outputJSON(param, analyzers)));
 			if (!param.outputToDatabaseURL.isEmpty()) {
-				DatabaseOutput0.outputToDatabase(param, analyzers);
+				futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(() ->
+					DatabaseOutput0.outputToDatabase(param, analyzers)));
 			}
 			if (!param.outputSerializedTo.isEmpty()) {
-				RunResult root = getRunResult(param, analyzers);
-				try (FileOutputStream fos = new FileOutputStream(param.outputSerializedTo)) {
-					ObjectOutputStream oos = new ObjectOutputStream(fos);
-					oos.writeObject(root);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+				futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(() -> {
+					RunResult root = getRunResult(param, analyzers);
+					try (FileOutputStream fos = new FileOutputStream(param.outputSerializedTo)) {
+						ObjectOutputStream oos = new ObjectOutputStream(fos);
+						oos.writeObject(root);
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				}));
 			}
+			futures.forEach(Procedures.throwing(Future::get));
 		};
 		Signals.registerSignalProcessor("INFO", infoSignalHandler);
 		closeableCloser.add(new CloseableWrapper<>(infoSignalHandler,
