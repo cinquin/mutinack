@@ -51,6 +51,14 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 		this.maxSize = maxSize;
 	}
 
+	public Histogram(int maxSize, int initialSize) {
+		super(initialSize);
+		if (maxSize < 1) {
+			throw new IllegalArgumentException("Histogram max size must be at least 1");
+		}
+		this.maxSize = maxSize;
+	}
+
 	@Override
 	public String toString() {
 		double nEntriesAsD = 0;
@@ -98,10 +106,10 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 		return result;
 	}
 
-	public void insert(int value) {
+	public void insert(int value, long count) {
 		if (!on)
 			return;
-		sum.add(value);
+		sum.add(value * count);
 		value = Math.min(value, maxSize - 1);
 		if (size() < value + 1) {
 			synchronized(this) {
@@ -111,14 +119,18 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 			}
 		}
 		try {
-			get(value).increment();
+			get(value).add(count);
 		} catch (NullPointerException e) {
 			//List might have been in the process of growing while
 			//we were trying to grab the element at index value
 			synchronized(this) {
-				get(value).increment();
+				get(value).add(count);
 			}
 		}
+	}
+
+	public void insert(int value) {
+		insert(value, 1);
 	}
 
 	@Override
