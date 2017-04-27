@@ -82,16 +82,15 @@ import uk.org.cinquin.mutinack.statistics.Traceable;
 @PersistenceCapable
 public class AnalysisStats implements Serializable, Actualizable {
 
-	private @Final @Persistent @NonNull String name;
-	OutputLevel outputLevel;
-	final MutinackGroup groupSettings;
-	@Final @Persistent Set<String> mutinackVersions = new HashSet<>();
-	@Final @Persistent
-	public Map<@NonNull String, @NonNull String> inputBAMHashes = new HashMap<>();
-	@Final @Persistent @NonNull Parameters analysisParameters;
-	@Final @Persistent boolean forInsertions;
+	public @Final @Persistent @NonNull String name;
+	public OutputLevel outputLevel;
+	public final MutinackGroup groupSettings;
+	public @Final @Persistent Set<String> mutinackVersions = new HashSet<>();
+	public @Final @Persistent Map<@NonNull String, @NonNull String> inputBAMHashes = new HashMap<>();
+	public @Final @Persistent @NonNull Parameters analysisParameters;
+	public @Final @Persistent boolean forInsertions;
 	//Changed to Map instead of ConcurrentMap to please datanucleus
-	@Final @Persistent @Join Map<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();
+	public @Final @Persistent @Join Map<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();
 	public transient PrintStream detectionOutputStream;
 	public transient OutputStreamWriter annotationOutputStream;
 	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter,
@@ -269,108 +268,108 @@ public class AnalysisStats implements Serializable, Actualizable {
 	private @interface AddChromosomeBins {};
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized="true")
+	public @Final @Persistent(serialized="true")
 	@Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram duplexGroupingDepth = new Histogram(100);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram minTopCandFreqQ2PosTopAlleleFreqOK = new Histogram(11);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram minTopCandFreqQ2PosTopAlleleFreqKO = new Histogram(11);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram duplexTotalRecords = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rejectedIndelDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rejectedSubstDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram wtRejectedDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram wtAcceptedBaseDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram singleAnalyzerQ2CandidateDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram crossAnalyzerQ2CandidateDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	ConcurrentMap<Mutation, Histogram> disagMutConsensus = new MutationHistogramMap();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	ConcurrentMap<Mutation, Histogram> disagWtConsensus = new MutationHistogramMap();
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram substDisagDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram insDisagDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram delDisagDistanceToLigationSite = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram disagDelSize = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram Q2CandidateDistanceToLigationSiteN = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram wtQ2CandidateQ1Q2Coverage = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram wtQ2CandidateQ1Q2CoverageRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram wtQ2CandidateQ1Q2CoverageNonRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram mutantQ2CandidateQ1Q2Coverage = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram mutantQ2CandidateQ1Q2DCoverageRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram mutantQ2CandidateQ1Q2DCoverageNonRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram uniqueMutantQ2CandidateQ1Q2DCoverage = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram uniqueMutantQ2CandidateQ1Q2DCoverageRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram uniqueMutantQ2CandidateQ1Q2DCoverageNonRepetitive = new Histogram(200);
 
 	@PrintInStatus(outputLevel = VERBOSE)
@@ -400,19 +399,19 @@ public class AnalysisStats implements Serializable, Actualizable {
 	Histogram mappingQualityAllRecords = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram averageReadPhredQuality0 = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram averageReadPhredQuality1 = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	MultiCounter<ComparablePair<Integer, Integer>> phredAndLigSiteDistance;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram medianReadPhredQuality = new Histogram(500);
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -525,14 +524,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawDeletionsQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rawDeletionLengthQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawInsertionsQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rawInsertionLengthQ1;
 
 	@PrintInStatus(outputLevel = VERBOSE)
@@ -542,14 +541,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawDeletionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rawDeletionLengthQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawInsertionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rawInsertionLengthQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
@@ -873,13 +872,13 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent StatsCollector nMateOutOfReach = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
-	@Final @Persistent StatsCollector nProcessedBases = new StatsCollector();
+	public @Final @Persistent StatsCollector nProcessedBases = new StatsCollector();
 
 	@PrintInStatus(outputLevel = TERSE)
 	boolean analysisTruncated;
 
 	@PrintInStatus(outputLevel = VERBOSE)
-	@Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram nReadsInPrefetchQueue;
 
 	/*
@@ -890,7 +889,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final StatsCollector nProcessedFirst6BasesSecondOfPair = new StatsCollector();*/
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	@Final @Persistent DoubleAdder phredSumProcessedbases = new DoubleAdder();
+	public @Final @Persistent DoubleAdder phredSumProcessedbases = new DoubleAdder();
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
