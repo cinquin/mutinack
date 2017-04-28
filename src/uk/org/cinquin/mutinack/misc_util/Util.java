@@ -17,8 +17,10 @@
 package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
@@ -64,6 +66,15 @@ import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 
 @SuppressWarnings("TypeParameterUnusedInFormals")
 public class Util {
+
+	public static Object readObject(String path) {
+		try (FileInputStream fis = new FileInputStream(path)) {
+			ObjectInputStream ois = new ObjectInputStream(fis);
+			return ois.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * Utility function to improve Null annotation checking by removing spurious

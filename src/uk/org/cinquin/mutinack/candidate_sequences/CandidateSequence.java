@@ -1063,6 +1063,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		goodCandidateForUniqueMutation = b;
 	}
 
+	public boolean isGoodCandidateForUniqueMutation() {
+		return goodCandidateForUniqueMutation;
+	}
+
 	@SuppressWarnings({"ReferenceEquality"})
 	public int getNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
@@ -1092,7 +1096,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			if (good) {
 				final int distance = d.distanceTo(supportingQ2);
 				alignmentStarts.add(distance);
-				concurringDuplexDistances.insert(distance);
+				if (concurringDuplexDistances != null) {
+					concurringDuplexDistances.insert(distance);
+				}
 			}
 			return good;
 		});
