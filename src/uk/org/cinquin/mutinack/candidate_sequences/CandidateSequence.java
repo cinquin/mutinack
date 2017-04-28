@@ -123,6 +123,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int nMatchingCandidatesOtherSamples = -1;
 	private int smallestConcurringDuplexDistance = -1;
 	private int largestConcurringDuplexDistance = -1;
+	private int nQ1PlusConcurringDuplexes = -1;
 
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
@@ -162,6 +163,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		setnDistancesToLigSite(0);
 		smallestConcurringDuplexDistance = -1;
 		largestConcurringDuplexDistance = -1;
+		nQ1PlusConcurringDuplexes = -1;
 		setGoodCandidateForUniqueMutation(false);
 	}
 
@@ -1109,7 +1111,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			largestConcurringDuplexDistance = stats.getMax();
 		}
 
+		nQ1PlusConcurringDuplexes = nConcurringDuplexes;
 		return nConcurringDuplexes;
+	}
+
+	public int getnQ1PlusConcurringDuplexes() {
+		return nQ1PlusConcurringDuplexes;
 	}
 
 }
