@@ -12,7 +12,7 @@ import java.util.stream.Collector;
 
 import uk.org.cinquin.mutinack.statistics.Histogram;
 
-public class HistogramCollector implements Collector<Histogram, Histogram, Histogram> {
+public class HistogramSumCollector implements Collector<Histogram, Histogram, Histogram> {
 
 	@Override
 	public Supplier<Histogram> supplier() {
