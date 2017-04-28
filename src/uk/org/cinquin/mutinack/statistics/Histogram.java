@@ -16,10 +16,18 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.DoubleStream;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.knowm.xchart.BitmapEncoder;
+import org.knowm.xchart.BitmapEncoder.BitmapFormat;
+import org.knowm.xchart.QuickChart;
+import org.knowm.xchart.SwingWrapper;
+import org.knowm.xchart.XYChart;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -221,5 +229,23 @@ public class Histogram extends ArrayList<LongAdderFormatter>
 		localAverage /= nPoints;
 		smoothen(a, maxIndex, localAverage, 1);
 		smoothen(a, maxIndex, localAverage, -1);
+	}
+
+	public XYChart getChart() {
+		return QuickChart.getChart("sample", "x", "Frequency", "Series 1",
+			DoubleStream.iterate(0, d -> d + 1).limit(size()).toArray(), this.stream().
+			mapToDouble(LongAdder::sum).toArray());
+	}
+
+	public void showPlot() {
+		new SwingWrapper<>(getChart()).displayChart();
+	}
+
+	public void savePlotToFile(String path) {
+		try {
+			BitmapEncoder.saveBitmapWithDPI(getChart(), path, BitmapFormat.PNG, 500);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
