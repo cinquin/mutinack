@@ -28,7 +28,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -62,7 +61,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -439,7 +437,7 @@ public class Mutinack implements Actualizable, Closeable {
 		return stat;
 	}
 
-	public static void main(String args[]) throws InterruptedException, ExecutionException, FileNotFoundException {
+	public static void main(String args[]) {
 		try {
 			try {
 				realMain0(args);

@@ -923,7 +923,7 @@ public final class SubAnalyzer {
 
 		candidateSet.forEach(candidate -> {
 			candidate.getQuality().addAllUnique(positionQualities);
-			processCandidateQualityStep1(candidate, location, result, positionMedianPhred, positionQualities);
+			processCandidateQualityStep1(candidate, result, positionMedianPhred, positionQualities);
 			if (candidate.getMutationType().isWildtype()) {
 				wildtypeBase.set(candidate.getWildtypeSequence());
 			}
@@ -962,7 +962,7 @@ public final class SubAnalyzer {
 				totalGoodOrDubiousDuplexes += candidate.getnGoodOrDubiousDuplexes();
 				totalGoodDuplexesIgnoringDisag += candidate.getnGoodDuplexesIgnoringDisag();
 
-				processCandidateQualityStep2(candidate, location, result, positionMedianPhred, positionQualities);
+				processCandidateQualityStep2(candidate, location);
 			}
 			if (leave) {
 				break;
@@ -980,12 +980,12 @@ public final class SubAnalyzer {
 		} while(Boolean.valueOf(null));//Assert never reached
 
 		if (qualityOKBeforeTopAllele) {
-			registerDuplexMinFracTopCandidate(param, duplexReads,
+			registerDuplexMinFracTopCandidate(duplexReads,
 				topAlleleQuality == null ?
 					stats.minTopCandFreqQ2PosTopAlleleFreqOK
 				:
-					stats.minTopCandFreqQ2PosTopAlleleFreqKO,
-				location);
+					stats.minTopCandFreqQ2PosTopAlleleFreqKO
+				);
 		}
 
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
@@ -1059,8 +1059,7 @@ public final class SubAnalyzer {
 		return result;
 	}//End examineLocation
 
-	private static void registerDuplexMinFracTopCandidate(Parameters param,
-			TCustomHashSet<DuplexRead> duplexReads, Histogram hist, SequenceLocation location) {
+	private static void registerDuplexMinFracTopCandidate(TCustomHashSet<DuplexRead> duplexReads, Histogram hist) {
 		duplexReads.forEach(dr -> {
 			if (dr.allDuplexRecords.size() < 2 || dr.minFracTopCandidate == Float.MAX_VALUE) {
 				return true;
@@ -1132,7 +1131,6 @@ public final class SubAnalyzer {
 	@SuppressWarnings("null")
 	private void processCandidateQualityStep1(
 			final CandidateSequence candidate,
-			final @NonNull SequenceLocation location,
 			final LocationExaminationResults result,
 			final byte positionMedianPhred,
 			final @NonNull DetailedQualities<PositionAssay> positionQualities) {
@@ -1224,10 +1222,7 @@ public final class SubAnalyzer {
 
 	private void processCandidateQualityStep2(
 			final CandidateSequence candidate,
-			final @NonNull SequenceLocation location,
-			final LocationExaminationResults result,
-			final byte positionMedianPhred,
-			final @NonNull DetailedQualities<PositionAssay> positionQualities
+			final @NonNull SequenceLocation location
 		) {
 
 		if (!param.rnaSeq) {
@@ -1618,8 +1613,7 @@ public final class SubAnalyzer {
 						locationInterningSet,
 						readLocalCandidates,
 						extendedRec,
-						readOnNegativeStrand,
-						effectiveReadLength);
+						readOnNegativeStrand);
 				}
 				else if (refPosition < refEndOfPreviousAlignment + 1) {
 					throw new AssertionFailedException("Alignment block misordering");
@@ -2042,8 +2036,7 @@ public final class SubAnalyzer {
 			final InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
 			final @NonNull ExtendedSAMRecord extendedRec,
-			final boolean readOnNegativeStrand,
-			final int effectiveReadLength) {
+			final boolean readOnNegativeStrand) {
 
 		boolean forceCandidateInsertion = false;
 

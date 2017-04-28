@@ -206,25 +206,22 @@ public class SubAnalyzerPhaser extends Phaser {
 						}
 					}
 
-					try {
-						onAdvance1(location);
-						analysisChunk.lastProcessedPosition = position;
-						if (outputReads && statsIndex == 0) {//Only output reads once; note
-							//however that different parameter sets may lead to different duplex
-							//grouping, which will not be apparent in BAM output
-							final @NonNull SequenceLocation locationNoPH =
-								new SequenceLocation(contigIndex, contigName, position, false);
-							prepareReadsToWrite(
-								locationNoPH,
-								analysisChunk,
-								param.collapseFilteredReads,
-								param.writeBothStrands,
-								param.clipPairOverlap,
-								dn);
-						}
-					} catch (IOException e) {
-						throw new RuntimeException(e);
+					onAdvance1(location);
+					analysisChunk.lastProcessedPosition = position;
+					if (outputReads && statsIndex == 0) {//Only output reads once; note
+						//however that different parameter sets may lead to different duplex
+						//grouping, which will not be apparent in BAM output
+						final @NonNull SequenceLocation locationNoPH =
+							new SequenceLocation(contigIndex, contigName, position, false);
+						prepareReadsToWrite(
+							locationNoPH,
+							analysisChunk,
+							param.collapseFilteredReads,
+							param.writeBothStrands,
+							param.clipPairOverlap,
+							dn);
 					}
+
 				}
 			}
 
@@ -317,7 +314,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 	private void onAdvance1(
 			final @NonNull SequenceLocation location
-		) throws IOException {
+		) {
 
 		final @NonNull UnifiedMap<SubAnalyzer, LocationExaminationResults> locationExamResultsMap0 =
 			new UnifiedMap<>();
@@ -452,7 +449,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull AnalysisChunk analysisChunk,
 			final @NonNull ConcurrentMap<Pair<SequenceLocation, String>,
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate
-		) throws IOException {
+		) {
 
 		final MutableList<CandidateSequence> candidateSequences = locationExamResults.
 			flatCollect(l -> l.analyzedCandidateSequences, new FastList<>()).
