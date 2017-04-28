@@ -5116,7 +5116,7 @@
   },
   {
     "name": "main_stats: randomizeStrand=false",
-    "candidates": [],
+    "candidates": null,
     "nProcessedBases": {
       "total": "7,483",
       "values": [

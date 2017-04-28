@@ -390,8 +390,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			}).
 			getMax());
 
-		@SuppressWarnings("null")//getMin cannot return null as long as
-		//locationExamResults is not empty
+		@SuppressWarnings("null")//getMin cannot return null because constructor with initial min is used
 		final float minTopAlleleFreq = new ObjMinMax<>(Float.MAX_VALUE, - Float.MAX_VALUE, Float::compareTo).
 			acceptMin(locationExamResults, cl -> {
 				MutableFloatList freq = ((LocationExaminationResults) cl).alleleFrequencies;
@@ -403,7 +402,8 @@ public class SubAnalyzerPhaser extends Phaser {
 				}
 			}).getMin();
 
-		final boolean lowTopAlleleFreq = minTopAlleleFreq < param.topAlleleFreqReport;
+		final boolean lowTopAlleleFreq = minTopAlleleFreq != 0 &&
+			minTopAlleleFreq < param.topAlleleFreqReport;
 
 		locationExamResults.flatCollect(c -> c.analyzedCandidateSequences).forEach(candidate -> {
 			if (candidate.getQuality().getNonNullValue().atLeast(Quality.GOOD)) {

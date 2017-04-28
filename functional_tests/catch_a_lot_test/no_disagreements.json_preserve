@@ -1,10 +1,10 @@
 [
   {
     "name": "main_stats: randomizeStrand=true",
-    "candidates": []
+    "candidates":  null
   },
   {
     "name": "main_stats: randomizeStrand=true",
-    "candidates": []
+    "candidates": null
   }
 ]
