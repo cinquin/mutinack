@@ -18,7 +18,7 @@ package uk.org.cinquin.mutinack.misc_util;
 
 import java.io.Serializable;
 
-public class SettableDouble implements Serializable {
+public class SettableDouble extends Number implements Serializable {
 
 	private static final long serialVersionUID = 8580008588332408546L;
 
@@ -74,6 +74,30 @@ public class SettableDouble implements Serializable {
 	@Override
 	public String toString() {
 		return Double.toString(value);
+	}
+
+	@Override
+	public int intValue() {
+		checkInitialized();
+		return (int) value;
+	}
+
+	@Override
+	public long longValue() {
+		checkInitialized();
+		return (long) value;
+	}
+
+	@Override
+	public float floatValue() {
+		checkInitialized();
+		return (float) value;
+	}
+
+	@Override
+	public double doubleValue() {
+		checkInitialized();
+		return value;
 	}
 
 }
