@@ -406,7 +406,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			if (candidate.getQuality().getNonNullValue().atLeast(Quality.GOOD)) {
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
-				candidate.getNQ1PlusConcurringDuplexes(stats.concurringDuplexDistance, param);
+				candidate.computeNQ1PlusConcurringDuplexes(stats.concurringDuplexDistance, param);
 			}
 		});
 
@@ -554,7 +554,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					candidate.getOwningSubAnalyzer().stats);
 
 				csla.nDuplexesUniqueQ2MutationCandidate.add(
-					candidate.getNQ1PlusConcurringDuplexes(stats.concurringMutationDuplexDistance, param));
+					candidate.computeNQ1PlusConcurringDuplexes(stats.concurringMutationDuplexDistance, param));
 
 				candidate.setGoodCandidateForUniqueMutation(true);
 

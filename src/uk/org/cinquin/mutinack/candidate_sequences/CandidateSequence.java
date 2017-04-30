@@ -1070,7 +1070,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@SuppressWarnings({"ReferenceEquality"})
-	public int getNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
+	public int computeNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
 		final DuplexRead supportingQ2 = getDuplexes().detect(d -> d.localAndGlobalQuality.getNonNullValue().
