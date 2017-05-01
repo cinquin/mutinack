@@ -125,10 +125,8 @@ public class Worker {
 			final String workerID = workerIDBase + loopIndex;
 			Job job;
 			while (!terminate.get()) {
-				SignalProcessor infoSignalHandlerWaiting = signal -> {
-					System.err.println("Worker " + workerID + " waiting for job from " +
-						cleanedUpName);
-				};
+				SignalProcessor infoSignalHandlerWaiting = signal ->
+					System.err.println("Worker " + workerID + " waiting for job from " + cleanedUpName);
 				try {
 					Signals.registerSignalProcessor("INFO", infoSignalHandlerWaiting);
 					job = server.getMoreWork(workerID);
@@ -185,10 +183,9 @@ public class Worker {
 					RuntimeException die = null;
 
 					final Job finalJob = job;
-					SignalProcessor infoSignalHandlerWorking = signal -> {
+					SignalProcessor infoSignalHandlerWorking = signal ->
 						System.err.println("Worker " + workerID + " working on " +
 							finalJob + " for server " + cleanedUpName);
-					};
 					Signals.registerSignalProcessor("INFO", infoSignalHandlerWorking);
 
 					try {

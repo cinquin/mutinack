@@ -260,14 +260,12 @@ public class SubAnalyzerPhaser extends Phaser {
 				final SequenceLocation lowerBound =
 					new SequenceLocation(contigIndex, contigName, analysisChunk.lastProcessedPosition);
 				analysisChunk.subAnalyzers.
-				forEach(subAnalyzer -> {
-					subAnalyzer.candidateSequences.retainEntries((key, val) -> {
-						Assert.isTrue(key.contigIndex == contigIndex,
-							"Problem with contig indices, " + key + ' ' + key.contigIndex +
-								' ' + contigIndex);
-						return key.compareTo(lowerBound) >= 0;
-					});
-				});
+				forEach(subAnalyzer -> subAnalyzer.candidateSequences.retainEntries((key, val) -> {
+					Assert.isTrue(key.contigIndex == contigIndex,
+						"Problem with contig indices, " + key + ' ' + key.contigIndex +
+							' ' + contigIndex);
+					return key.compareTo(lowerBound) >= 0;
+				}));
 			}
 
 			Assert.noException(() -> {
@@ -815,7 +813,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			) {
 
 			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).
-				flatCollect(c -> c.getDuplexes()).
+				flatCollect(CandidateSequence::getDuplexes).
 				collectIf(dr -> dr.localAndGlobalQuality.getNonNullValue().atLeast(GOOD),
 					DuplexRead::getMaxDistanceToLigSite).
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)

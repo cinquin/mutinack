@@ -59,6 +59,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
@@ -361,7 +362,7 @@ public final class SubAnalyzer {
 		if (param.jiggle) {
 			List<@NonNull ExtendedSAMRecord> reorderedReads = new ArrayList<>(extSAMCache.values());
 			Collections.shuffle(reorderedReads, random);
-			reorderedReads.forEach(e -> callLoadRead.execute(e));
+			reorderedReads.forEach(callLoadRead::execute);
 		} else {
 			extSAMCache.forEachValue(callLoadRead);
 		}
@@ -460,11 +461,8 @@ public final class SubAnalyzer {
 		insertDuplexGroupSizeStats(cleanedUpDuplexes, 15, stats.duplexLocalShiftedGroupSize);
 
 		if (cleanedUpDuplexes.size() < analyzer.maxNDuplexes) {
-			cleanedUpDuplexes.forEach(d1 -> {
-				cleanedUpDuplexes.forEach(d2 -> {
-					stats.duplexDistance.insert(d1.euclideanDistanceTo(d2));
-				});
-			});
+			cleanedUpDuplexes.forEach(d1 -> cleanedUpDuplexes.forEach(d2 ->
+				stats.duplexDistance.insert(d1.euclideanDistanceTo(d2))));
 		}
 
 		for (int i = 0; i < averageClipping.length; i++) {
@@ -947,7 +945,7 @@ public final class SubAnalyzer {
 					groupBy(dr -> dr.localAndGlobalQuality.getValue());
 				if (param.enableCostlyAssertions) {
 					map.forEachKeyMultiValues((k, v) -> Assert.isTrue(Util.getDuplicates(v).isEmpty()));
-					Assert.isTrue(map.multiValuesView().collectInt(v -> v.size()).sum() == candidate.getDuplexes().size());
+					Assert.isTrue(map.multiValuesView().collectInt(RichIterable::size).sum() == candidate.getDuplexes().size());
 				}
 				@Nullable MutableSet<DuplexRead> gd = map.get(GOOD);
 				candidate.setnGoodDuplexes(gd == null ? 0 : gd.size());
@@ -1011,9 +1009,9 @@ public final class SubAnalyzer {
 			stats.nPosDuplexCandidatesForDisagreementQ2.acceptSkip0(location, result.disagQ2Coverage);
 			stats.nPosDuplexCandidatesForDisagreementQ1.acceptSkip0(location, result.disagOneStrandedCoverage);
 			if (param.computeRawMismatches) {
-				candidateSet.forEach(c -> c.getRawMismatchesQ2().forEach(result.rawMismatchesQ2::add));
-				candidateSet.forEach(c -> c.getRawInsertionsQ2().forEach(result.rawInsertionsQ2::add));
-				candidateSet.forEach(c -> c.getRawDeletionsQ2().forEach(result.rawDeletionsQ2::add));
+				candidateSet.forEach(c -> result.rawMismatchesQ2.addAll(c.getRawMismatchesQ2()));
+				candidateSet.forEach(c -> result.rawInsertionsQ2.addAll(c.getRawInsertionsQ2()));
+				candidateSet.forEach(c -> result.rawDeletionsQ2.addAll(c.getRawDeletionsQ2()));
 			}
 		}
 

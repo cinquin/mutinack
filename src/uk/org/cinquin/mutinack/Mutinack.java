@@ -627,18 +627,7 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		SAMFileWriter result = factory.makeBAMWriter(header, false, new File(path), 0);
-		closeableCloser.add(new CloseableWrapper<>(result, writer -> {
-			writer.close();
-
-			if (param.sortOutputAlignmentFile) {
-				if (!path.endsWith(".bam")) {
-					throw new IllegalArgumentException("Path " + path + " does not end with .bam");
-				}
-				try (SAMFileReader bamOutput = new SAMFileReader(new File(path))) {
-					//BuildBamIndex.createIndex(bamOutput, new File(path.replaceAll(".bam$", ".bai")));
-				}
-			}
-		}));
+		closeableCloser.add(new CloseableWrapper<>(result, SAMFileWriter::close));
 
 		return result;
 	}

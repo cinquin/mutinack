@@ -163,9 +163,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 		} else {
 			counter.getCounts().entrySet().stream().sorted((a, b) -> - ((DoubleAdderFormatter) a.getValue()).
 					compareTo((DoubleAdderFormatter) b.getValue())).forEach (e ->
-					{
-						result.append(e.getKey()).append('=').append(e.getValue()).append(", ");
-					});
+						result.append(e.getKey()).append('=').append(e.getValue()).append(", "));
 			String r = result.toString();
 			return r.isEmpty() ? "" : r.substring(0, r.length() - 2);
 		}

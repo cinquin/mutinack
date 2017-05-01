@@ -1065,7 +1065,7 @@ public final class Parameters implements Serializable, Cloneable {
 
 		@SuppressWarnings("null")
 		String requiredParams = fields.stream().map(f -> f.getAnnotation(Parameter.class)).
-				filter(a -> a != null).
+				filter(Objects::nonNull).
 				filter(a -> (!a.hidden()) && a.required()).map(a -> a.names()[0]).
 				collect(Collectors.joining(", "));
 

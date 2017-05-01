@@ -604,15 +604,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 		bottomCounter.compute();
 
 		IntMinMax<CandidateDuplexEval> ir1 = new IntMinMax<>();
-		bottomCounter.candidateCounts.forEachValue(si -> {
-			ir1.acceptMax(si.count, si);
-		});
+		bottomCounter.candidateCounts.forEachValue(si -> ir1.acceptMax(si.count, si));
 		bottom = ir1.getKeyMax();
 
 		IntMinMax<CandidateDuplexEval> ir2 = new IntMinMax<>();
-		topCounter.candidateCounts.forEachValue(si -> {
-			ir2.acceptMax(si.count, si);
-		});
+		topCounter.candidateCounts.forEachValue(si -> ir2.acceptMax(si.count, si));
 		top = ir2.getKeyMax();
 
 		final int nTopStrandsWithCandidate = topCounter.keptRecords.size();
