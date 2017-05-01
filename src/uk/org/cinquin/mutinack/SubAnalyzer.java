@@ -781,6 +781,7 @@ public final class SubAnalyzer {
 		candidateSet.forEach(candidate -> {
 			candidate.getQuality().reset();
 			candidate.getDuplexes().clear();//Should have no effect
+			candidate.resetLigSiteDistances();
 			candidate.restoreConcurringReads();
 			final Set<DuplexRead> candidateDuplexReads =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
@@ -1207,7 +1208,6 @@ public final class SubAnalyzer {
 			max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
 		}
 
-		candidate.resetLigSiteDistances();
 		if (maxDuplexQ.atLeast(DUBIOUS)) {
 			candidateDuplexes.forEach(dr -> {
 				if (dr.localAndGlobalQuality.getValue().atLeast(maxDuplexQ)) {
