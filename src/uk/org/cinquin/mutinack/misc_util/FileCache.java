@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.nustaq.serialization.FSTConfiguration;
@@ -46,7 +47,8 @@ public class FileCache<T extends Serializable> {
 	private static final Map<String, SoftReference<Object>> cache = new ConcurrentHashMap<>();
 
 	@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
-	public static <T> @NonNull T getCached(String path, String cacheExtension, Function<String, @NonNull T> processor) {
+	public static <T> @NonNull T getCached(String path, String cacheExtension, Function<String, @NonNull T> processor,
+			Predicate<T> mustRecompute) {
 		String canonicalPath;
 		try {
 			canonicalPath = new File(path + cacheExtension).getCanonicalPath();
@@ -58,13 +60,14 @@ public class FileCache<T extends Serializable> {
 		if (o != null) {
 			return (T) o;
 		}
-		@NonNull T result = getCached0(path, cacheExtension, processor);
+		@NonNull T result = getCached0(path, cacheExtension, processor, mustRecompute);
 		cache.put(canonicalPath, new SoftReference<> (result));
 		return result;
 	}
 
 	@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
-	public static <T> @NonNull T getCached0(String path, String cacheExtension, Function<String, @NonNull T> processor) {
+	public static <T> @NonNull T getCached0(String path, String cacheExtension, Function<String, @NonNull T> processor,
+			Predicate<T> mustRecompute) {
 		File cachedInfo;
 		try {
 			cachedInfo = new File(path + cacheExtension).getCanonicalFile();
@@ -80,7 +83,7 @@ public class FileCache<T extends Serializable> {
 				byte [] bytes = new byte [(int) cachedInfo.length()];
 				dataIS.readFully(bytes);
 				result = (T) conf.asObject(bytes);
-				recreate = false;
+				recreate = mustRecompute != null && mustRecompute.test(result);
 			} catch (Exception e) {
 				logger.debug("Problem reading cache from " + cachedInfo.getAbsolutePath(), e);
 			}

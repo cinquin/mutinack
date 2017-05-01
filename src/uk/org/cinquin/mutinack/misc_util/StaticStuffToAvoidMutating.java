@@ -166,6 +166,6 @@ public class StaticStuffToAvoidMutating {
 			} catch (IOException e) {
 				throw new RuntimeException("Problem reading size of contigs from reference file " + path, e);
 			}
-		}));
+		}, r -> false));
 	}
 }

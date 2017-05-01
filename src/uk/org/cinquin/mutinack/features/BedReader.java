@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,14 +85,16 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	@SuppressWarnings("resource")
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
 			List<@NonNull String> contigNames, String readerName, boolean parseScore) {
-		return FileCache.getCached(path0, cacheExtension, path -> {
+		@NonNull BedReader result = FileCache.getCached(path0, cacheExtension, path -> {
 			try {
 				return new BedReader(contigNames,
 					new BufferedReader(new FileReader(new File(path))), readerName, null, false);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-		});
+		}, r -> r.contigTrees == null);
+		Objects.requireNonNull(result.contigTrees);
+		return result;
 	}
 
 	public final static <K, V> Map<V, K> invertMap(Map<K, V> map) {
