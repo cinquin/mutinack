@@ -1077,7 +1077,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 		final DuplexRead supportingQ2 = getDuplexes().collectIf(d -> d.localAndGlobalQuality.getNonNullValue().
 			atLeast(Quality.GOOD), d -> d, new FastList<>(3)).
-			sortThis(Comparator.comparing(dr -> dr.allDuplexRecords.size())).getLast();
+			sortThis(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size()).
+				thenComparing(DuplexRead::getUnclippedAlignmentStart)).getLast();
 
 		if (Util.nullableify(supportingQ2) == null) {
 			nQ1PlusConcurringDuplexes = 0;
