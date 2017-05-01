@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IntSummaryStatistics;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -37,6 +38,7 @@ import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -1073,10 +1075,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public int computeNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
-		final DuplexRead supportingQ2 = getDuplexes().detect(d -> d.localAndGlobalQuality.getNonNullValue().
-			atLeast(Quality.GOOD));
+		final DuplexRead supportingQ2 = getDuplexes().collectIf(d -> d.localAndGlobalQuality.getNonNullValue().
+			atLeast(Quality.GOOD), d -> d, new FastList<>(3)).
+			sortThis(Comparator.comparing(dr -> dr.allDuplexRecords.size())).getLast();
 
 		if (Util.nullableify(supportingQ2) == null) {
+			nQ1PlusConcurringDuplexes = 0;
 			return 0;
 		}
 
