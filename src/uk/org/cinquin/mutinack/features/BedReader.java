@@ -126,7 +126,6 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		this.readerName = readerName;
 		bedFileIntervals = new MapOfLists<>();
 
-		int entryCount = 0;
 		final AtomicInteger lineCount = new AtomicInteger(0);
 		final AtomicInteger skipped = new AtomicInteger(0);
 
@@ -230,6 +229,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 		//NB For this to work the contig IDs used in the test function must match
 		//alphabetical order of contig names
+		int entryCount = 0;
 		for (Entry<String, List<IntervalData<GenomeInterval>>> sortedContig: sortedContigs) {
 			entryCount += sortedContig.getValue().size();
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
