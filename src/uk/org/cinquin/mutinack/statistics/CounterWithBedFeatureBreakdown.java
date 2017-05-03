@@ -54,22 +54,15 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 	private static final ThreadLocal<NumberFormat> formatterTL =
 		ThreadLocal.withInitial(() -> new DecimalFormat("0.###E0"));
 
-	@JsonIgnore
-	protected boolean on = true;
+	protected @JsonIgnore boolean on = true;
 
 	private final @NonNull Counter<GenomeInterval> counter;
-	@JsonIgnore
-	private transient final @NonNull BedReader bedFeatures;
-	@JsonIgnore
-	private @Nullable File outputFile;
-	@JsonIgnore
-	private transient final @Nullable Function<@NonNull String, @NonNull String> supplementaryInfoProvider;
-	@JsonIgnore
-	private transient final @Nullable Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName;
-	@JsonIgnore
-	private @Nullable String analyzerName = null;
-	@JsonIgnore
-	private boolean normalizedOutput = false;
+	private transient final @JsonIgnore @NonNull BedReader bedFeatures;
+	private @JsonIgnore @Nullable File outputFile;
+	private transient final @JsonIgnore @Nullable Function<@NonNull String, @NonNull String> supplementaryInfoProvider;
+	private transient final @JsonIgnore @Nullable Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName;
+	private @JsonIgnore @Nullable String analyzerName = null;
+	private @JsonIgnore boolean normalizedOutput = false;
 
 	public CounterWithBedFeatureBreakdown(@NonNull BedReader bedFeatures,
 			Map<@NonNull String, @NonNull String> refSeqToOfficialGeneName,

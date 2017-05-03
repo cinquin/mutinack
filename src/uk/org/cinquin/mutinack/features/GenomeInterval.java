@@ -43,10 +43,8 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	private final int start, end;
 	private final int length;
 	private final float score;
-	@JsonIgnore
-	private final double lengthInverse;
-	@JsonIgnore
-	private final Interval<Integer> interval;
+	private final @JsonIgnore double lengthInverse;
+	private final @JsonIgnore Interval<Integer> interval;
 	private @Nullable Boolean negativeStrand;
 
 	public GenomeInterval(String name, int contigIndex, @NonNull String contigName, int start, int end, Integer length,
