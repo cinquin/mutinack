@@ -1083,6 +1083,18 @@ public class Mutinack implements Actualizable, Closeable {
 					"-saveBEDBreakdownTo must appear same number of times");
 			}
 
+			final @Nullable Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
+			if (param.refSeqToOfficialGeneName == null) {
+				refSeqToOfficialGeneNameMap = null;
+			} else {
+				try (BufferedReader refSeqToOfficial = new BufferedReader(
+						new FileReader(param.refSeqToOfficialGeneName))) {
+					refSeqToOfficialGeneNameMap = TSVMapReader.getMap(refSeqToOfficial);
+				} catch (Exception e) {
+					throw new RuntimeException("Problem reading refseq info from " + param.refSeqToOfficialGeneName, e);
+				}
+			}
+
 			final Set<String> outputPaths = new HashSet<>();
 			int index;
 			for (index = 0; index < param.reportBreakdownForBED.size(); index++) {
@@ -1096,18 +1108,9 @@ public class Mutinack implements Actualizable, Closeable {
 					analyzer.stats.forEach(s -> {
 						CounterWithBedFeatureBreakdown counter;
 						try {
-							if (param.refSeqToOfficialGeneName == null) {
-								counter = new CounterWithBedFeatureBreakdown(filter,
-									null,
-									groupSettings);
-							} else {
-								try (BufferedReader refSeqToOfficial = new BufferedReader(
-									new FileReader(param.refSeqToOfficialGeneName))) {
-								counter = new CounterWithBedFeatureBreakdown(filter,
-									TSVMapReader.getMap(refSeqToOfficial),
-									groupSettings);
-								}
-							}
+							counter = new CounterWithBedFeatureBreakdown(filter,
+								refSeqToOfficialGeneNameMap,
+								groupSettings);
 						} catch (Exception e) {
 							throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
 						}
