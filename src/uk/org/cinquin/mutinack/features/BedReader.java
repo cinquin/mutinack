@@ -64,7 +64,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	private static final long serialVersionUID = 7826378727266972258L;
 	private static final Pattern underscorePattern = Pattern.compile("_");
 	private static final Pattern quotePattern = Pattern.compile("\"");
-	private static final boolean IGNORE_MISSING_CONTIGS = true;
+	private static final boolean IGNORE_MISSING_CONTIGS = false;
 	private final static @NonNull Optional<Boolean> TRUE_OPTIONAL = Optional.of(true);
 	private final static @NonNull Optional<Boolean> FALSE_OPTIONAL = Optional.of(false);
 	private static final Set<@NonNull String> missingContigNames = new HashSet<>();
