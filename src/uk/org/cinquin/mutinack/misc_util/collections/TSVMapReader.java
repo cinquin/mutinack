@@ -20,6 +20,7 @@ package uk.org.cinquin.mutinack.misc_util.collections;
 import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -71,6 +72,6 @@ public class TSVMapReader {
 			result.put(e.getKey(), name + '\t' + e.getValue().snd);
 		}
 
-		return result;
+		return Collections.unmodifiableMap(result);
 	}
 }
