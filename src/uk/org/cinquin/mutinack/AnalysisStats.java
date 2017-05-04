@@ -226,6 +226,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 				}
 				Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
 				Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
+				ComparablePair<Mutation, Mutation> cpMut = new ComparablePair<>(wtM, to);
+				DuplexDisagreement disag = new DuplexDisagreement(wtM, to, true, Quality.GOOD);
 
 				List<String> contigNames = groupSettings.getContigNames();
 				for (int contig = 0; contig < contigNames.size(); contig++) {
@@ -233,9 +235,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 							contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
 						SequenceLocation location = new SequenceLocation(contig,
 							Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE);
-						topBottomSubstDisagreementsQ2.accept(location, new DuplexDisagreement(wtM, to, true, Quality.GOOD), 0);
-						codingStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
-						templateStrandSubstQ2.accept(location, new ComparablePair<>(wtM, to), 0);
+						topBottomSubstDisagreementsQ2.accept(location, disag, 0);
+						codingStrandSubstQ2.accept(location, cpMut, 0);
+						templateStrandSubstQ2.accept(location, cpMut, 0);
 					}
 				}
 			}
