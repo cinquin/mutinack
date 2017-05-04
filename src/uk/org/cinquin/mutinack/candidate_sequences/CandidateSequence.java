@@ -1138,4 +1138,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return nQ1PlusConcurringDuplexes;
 	}
 
+	@Override
+	public SetMultimap<String, GenomeInterval> getMatchingGenomeIntervals() {
+		return matchingGenomeIntervals;
+	}
+
 }
