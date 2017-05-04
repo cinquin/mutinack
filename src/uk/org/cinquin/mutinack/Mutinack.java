@@ -993,11 +993,10 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			final Set<String> bedFileNames = new HashSet<>();
-
 			for (String fileName: param.reportStatsForBED) {
 				try {
 					if (!bedFileNames.add(fileName)) {
-						throw new IllegalArgumentException("Bed file " + fileName + " specified multiple times");
+						throw new AssertionFailedException();
 					}
 					final File f = new File(fileName);
 					final String filterName = f.getName();
@@ -1096,8 +1095,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			final Set<String> outputPaths = new HashSet<>();
-			int index;
-			for (index = 0; index < param.reportBreakdownForBED.size(); index++) {
+			for (int index = 0; index < param.reportBreakdownForBED.size(); index++) {
 				try {
 					final File f = new File(param.reportBreakdownForBED.get(index));
 					final BedReader filter = new BedReader(groupSettings.getContigNames(),
