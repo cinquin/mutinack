@@ -993,6 +993,18 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			}
 
+			final @NonNull Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
+			if (param.refSeqToOfficialGeneName == null) {
+				refSeqToOfficialGeneNameMap = Collections.emptyMap();
+			} else {
+				try (BufferedReader refSeqToOfficial = new BufferedReader(
+						new FileReader(param.refSeqToOfficialGeneName))) {
+					refSeqToOfficialGeneNameMap = TSVMapReader.getMap(refSeqToOfficial);
+				} catch (Exception e) {
+					throw new RuntimeException("Problem reading refseq info from " + param.refSeqToOfficialGeneName, e);
+				}
+			}
+
 			final Set<String> bedFileNames = new HashSet<>();
 			for (String fileName: param.reportStatsForBED) {
 				try {
@@ -1003,7 +1015,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final String filterName = f.getName();
 					final @NonNull GenomeFeatureTester filter =
 						BedReader.getCachedBedFileReader(fileName, ".cached",
-							groupSettings.getContigNames(), filterName);
+							groupSettings.getContigNames(), filterName, false, refSeqToOfficialGeneNameMap);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
@@ -1056,7 +1068,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
 					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-						groupSettings.getContigNames(), filterName);
+						groupSettings.getContigNames(), filterName, false, refSeqToOfficialGeneNameMap);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
 						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
@@ -1081,18 +1093,6 @@ public class Mutinack implements Actualizable, Closeable {
 			if (param.reportBreakdownForBED.size() != param.saveBEDBreakdownToPathPrefix.size()) {
 				throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
 					"-saveBEDBreakdownToPathPrefix must appear same number of times");
-			}
-
-			final @NonNull Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
-			if (param.refSeqToOfficialGeneName == null) {
-				refSeqToOfficialGeneNameMap = Collections.emptyMap();
-			} else {
-				try (BufferedReader refSeqToOfficial = new BufferedReader(
-						new FileReader(param.refSeqToOfficialGeneName))) {
-					refSeqToOfficialGeneNameMap = TSVMapReader.getMap(refSeqToOfficial);
-				} catch (Exception e) {
-					throw new RuntimeException("Problem reading refseq info from " + param.refSeqToOfficialGeneName, e);
-				}
 			}
 
 			final Set<String> outputPaths = new HashSet<>();
