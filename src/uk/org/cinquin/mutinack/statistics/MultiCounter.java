@@ -17,6 +17,7 @@
 package uk.org.cinquin.mutinack.statistics;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
@@ -24,7 +25,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.jdo.annotations.PersistenceCapable;
 
@@ -270,9 +270,18 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 
 	@Override
 	public void actualize() {
-		Stream.concat(counters.values().stream(), seqLocCounters.values().
-			stream()).map(p -> p.snd).filter(o -> o instanceof Actualizable).
-			forEach(a -> ((Actualizable) a).actualize());
+		actualizeValues(counters.values());
+		actualizeValues(seqLocCounters.values());
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void actualizeValues(@SuppressWarnings("rawtypes") Collection values) {
+		values.forEach(o -> {
+			Pair<?, ?> p = (Pair<?, ?>) o;
+			if (p.snd instanceof Actualizable) {
+				((Actualizable) p.snd).actualize();
+			}
+		});
 	}
 
 }

@@ -280,8 +280,12 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@Override
 	public void actualize() {
 		//TODO Finish this
-		map.values().stream().filter(o -> o instanceof Actualizable).
-			forEach(a -> ((Actualizable) a).actualize());
+		map.forEachValue(val -> {
+			if (val instanceof Actualizable) {
+				((Actualizable) val).actualize();
+			}
+			return true;
+		});
 	}
 
 }
