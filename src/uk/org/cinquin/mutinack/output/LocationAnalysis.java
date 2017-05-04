@@ -32,4 +32,11 @@ public class LocationAnalysis implements Serializable {
 		return this;
 	}
 
+	@Override
+	public String toString() {
+		return crossSampleLocationAnalysis +
+			(candidates.isEmpty() ? "" : ("; candidates: " + candidates)) +
+			(disagreements.isEmpty() ? "" : ("; disagreements: " + disagreements));
+	}
+
 }

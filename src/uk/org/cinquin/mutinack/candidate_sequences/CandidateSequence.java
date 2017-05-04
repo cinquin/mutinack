@@ -258,7 +258,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public String toString() {
-		String result = getMutationType().toString();
+		String result = goodCandidateForUniqueMutation ? "*" : "";
+		result += getnQ1PlusConcurringDuplexes() + " ";
+		result += getMutationType().toString();
 		switch(getMutationType()) {
 			case WILDTYPE:
 				break;
@@ -273,7 +275,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			default:
 				throw new AssertionFailedException();
 		}
-		result += " at " + getLocation() + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
+		result += " at " + getLocation() + " " + matchingGenomeIntervals + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
 		return result;
 	}
 
