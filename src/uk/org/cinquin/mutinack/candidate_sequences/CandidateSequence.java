@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IntSummaryStatistics;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -35,10 +34,13 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
 import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
+import org.eclipse.collections.api.multimap.set.SetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -47,6 +49,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import gnu.trove.TByteCollection;
 import gnu.trove.list.array.TByteArrayList;
+import gnu.trove.map.TMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
@@ -61,6 +64,7 @@ import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.features.BedComplement;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
+import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.Util;
@@ -143,6 +147,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private boolean hidden = false;
 	private Boolean negativeCodingStrand;
 	private @Persistent boolean goodCandidateForUniqueMutation;
+	@Persistent SetMultimap<String, GenomeInterval> matchingGenomeIntervals;
 
 	@JsonIgnore private transient Mutation mutation;
 
@@ -170,6 +175,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		largestConcurringDuplexDistance = -1;
 		nQ1PlusConcurringDuplexes = -1;
 		setGoodCandidateForUniqueMutation(false);
+		matchingGenomeIntervals = null;
 	}
 
 	@Override
@@ -797,7 +803,18 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return sampleName;
 	}
 
-	@SuppressWarnings("resource")
+	public void recordMatchingGenomeInvervals(TMap<String, GenomeFeatureTester> annotationSets) {
+		MutableSetMultimap<String, GenomeInterval> result = new UnifiedSetMultimap<>();
+		annotationSets.forEachEntry((setName, tester) -> {
+			if (tester instanceof BedComplement) {
+				return true;
+			}
+			tester.apply(location).forEach(gi -> result.put(setName, gi));
+			return true;
+		});
+		matchingGenomeIntervals = result.toImmutable();
+	}
+
 	@Override
 	public @NonNull String toOutputString(Parameters param, LocationExaminationResults examResults) {
 		StringBuilder result = new StringBuilder();
@@ -873,18 +890,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
 			);
 
-		boolean needComma = false;
-		final Mutinack analyzer = getOwningAnalyzer();
-		for (Entry<String, GenomeFeatureTester> a: analyzer.filtersForCandidateReporting.entrySet()) {
-			if (!(a.getValue() instanceof BedComplement) && a.getValue().test(location)) {
-				if (needComma) {
-					result.append(", ");
-				}
-				needComma = true;
-				Object val = a.getValue().apply(location);
-				result.append(a.getKey() + (val != null ? (": " + val) : ""));
-			}
-		}
+		/*result.append(matchingGenomeIntervals.keyMultiValuePairsView().
+			collect(p -> p.getOne().toString() + ": " + p.getTwo().makeString(", ")).
+			makeString("; "));*/
+		result.append(matchingGenomeIntervals);
 
 		return result.toString();
 	}

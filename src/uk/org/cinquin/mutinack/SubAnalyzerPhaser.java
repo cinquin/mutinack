@@ -651,6 +651,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				}
 
+				matchingSACandidate.recordMatchingGenomeInvervals(sa.analyzer.filtersForCandidateReporting);
+
 				if (doOutput && (sa.stats.detectionOutputStream != null ||
 							sa.stats.annotationOutputStream != null)) {
 					outputCandidate(sa.analyzer, matchingSACandidate, location,
