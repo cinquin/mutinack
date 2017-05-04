@@ -81,7 +81,7 @@ public class DuplexAssayToQualityMapTest {
 		return values[(int) Math.round(Math.random() * (values.length - 1))];
 	}
 
-	@SuppressWarnings({"static-method", "CollectionIncompatibleType"})
+	@SuppressWarnings({"static-method", "CollectionIncompatibleType", "unlikely-arg-type"})
 	@Test
 	public void test() {
 
