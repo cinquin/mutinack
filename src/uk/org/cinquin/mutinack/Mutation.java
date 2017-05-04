@@ -29,7 +29,7 @@ import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
 
-public final class Mutation implements Comparable<Mutation>, Serializable {
+public final class Mutation implements Comparable<Mutation>, Serializable, Cacheable {
 
 	private static final long serialVersionUID = 6679657529214343514L;
 	public final @NonNull MutationType mutationType;
@@ -198,6 +198,11 @@ public final class Mutation implements Comparable<Mutation>, Serializable {
 
 	public void setTemplateStrand(Optional<Boolean> templateStrand) {
 		this.templateStrand = templateStrand.orElse(null);
+	}
+
+	@Override
+	public boolean shouldCache() {
+		return mutationSequence == null || mutationSequence.length < 3;
 	}
 
 }

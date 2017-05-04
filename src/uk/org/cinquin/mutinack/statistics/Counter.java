@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,9 @@ import org.eclipse.jdt.annotation.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
+import gnu.trove.map.TMap;
 import gnu.trove.map.hash.THashMap;
+import uk.org.cinquin.mutinack.Cacheable;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.misc_util.Handle;
@@ -52,7 +55,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@JsonIgnore
 	protected final boolean sortByValue;
 	@JsonUnwrapped
-	private final @NonNull THashMap<Object, @NonNull Object> map = new THashMap<>(4, 0.1f);
+	private final @NonNull TMap<Object, @NonNull Object> map = new THashMap<>(4, 0.1f);
 	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
 	@JsonIgnore
@@ -129,7 +132,17 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 			accept(t, (double) l);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes", "null" })
+	private static final Map<Object, Object> keyCache = new ConcurrentHashMap<>(500, 0.2f);
+
+	@SuppressWarnings("null")
+	private static @NonNull Object getCachedKey(@NonNull Object key) {
+		if (!(key instanceof Cacheable) || !((Cacheable) key).shouldCache()) {
+			return key;
+		}
+		return keyCache.computeIfAbsent(key, k -> k);
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void accept(@NonNull Object t, Consumer<DoubleAdderFormatter> action, int offset) {
 		@NonNull Object index = t;
 		boolean terminal = true;
@@ -147,6 +160,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 				preExistingValue = map.get(index);
 				if (preExistingValue == null) {
 					if (terminal) {
+						index = getCachedKey(index);
 						preExistingValue = new DoubleAdderFormatter();
 					} else {
 						preExistingValue = new Counter<>(sortByValue, groupSettings);

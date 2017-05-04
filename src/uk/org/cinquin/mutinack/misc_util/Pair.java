@@ -28,10 +28,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 import uk.org.cinquin.final_annotation.Final;
+import uk.org.cinquin.mutinack.Cacheable;
 
 //Adapted from http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
 @Immutable
-public class Pair<A,B> implements Serializable {
+public class Pair<A,B> implements Serializable, Cacheable {
 
 	private static final long serialVersionUID = -1873509799696495621L;
 	@JsonIgnore @Final public @NonNull A fst;
@@ -110,6 +111,14 @@ public class Pair<A,B> implements Serializable {
 			index++;
 		}
 		return result;
+	}
+
+	@Override
+	public boolean shouldCache() {
+		if (!(fst instanceof Cacheable) || !(snd instanceof Cacheable)) {
+			return false;
+		}
+		return ((Cacheable) fst).shouldCache() && ((Cacheable) snd).shouldCache();
 	}
 
 }
