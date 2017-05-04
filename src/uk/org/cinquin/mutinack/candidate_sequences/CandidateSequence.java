@@ -1069,18 +1069,22 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		this.negativeCodingStrand = negativeCodingStrand;
 	}
 
+	@Override
 	public int getSmallestConcurringDuplexDistance() {
 		return smallestConcurringDuplexDistance;
 	}
 
+	@Override
 	public int getLargestConcurringDuplexDistance() {
 		return largestConcurringDuplexDistance;
 	}
 
+	@Override
 	public void setGoodCandidateForUniqueMutation(boolean b) {
 		goodCandidateForUniqueMutation = b;
 	}
 
+	@Override
 	public boolean isGoodCandidateForUniqueMutation() {
 		return goodCandidateForUniqueMutation;
 	}
@@ -1134,6 +1138,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return nConcurringDuplexes;
 	}
 
+	@Override
 	public int getnQ1PlusConcurringDuplexes() {
 		return nQ1PlusConcurringDuplexes;
 	}

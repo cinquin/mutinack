@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 import java.io.Serializable;
 import java.util.Collection;
 
+import org.eclipse.collections.api.multimap.set.SetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -34,6 +35,7 @@ import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
+import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
 import uk.org.cinquin.mutinack.qualities.DetailedQualities;
@@ -130,5 +132,11 @@ public interface CandidateSequenceI extends Serializable {
 	byte getMedianPhredScore();
 	@Nullable Boolean getNegativeCodingStrand();
 	void setNegativeCodingStrand(@Nullable Boolean negativeCodingStrand);
+	int getSmallestConcurringDuplexDistance();
+	int getLargestConcurringDuplexDistance();
+	void setGoodCandidateForUniqueMutation(boolean b);
+	boolean isGoodCandidateForUniqueMutation();
+	int getnQ1PlusConcurringDuplexes();
+	SetMultimap<String, GenomeInterval> getMatchingGenomeIntervals();
 
 }
