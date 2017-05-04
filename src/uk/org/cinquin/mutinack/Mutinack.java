@@ -100,6 +100,7 @@ import contrib.nf.fr.eraasoft.pool.PoolSettings;
 import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
+import gnu.trove.map.TMap;
 import gnu.trove.map.hash.THashMap;
 import uk.org.cinquin.mutinack.database.DatabaseOutput0;
 import uk.org.cinquin.mutinack.distributed.Server;
@@ -233,7 +234,7 @@ public class Mutinack implements Actualizable, Closeable {
 	final double @Nullable[] insertSizeProbSmooth;
 	private final double @Nullable[] insertSizeProbRaw;
 	final @NonNull Collection<File> intersectAlignmentFiles;
-	final @NonNull public Map<String, GenomeFeatureTester> filtersForCandidateReporting = new HashMap<>();
+	final @NonNull public TMap<String, GenomeFeatureTester> filtersForCandidateReporting = new THashMap<>();
 	@Nullable GenomeFeatureTester codingStrandTester;
 	final byte @NonNull[] constantBarcode;
 	final int maxNDuplexes;
@@ -809,7 +810,7 @@ public class Mutinack implements Actualizable, Closeable {
 		for (String bed: param.excludeRegionsInBED) {
 			try {
 				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-					groupSettings.getContigNames(), bed, false);
+					groupSettings.getContigNames(), bed);
 				excludeBEDs.add(reader);
 			} catch (Exception e) {
 				throw new RuntimeException("Problem with BED file " + bed, e);
@@ -820,7 +821,7 @@ public class Mutinack implements Actualizable, Closeable {
 		for (String bed: param.repetiveRegionBED) {
 			try {
 				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-					groupSettings.getContigNames(), bed, false);
+					groupSettings.getContigNames(), bed);
 				repetitiveBEDs.add(reader);
 			} catch (Exception e) {
 				throw new RuntimeException("Problem with BED file " + bed, e);
@@ -985,7 +986,7 @@ public class Mutinack implements Actualizable, Closeable {
 			if (param.bedDisagreementOrienter != null) {
 				try {
 					analyzer.codingStrandTester = BedReader.getCachedBedFileReader(param.bedDisagreementOrienter, ".cached",
-						groupSettings.getContigNames(), "", false);
+						groupSettings.getContigNames(), "");
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " +
 						param.bedDisagreementOrienter, e);
@@ -1002,7 +1003,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final String filterName = f.getName();
 					final @NonNull GenomeFeatureTester filter =
 						BedReader.getCachedBedFileReader(fileName, ".cached",
-							groupSettings.getContigNames(), filterName, false);
+							groupSettings.getContigNames(), filterName);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
@@ -1055,7 +1056,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
 					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-						groupSettings.getContigNames(), filterName, false);
+						groupSettings.getContigNames(), filterName);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
 						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
@@ -1082,9 +1083,9 @@ public class Mutinack implements Actualizable, Closeable {
 					"-saveBEDBreakdownToPathPrefix must appear same number of times");
 			}
 
-			final @Nullable Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
+			final @NonNull Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
 			if (param.refSeqToOfficialGeneName == null) {
-				refSeqToOfficialGeneNameMap = null;
+				refSeqToOfficialGeneNameMap = Collections.emptyMap();
 			} else {
 				try (BufferedReader refSeqToOfficial = new BufferedReader(
 						new FileReader(param.refSeqToOfficialGeneName))) {
@@ -1098,10 +1099,12 @@ public class Mutinack implements Actualizable, Closeable {
 			for (int index = 0; index < param.reportBreakdownForBED.size(); index++) {
 				try {
 					final File f = new File(param.reportBreakdownForBED.get(index));
-					final BedReader filter = new BedReader(groupSettings.getContigNames(),
+					final BedReader filter = new BedReader(
+						groupSettings.getContigNames(),
 						new BufferedReader(new FileReader(f)), f.getName(),
 						param.bedFeatureSuppInfoFile == null ? null :
-							new BufferedReader(new FileReader(param.bedFeatureSuppInfoFile)), false);
+							new BufferedReader(new FileReader(param.bedFeatureSuppInfoFile)),
+						refSeqToOfficialGeneNameMap, false);
 					int index0 = index;
 					analyzer.stats.forEach(s -> {
 						CounterWithBedFeatureBreakdown counter;

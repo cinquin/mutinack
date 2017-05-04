@@ -38,6 +38,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 
 	private static final long serialVersionUID = -8173244932350184778L;
 	public final String name;
+	public final String geneName;
 	public final @NonNull String contigName;
 	public final int contigIndex;
 	private final int start, end;
@@ -48,7 +49,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	private @Nullable Boolean negativeStrand;
 
 	public GenomeInterval(String name, int contigIndex, @NonNull String contigName, int start, int end, Integer length,
-			@NonNull Optional<Boolean> negativeStrand, float score) {
+			@NonNull Optional<Boolean> negativeStrand, float score, String geneName) {
 		this.name = name;
 		this.contigName = contigName;
 		this.contigIndex = contigIndex;
@@ -59,6 +60,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 		interval = Interval.toInterval(start, end);
 		this.negativeStrand = negativeStrand.orElse(null);
 		this.score = score;
+		this.geneName = geneName;
 	}
 
 	private static final Optional<Boolean> optionalTrue = Optional.of(true);

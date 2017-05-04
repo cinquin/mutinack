@@ -41,7 +41,8 @@ public class BedFileExpMovingAverage {
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws IOException, ParseRTException {
-		final String refFile = args[0];
+		@SuppressWarnings("null")
+		final @NonNull String refFile = args[0];
 		final double alpha = Double.parseDouble(args[1]);
 		final boolean parseExpressionLevel = args.length >= 3 && args[2].equals("-parseExpressionLevel");
 		final double truncate = args.length >= 4 ? Double.parseDouble(args[3]) : Double.MAX_VALUE;
@@ -54,7 +55,7 @@ public class BedFileExpMovingAverage {
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
 
 			BedReader bedReader = new BedReader(contigNames,
-					new BufferedReader(fileReader), refFile, null, false);
+					new BufferedReader(fileReader), refFile, null);
 
 			for (int contig = 0; contig < contigNames.size(); contig++) {
 				double v = 0;

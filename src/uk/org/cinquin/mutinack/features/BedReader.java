@@ -84,17 +84,24 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 	@SuppressWarnings("resource")
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			List<@NonNull String> contigNames, String readerName, boolean parseScore) {
+			List<@NonNull String> contigNames, @NonNull String readerName, boolean parseScore,
+			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap) {
 		@NonNull BedReader result = FileCache.getCached(path0, cacheExtension, path -> {
 			try {
 				return new BedReader(contigNames,
-					new BufferedReader(new FileReader(new File(path))), readerName, null, false);
+					new BufferedReader(new FileReader(new File(path))), readerName, null, transcriptToGeneNameMap, false);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}, r -> r.contigTrees == null);
 		Objects.requireNonNull(result.contigTrees);
 		return result;
+	}
+
+	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
+			List<@NonNull String> contigNames, @NonNull String readerName) {
+		return getCachedBedFileReader(path0, cacheExtension, contigNames, readerName,
+			false, Collections.emptyMap());
 	}
 
 	public final static <K, V> Map<V, K> invertMap(Map<K, V> map) {
@@ -117,9 +124,21 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		return result;
 	}
 
-	@SuppressWarnings("null")
-	public BedReader(List<@NonNull String> contigNames, BufferedReader reader,
-			String readerName, BufferedReader suppInfoReader, boolean parseScore) throws ParseRTException {
+	public BedReader(
+			List<@NonNull String> contigNames,
+			BufferedReader reader,
+			@NonNull String readerName,
+			BufferedReader suppInfoReader) {
+		this(contigNames, reader, readerName, suppInfoReader, Collections.emptyMap(), false);
+	}
+
+	public BedReader(
+			List<@NonNull String> contigNames,
+			BufferedReader reader,
+			@NonNull String readerName,
+			BufferedReader suppInfoReader,
+			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
+			boolean parseScore) throws ParseRTException {
 
 		Map<String, Integer> reverseIndex = invertList(contigNames);
 
@@ -132,7 +151,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		for (int i = 0; i < contigNames.size(); i++) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(contigNames.get(i), new IntervalTree.IntervalData<>(-1, -1,
-					new GenomeInterval("", i, contigNames.get(i), -1, -1, null, Optional.empty(), 0)));
+					new GenomeInterval("", i, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null)));
 		}
 
 		try(Stream<String> lines = reader.lines()) {
@@ -210,7 +229,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						}
 					}
 					GenomeInterval interval = new GenomeInterval(name, contigIndex,
-							/*contig*/ components[0], start, end, length, strandPolarity, score);
+							/*contig*/ components[0], start, end, length, strandPolarity, score,
+							transcriptToGeneNameMap.get(name));
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
 				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);

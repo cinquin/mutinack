@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,7 +62,7 @@ public class BedFileDisagScoreLookup {
 		final BedReader scores;
 		try (BufferedReader br = new BufferedReader(new FileReader(
 				new File(scoreBedFile)))) {
-			scores = new BedReader(contigNames, br, "scores reader", null, true);
+			scores = new BedReader(contigNames, br, "scores reader", null, Collections.emptyMap(), true);
 		}
 
 		SettableInteger inRange = new SettableInteger(0);
