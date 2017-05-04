@@ -529,8 +529,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return getMutableConcurringReads().remove(er);
 	}
 
-	@Override
-	public void restoreConcurringReads() {
+	private void restoreConcurringReads() {
 		if (originalConcurringReads != null) {
 			concurringReads = originalConcurringReads;
 			originalConcurringReads = null;

@@ -103,7 +103,6 @@ public interface CandidateSequenceI extends Serializable {
 	int getNegativeStrandCount();
 	void incrementPositiveStrandCount(int i);
 	void incrementNegativeStrandCount(int i);
-	void restoreConcurringReads();
 	boolean isHidden();
 	int removeConcurringRead(@NonNull ExtendedSAMRecord r);
 	void setMedianPhredAtPosition(byte positionMedianPhred);
