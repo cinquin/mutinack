@@ -109,7 +109,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setnWrongPairs(int count);
 	int getnWrongPairs();
 	@NonNull TObjectLongHashMap<DuplexRead> getIssues();
-	void resetLigSiteDistances();
+	void reset();
 	void acceptLigSiteDistance(int maxDistanceToLigSite);
 	void setnGoodDuplexesIgnoringDisag(int size);
 	int getnGoodDuplexesIgnoringDisag();

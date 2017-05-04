@@ -158,7 +158,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int refPositionOfMateLigationSite = 1;
 
 	@Override
-	public void resetLigSiteDistances() {
+	public void reset() {
+		restoreConcurringReads();
+		getQuality().reset();
+		getDuplexes().clear();//Should have no effect
 		setMinDistanceToLigSite(Integer.MAX_VALUE);
 		setMaxDistanceToLigSite(Integer.MIN_VALUE);
 		setMeanDistanceToLigSite(Float.NaN);

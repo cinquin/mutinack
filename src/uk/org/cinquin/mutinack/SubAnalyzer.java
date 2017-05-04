@@ -779,10 +779,7 @@ public final class SubAnalyzer {
 			new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 
 		candidateSet.forEach(candidate -> {
-			candidate.getQuality().reset();
-			candidate.getDuplexes().clear();//Should have no effect
-			candidate.resetLigSiteDistances();
-			candidate.restoreConcurringReads();
+			candidate.reset();
 			final Set<DuplexRead> candidateDuplexReads =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			List<ExtendedSAMRecord> discarded = Lists.mutable.empty();
