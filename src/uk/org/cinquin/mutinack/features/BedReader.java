@@ -72,7 +72,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	@JsonIgnore
 	public final transient MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
 	@JsonIgnore
-	private final transient List<IntervalTree<GenomeInterval>> contigTrees = new ArrayList<>();
+	private final transient List<IntervalTree<@NonNull GenomeInterval>> contigTrees = new ArrayList<>();
 	@JsonIgnore
 	private final transient @NonNull Map<@NonNull String, @NonNull String> suppInfo;
 	private final String readerName;
@@ -244,13 +244,13 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			}
 		}
 
-		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs =
+		List<Entry<@NonNull String, @NonNull List<@NonNull IntervalData<@NonNull GenomeInterval>>>> sortedContigs =
 				bedFileIntervals.entrySet().stream().sorted(Comparator.comparing(Entry::getKey)).collect(Collectors.toList());
 
 		//NB For this to work the contig IDs used in the test function must match
 		//alphabetical order of contig names
 		int entryCount = 0;
-		for (Entry<String, List<IntervalData<GenomeInterval>>> sortedContig: sortedContigs) {
+		for (Entry<String, @NonNull List<IntervalData<@NonNull GenomeInterval>>> sortedContig: sortedContigs) {
 			entryCount += sortedContig.getValue().size();
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
@@ -313,15 +313,15 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	 * @see uk.org.cinquin.duplex_analysis.features.BedFeatureTester#apply(uk.org.cinquin.duplex_analysis.SequenceLocation)
 	 */
 	@Override
-	public Collection<GenomeInterval> apply(SequenceLocation loc) {
+	public @NonNull Collection<@NonNull GenomeInterval> apply(SequenceLocation loc) {
 		return contigTrees.get(loc.contigIndex).query(loc.position).getUnprotectedData();
 	}
 
-	public void forEach(SequenceLocation loc, Predicate<GenomeInterval> keepGoingPredicate) {
+	public void forEach(SequenceLocation loc, Predicate<@NonNull GenomeInterval> keepGoingPredicate) {
 		contigTrees.get(loc.contigIndex).forEach(loc.position, keepGoingPredicate);
 	}
 
-	public void forEach(Consumer<GenomeInterval> action) {
+	public void forEach(Consumer<@NonNull GenomeInterval> action) {
 		contigTrees.forEach(tree -> tree.forEach(action));
 	}
 

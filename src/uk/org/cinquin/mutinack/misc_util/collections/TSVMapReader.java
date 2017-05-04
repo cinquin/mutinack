@@ -40,9 +40,8 @@ import uk.org.cinquin.mutinack.misc_util.Pair;
 public class TSVMapReader {
 	static final Logger logger = LoggerFactory.getLogger(TSVMapReader.class);
 
-	@SuppressWarnings("null")
-	public static Map<@NonNull String, @NonNull String> getMap(BufferedReader r) {
-		Map<String, Pair<Set<String>, Set<String>>> tempMap = new HashMap<>();
+	public static @NonNull Map<@NonNull String, @NonNull String> getMap(BufferedReader r) {
+		Map<@NonNull String, Pair<Set<String>, Set<String>>> tempMap = new HashMap<>();
 		try(Stream<String> lines = r.lines()) {
 			lines.forEachOrdered(l -> {
 				@NonNull String[] components = l.split("\t");
@@ -62,9 +61,9 @@ public class TSVMapReader {
 			});
 		}
 
-		Map<String, String> result = new HashMap<>();
+		Map<@NonNull String, @NonNull String> result = new HashMap<>();
 
-		for (Entry<String, Pair<Set<String>, Set<String>>> e: tempMap.entrySet()) {
+		for (Entry<@NonNull String, Pair<Set<String>, Set<String>>> e: tempMap.entrySet()) {
 			Set<String> geneNames = e.getValue().fst;
 			final String name;
 			Assert.isFalse(geneNames.isEmpty());

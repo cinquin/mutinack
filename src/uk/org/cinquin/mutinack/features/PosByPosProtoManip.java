@@ -94,7 +94,7 @@ public class PosByPosProtoManip {
 		public boolean invertInputs;
 
 		@Parameter(names = "-domainBedFile", description = "Only domains defined in following bed file will be used for histogram computation", required = false)
-		public String domainBedFile = "";
+		public @NonNull String domainBedFile = "";
 
 		@Parameter(names = "-output", description = "File name or - for stdout", required = true)
 		public String output;

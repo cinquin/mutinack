@@ -16,23 +16,23 @@
  */
 package uk.org.cinquin.mutinack.features;
 
-import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
-
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-public interface GenomeFeatureTester extends Function<SequenceLocation, Collection<GenomeInterval>>,
-		SerializablePredicate<SequenceLocation> {
+import uk.org.cinquin.mutinack.SequenceLocation;
+import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
+
+public interface GenomeFeatureTester extends Function<SequenceLocation,
+	@NonNull Collection<@NonNull GenomeInterval>>, SerializablePredicate<SequenceLocation> {
 
 	@Override
 	boolean test(SequenceLocation loc);
 
 	@Override
-	Collection<GenomeInterval> apply(SequenceLocation loc);
+	@NonNull Collection<@NonNull GenomeInterval> apply(SequenceLocation loc);
 
 	@NonNull Optional<Boolean> getNegativeStrand(SequenceLocation loc);
 

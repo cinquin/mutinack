@@ -40,7 +40,7 @@ public class BedComplement implements GenomeFeatureTester, Serializable {
 	}
 
 	@Override
-	public Collection<GenomeInterval> apply(SequenceLocation t) {
+	public @NonNull Collection<@NonNull GenomeInterval> apply(SequenceLocation t) {
 		throw new RuntimeException("Unimplemented");
 	}
 
