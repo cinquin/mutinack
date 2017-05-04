@@ -750,9 +750,9 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@FilePathList
 	@NoDuplicates
-	@Parameter(names = "-saveBEDBreakdownTo", description = "Path for saving of BED region counts; argument " +
+	@Parameter(names = {"-saveBEDBreakdownToPathPrefix", "-saveBEDBreakdownTo"}, description = "Path prefix for saving of BED region counts; argument " +
 		" list must match that given to -reportBreakdownForBED", required = false)
-	public List<@NonNull String> saveBEDBreakdownTo = new ArrayList<>();
+	public List<@NonNull String> saveBEDBreakdownToPathPrefix = new ArrayList<>();
 
 	@FilePath
 	@Parameter(names = "-bedFeatureSuppInfoFile", description = "Read genome annotation supplementary info, used in output of counter with BED feature breakdown")

@@ -1078,9 +1078,9 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			}
 
-			if (param.reportBreakdownForBED.size() != param.saveBEDBreakdownTo.size()) {
+			if (param.reportBreakdownForBED.size() != param.saveBEDBreakdownToPathPrefix.size()) {
 				throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
-					"-saveBEDBreakdownTo must appear same number of times");
+					"-saveBEDBreakdownToPathPrefix must appear same number of times");
 			}
 
 			final @Nullable Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
@@ -1115,10 +1115,9 @@ public class Mutinack implements Actualizable, Closeable {
 							throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
 						}
 
-						String outputPath = param.saveBEDBreakdownTo.get(index0) + s.getName();
+						String outputPath = param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName();
 						if (!outputPaths.add(outputPath)) {
-							throw new IllegalArgumentException("saveBEDBreakdownTo " + outputPath +
-								" specified multiple times");
+							throw new AssertionFailedException();
 						}
 						counter.setOutputFile(new File(outputPath + "_nPosDuplex.bed"));
 						s.nPosDuplex.addPredicate(f.getName(), filter, counter);
@@ -1137,7 +1136,7 @@ public class Mutinack implements Actualizable, Closeable {
 						counter.setAnalyzerName(name);
 
 						counter = new CounterWithBedFeatureBreakdown(filter, null, groupSettings);
-						counter.setOutputFile(new File(param.saveBEDBreakdownTo.get(index0) + s.getName() +
+						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName() +
 							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
 					});
