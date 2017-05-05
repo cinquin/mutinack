@@ -16,6 +16,7 @@ addons:
 
 before_install:
   - sudo apt-get update
+  - sudo apt-get install ant-optional
   - sudo apt-get install perl
   - sudo apt-get install gettext
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
