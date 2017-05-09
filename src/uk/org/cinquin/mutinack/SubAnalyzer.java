@@ -138,10 +138,10 @@ public final class SubAnalyzer {
 
 	public static final @NonNull Set<DuplexAssay>
 		assaysToIgnoreForDisagreementQuality
-		= Collections.unmodifiableSet(EnumSet.copyOf(Collections.singletonList(DISAGREEMENT))),
+		= Collections.unmodifiableSet(EnumSet.of(DISAGREEMENT)),
 
 		assaysToIgnoreForDuplexNStrands
-		= Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(N_READS_PER_STRAND, MISSING_STRAND)));
+		= Collections.unmodifiableSet(EnumSet.of(N_READS_PER_STRAND, MISSING_STRAND));
 
 	static final @NonNull TByteObjectMap<@NonNull String> byteMap;
 	static {
