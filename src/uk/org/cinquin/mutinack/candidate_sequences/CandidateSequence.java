@@ -1093,7 +1093,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
 		final DuplexRead supportingQ2 = getDuplexes().collectIf(d -> d.localAndGlobalQuality.getNonNullValue().
-			atLeast(Quality.GOOD), d -> d, new FastList<>(3)).
+				atLeast(Quality.GOOD), d -> d, new FastList<>(3)).
 			sortThis(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size()).
 				thenComparing(DuplexRead::getUnclippedAlignmentStart)).getLast();
 
