@@ -141,7 +141,7 @@ public final class SubAnalyzer {
 		= Collections.unmodifiableSet(EnumSet.of(DISAGREEMENT)),
 
 		assaysToIgnoreForDuplexNStrands
-		= Collections.unmodifiableSet(EnumSet.of(N_READS_PER_STRAND, MISSING_STRAND));
+		= Collections.unmodifiableSet(EnumSet.of(N_READS_PER_STRAND, MISSING_STRAND, DuplexAssay.TOTAL_N_READS_Q2));
 
 	static final @NonNull TByteObjectMap<@NonNull String> byteMap;
 	static {
