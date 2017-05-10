@@ -59,6 +59,9 @@ public class IteratorPrefetcher<T> implements Iterator<T>, Closeable {
 			final @Nullable Closeable closeWhenDone,
 			final Consumer<T> preProcessor,
 			final @Nullable Histogram nReadsInPrefetchQueue) {
+		if (nReadAhead < 1) {
+			throw new IllegalArgumentException();
+		}
 		this.closeWhenDone = closeWhenDone;
 		minQueueSize = nReadAhead;
 		Runnable r = new Runnable() {
