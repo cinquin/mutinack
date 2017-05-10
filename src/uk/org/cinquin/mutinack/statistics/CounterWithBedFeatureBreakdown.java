@@ -112,7 +112,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 				counter.getCounts().entrySet().stream().mapToDouble(e ->
 					((DoubleAdderFormatter) e.getValue()).sum()).
 				filter(d -> d!= 0).
-				average().getAsDouble())).
+				average().orElse(Double.NaN))).
 		append('\n');
 		return result.toString();
 	}
