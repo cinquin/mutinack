@@ -137,7 +137,7 @@ clean_results:
 	@find . -name '*control_mutations.bed' -delete -or -name '*control_top_bottom_disag.bed' -delete -or -name '*test_mutations.bed' -delete -or -name '*test_top_bottom_disag.bed' -delete -or -name '*_coverage.bed' -delete -or -name '*_coverage.proto' -delete -or -name '*main_stats_.bed' -delete -or -name '*main_stats.bed' -delete -or -name '*ins_stats_.bed' -delete -or -name '*ins_stats.bed' -not -name 'expected_*' -delete -or -name '*_coverage.txt' -not -name 'expected_*' -delete -or -name '*_nPosDuplex.bed' -not -name 'expected_*' -delete -or -name '*.json' -delete -or -name 'labeled_reads.bam' -delete -or -name 'labeled_reads.bam.bai' -delete -or -name 'labeled_reads.bai' -delete -or -name 'run.out' -delete -or -name '*.out.bin' -delete -or -name '*randomizeStrand=*' -delete
 
 clean_check:
-	find . -name 'run.out.check' -delete
+	find . -name 'run.out.check' -delete -or -name 'custom_check' -delete
 
 clean_jars:
 	find . -mindepth 2 -name '*.jar' -delete
