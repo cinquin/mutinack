@@ -115,6 +115,7 @@
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
            <compilerarg value="-XDignore.symbol.file"/>
+           <compilerarg value="-parameters"/>
            <src path="src"/>
            <include name="contrib/edu/**/*.java"/>
            <include name="contrib/net/**/*.java"/>
@@ -125,6 +126,7 @@
 
         <javac compiler="com.google.errorprone.ErrorProneAntCompilerAdapter" encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
            <compilerarg value="-XDignore.symbol.file"/>
+           <compilerarg value="-parameters"/>
            <compilerarg value="-Xep:Finally:OFF"/>
            <compilerarg value="-Xep:DefaultCharset:OFF"/>
            <src path="src"/>
