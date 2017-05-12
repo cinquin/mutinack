@@ -357,17 +357,25 @@ public class SubAnalyzerPhaser extends Phaser {
 		final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
 
 		analysisChunk.subAnalyzers.forEach(
-			sa -> registerAndAnalyzeCoverage(
-				Objects.requireNonNull(locationExamResultsMap.get(sa)),
-				tooHighCoverage,
-				mutationToAnnotate,
-				Objects.requireNonNull(sa.stats),
-				location,
-				locationExamResultsMap,
-				sa.analyzer,
-				groupSettings.mutationsToAnnotate,
-				sa.analyzer.codingStrandTester,
-				repetitiveBEDs)
+			sa -> {
+				sa.incrementednPosDuplexQualityQ2OthersQ1Q2 = false;
+				sa.c1 = false;
+				sa.c2 = false;
+				sa.c3 = false;
+				sa.c4 = false;
+				sa.processed = false;
+				registerAndAnalyzeCoverage(
+					Objects.requireNonNull(locationExamResultsMap.get(sa)),
+					tooHighCoverage,
+					mutationToAnnotate,
+					Objects.requireNonNull(sa.stats),
+					location,
+					locationExamResultsMap,
+					sa.analyzer,
+					groupSettings.mutationsToAnnotate,
+					sa.analyzer.codingStrandTester,
+					repetitiveBEDs);
+			}
 		);
 
 		RichIterable<CandidateSequence> mutantCandidates = locationExamResults.
@@ -550,6 +558,18 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
+
+				SubAnalyzer sa0 = candidate.getOwningSubAnalyzer();
+				if (!sa0.incrementednPosDuplexQualityQ2OthersQ1Q2) {
+					@NonNull LocationExaminationResults ler =
+						locationExamResultsMap.get(candidate.getOwningSubAnalyzer());
+					boolean c1 = ler.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation;
+					boolean c2 = ler.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation;
+					boolean c3 = ler.nGoodOrDubiousDuplexesSisterSamples >= stats.analysisParameters.minNumberDuplexesSisterSamples;
+
+					throw new AssertionFailedException(c1 + " " + c2 + " " + c3 + " --- " + sa0.processed + " " +
+						sa0.c1 + " " + sa0.c2 + " " + sa0.c3 + " " + sa0.c4);
+				}
 
 				csla.nDuplexesUniqueQ2MutationCandidate.add(
 					candidate.computeNQ1PlusConcurringDuplexes(stats.concurringMutationDuplexDistance, param));
@@ -792,6 +812,10 @@ public class SubAnalyzerPhaser extends Phaser {
 		});
 
 		final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
+		analyzerCandidateLists.forEachKey(sa -> {
+			sa.c1 = localTooHighCoverage;
+			sa.processed = true;
+		});
 
 		if (localTooHighCoverage) {
 			stats.nPosIgnoredBecauseTooHighCoverage.increment(location);
@@ -808,6 +832,13 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 		}
 
+		analyzerCandidateLists.forEachKey(sa -> {
+			sa.c2 = !stats.analysisParameters.candidateQ2Criterion.equals("1Q2Duplex") ||//XXX Needs more work
+				examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation;
+			sa.c3 = examResults.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation;
+			sa.c4 = examResults.nGoodOrDubiousDuplexesSisterSamples >= stats.analysisParameters.minNumberDuplexesSisterSamples;
+		});
+
 		if ((!localTooHighCoverage) &&
 				examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation &&
 				examResults.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation &&
@@ -821,6 +852,9 @@ public class SubAnalyzerPhaser extends Phaser {
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
+			analyzerCandidateLists.forEachKey(sa -> {
+				sa.incrementednPosDuplexQualityQ2OthersQ1Q2 = true;
+			});
 			stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
 			stats.nPosQualityQ2OthersQ1Q2.increment(location);
 			if (codingStrandTester != null &&

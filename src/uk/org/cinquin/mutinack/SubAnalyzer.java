@@ -118,6 +118,9 @@ import uk.org.cinquin.mutinack.statistics.MultiCounter;
 public final class SubAnalyzer {
 	private static final Logger logger = LoggerFactory.getLogger(SubAnalyzer.class);
 
+	//For assertion and debugging purposes
+	public boolean incrementednPosDuplexQualityQ2OthersQ1Q2, processed, c1, c2, c3, c4;
+
 	public final @NonNull Mutinack analyzer;
 	@NonNull Parameters param;
 	@NonNull public AnalysisStats stats;//Will in fact be null until set in SubAnalyzerPhaser but that's OK
