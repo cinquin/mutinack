@@ -54,6 +54,8 @@ public enum PositionAssay implements AssayInfo {
 
 	PRESENT_IN_SISTER_SAMPLE,
 
+	PRESENT_IN_OTHER_EXPERIMENTS,
+
 	/**
 	 * Multiple candidates at position that would reach Q2 (ignoring whether they
 	 * are found multiple times across sister samples)
