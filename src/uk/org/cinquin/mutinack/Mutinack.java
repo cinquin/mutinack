@@ -60,7 +60,10 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -134,6 +137,7 @@ import uk.org.cinquin.mutinack.misc_util.collections.TSVMapReader;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.ParedDownMutinack;
 import uk.org.cinquin.mutinack.output.RunResult;
+import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithBedFeatureBreakdown;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
@@ -728,7 +732,7 @@ public class Mutinack implements Actualizable, Closeable {
 		param.tracePositions.stream().map(s -> SequenceLocation.parse(s, groupSettings.indexContigNameReverseMap)).
 			forEach(param.parsedTracePositions::add);
 
-		for (String forceOutputFilePath: param.forceOutputAtPositionsFile) {
+		for (String forceOutputFilePath: param.forceOutputAtPositionsTextFile) {
 			try(Stream<String> lines = Files.lines(Paths.get(forceOutputFilePath))) {
 				lines.forEach(l -> {
 					for (String loc: l.split(" ")) {
@@ -756,6 +760,30 @@ public class Mutinack implements Actualizable, Closeable {
 						}
 					}
 				});
+			}
+		}
+
+		CompletionService<RunResult> completionService =
+			new ExecutorCompletionService<>(StaticStuffToAvoidMutating.getExecutorService());
+		for (String forceOutputFilePath: param.forceOutputAtPositionsBinFile) {
+			completionService.submit(() ->  {
+				try {
+					RunResult runResult = (RunResult) Util.readObject(forceOutputFilePath);
+					return runResult;
+				} catch (Exception e) {
+					throw new RuntimeException("Error extracting positions from binary out file " + forceOutputFilePath, e);
+				}
+			});
+		}
+		for (int fileNumber = 0; fileNumber < param.forceOutputAtPositionsBinFile.size(); fileNumber++) {
+			try {
+				completionService.take().get().extractDetections().
+				filter(candidate -> candidate.getMutationType() != MutationType.WILDTYPE).
+				filter(candidate -> candidate.getQuality().getNonNullValue().atLeast(Quality.GOOD)).
+				forEach(candidate -> {
+					groupSettings.forceOutputAtLocations.put(candidate.getLocation(), false);});
+			} catch (ExecutionException e) {
+				throw new RuntimeException(e);
 			}
 		}
 

@@ -675,8 +675,13 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@FilePathList
 	@NoDuplicates
-	@Parameter(names = "-forceOutputAtPositionsFile", description = "Detailed information is reported for all positions listed in the file", required = false)
-	public List<@NonNull String> forceOutputAtPositionsFile = new ArrayList<>();
+	@Parameter(names = {"-forceOutputAtPositionsTextFile", "-forceOutputAtPositionsFile"}, description = "Detailed information is reported for all positions listed in the file", required = false)
+	public List<@NonNull String> forceOutputAtPositionsTextFile = new ArrayList<>();
+
+	@FilePathList
+	@NoDuplicates
+	@Parameter(names = "-forceOutputAtPositionsBinFile", description = "Detailed information is reported for all positions listed in the file", required = false)
+	public List<@NonNull String> forceOutputAtPositionsBinFile = new ArrayList<>();
 
 	@Parameter(names = "-forceOutputAtPositions", description = "Detailed information is reported for positions given as ranges", required = false,
 		converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
