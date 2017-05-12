@@ -45,18 +45,21 @@ public class TSVMapReader {
 		try(Stream<String> lines = r.lines()) {
 			lines.forEachOrdered(l -> {
 				@NonNull String[] components = l.split("\t");
-				List<String> suppInfo = new ArrayList<>(Arrays.asList(components).subList(2, components.length));
+				List<String> suppInfo = new ArrayList<>(Arrays.asList(components).stream().
+					skip(2).
+					map(String::intern).
+					collect(Collectors.toList()));
 				Pair<Set<String>, Set<String>> entry = tempMap.get(components[0]);
 				if (entry != null) {
-					entry.fst.add(components[1]);
+					entry.fst.add(components[1].intern());
 					entry.snd.addAll(suppInfo);
 				} else {
 					Set<String> suppInfoSet = new HashSet<>(suppInfo);
 
 					Set<String> nameSet = new HashSet<>();
-					nameSet.add(components[1]);
+					nameSet.add(components[1].intern());
 
-					tempMap.put(components[0], new Pair<>(nameSet, suppInfoSet));
+					tempMap.put(components[0].intern(), new Pair<>(nameSet, suppInfoSet));
 				}
 			});
 		}

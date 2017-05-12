@@ -228,8 +228,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 							throw new IllegalArgumentException("Could not find contig " + components[0]);
 						}
 					}
-					GenomeInterval interval = new GenomeInterval(name, contigIndex,
-							/*contig*/ components[0], start, end, length, strandPolarity, score,
+					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex,
+							/*contig*/ components[0].intern(), start, end, length, strandPolarity, score,
 							transcriptToGeneNameMap.get(name));
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
 				} catch (IllegalArgumentException | ParseRTException e) {
