@@ -19,12 +19,14 @@ package uk.org.cinquin.mutinack.output;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
 import uk.org.cinquin.mutinack.Parameters;
+import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 
 @PersistenceCapable
 public class RunResult implements Serializable {
@@ -33,4 +35,11 @@ public class RunResult implements Serializable {
 	public @Persistent @Column(length = 10_000) String mutinackVersion;
 	public @Persistent Parameters parameters;
 	public @Persistent List<ParedDownMutinack> samples;
+
+	public Stream<CandidateSequence> extractDetections() {
+		return samples.stream().
+			flatMap(sample -> sample.stats.stream()).
+			flatMap(stats -> stats.detections.entrySet().stream()).
+			flatMap(e -> e.getValue().candidates.stream());
+	}
 }
