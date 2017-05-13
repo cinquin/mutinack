@@ -835,7 +835,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			(!stats.analysisParameters.candidateQ2Criterion.equals("1Q2Duplex") ||//XXX Needs more work
 					examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation) &&
 				examResults.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation &&
-				sumOtherGoodOrDubiousDuplexes(analyzerCandidateLists, a) >= stats.analysisParameters.minNumberDuplexesSisterSamples
+				examResults.nGoodOrDubiousDuplexesSisterSamples >= stats.analysisParameters.minNumberDuplexesSisterSamples
 			) {
 
 			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).
@@ -867,15 +867,6 @@ public class SubAnalyzerPhaser extends Phaser {
 				stats.duplexCollisionProbabilityAtQ2.insert((int) (examResults.probAtLeastOneCollision * 1_000d));
 			}
 		}
-	}
-
-	private static int sumOtherGoodOrDubiousDuplexes(
-			@NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> analyzerCandidateLists,
-			Mutinack a) {
-		SettableInteger sum = new SettableInteger(0);
-		analyzerCandidateLists.entrySet().forEach(e -> {
-			if (e.getKey().analyzer != a) sum.addAndGet(e.getValue().nGoodOrDubiousDuplexes);});
-		return sum.get();
 	}
 
 	private static void registerOutputDisagreements(
