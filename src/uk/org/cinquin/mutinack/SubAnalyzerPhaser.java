@@ -353,8 +353,14 @@ public class SubAnalyzerPhaser extends Phaser {
 		dubiousOrGoodDuplexCovInAllInputs.insert(dubiousOrGoodInAllInputsAtPos);
 		goodDuplexCovInAllInputs.insert(goodDuplexCovInAllInputsAtPos);
 
-		final Handle<Boolean> tooHighCoverage = new Handle<>(false);
 		final Handle<Boolean> mutationToAnnotate = new Handle<>(false);
+
+		locationExamResultsMap.forEachKeyValue((sa, ler) -> {
+			SettableInteger sum = new SettableInteger(0);
+			locationExamResultsMap.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
+			ler.nGoodOrDubiousDuplexesSisterSamples = sum.get();
+			ler.analyzedCandidateSequences.each(c -> c.setnDuplexesSisterArm(sum.get()));
+		});
 
 		analysisChunk.subAnalyzers.forEach(
 			sa -> {
@@ -366,7 +372,6 @@ public class SubAnalyzerPhaser extends Phaser {
 				sa.processed = false;
 				registerAndAnalyzeCoverage(
 					Objects.requireNonNull(locationExamResultsMap.get(sa)),
-					tooHighCoverage,
 					mutationToAnnotate,
 					Objects.requireNonNull(sa.stats),
 					location,
@@ -434,7 +439,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 			processAndReportCandidates(analysisChunk.subAnalyzers.get(0).stats.analysisParameters,
 				locationExamResults, locationExamResultsMap,
-				location, randomlySelected, lowTopAlleleFreq, tooHighCoverage.get(), true,
+				location, randomlySelected, lowTopAlleleFreq, true,
 				repetitiveBEDs, analysisChunk, groupSettings.mutationsToAnnotate);
 		}
 	}
@@ -449,7 +454,6 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull SequenceLocation location,
 			final boolean randomlySelected,
 			final boolean lowTopAlleleFreq,
-			final boolean tooHighCoverage,
 			final boolean doOutput,
 			final @NonNull List<@NonNull BedReader> repetitiveBEDs,
 			final @NonNull AnalysisChunk analysisChunk,
@@ -480,17 +484,6 @@ public class SubAnalyzerPhaser extends Phaser {
 		if (allQ1Q2Candidates.noneSatisfy(c -> c.getMutationType().isWildtype())) {
 			csla.noWt = true;
 		}
-
-		locationExamResultsMap.forEachKeyValue((sa, ler) -> {
-			SettableInteger sum = new SettableInteger(0);
-			locationExamResultsMap.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
-			ler.nGoodOrDubiousDuplexesSisterSamples = sum.get();
-		});
-
-		candidateSequences.forEach(c -> {
-				c.setnDuplexesSisterArm(locationExamResultsMap.get(c.getOwningSubAnalyzer()).
-					nGoodOrDubiousDuplexesSisterSamples);
-		});
 
 		MutableSet<CandidateSequence> distinctCandidates = candidateSequences.select(c -> !c.isHidden() && (c.getQuality().getNonNullValue().greaterThan(POOR) ||
 			c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)), Sets.mutable.empty());
@@ -533,7 +526,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					candidate.getQuality().getNonNullValue().atLeast(GOOD) &&
 					(!param.candidateQ2Criterion.equals("1Q2Duplex") || candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation) &&
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
-					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE, !tooHighCoverage) &&
+					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE,
+						!locationExamResultsMap.get(candidate.getOwningSubAnalyzer()).tooHighCoverage) &&
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
 						candidate.getnDuplexesSisterArm() >= param.minNumberDuplexesSisterSamples) &&
 					(!param.Q2DisagCapsMatchingMutationQuality ||
@@ -717,7 +711,6 @@ public class SubAnalyzerPhaser extends Phaser {
 
 	private static void registerAndAnalyzeCoverage(
 			final @NonNull LocationExaminationResults examResults,
-			final @NonNull Handle<Boolean> tooHighCoverage,
 			final @NonNull Handle<Boolean> mutationToAnnotate,
 			final @NonNull AnalysisStats stats,
 			final @NonNull SequenceLocation location,
@@ -804,6 +797,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		});
 
 		final boolean localTooHighCoverage = examResults.nGoodOrDubiousDuplexes > a.maxNDuplexes;
+		examResults.tooHighCoverage = localTooHighCoverage;
 		analyzerCandidateLists.forEachKey(sa -> {
 			sa.c1 = localTooHighCoverage;
 			sa.processed = true;
@@ -811,7 +805,6 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		if (localTooHighCoverage) {
 			stats.nPosIgnoredBecauseTooHighCoverage.increment(location);
-			tooHighCoverage.set(true);
 		}
 
 		if (!localTooHighCoverage) {
