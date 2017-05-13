@@ -69,6 +69,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -775,16 +776,29 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			});
 		}
+		//The following two variables don't need to be atomic unless the loop below is made parallel
+		AtomicInteger numberAddedPositions = new AtomicInteger();
+		AtomicInteger numberConsideredPositions = new AtomicInteger();
 		for (int fileNumber = 0; fileNumber < param.forceOutputAtPositionsBinFile.size(); fileNumber++) {
 			try {
 				completionService.take().get().extractDetections().
-				filter(candidate -> candidate.getMutationType() != MutationType.WILDTYPE).
+				filter(candidate -> {
+					numberConsideredPositions.incrementAndGet();
+					return candidate.getMutationType() != MutationType.WILDTYPE;}).
 				filter(candidate -> candidate.getQuality().getNonNullValue().atLeast(Quality.GOOD)).
 				forEach(candidate -> {
-					groupSettings.forceOutputAtLocations.put(candidate.getLocation(), false);});
+					if (groupSettings.forceOutputAtLocations.put(candidate.getLocation(), false) == null) {
+						numberAddedPositions.incrementAndGet();
+					}
+				});
 			} catch (ExecutionException e) {
 				throw new RuntimeException(e);
 			}
+		}
+		if (param.forceOutputAtPositionsBinFile.size() > 0) {
+			printUserMustSeeMessage("Forcing output at " + numberAddedPositions.get() + " of " +
+				numberConsideredPositions + " potential new positions read from " +
+				param.forceOutputAtPositionsBinFile.size() + " binary files");
 		}
 
 		if (param.randomOutputRate != 0) {
