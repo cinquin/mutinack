@@ -115,8 +115,8 @@ public interface CandidateSequenceI extends Serializable {
 	void setnGoodDuplexesIgnoringDisag(int size);
 	int getnGoodDuplexesIgnoringDisag();
 	Mutation getMutation();
-	int getnDuplexesSisterArm();
-	void setnDuplexesSisterArm(int nDuplexesSisterArm);
+	int getnDuplexesSisterSamples();
+	void setnDuplexesSisterSamples(int nDuplexesSisterSamples);
 	void setInsertSize(int insertSize);
 	void setPositionInRead(int readPosition);
 	void setReadEL(int effectiveReadLength);

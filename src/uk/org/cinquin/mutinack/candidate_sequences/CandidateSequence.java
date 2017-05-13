@@ -125,7 +125,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private float meanDistanceToLigSite = Float.NaN;
 	private int nDistancesToLigSite = 0;
 	private float probCollision = Float.NaN;
-	private int nDuplexesSisterArm = -1;
+	private int nDuplexesSisterSamples = -1;
 	private int nMatchingCandidatesOtherSamples = -1;
 	private int smallestConcurringDuplexDistance = -1;
 	private int largestConcurringDuplexDistance = -1;
@@ -170,7 +170,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		setMinDistanceToLigSite(Integer.MAX_VALUE);
 		setMaxDistanceToLigSite(Integer.MIN_VALUE);
 		setMeanDistanceToLigSite(Float.NaN);
-		setnDuplexesSisterArm(-1);
+		setnDuplexesSisterSamples(-1);
 		setnDistancesToLigSite(0);
 		smallestConcurringDuplexDistance = -1;
 		largestConcurringDuplexDistance = -1;
@@ -827,10 +827,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				filter(entry -> entry.getValue().lowerThan(Quality.GOOD)).
 				map(Object::toString).
 				collect(Collectors.joining(",", "{", "}")));
-		Assert.isTrue(nDuplexesSisterArm > -1);
+		Assert.isTrue(nDuplexesSisterSamples > -1);
 		//TODO The following issues added below to qualityKD should just be retrieved from the
 		//qualities field instead of being recomputed
-		if (nDuplexesSisterArm < param.minNumberDuplexesSisterSamples) {
+		if (nDuplexesSisterSamples < param.minNumberDuplexesSisterSamples) {
 			qualityKD = Stream.concat(Stream.of(PositionAssay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
 				qualityKD);
 		}
@@ -861,7 +861,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			formatter.format((getnDuplexes() / ((float) getTotalAllDuplexes()))) + "\t" +
 			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + "\t" +
 			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + "\t" +
-			nDuplexesSisterArm + "\t" +
+			nDuplexesSisterSamples + "\t" +
 			getInsertSize() + "\t" +
 			getInsertSizeAtPos10thP() + "\t" +
 			getInsertSizeAtPos90thP() + "\t" +
@@ -949,16 +949,16 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public int getnDuplexesSisterArm() {
-		if (nDuplexesSisterArm < 0) {
+	public int getnDuplexesSisterSamples() {
+		if (nDuplexesSisterSamples < 0) {
 			throw new IllegalStateException();
 		}
-		return nDuplexesSisterArm;
+		return nDuplexesSisterSamples;
 	}
 
 	@Override
-	public void setnDuplexesSisterArm(int nDuplexesSisterArm) {
-		this.nDuplexesSisterArm = nDuplexesSisterArm;
+	public void setnDuplexesSisterSamples(int nDuplexesSisterSamples) {
+		this.nDuplexesSisterSamples = nDuplexesSisterSamples;
 	}
 
 	public void setMinDistanceToLigSite(int minDistanceToLigSite) {

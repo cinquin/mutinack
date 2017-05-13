@@ -359,7 +359,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			SettableInteger sum = new SettableInteger(0);
 			locationExamResultsMap.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
 			ler.nGoodOrDubiousDuplexesSisterSamples = sum.get();
-			ler.analyzedCandidateSequences.each(c -> c.setnDuplexesSisterArm(sum.get()));
+			ler.analyzedCandidateSequences.each(c -> c.setnDuplexesSisterSamples(sum.get()));
 		});
 
 		analysisChunk.subAnalyzers.forEach(
@@ -529,7 +529,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE,
 						!locationExamResultsMap.get(candidate.getOwningSubAnalyzer()).tooHighCoverage) &&
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
-						candidate.getnDuplexesSisterArm() >= param.minNumberDuplexesSisterSamples) &&
+						candidate.getnDuplexesSisterSamples() >= param.minNumberDuplexesSisterSamples) &&
 					(!param.Q2DisagCapsMatchingMutationQuality ||
 						(//Disagreements from the same sample will have already-downgraded mutation quality,
 						//if analysis parameter dictates it, but check again in case a matching disagreement is
