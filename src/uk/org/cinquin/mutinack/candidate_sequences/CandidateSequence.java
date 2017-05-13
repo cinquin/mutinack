@@ -170,6 +170,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		setMinDistanceToLigSite(Integer.MAX_VALUE);
 		setMaxDistanceToLigSite(Integer.MIN_VALUE);
 		setMeanDistanceToLigSite(Float.NaN);
+		setnDuplexesSisterArm(-1);
 		setnDistancesToLigSite(0);
 		smallestConcurringDuplexDistance = -1;
 		largestConcurringDuplexDistance = -1;
@@ -949,6 +950,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public int getnDuplexesSisterArm() {
+		if (nDuplexesSisterArm < 0) {
+			throw new IllegalStateException();
+		}
 		return nDuplexesSisterArm;
 	}
 

@@ -42,6 +42,7 @@ public final class LocationExaminationResults implements Serializable {
 	@JsonIgnore //Already listed in LocationAnalysis
 	public transient ImmutableSet<CandidateSequence> analyzedCandidateSequences;
 	public int nGoodOrDubiousDuplexes = 0;
+	public int nGoodOrDubiousDuplexesSisterSamples = 0;
 	public int nGoodDuplexesIgnoringDisag = 0;
 	public int nGoodDuplexes = 0;
 	public int strandCoverageImbalance;

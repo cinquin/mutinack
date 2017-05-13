@@ -314,7 +314,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull SequenceLocation location
 		) {
 
-		final @NonNull UnifiedMap<SubAnalyzer, LocationExaminationResults> locationExamResultsMap0 =
+		final @NonNull MutableMap<SubAnalyzer, LocationExaminationResults> locationExamResultsMap0 =
 			new UnifiedMap<>();
 		//Fill the map so that at next step values can be modified concurrently
 		//without causing structural modifications, obviating the need for synchronization
@@ -445,7 +445,7 @@ public class SubAnalyzerPhaser extends Phaser {
 	private static void processAndReportCandidates(
 			final @NonNull Parameters param,
 			final @NonNull ListIterable<@NonNull LocationExaminationResults> locationExamResults,
-			final @NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap,
+			final @NonNull MutableMap<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap,
 			final @NonNull SequenceLocation location,
 			final boolean randomlySelected,
 			final boolean lowTopAlleleFreq,
@@ -481,24 +481,16 @@ public class SubAnalyzerPhaser extends Phaser {
 			csla.noWt = true;
 		}
 
-		final UnifiedMap<SubAnalyzer, SettableInteger> nGoodOrDubiousDuplexes = new UnifiedMap<>(8);
-		candidateSequences.each(c -> {
-			if (c.getQuality().getNonNullValue().greaterThan(POOR))
-				nGoodOrDubiousDuplexes.getIfAbsentPut(c.getOwningSubAnalyzer(), () -> new SettableInteger(0)).
-					addAndGet(c.getnGoodOrDubiousDuplexes());
-		});
-
-		final UnifiedMap<SubAnalyzer, Integer> nGoodOrDubiousDuplexesOthers = new UnifiedMap<>(8);
-		nGoodOrDubiousDuplexes.forEachKey(sa -> {
+		locationExamResultsMap.forEachKeyValue((sa, ler) -> {
 			SettableInteger sum = new SettableInteger(0);
-			nGoodOrDubiousDuplexes.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.get());});
-			nGoodOrDubiousDuplexesOthers.put(sa, sum.get());
+			locationExamResultsMap.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
+			ler.nGoodOrDubiousDuplexesSisterSamples = sum.get();
 		});
 
 		candidateSequences.forEach(c -> {
-				Integer i = nGoodOrDubiousDuplexesOthers.get(c.getOwningSubAnalyzer());
-				c.setnDuplexesSisterArm((i == null) ? 0 : i);
-			});
+				c.setnDuplexesSisterArm(locationExamResultsMap.get(c.getOwningSubAnalyzer()).
+					nGoodOrDubiousDuplexesSisterSamples);
+		});
 
 		MutableSet<CandidateSequence> distinctCandidates = candidateSequences.select(c -> !c.isHidden() && (c.getQuality().getNonNullValue().greaterThan(POOR) ||
 			c.getQuality().qualitiesContain(DISAG_THAT_MISSED_Q2)), Sets.mutable.empty());
@@ -840,7 +832,8 @@ public class SubAnalyzerPhaser extends Phaser {
 		});
 
 		if ((!localTooHighCoverage) &&
-				examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation &&
+			(!stats.analysisParameters.candidateQ2Criterion.equals("1Q2Duplex") ||//XXX Needs more work
+					examResults.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation) &&
 				examResults.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation &&
 				sumOtherGoodOrDubiousDuplexes(analyzerCandidateLists, a) >= stats.analysisParameters.minNumberDuplexesSisterSamples
 			) {
@@ -877,11 +870,11 @@ public class SubAnalyzerPhaser extends Phaser {
 	}
 
 	private static int sumOtherGoodOrDubiousDuplexes(
-			@NonNull MutableMap<SubAnalyzer, @NonNull LocationExaminationResults> analyzerCandidateLists,
+			@NonNull Map<SubAnalyzer, @NonNull LocationExaminationResults> analyzerCandidateLists,
 			Mutinack a) {
 		SettableInteger sum = new SettableInteger(0);
-		analyzerCandidateLists.forEachKeyValue((k, v) -> {
-			if (k.analyzer != a) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
+		analyzerCandidateLists.entrySet().forEach(e -> {
+			if (e.getKey().analyzer != a) sum.addAndGet(e.getValue().nGoodOrDubiousDuplexes);});
 		return sum.get();
 	}
 
