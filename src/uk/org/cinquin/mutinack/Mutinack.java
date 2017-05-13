@@ -877,8 +877,8 @@ public class Mutinack implements Actualizable, Closeable {
 
 			synchronized (sampleNames) {
 				if (!sampleNames.add(name)) {
-					throw new RuntimeException("Two or more analyzers trying to use the same name " +
-						name + "; please give samples unique names");
+					throw new AssertionFailedException("Two or more analyzers trying to use the same name " +
+						name);
 				}
 			}
 
