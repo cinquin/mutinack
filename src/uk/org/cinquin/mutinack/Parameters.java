@@ -165,6 +165,18 @@ public final class Parameters implements Serializable, Cloneable {
 				throw new IllegalArgumentException("Parameter " + paramName + " is not a number or boolean");
 			}
 		}
+
+		if (randomOutputRate != 0) {
+			if (!readContigsFromFile) {
+				throw new IllegalArgumentException("Option randomOutputRate "
+					+ "requires readContigsFromFiles");
+			}
+		}
+
+		if (minMappingQIntersect.size() != intersectAlignment.size()) {
+			throw new IllegalArgumentException(
+				"Lists given in minMappingQIntersect and intersectAlignment must have same length");
+		}
 	}
 
 	private static void throwIAEIfFalse(boolean b, String message) {

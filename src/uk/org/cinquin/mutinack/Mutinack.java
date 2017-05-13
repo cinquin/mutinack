@@ -802,10 +802,6 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		if (param.randomOutputRate != 0) {
-			if (!param.readContigsFromFile) {
-				throw new IllegalArgumentException("Option randomOutputRate "
-					+ "requires readContigsFromFiles");
-			}
 			Random random = new Random(param.randomSeed);
 			int randomLocs = 0;
 			for (Entry<@NonNull String, Integer> c: contigSizes.entrySet()) {
@@ -830,11 +826,6 @@ public class Mutinack implements Actualizable, Closeable {
 
 		//Used to ensure that different analyzers do not use same output files
 		final Set<String> sampleNames = new HashSet<>();
-
-		if (param.minMappingQIntersect.size() != param.intersectAlignment.size()) {
-			throw new IllegalArgumentException(
-				"Lists given in minMappingQIntersect and intersectAlignment must have same length");
-		}
 
 		Pair<List<String>, List<Integer>> parsedPositions =
 			Util.parseListPositions(param.startAtPositions, true, "startAtPosition");
