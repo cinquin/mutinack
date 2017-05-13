@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -936,7 +937,7 @@ public class Mutinack implements Actualizable, Closeable {
 				analyzer.stats.forEach(s -> {
 					final String pathMain = tbdNameMain + s.getName() + ".bed";
 					try {
-						new File(pathMain).getParentFile().mkdirs();
+						Optional.ofNullable(new File(pathMain).getParentFile()).map(File::mkdirs);
 						s.topBottomDisagreementWriter = new FileWriter(pathMain);
 						analyzer.itemsToClose.add(s.topBottomDisagreementWriter);
 					} catch (IOException e) {
@@ -944,7 +945,7 @@ public class Mutinack implements Actualizable, Closeable {
 					}
 					final String pathNoWt = tbdNameNoWt + s.getName() + ".bed";
 					try {
-						new File(pathNoWt).getParentFile().mkdirs();
+						Optional.ofNullable(new File(pathNoWt).getParentFile()).map(File::mkdirs);
 						s.noWtDisagreementWriter = new FileWriter(pathNoWt);
 						analyzer.itemsToClose.add(s.noWtDisagreementWriter);
 					} catch (IOException e) {
@@ -957,7 +958,7 @@ public class Mutinack implements Actualizable, Closeable {
 			analyzer.stats.forEach(s -> {
 				final String path = mutName + s.getName() + ".bed";
 				try {
-					new File(path).getParentFile().mkdirs();
+					Optional.ofNullable(new File(path).getParentFile()).map(File::mkdirs);
 					s.mutationBEDWriter = new FileWriter(path);
 					analyzer.itemsToClose.add(s.mutationBEDWriter);
 				} catch (IOException e) {
@@ -987,7 +988,7 @@ public class Mutinack implements Actualizable, Closeable {
 				analyzer.stats.forEach(s -> {
 					final String path = coverageName + s.getName() + ".bed";
 					try {
-						new File(path).getParentFile().mkdirs();
+						Optional.ofNullable(new File(path).getParentFile()).map(File::mkdirs);
 						s.coverageBEDWriter = new FileWriter(path);
 						analyzer.itemsToClose.add(s.coverageBEDWriter);
 					} catch (IOException e) {
