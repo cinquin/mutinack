@@ -1081,11 +1081,6 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			}
 
-			if (param.reportBreakdownForBED.size() != param.saveBEDBreakdownToPathPrefix.size()) {
-				throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
-					"-saveBEDBreakdownToPathPrefix must appear same number of times");
-			}
-
 			final Set<String> outputPaths = new HashSet<>();
 			for (int index = 0; index < param.reportBreakdownForBED.size(); index++) {
 				try {

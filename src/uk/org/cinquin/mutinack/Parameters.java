@@ -178,6 +178,11 @@ public final class Parameters implements Serializable, Cloneable {
 			throw new IllegalArgumentException(
 				"Lists given in minMappingQIntersect and intersectAlignment must have same length");
 		}
+
+		if (reportBreakdownForBED.size() != saveBEDBreakdownToPathPrefix.size()) {
+			throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
+				"-saveBEDBreakdownToPathPrefix must appear same number of times");
+		}
 	}
 
 	private static void throwIAEIfFalse(boolean b, String message) {
