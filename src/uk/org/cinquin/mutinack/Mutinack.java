@@ -77,6 +77,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.eclipse.collections.impl.block.factory.Functions;
 import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -1087,21 +1088,17 @@ public class Mutinack implements Actualizable, Closeable {
 					final File f = new File(param.reportBreakdownForBED.get(index));
 					final BedReader filter = new BedReader(
 						groupSettings.getContigNames(),
-						new BufferedReader(new FileReader(f)), f.getName(),
-						param.bedFeatureSuppInfoFile == null ? null :
-							new BufferedReader(new FileReader(param.bedFeatureSuppInfoFile)),
+						new BufferedReader(new FileReader(f)),
+						f.getName(),
+						Optional.ofNullable(param.bedFeatureSuppInfoFile).map(Functions.throwing(file ->
+							new BufferedReader(new FileReader(file)))).orElse(null),
 						refSeqToOfficialGeneNameMap, false);
 					int index0 = index;
 					analyzer.stats.forEach(s -> {
-						CounterWithBedFeatureBreakdown counter;
-						try {
-							counter = new CounterWithBedFeatureBreakdown(filter,
-								refSeqToOfficialGeneNameMap,
-								groupSettings);
-						} catch (Exception e) {
-							throw new RuntimeException("Problem setting up BED file " + f.getName(), e);
-						}
-
+						CounterWithBedFeatureBreakdown counter =
+							new CounterWithBedFeatureBreakdown(filter, refSeqToOfficialGeneNameMap, groupSettings);
+						counter.setNormalizedOutput(true);
+						counter.setAnalyzerName(name);
 						String outputPath = param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName();
 						if (!outputPaths.add(outputPath)) {
 							throw new AssertionFailedException();
@@ -1119,10 +1116,9 @@ public class Mutinack implements Actualizable, Closeable {
 								}
 							}
 						}
-						counter.setNormalizedOutput(true);
-						counter.setAnalyzerName(name);
 
-						counter = new CounterWithBedFeatureBreakdown(filter, null, groupSettings);
+						counter = new CounterWithBedFeatureBreakdown(filter, refSeqToOfficialGeneNameMap, groupSettings);
+						counter.setAnalyzerName(name);
 						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName() +
 							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
