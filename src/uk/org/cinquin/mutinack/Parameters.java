@@ -53,6 +53,7 @@ import com.beust.jcommander.converters.BaseConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.FieldIteration;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
@@ -193,7 +194,7 @@ public final class Parameters implements Serializable, Cloneable {
 	}
 
 	private void checkNoDuplicates() {
-		iterateFields((field, obj) -> {
+		FieldIteration.iterateFields((field, obj) -> {
 			if (field.getAnnotation(NoDuplicates.class) == null || obj == null) {
 				return;
 			}
@@ -206,7 +207,7 @@ public final class Parameters implements Serializable, Cloneable {
 						" but " + o + " is specified more than once");
 				}
 			}
-		});
+		}, this, Parameters.class);
 	}
 
 	public static boolean isUsedAtDuplexGrouping(String key) {
@@ -215,21 +216,6 @@ public final class Parameters implements Serializable, Cloneable {
 			return f.getAnnotation(UsedAtDuplexGrouping.class) != null;
 		} catch (NoSuchFieldException e) {
 			throw new RuntimeException(e);
-		}
-	}
-
-	@FunctionalInterface
-	private static interface ThrowingFieldValueBiConsumer {
-		void accept(Field field, Object fieldValue) throws IllegalArgumentException, IllegalAccessException;
-	}
-
-	private void iterateFields(ThrowingFieldValueBiConsumer consumer) {
-		for (Field field: Parameters.class.getDeclaredFields()) {
-			try {
-				consumer.accept(field, field.get(this));
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				throw new RuntimeException(e);
-			}
 		}
 	}
 
@@ -892,7 +878,7 @@ public final class Parameters implements Serializable, Cloneable {
 	}
 
 	public void transformFilePaths(Function<String, String> transformer) {
-		iterateFields((field, fieldValue) -> {
+		FieldIteration.iterateFields((field, fieldValue) -> {
 			if (fieldValue == null) {
 				return;
 			}
@@ -911,7 +897,7 @@ public final class Parameters implements Serializable, Cloneable {
 					paths.set(i, transformed);
 				}
 			}
-		});
+		}, this, Parameters.class);
 	}
 
 	/**
@@ -1163,11 +1149,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Override
 	public int hashCode() {
 		SettableInteger hashCode = new SettableInteger(0);
-		iterateFields((f, value) -> {
+		FieldIteration.iterateFields((f, value) -> {
 			if (f.getAnnotation(IgnoreInHashcodeEquals.class) == null) {
 				hashCode.set(hashCode.get() * 31 + Objects.hashCode(value));
 			}
-		});
+		}, this, Parameters.class);
 		return hashCode.get();
 	}
 
@@ -1175,7 +1161,7 @@ public final class Parameters implements Serializable, Cloneable {
 	public boolean equals(Object other0) {
 		Handle<Boolean> notEqual = new Handle<>(false);
 		Parameters other = (Parameters) other0;
-		iterateFields((f, value) -> {
+		FieldIteration.iterateFields((f, value) -> {
 			if (notEqual.get()) {
 				return;
 			}
@@ -1184,7 +1170,7 @@ public final class Parameters implements Serializable, Cloneable {
 					notEqual.set(true);
 				}
 			}
-		});
+		}, this, Parameters.class);
 		return !notEqual.get();
 	}
 
