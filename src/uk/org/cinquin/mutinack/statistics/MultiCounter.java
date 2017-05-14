@@ -122,7 +122,9 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	public void addPredicate(String name,
 			@NonNull SerializablePredicate<SequenceLocation> predicate,
 			@NonNull ICounterSeqLoc counter) {
-		seqLocCounters.put(name, new Pair<>(predicate, counter));
+		if (seqLocCounters.put(name, new Pair<>(predicate, counter)) != null) {
+			throw new IllegalArgumentException("Counter with name " + name + " already exists");
+		}
 	}
 
 	@Override
