@@ -212,7 +212,7 @@ public final class Parameters implements Serializable, Cloneable {
 						" but " + o + " is specified more than once");
 				}
 			}
-		}, this, Parameters.class);
+		}, this);
 	}
 
 	public static boolean isUsedAtDuplexGrouping(String key) {
@@ -902,7 +902,7 @@ public final class Parameters implements Serializable, Cloneable {
 					paths.set(i, transformed);
 				}
 			}
-		}, this, Parameters.class);
+		}, this);
 	}
 
 	/**
@@ -1158,7 +1158,7 @@ public final class Parameters implements Serializable, Cloneable {
 			if (f.getAnnotation(IgnoreInHashcodeEquals.class) == null) {
 				hashCode.set(hashCode.get() * 31 + Objects.hashCode(value));
 			}
-		}, this, Parameters.class);
+		}, this);
 		return hashCode.get();
 	}
 
@@ -1175,7 +1175,7 @@ public final class Parameters implements Serializable, Cloneable {
 					notEqual.set(true);
 				}
 			}
-		}, this, Parameters.class);
+		}, this);
 		return !notEqual.get();
 	}
 

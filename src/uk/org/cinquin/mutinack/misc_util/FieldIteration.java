@@ -20,5 +20,8 @@ public class FieldIteration {
 		}
 	}
 
+	public static void iterateFields(ThrowingFieldValueBiConsumer consumer, Object o) {
+		iterateFields(consumer, o, o.getClass());
+	}
 
 }

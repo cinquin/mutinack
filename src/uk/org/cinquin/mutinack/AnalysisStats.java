@@ -1047,7 +1047,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 			if (f.getAnnotation(AddLocationPredicates.class) != null) {
 				((MultiCounter<?>) value).addPredicate(filterName, filter);
 			}
-		}, this, AnalysisStats.class);
+		}, this);
 	}
 
 }
