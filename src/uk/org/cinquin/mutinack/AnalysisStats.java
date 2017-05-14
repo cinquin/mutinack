@@ -60,6 +60,8 @@ import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.misc_util.FieldIteration;
+import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MutationHistogramMap;
 import uk.org.cinquin.mutinack.output.LocationAnalysis;
@@ -268,6 +270,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface AddChromosomeBins {};
+
+	@Retention(RetentionPolicy.RUNTIME)
+	private @interface AddLocationPredicates {};
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized="true")
@@ -505,8 +510,10 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent StatsCollector nPosIgnoredBecauseTooHighCoverage;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexWithTopBottomDuplexDisagreementNoWT;
 
+	@AddLocationPredicates
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexWithTopBottomDuplexDisagreementNotASub;
 
@@ -555,10 +562,12 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomSubstDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomDelDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
@@ -570,35 +579,45 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomInsDisagreementsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandSubstQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandSubstQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandDelQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandDelQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> codingStrandInsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<Mutation, Mutation>> templateStrandInsQ2;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomDisagreementsQ2TooHighCoverage;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	@AddChromosomeBins
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexCandidatesForDisagreementQ1;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -653,12 +672,15 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent StatsCollector nPosQualityQ2OthersQ1Q2;
 
 	@PrintInStatus(outputLevel = TERSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2;
 
 	@PrintInStatus(outputLevel = TERSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate;
 
 	@PrintInStatus(color = "greenBackground", outputLevel = TERSE)
+	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosCandidatesForUniqueMutation;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
@@ -1018,6 +1040,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 				throw new RuntimeException(e);
 			};
 		}
+	}
+
+	public void addLocationPredicate(String filterName, @NonNull SerializablePredicate<SequenceLocation> filter) {
+		FieldIteration.iterateFields((f, value) -> {
+			if (f.getAnnotation(AddLocationPredicates.class) != null) {
+				((MultiCounter<?>) value).addPredicate(filterName, filter);
+			}
+		}, this, AnalysisStats.class);
 	}
 
 }

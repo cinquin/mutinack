@@ -1053,44 +1053,11 @@ public class Mutinack implements Actualizable, Closeable {
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
+					analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
 
 					analyzer.stats.forEach(s -> {
-						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-						s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(filterName, filter);
-						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
-						s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
-						s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
-						s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
-						s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
-						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
-						s.codingStrandSubstQ2.addPredicate(filterName, filter);
-						s.templateStrandSubstQ2.addPredicate(filterName, filter);
-						s.codingStrandDelQ2.addPredicate(filterName, filter);
-						s.templateStrandDelQ2.addPredicate(filterName, filter);
-						s.codingStrandInsQ2.addPredicate(filterName, filter);
-						s.templateStrandInsQ2.addPredicate(filterName, filter);
-
-						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(notFilterName, notFilter);
-						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(notFilterName, notFilter);
-						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(notFilterName, notFilter);
-						s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(notFilterName, notFilter);
-						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(notFilterName, notFilter);
-						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(notFilterName, notFilter);
-						s.nPosCandidatesForUniqueMutation.addPredicate(notFilterName, notFilter);
-						s.topBottomSubstDisagreementsQ2.addPredicate(notFilterName, notFilter);
-						s.topBottomDelDisagreementsQ2.addPredicate(notFilterName, notFilter);
-						s.topBottomInsDisagreementsQ2.addPredicate(notFilterName, notFilter);
-						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(notFilterName, notFilter);
-						s.codingStrandSubstQ2.addPredicate(notFilterName, notFilter);
-						s.templateStrandSubstQ2.addPredicate(notFilterName, notFilter);
-						s.codingStrandDelQ2.addPredicate(notFilterName, notFilter);
-						s.templateStrandDelQ2.addPredicate(notFilterName, notFilter);
-						s.codingStrandInsQ2.addPredicate(notFilterName, notFilter);
-						s.templateStrandInsQ2.addPredicate(notFilterName, notFilter);
-						analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
+						s.addLocationPredicate(filterName, filter);
+						s.addLocationPredicate(notFilterName, notFilter);
 					});
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + fileName, e);
@@ -1105,17 +1072,7 @@ public class Mutinack implements Actualizable, Closeable {
 						groupSettings.getContigNames(), filterName, false, refSeqToOfficialGeneNameMap);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
-						s.nPosDuplexWithTopBottomDuplexDisagreementNoWT.addPredicate(filterName, filter);
-						s.nPosDuplexWithTopBottomDuplexDisagreementNotASub.addPredicate(filterName, filter);
-						s.nPosDuplexCandidatesForDisagreementQ2.addPredicate(filterName, filter);
-						s.nPosDuplexCandidatesForDisagreementQ1.addPredicate(filterName, filter);
-						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(filterName, filter);
-						s.nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate.addPredicate(filterName, filter);
-						s.nPosCandidatesForUniqueMutation.addPredicate(filterName, filter);
-						s.topBottomSubstDisagreementsQ2.addPredicate(filterName, filter);
-						s.topBottomDelDisagreementsQ2.addPredicate(filterName, filter);
-						s.topBottomInsDisagreementsQ2.addPredicate(filterName, filter);
-						s.topBottomDisagreementsQ2TooHighCoverage.addPredicate(filterName, filter);
+						s.addLocationPredicate(filterName, filter);
 					});
 
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
