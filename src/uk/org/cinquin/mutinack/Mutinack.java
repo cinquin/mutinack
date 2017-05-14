@@ -1104,7 +1104,7 @@ public class Mutinack implements Actualizable, Closeable {
 							throw new AssertionFailedException();
 						}
 						counter.setOutputFile(new File(outputPath + "_nPosDuplex.bed"));
-						s.nPosDuplex.addPredicate(f.getName(), filter, counter);
+						s.nPosDuplex.addPredicate("breakdown_" + f.getName(), filter, counter);
 						for (List<IntervalData<GenomeInterval>> locs: filter.bedFileIntervals.values()) {
 							for (IntervalData<GenomeInterval> loc: locs) {
 								for (GenomeInterval interval : loc.getData()) {
@@ -1121,7 +1121,7 @@ public class Mutinack implements Actualizable, Closeable {
 						counter.setAnalyzerName(name);
 						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName() +
 							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
-						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate(f.getName(), filter, counter);
+						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate("breakdown_" + f.getName(), filter, counter);
 					});
 				} catch (Exception e) {
 					throw new RuntimeException("Problem setting up BED file " + param.reportBreakdownForBED.get(index), e);
