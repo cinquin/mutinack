@@ -231,7 +231,12 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		Set<String> result = new HashSet<>(counters.keySet().size() +
 				seqLocCounters.keySet().size());
 		result.addAll(counters.keySet());
-		result.addAll(seqLocCounters.keySet());
+		seqLocCounters.forEachEntry((k , v) -> {
+			if (!(v.snd instanceof CounterWithBedFeatureBreakdown)) {
+				result.add(k);
+			}
+			return true;
+		});
 		return result;
 	}
 
