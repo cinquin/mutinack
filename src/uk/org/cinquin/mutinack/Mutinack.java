@@ -1100,8 +1100,8 @@ public class Mutinack implements Actualizable, Closeable {
 						refSeqToOfficialGeneNameMap, false);
 					final String filterName = f.getName();
 					int index0 = index;
+					analyzer.addFilterForCandidateReporting(filterName, filter);
 					analyzer.stats.forEach(s -> {
-						analyzer.addFilterForCandidateReporting(filterName, filter);
 						CounterWithBedFeatureBreakdown counter =
 							new CounterWithBedFeatureBreakdown(filter, refSeqToOfficialGeneNameMap, groupSettings);
 						counter.setNormalizedOutput(true);
