@@ -1054,7 +1054,6 @@ public class Mutinack implements Actualizable, Closeable {
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.filtersForCandidateReporting.put(filterName, filter);
-					analyzer.filtersForCandidateReporting.put(notFilterName, notFilter);
 
 					analyzer.stats.forEach(s -> {
 						s.addLocationPredicate(filterName, filter);
