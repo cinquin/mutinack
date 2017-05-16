@@ -250,6 +250,12 @@ public class Mutinack implements Actualizable, Closeable {
 	public boolean notifiedUnpairedReads = false;
 	final @Nullable SAMFileWriter outputAlignmentWriter;
 
+	public void addFilterForCandidateReporting(String filterName, GenomeFeatureTester filter) {
+		if (filtersForCandidateReporting.put(filterName, filter) != null) {
+			throw new IllegalArgumentException("Filter " + filterName + " already added");
+		}
+	}
+
 	private Mutinack(
 			MutinackGroup groupSettings,
 			Parameters param,
@@ -1053,7 +1059,7 @@ public class Mutinack implements Actualizable, Closeable {
 							groupSettings.getContigNames(), filterName, false, refSeqToOfficialGeneNameMap);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
-					analyzer.filtersForCandidateReporting.put(filterName, filter);
+					analyzer.addFilterForCandidateReporting(filterName, filter);
 
 					analyzer.stats.forEach(s -> {
 						s.addLocationPredicate(filterName, filter);
@@ -1075,7 +1081,7 @@ public class Mutinack implements Actualizable, Closeable {
 						s.addLocationPredicate(filterName, filter);
 					});
 
-					analyzer.filtersForCandidateReporting.put(filterName, filter);
+					analyzer.addFilterForCandidateReporting(filterName, filter);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " + fileName, e);
 				}
@@ -1095,7 +1101,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final String filterName = f.getName();
 					int index0 = index;
 					analyzer.stats.forEach(s -> {
-						analyzer.filtersForCandidateReporting.put(filterName, filter);
+						analyzer.addFilterForCandidateReporting(filterName, filter);
 						CounterWithBedFeatureBreakdown counter =
 							new CounterWithBedFeatureBreakdown(filter, refSeqToOfficialGeneNameMap, groupSettings);
 						counter.setNormalizedOutput(true);
