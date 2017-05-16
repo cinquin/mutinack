@@ -818,7 +818,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public @NonNull String toOutputString(Parameters param, LocationExaminationResults examResults) {
+	public @NonNull String toOutputString(@Nullable Parameters param, @Nullable LocationExaminationResults examResults) {
 		StringBuilder result = new StringBuilder();
 
 		NumberFormat formatter = Util.mediumLengthFloatFormatter.get();
@@ -830,7 +830,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		Assert.isTrue(nDuplexesSisterSamples > -1);
 		//TODO The following issues added below to qualityKD should just be retrieved from the
 		//qualities field instead of being recomputed
-		if (nDuplexesSisterSamples < param.minNumberDuplexesSisterSamples) {
+		if (param != null && nDuplexesSisterSamples < param.minNumberDuplexesSisterSamples) {
 			qualityKD = Stream.concat(Stream.of(PositionAssay.MIN_DUPLEXES_SISTER_SAMPLE.toString()),
 				qualityKD);
 		}
@@ -878,15 +878,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			getReadAlignmentEnd() + "\t" +
 			getMateReadAlignmentEnd() + "\t" +
 			getRefPositionOfMateLigationSite() + "\t" +
-			((param.outputDuplexDetails || param.annotateMutationsInFile != null) ?
+			( ( param != null && (param.outputDuplexDetails || param.annotateMutationsInFile != null)) ?
 					qualityKDString
 				:
 					"" /*getIssues()*/) + "\t" +
 			getMedianPhredAtPosition() + "\t" +
 			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + "\t" +
 			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + "\t" +
-			formatter.format(examResults.alleleFrequencies.get(0)) + "\t" +
-			formatter.format(examResults.alleleFrequencies.get(1)) + "\t" +
+			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(0)) + "\t" +
+			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(1)) + "\t" +
 			getSmallestConcurringDuplexDistance() + "\t" +
 			getLargestConcurringDuplexDistance() + "\t" +
 			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
