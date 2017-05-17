@@ -1056,7 +1056,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final String filterName = f.getName();
 					final @NonNull GenomeFeatureTester filter =
 						BedReader.getCachedBedFileReader(fileName, ".cached",
-							groupSettings.getContigNames(), filterName, false, refSeqToOfficialGeneNameMap);
+							groupSettings.getContigNames(), filterName, refSeqToOfficialGeneNameMap);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.addFilterForCandidateReporting(filterName, filter);
@@ -1075,7 +1075,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
 					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-						groupSettings.getContigNames(), filterName, false, refSeqToOfficialGeneNameMap);
+						groupSettings.getContigNames(), filterName, refSeqToOfficialGeneNameMap);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
 						s.addLocationPredicate(filterName, filter);

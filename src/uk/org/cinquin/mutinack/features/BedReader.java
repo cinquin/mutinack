@@ -84,7 +84,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 	@SuppressWarnings("resource")
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			List<@NonNull String> contigNames, @NonNull String readerName, boolean parseScore,
+			List<@NonNull String> contigNames, @NonNull String readerName,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap) {
 		@NonNull BedReader result = FileCache.getCached(path0, cacheExtension, path -> {
 			try {
@@ -101,7 +101,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
 			List<@NonNull String> contigNames, @NonNull String readerName) {
 		return getCachedBedFileReader(path0, cacheExtension, contigNames, readerName,
-			false, Collections.emptyMap());
+			Collections.emptyMap());
 	}
 
 	public final static <K, V> Map<V, K> invertMap(Map<K, V> map) {
