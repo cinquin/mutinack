@@ -805,7 +805,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return sampleName;
 	}
 
-	public void recordMatchingGenomeInvervals(TMap<String, GenomeFeatureTester> annotationSets) {
+	public void recordMatchingGenomeIntervals(TMap<String, GenomeFeatureTester> annotationSets) {
 		MutableSetMultimap<String, GenomeInterval> result = new UnifiedSetMultimap<>();
 		annotationSets.forEachEntry((setName, tester) -> {
 			if (tester instanceof BedComplement) {
