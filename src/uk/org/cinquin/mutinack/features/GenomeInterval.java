@@ -38,7 +38,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 
 	private static final long serialVersionUID = -8173244932350184778L;
 	public final String name;
-	public final String geneName;
+	public final @Nullable String geneName;
 	public final @NonNull String contigName;
 	public final int contigIndex;
 	private final int start, end;
