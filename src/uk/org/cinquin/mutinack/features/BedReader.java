@@ -136,7 +136,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			List<@NonNull String> contigNames,
 			BufferedReader reader,
 			@NonNull String readerName,
-			BufferedReader suppInfoReader,
+			@Nullable BufferedReader suppInfoReader,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
 			boolean parseScore) throws ParseRTException {
 
