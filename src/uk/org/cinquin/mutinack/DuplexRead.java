@@ -483,13 +483,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 					final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, param.acceptNInBarCode);
 					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, param.acceptNInBarCode);
 
-					if (leftMismatches > 0) {
+					if (param.computeDuplexGroupingStats && leftMismatches > 0) {
 						registerMismatches(requireNonNull(duplex1.roughLocation), leftMismatches,
 								duplex1.leftBarcode, duplex2.leftBarcode,
 								duplex1.leftBarcodeNegativeStrand, duplex2.leftBarcodeNegativeStrand,
 								stats);
 					}
-					if (rightMismatches > 0) {
+					if (param.computeDuplexGroupingStats && rightMismatches > 0) {
 						registerMismatches(requireNonNull(duplex1.roughLocation), rightMismatches,
 								duplex1.rightBarcode, duplex2.rightBarcode,
 								duplex1.rightBarcodeNegativeStrand, duplex2.rightBarcodeNegativeStrand,

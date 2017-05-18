@@ -635,6 +635,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-requireMatchInAlignmentEnd", description = "Used while grouping reads into duplexes; turn off if alignments were aggregated from sequencing runs with different read lengths", required = false)
 	public boolean requireMatchInAlignmentEnd = false;
 
+	@Parameter(names = "-computeDuplexGroupingStats", description = "Off by default for higher performance", required = false)
+	public boolean computeDuplexGroupingStats = false;
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)
