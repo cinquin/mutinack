@@ -1,4 +1,4 @@
-package uk.org.cinquin.mutinack.misc_util;
+package contrib.jdk;
 /*
  * Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
  * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
@@ -44,7 +44,7 @@ package uk.org.cinquin.mutinack.misc_util;
  * @version 2011.02.11 m765.827.12i:5\7pm
  * @since 1.7
  */
-final class DualPivotQuicksort {
+public final class DualPivotQuicksort {
 
     /**
      * Prevents instantiation.
@@ -1484,7 +1484,7 @@ final class DualPivotQuicksort {
      * @param workBase origin of usable space in work array
      * @param workLen usable size of work array
      */
-    static void sort(char[] a, int left, int right,
+    public static void sort(char[] a, int left, int right,
                      char[] work, int workBase, int workLen) {
         // Use counting sort on large arrays
         if (right - left > COUNTING_SORT_THRESHOLD_FOR_SHORT_OR_CHAR) {
@@ -1967,7 +1967,7 @@ final class DualPivotQuicksort {
      * @param left the index of the first element, inclusive, to be sorted
      * @param right the index of the last element, inclusive, to be sorted
      */
-    static void sort(byte[] a, int left, int right) {
+    public static void sort(byte[] a, int left, int right) {
         // Use counting sort on large arrays
         if (right - left > COUNTING_SORT_THRESHOLD_FOR_BYTE) {
             int[] count = new int[NUM_BYTE_VALUES];

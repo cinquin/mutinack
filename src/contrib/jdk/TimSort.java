@@ -1,4 +1,4 @@
-package uk.org.cinquin.mutinack.misc_util;
+package contrib.jdk;
 
 import java.util.Comparator;
 

@@ -398,7 +398,7 @@ public final class SubAnalyzer {
 		//param.nVariableBarcodeMismatchesAllowed
 
 		final DuplexKeeper cleanedUpDuplexes;
-		if (param.nVariableBarcodeMismatchesAllowed > 0 && duplexKeeper.size() < analyzer.maxNDuplexes) {
+		if (param.nVariableBarcodeMismatchesAllowed > 0 /*&& duplexKeeper.size() < analyzer.maxNDuplexes*/) {
 			cleanedUpDuplexes = DuplexRead.groupDuplexes(
 					duplexKeeper,
 					duplex -> duplex.computeConsensus(false, param.variableBarcodeLength),

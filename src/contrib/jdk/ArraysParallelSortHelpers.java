@@ -1,4 +1,4 @@
-package uk.org.cinquin.mutinack.misc_util;
+package contrib.jdk;
 
 import java.util.Comparator;
 import java.util.concurrent.CountedCompleter;
@@ -48,7 +48,7 @@ import java.util.concurrent.CountedCompleter;
  * avoids redundant allocation. (Except for DualPivotQuicksort byte[]
  * sort, that does not ever use a workspace array.)
  */
-/*package*/ class ArraysParallelSortHelpers {
+public /*package*/ class ArraysParallelSortHelpers {
 
     /*
      * Style note: The task classes have a lot of parameters, that are
@@ -88,13 +88,13 @@ import java.util.concurrent.CountedCompleter;
     }
 
     /** Object + Comparator support class */
-    static final class FJObject {
-        static final class Sorter<T> extends CountedCompleter<Void> {
+    public static final class FJObject {
+        public static final class Sorter<T> extends CountedCompleter<Void> {
             static final long serialVersionUID = 2446542900576103244L;
             final T[] a, w;
             final int base, size, wbase, gran;
             Comparator<? super T> comparator;
-            Sorter(CountedCompleter<?> par, T[] a, T[] w, int base, int size,
+            public Sorter(CountedCompleter<?> par, T[] a, T[] w, int base, int size,
                    int wbase, int gran,
                    Comparator<? super T> comparator) {
                 super(par);

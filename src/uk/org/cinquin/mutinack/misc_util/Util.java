@@ -55,6 +55,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.nustaq.serialization.FSTConfiguration;
 
+import contrib.jdk.ArraysParallelSortHelpers;
 import contrib.net.sf.samtools.AbstractBAMFileIndex;
 import contrib.net.sf.samtools.BAMIndexMetaData;
 import contrib.net.sf.samtools.SAMFileReader;
