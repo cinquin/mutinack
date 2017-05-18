@@ -461,8 +461,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 			Assert.isNonNull(duplex1.getInterval());
 
 			List<DuplexRead> overlapping = result.getOverlapping(duplex1);
-			//Collections.sort(overlapping, duplexCountQualComparator);
-			Util.arrayListParallelSort((ArrayList<DuplexRead>) overlapping, duplexCountQualComparator);
+			if (overlapping instanceof ArrayList<?>) {
+				Util.arrayListParallelSort((ArrayList<DuplexRead>) overlapping, duplexCountQualComparator);
+			} else {
+				Collections.sort(overlapping, duplexCountQualComparator);
+			}
 
 			for (DuplexRead duplex2: overlapping) {
 
