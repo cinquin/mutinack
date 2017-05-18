@@ -1115,7 +1115,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				return true;
 			}
 			boolean good =
-				d.allDuplexRecords.size() >= param.minConcurringDuplexReads &&
+				d.allDuplexRecords.size() >= param.minConcurringDuplexReads * 2 /* double to account for mates */ &&
 				d.localAndGlobalQuality.getValueIgnoring(SubAnalyzer.assaysToIgnoreForDuplexNStrands).
 					atLeast(Quality.GOOD) &&
 				d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
