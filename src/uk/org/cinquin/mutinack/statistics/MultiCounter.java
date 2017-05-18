@@ -19,10 +19,10 @@ package uk.org.cinquin.mutinack.statistics;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -228,8 +228,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	}
 
 	public Set<String> getCounterNames() {
-		Set<String> result = new HashSet<>(counters.keySet().size() +
-				seqLocCounters.keySet().size());
+		Set<String> result = new TreeSet<>();
 		result.addAll(counters.keySet());
 		seqLocCounters.forEachEntry((k , v) -> {
 			if (!(v.snd instanceof CounterWithBedFeatureBreakdown)) {
