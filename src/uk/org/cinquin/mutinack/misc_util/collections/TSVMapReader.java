@@ -68,10 +68,10 @@ public class TSVMapReader {
 
 		for (Entry<@NonNull String, Pair<Set<String>, Set<String>>> e: tempMap.entrySet()) {
 			Set<String> geneNames = e.getValue().fst;
-			final String name;
 			Assert.isFalse(geneNames.isEmpty());
-			name = geneNames.stream().collect(Collectors.joining("="));
-			result.put(e.getKey(), name + '\t' + e.getValue().snd);
+			final String name = geneNames.stream().collect(Collectors.joining("="));
+			final Set<String> suppInfo = e.getValue().snd;
+			result.put(e.getKey(), name + '\t' + (suppInfo.isEmpty() ? "" : suppInfo));
 		}
 
 		return Collections.unmodifiableMap(result);
