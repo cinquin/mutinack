@@ -1034,13 +1034,13 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			}
 
-			final @NonNull Map<@NonNull String, @NonNull String> refSeqToOfficialGeneNameMap;
+			final @NonNull Map<@NonNull String, @NonNull String> transcriptToGene;
 			if (param.refSeqToOfficialGeneName == null) {
-				refSeqToOfficialGeneNameMap = Collections.emptyMap();
+				transcriptToGene = Collections.emptyMap();
 			} else {
 				try (BufferedReader refSeqToOfficial = new BufferedReader(
 						new FileReader(param.refSeqToOfficialGeneName))) {
-					refSeqToOfficialGeneNameMap = TSVMapReader.getMap(refSeqToOfficial);
+					transcriptToGene = TSVMapReader.getMap(refSeqToOfficial);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem reading refseq info from " + param.refSeqToOfficialGeneName, e);
 				}
@@ -1056,7 +1056,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final String filterName = f.getName();
 					final @NonNull GenomeFeatureTester filter =
 						BedReader.getCachedBedFileReader(fileName, ".cached",
-							groupSettings.getContigNames(), filterName, refSeqToOfficialGeneNameMap);
+							groupSettings.getContigNames(), filterName, transcriptToGene);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.addFilterForCandidateReporting(filterName, filter);
@@ -1075,7 +1075,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
 					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-						groupSettings.getContigNames(), filterName, refSeqToOfficialGeneNameMap);
+						groupSettings.getContigNames(), filterName, transcriptToGene);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
 						s.addLocationPredicate(filterName, filter);
@@ -1097,13 +1097,13 @@ public class Mutinack implements Actualizable, Closeable {
 						f.getName(),
 						Optional.ofNullable(param.bedFeatureSuppInfoFile).map(Functions.throwing(file ->
 							new BufferedReader(new FileReader(file)))).orElse(null),
-						refSeqToOfficialGeneNameMap, false);
+						transcriptToGene, false);
 					final String filterName = f.getName();
 					int index0 = index;
 					analyzer.addFilterForCandidateReporting(filterName, filter);
 					analyzer.stats.forEach(s -> {
 						CounterWithBedFeatureBreakdown counter =
-							new CounterWithBedFeatureBreakdown(filter, refSeqToOfficialGeneNameMap, groupSettings);
+							new CounterWithBedFeatureBreakdown(filter, transcriptToGene, groupSettings);
 						counter.setNormalizedOutput(true);
 						counter.setAnalyzerName(name);
 						String outputPath = param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName();
@@ -1124,7 +1124,7 @@ public class Mutinack implements Actualizable, Closeable {
 							}
 						}
 
-						counter = new CounterWithBedFeatureBreakdown(filter, refSeqToOfficialGeneNameMap, groupSettings);
+						counter = new CounterWithBedFeatureBreakdown(filter, transcriptToGene, groupSettings);
 						counter.setAnalyzerName(name);
 						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName() +
 							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
