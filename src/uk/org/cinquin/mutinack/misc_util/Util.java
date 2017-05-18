@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -31,6 +33,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +44,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -557,5 +561,39 @@ public class Util {
 		return result;
 	}
 
+	public final static Field elementDataField;
+
+	static {
+		try {
+			elementDataField = ArrayList.class.getDeclaredField("elementData");
+			elementDataField.setAccessible(true);
+		} catch (NoSuchFieldException | SecurityException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static final int MIN_ARRAY_SORT_GRAN = 1 << 13;
+
+	@SuppressWarnings("unchecked")
+	public static<T> void arrayListParallelSort(ArrayList<T> list, Comparator<? super T> cmp) {
+		int n = list.size() - 1, p, g;
+		if (n <= MIN_ARRAY_SORT_GRAN ||
+			(p = ForkJoinPool.getCommonPoolParallelism()) == 1)
+			list.sort(cmp);
+		else {
+			Object[] a;
+			try {
+				a = (Object[]) elementDataField.get(list);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+			new ArraysParallelSortHelpers.FJObject.Sorter<>
+			(null, a,
+				(Object []) Array.newInstance(Object.class, n),
+				0, n, 0, ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
+					MIN_ARRAY_SORT_GRAN : g, (Comparator<? super Object>) cmp).invoke();
+		}
+
+	}
 
 }
