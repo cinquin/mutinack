@@ -79,7 +79,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 	@Override
 	public String toString() {
-		return "Tester for BED file at " + readerName;
+		return readerName + " BED file tester";
 	}
 
 	@SuppressWarnings("resource")
