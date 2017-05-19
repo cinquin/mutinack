@@ -294,14 +294,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public final boolean equals(Object obj) {
+	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;
 		}
 		CandidateSequence other = (CandidateSequence) obj;
-		/*if (obj instanceof CandidateDeletion) {
-			return false;
-		}*/
 		if (getMutationType() != other.getMutationType()) {
 			return false;
 		}

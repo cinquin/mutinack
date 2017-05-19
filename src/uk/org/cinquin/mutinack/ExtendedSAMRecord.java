@@ -70,7 +70,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public final @NonNull SequenceLocation location;
 	final int medianPhred;
 	final float averagePhred;
-	final Cigar cigar;
+	private final Cigar cigar;
 	/**
 	 * Length of read ignoring trailing Ns.
 	 */
