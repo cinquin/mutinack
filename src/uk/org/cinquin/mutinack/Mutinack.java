@@ -235,7 +235,7 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			});
 
-	final ObjectPool<SAMFileReader> readerPool =
+	final public ObjectPool<SAMFileReader> readerPool =
 		poolSettings.min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
 	final double @Nullable[] insertSizeProbSmooth;
