@@ -147,7 +147,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private boolean hidden = false;
 	private Boolean negativeCodingStrand;
 	private @Persistent boolean goodCandidateForUniqueMutation;
-	@Persistent SetMultimap<String, GenomeInterval> matchingGenomeIntervals;
+	@Persistent MutableSetMultimap<String, GenomeInterval> matchingGenomeIntervals;
 
 	@JsonIgnore private transient Mutation mutation;
 
@@ -805,16 +805,26 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return sampleName;
 	}
 
+	private void initializeGenomeIntervals() {
+		if (matchingGenomeIntervals == null) {
+			matchingGenomeIntervals = new UnifiedSetMultimap<>();
+		}
+	}
+
+	public void addMatchingGenomeIntervals(String name, GenomeFeatureTester intervals) {
+		initializeGenomeIntervals();
+		intervals.apply(location).forEach(gi -> matchingGenomeIntervals.put(name, gi));
+	}
+
 	public void recordMatchingGenomeIntervals(TMap<String, GenomeFeatureTester> intervalsMap) {
-		MutableSetMultimap<String, GenomeInterval> result = new UnifiedSetMultimap<>();
+		initializeGenomeIntervals();
 		intervalsMap.forEachEntry((setName, tester) -> {
 			if (tester instanceof BedComplement) {
 				return true;
 			}
-			tester.apply(location).forEach(gi -> result.put(setName, gi));
+			addMatchingGenomeIntervals(setName, tester);
 			return true;
 		});
-		matchingGenomeIntervals = result.toImmutable();
 	}
 
 	@Override
