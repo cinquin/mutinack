@@ -1410,6 +1410,13 @@ public final class SubAnalyzer {
 			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, extSAMCache));
 	}
 
+	@SuppressWarnings("null")
+	public ExtendedSAMRecord getExtendedNoCaching(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
+		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
+		return
+			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, null);
+	}
+
 	/**
 	 *
 	 * @return the furthest position in the contig covered by the read
