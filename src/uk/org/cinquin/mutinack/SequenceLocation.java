@@ -166,21 +166,21 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	}
 
 	public static @NonNull SequenceLocation get(InterningSet<@NonNull SequenceLocation> interningSet,
-		int contigIndex, @NonNull String contigName, int position) {
+			int contigIndex, @NonNull String contigName, int position) {
 		return get(interningSet, contigIndex, contigName, position, false);
 	}
 
 
-	public SequenceLocation(int contigIndex, List<String> nameMap, int position, boolean plusHalf) {
-		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, plusHalf);
+	public SequenceLocation(int contigIndex, List<String> contigNames, int position, boolean plusHalf) {
+		this(contigIndex, Objects.requireNonNull(contigNames.get(contigIndex)), position, plusHalf);
 	}
 
 	public SequenceLocation(int contigIndex, @NonNull String contigName, int position) {
 		this(contigIndex, contigName, position, false);
 	}
 
-	public SequenceLocation(int contigIndex, List<String> nameMap, int position) {
-		this(contigIndex, Objects.requireNonNull(nameMap.get(contigIndex)), position, false);
+	public SequenceLocation(int contigIndex, List<String> contigNames, int position) {
+		this(contigIndex, Objects.requireNonNull(contigNames.get(contigIndex)), position, false);
 	}
 
 	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
