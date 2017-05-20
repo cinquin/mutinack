@@ -1184,19 +1184,10 @@ public final class SubAnalyzer {
 				candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
 				break;
 			case "NQ1Duplexes":
-				SettableInteger countQ1Duplexes = new SettableInteger(0);
-				candidateDuplexes.forEach(d -> {
-					if (d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).
-							atLeast(GOOD)) {
-						countQ1Duplexes.incrementAndGet();
-					}
-				});
-				if (countQ1Duplexes.get() >= param.minQ1Duplexes &&
-						candidate.getNonMutableConcurringReads().size() >= param.minTotalReadsForNQ1Duplexes) {
-					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, GOOD);
-				} else {
-					candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, DUBIOUS);
-				}
+				int duplexCount = candidateDuplexes.count(d ->
+					d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).atLeast(GOOD) &&
+						d.allDuplexRecords.size() > 1 * 2);
+				setNQ1DupQuality(candidate, duplexCount, param.minQ1Duplexes, param.minTotalReadsForNQ1Duplexes);
 				break;
 			default:
 				throw new AssertionFailedException();
@@ -1216,6 +1207,13 @@ public final class SubAnalyzer {
 			});
 		}
 
+	}
+
+	private static void setNQ1DupQuality(CandidateSequence candidate, int duplexCount,
+			int minQ1Duplexes, int minTotalReads) {
+		boolean good = duplexCount >= minQ1Duplexes &&
+			candidate.getNonMutableConcurringReads().size() >= minTotalReads;
+		candidate.getQuality().addUnique(PositionAssay.N_Q1_DUPLEXES, good ? GOOD : DUBIOUS);
 	}
 
 	private void processCandidateQualityStep2(
