@@ -139,11 +139,11 @@ public final class SubAnalyzer {
 		= new THashMap<>();
 	private final Random random;
 
-	public static final @NonNull Set<DuplexAssay>
-		assaysToIgnoreForDisagreementQuality
+	public static final @NonNull Set<@NonNull DuplexAssay>
+		ASSAYS_TO_IGNORE_FOR_DISAGREEMENT_QUALITY
 		= Collections.unmodifiableSet(EnumSet.of(DISAGREEMENT)),
 
-		assaysToIgnoreForDuplexNStrands
+		ASSAYS_TO_IGNORE_FOR_DUPLEX_NSTRANDS
 		= Collections.unmodifiableSet(EnumSet.of(N_READS_PER_STRAND, MISSING_STRAND, DuplexAssay.TOTAL_N_READS_Q2));
 
 	static final @NonNull TByteObjectMap<@NonNull String> byteMap;
@@ -952,7 +952,7 @@ public final class SubAnalyzer {
 				@Nullable MutableSet<DuplexRead> db = map.get(DUBIOUS);
 				candidate.setnGoodOrDubiousDuplexes(candidate.getnGoodDuplexes() + (db == null ? 0 : db.size()));
 				candidate.setnGoodDuplexesIgnoringDisag(candidate.getDuplexes().
-					count(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality).atLeast(GOOD)));
+					count(dr -> dr.localAndGlobalQuality.getValueIgnoring(ASSAYS_TO_IGNORE_FOR_DISAGREEMENT_QUALITY).atLeast(GOOD)));
 
 				maxQuality = max(candidate.getQuality().getValue(), maxQuality);
 				totalAllDuplexes += candidate.getnDuplexes();
@@ -1182,7 +1182,7 @@ public final class SubAnalyzer {
 				break;
 			case "NQ1Duplexes":
 				int duplexCount = candidateDuplexes.count(d ->
-					d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDuplexNStrands).atLeast(GOOD) &&
+					d.localAndGlobalQuality.getValueIgnoring(ASSAYS_TO_IGNORE_FOR_DUPLEX_NSTRANDS).atLeast(GOOD) &&
 						d.allDuplexRecords.size() > 1 * 2);
 				setNQ1DupQuality(candidate, duplexCount, param.minQ1Duplexes, param.minTotalReadsForNQ1Duplexes);
 				break;
@@ -1192,8 +1192,8 @@ public final class SubAnalyzer {
 
 		if (PositionAssay.COMPUTE_MAX_DPLX_Q_IGNORING_DISAG) {
 			candidateDuplexes.stream().
-			map(dr -> dr.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreForDisagreementQuality, true)).
-			max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
+				map(dr -> dr.localAndGlobalQuality.getValueIgnoring(ASSAYS_TO_IGNORE_FOR_DISAGREEMENT_QUALITY, true)).
+				max(Quality::compareTo).ifPresent(q -> candidate.getQuality().addUnique(MAX_DPLX_Q_IGNORING_DISAG, q));
 		}
 
 		if (maxDuplexQ.atLeast(DUBIOUS)) {
