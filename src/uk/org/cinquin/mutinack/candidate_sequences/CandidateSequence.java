@@ -39,7 +39,6 @@ import org.eclipse.collections.api.multimap.set.SetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
-import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -1103,17 +1102,17 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public int computeNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
-		final DuplexRead supportingQ2 = getDuplexes().collectIf(d -> d.localAndGlobalQuality.getNonNullValue().
-				atLeast(Quality.GOOD), d -> d, new FastList<>(3)).
-			sortThis(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size()).
-				thenComparing(DuplexRead::getUnclippedAlignmentStart)).getLast();
+		final DuplexRead bestSupporting = getDuplexes().stream().
+			max(Comparator.comparing((DuplexRead dr) -> dr.localAndGlobalQuality.getNonNullValue()).
+				thenComparing(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size())).
+				thenComparing(DuplexRead::getUnclippedAlignmentStart)).get();
 
 		//Exclude duplexes whose reads all have an unmapped mate from the count
 		//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
 		//may cause an overestimate of that number
 		//Also exclude duplexes with clipping greater than maxConcurringDuplexClipping
 		final int nConcurringDuplexes = getDuplexes().count(d -> {
-			if (d == supportingQ2) {
+			if (d == bestSupporting) {
 				return true;
 			}
 			boolean good =
@@ -1124,7 +1123,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
 					r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping);
 			if (good) {
-				final int distance = d.distanceTo(supportingQ2);
+				final int distance = d.distanceTo(bestSupporting);
 				alignmentStarts.add(distance);
 				if (concurringDuplexDistances != null) {
 					concurringDuplexDistances.insert(distance);
