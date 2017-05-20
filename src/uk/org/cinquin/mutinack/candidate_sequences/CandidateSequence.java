@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.IntSummaryStatistics;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -1104,7 +1105,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
 		final DuplexRead bestSupporting = getDuplexes().stream().
-			max(Comparator.comparing((DuplexRead dr) -> dr.localAndGlobalQuality.getNonNullValue()).
+			max(Comparator.comparing((DuplexRead dr) -> filterQuality(dr.localAndGlobalQuality)).
 				thenComparing(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size())).
 				thenComparing(DuplexRead::getUnclippedAlignmentStart)).get();
 
@@ -1118,11 +1119,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			}
 			boolean good =
 				d.allDuplexRecords.size() >= param.minConcurringDuplexReads * 2 /* double to account for mates */ &&
-				d.localAndGlobalQuality.getValueIgnoring(SubAnalyzer.assaysToIgnoreForDuplexNStrands).
+				d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreIncludingDuplexNStrands()).
 					atLeast(Quality.GOOD) &&
 				d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
-				d.allDuplexRecords.anySatisfy(r -> r.getnClipped() < param.maxConcurringDuplexClipping &&
-					r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping);
+				d.allDuplexRecords.anySatisfy(r -> concurringDuplexReadClippingOK(r, param));
 			if (good) {
 				final int distance = d.distanceTo(bestSupporting);
 				alignmentStarts.add(distance);
@@ -1153,4 +1153,19 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return matchingGenomeIntervals;
 	}
 
+	@SuppressWarnings("static-method")
+	public @NonNull Quality filterQuality(DetailedQualities<DuplexAssay> localAndGlobalQuality) {
+		return localAndGlobalQuality.getNonNullValue();
+	}
+
+	@SuppressWarnings("static-method")
+	protected Set<DuplexAssay> assaysToIgnoreIncludingDuplexNStrands() {
+		return SubAnalyzer.ASSAYS_TO_IGNORE_FOR_DUPLEX_NSTRANDS;
+	}
+
+	@SuppressWarnings("static-method")
+	protected boolean concurringDuplexReadClippingOK(ExtendedSAMRecord r, Parameters param) {
+		return r.getnClipped() < param.maxConcurringDuplexClipping &&
+			r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping;
+	}
 }

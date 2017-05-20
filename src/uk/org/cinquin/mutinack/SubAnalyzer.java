@@ -942,7 +942,7 @@ public final class SubAnalyzer {
 					candidate.getQuality().addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, DUBIOUS);
 				}
 				@NonNull MutableSetMultimap<Quality, DuplexRead> map = candidate.getDuplexes().
-					groupBy(dr -> dr.localAndGlobalQuality.getValue());
+					groupBy(dr -> candidate.filterQuality(dr.localAndGlobalQuality));
 				if (param.enableCostlyAssertions) {
 					map.forEachKeyMultiValues((k, v) -> Assert.isTrue(Util.getDuplicates(v).isEmpty()));
 					Assert.isTrue(map.multiValuesView().collectInt(RichIterable::size).sum() == candidate.getDuplexes().size());
@@ -1172,7 +1172,8 @@ public final class SubAnalyzer {
 			if (posQMin != null) {
 				dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
 			}
-			maxDuplexQHandle.set(Quality.max(maxDuplexQHandle.get(), dr.localAndGlobalQuality.getValue()));
+			maxDuplexQHandle.set(Quality.max(maxDuplexQHandle.get(),
+				candidate.filterQuality(dr.localAndGlobalQuality)));
 			});
 		final @NonNull Quality maxDuplexQ = maxDuplexQHandle.get();
 
