@@ -165,6 +165,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public void reset() {
 		restoreConcurringReads();
 		getQuality().reset();
+		getIssues().clear();
 		getDuplexes().clear();//Should have no effect
 		setMinDistanceToLigSite(Integer.MAX_VALUE);
 		setMaxDistanceToLigSite(Integer.MIN_VALUE);

@@ -1161,8 +1161,6 @@ public final class SubAnalyzer {
 		}
 
 		if (param.verbosity > 2) {
-			candidate.getIssues().clear();//This *must* be done to avoid interference
-			//between parameter sets, in parameter exploration runs
 			candidateDuplexes.forEach(d -> {
 				candidate.getIssues().put(d, d.localAndGlobalQuality.toLong());
 			});
