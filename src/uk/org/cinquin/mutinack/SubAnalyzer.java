@@ -828,7 +828,6 @@ public final class SubAnalyzer {
 				location,
 				result,
 				candidateSet,
-				assaysToIgnoreForDisagreementQuality,
 				topCounter,
 				bottomCounter,
 				analyzer,

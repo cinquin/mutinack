@@ -552,7 +552,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public void examineAtLoc(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
 			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
-			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
 			Mutinack analyzer,
@@ -564,7 +563,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 
 		try {
-			examineAtLoc1(location, result, candidateSet, assaysToIgnoreForDisagreementQuality,
+			examineAtLoc1(location, result, candidateSet,
 				topCounter, bottomCounter, analyzer, param, stats);
 			lastExaminedPosition = location.position;
 		} finally {
@@ -578,7 +577,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
 			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
-			@NonNull Set<DuplexAssay> assaysToIgnoreForDisagreementQuality,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
 			Mutinack analyzer,
@@ -1151,10 +1149,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 				maxxIndex++;
 			}
 			final int finalRecordIndex = recordIndex;
-			final int finalMaxxIndex = maxxIndex;
 			forEachDuplicate(param, stats, reads, reads.get(recordIndex), recordIndex + 1, maxxIndex,
 					dupIndex -> {
-						nDuplicates.addAndGet(sweepOpticalDuplicateGroup(param, stats, reads, finalRecordIndex, finalMaxxIndex));
+						nDuplicates.addAndGet(sweepOpticalDuplicateGroup(param, stats, reads, finalRecordIndex));
 						return false;//Stop on first duplicate because whole group has already been swept
 					});
 		}
@@ -1209,8 +1206,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			Parameters param,
 			AnalysisStats stats,
 			List<ExtendedSAMRecord> reads,
-			final int readIndex,
-			final int maxxIndex) {
+			final int readIndex) {
 
 		if (reads.get(0).tempIndex0 == -1) {
 			markIndices(reads, param.computeAllReadDistances ? 1_000_000_000 : param.opticalDuplicateDistance);
