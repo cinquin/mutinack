@@ -467,7 +467,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@OnlyUsedAfterDuplexGrouping
 	public int minQ1Duplexes = Integer.MAX_VALUE;
 
-	@Parameter(names = "-minTotalReadsForNQ1Duplexes", description = "If candidateQ2Criterion is set to NQ1Duplexes, allow mutation candidate to be Q2 if it has at least this many supporting reads", required = false, hidden = true)
+	@Parameter(names = "-minTotalReadsForNQ1Duplexes", description = "If candidateQ2Criterion is set to NQ1Duplexes, allow mutation candidate to be Q2 only if it has at least this many supporting reads", required = false, hidden = true)
 	@OnlyUsedAfterDuplexGrouping
 	public int minTotalReadsForNQ1Duplexes = Integer.MAX_VALUE;
 
