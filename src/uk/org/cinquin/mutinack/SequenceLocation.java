@@ -184,7 +184,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	}
 
 	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
-			int position) {
+			int position, boolean plusHalf) {
 		final int contigIndex1;
 		try {
 			contigIndex1 = Objects.requireNonNull(
@@ -195,10 +195,15 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 		this.contigIndex = contigIndex1;
 		this.position = position;
-		this.plusHalf = false;
+		this.plusHalf = plusHalf;
 		this.contigName = contigName;
 
 		this.hash = computeHash();
+	}
+
+	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
+			int position) {
+		this(contigName, indexContigNameReverseMap, position, false);
 	}
 
 	public @NonNull SequenceLocation add(int offset) {
