@@ -1408,7 +1408,7 @@ public final class SubAnalyzer {
 	}
 
 	@SuppressWarnings("null")
-	public ExtendedSAMRecord getExtendedNoCaching(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
+	public @NonNull ExtendedSAMRecord getExtendedNoCaching(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
 		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
 		return
 			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, null);
