@@ -1108,11 +1108,6 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			sortThis(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size()).
 				thenComparing(DuplexRead::getUnclippedAlignmentStart)).getLast();
 
-		if (Util.nullableify(supportingQ2) == null) {
-			nQ1PlusConcurringDuplexes = 0;
-			return 0;
-		}
-
 		//Exclude duplexes whose reads all have an unmapped mate from the count
 		//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
 		//may cause an overestimate of that number
