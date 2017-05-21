@@ -835,14 +835,16 @@ public class Mutinack implements Actualizable, Closeable {
 		//Used to ensure that different analyzers do not use same output files
 		final Set<String> sampleNames = new HashSet<>();
 
-		Pair<List<String>, List<Integer>> parsedPositions =
+		Pair<List<@NonNull String>, List<Integer>> parsedPositions =
 			Util.parseListPositions(param.startAtPositions, true, "startAtPosition");
-		final List<String> startAtContigs = parsedPositions.fst;
+		final List<@NonNull String> startAtContigs = parsedPositions.fst;
+		Util.checkContained(startAtContigs, contigNames, "Error validating startAtPosition:");
 		final List<Integer> startAtPositions = parsedPositions.snd;
 
-		Pair<List<String>, List<Integer>> parsedPositions2 =
+		Pair<List<@NonNull String>, List<Integer>> parsedPositions2 =
 			Util.parseListPositions(param.stopAtPositions, true, "stopAtPosition");
-		final List<String> truncateAtContigs = parsedPositions2.fst;
+		final List<@NonNull String> truncateAtContigs = parsedPositions2.fst;
+		Util.checkContained(truncateAtContigs, contigNames, "Error validating stopAtPosition:");
 		final List<Integer> truncateAtPositions = parsedPositions2.snd;
 
 		Util.checkPositionsOrdering(parsedPositions, parsedPositions2);

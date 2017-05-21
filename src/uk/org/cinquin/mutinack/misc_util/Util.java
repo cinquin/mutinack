@@ -153,7 +153,7 @@ public class Util {
 			}).collect(Collectors.toList());
 	}
 
-	public static Pair<List<String>, List<Integer>> parseListPositions(List<String> l,
+	public static Pair<List<@NonNull String>, List<@NonNull Integer>> parseListPositions(List<String> l,
 			boolean noContigRepeat, String errorMessagePrefix) {
 
 		l.stream().forEach(s -> {
@@ -163,7 +163,7 @@ public class Util {
 			}
 		});
 
-		final List<String> contigNames = l.stream().map
+		final List<@NonNull String> contigNames = l.stream().map
 				(s -> s.split(":")[0]).collect(Collectors.toList());
 
 		Set<String> dup;
@@ -172,7 +172,7 @@ public class Util {
 					" remove extra occurrences of " + Arrays.toString(dup.toArray()));
 		}
 
-		final List<Integer> positionsInContig = l.stream().map
+		final List<@NonNull Integer> positionsInContig = l.stream().map
 				(s -> Integer.valueOf(s.split(":")[1])).collect(Collectors.toList());
 
 		return new Pair<>(contigNames, positionsInContig);
@@ -595,6 +595,14 @@ public class Util {
 					MIN_ARRAY_SORT_GRAN : g, (Comparator<? super Object>) cmp).invoke();
 		}
 
+	}
+
+	public static<T> void checkContained(List<T> list1, List<T> list2, String errorMessage) {
+		for (T t: list1) {
+			if (!list2.contains(t)) {
+				throw new IllegalArgumentException(errorMessage + " " + t + " not present in " + list2);
+			}
+		}
 	}
 
 }
