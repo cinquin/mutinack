@@ -2039,8 +2039,6 @@ public final class SubAnalyzer {
 			final @NonNull ExtendedSAMRecord extendedRec,
 			final boolean readOnNegativeStrand) {
 
-		boolean forceCandidateInsertion = false;
-
 		final @NonNull SequenceLocation location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 			extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
 		int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, param.ignoreFirstNBasesQ1);
@@ -2055,52 +2053,51 @@ public final class SubAnalyzer {
 				stats.nCandidateIndelBeforeFirstNBases.increment(location);
 			}
 			logger.trace("Ignoring insertion " + readEndOfPreviousAlignment + param.ignoreFirstNBasesQ1 + ' ' + extendedRec.getFullName());
-		} else {
-			distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
-			distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
-			distance = Math.max(distance0, distance1);
-			distance = -distance + 1;
+			return false;
+		}
+		distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, 0);
+		distance1 = extendedRec.tooCloseToBarcode(readPosition, 0);
+		distance = Math.max(distance0, distance1);
+		distance = -distance + 1;
 
-			final byte [] readBases = extendedRec.record.getReadBases();
-			final byte @NonNull [] insertedSequence = Arrays.copyOfRange(readBases,
-				readEndOfPreviousAlignment + 1, readPosition);
+		final byte [] readBases = extendedRec.record.getReadBases();
+		final byte @NonNull [] insertedSequence = Arrays.copyOfRange(readBases,
+			readEndOfPreviousAlignment + 1, readPosition);
 
-			CandidateSequence candidate = new CandidateSequence(
-				this,
-				INSERTION,
-				insertedSequence,
-				location,
-				extendedRec,
-				distance);
+		CandidateSequence candidate = new CandidateSequence(
+			this,
+			INSERTION,
+			insertedSequence,
+			location,
+			extendedRec,
+			distance);
 
-			if (!extendedRec.formsWrongPair()) {
-				candidate.acceptLigSiteDistance(distance);
-			}
-
-			candidateFiller.accept(candidate);
-			candidate.setPositionInRead(readPosition);
-
-			if (param.computeRawMismatches) {
-				stats.rawInsertionLengthQ1.insert(insertedSequence.length);
-				registerRawMismatch(location, extendedRec, readPosition,
-					distance, candidate.getMutableRawInsertionsQ2(), stats.rawInsertionsQ1,
-					getFromByteMap(readBases[readEndOfPreviousAlignment], readOnNegativeStrand),
-					toUpperCase(insertedSequence, readOnNegativeStrand));
-			}
-
-			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-				logger.info("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
-			}
-			candidate = readLocalCandidates.add(candidate, location);
-			candidate = null;
-			forceCandidateInsertion = true;
-			if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
-				logger.info("Added candidate at " + location /*+ "; readLocalCandidates now " + readLocalCandidates.build()*/);
-			}
-			extendedRec.nReferenceDisagreements++;
+		if (!extendedRec.formsWrongPair()) {
+			candidate.acceptLigSiteDistance(distance);
 		}
 
-		return forceCandidateInsertion;
+		candidateFiller.accept(candidate);
+		candidate.setPositionInRead(readPosition);
+
+		if (param.computeRawMismatches) {
+			stats.rawInsertionLengthQ1.insert(insertedSequence.length);
+			registerRawMismatch(location, extendedRec, readPosition,
+				distance, candidate.getMutableRawInsertionsQ2(), stats.rawInsertionsQ1,
+				getFromByteMap(readBases[readEndOfPreviousAlignment], readOnNegativeStrand),
+				toUpperCase(insertedSequence, readOnNegativeStrand));
+		}
+
+		if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+			logger.info("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
+		}
+		candidate = readLocalCandidates.add(candidate, location);
+		candidate = null;
+		if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
+			logger.info("Added candidate at " + location /*+ "; readLocalCandidates now " + readLocalCandidates.build()*/);
+		}
+		extendedRec.nReferenceDisagreements++;
+
+		return true;
 	}
 
 	public @NonNull Mutinack getAnalyzer() {
