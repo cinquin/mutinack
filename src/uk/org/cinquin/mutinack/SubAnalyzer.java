@@ -1676,11 +1676,11 @@ public final class SubAnalyzer {
 					readPosition > (rec.getReadLength() - 1) - param.ignoreLastNBases;
 
 				boolean goodToInsert = checkSubstDistance(
-					readPosition,
-					location,
-					tooLate,
-					insertCandidateAtRegularPosition,
-					extendedRec)
+						readPosition,
+						location,
+						tooLate,
+						insertCandidateAtRegularPosition,
+						extendedRec)
 					&& !tooLate;
 
 				if (goodToInsert || forceCandidateInsertion) {
