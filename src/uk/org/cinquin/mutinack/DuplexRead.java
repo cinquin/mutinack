@@ -357,7 +357,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public Interval<Integer> getIntervalWithSlop(int shift, int slop) {
 		Interval<Integer> result = Interval.toInterval(leftAlignmentStart != null ? (leftAlignmentStart.position + shift - slop) : 0,
-					leftAlignmentEnd != null ? leftAlignmentEnd.position + shift + slop : Integer.MAX_VALUE);
+			leftAlignmentStart != null ? leftAlignmentStart.position + shift + slop : Integer.MAX_VALUE);
 		return result;
 	}
 
