@@ -658,12 +658,30 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return nonNullify(mate).getUnclippedEnd();
 	}
 
+	private SequenceLocation unclippedEndHelper(boolean noMatePosition) {
+		return new SequenceLocation(getLocation().contigIndex, groupSettings.getContigNames(),
+			noMatePosition ? NO_MATE_POSITION : record.getUnclippedEnd() - 1 - intronAdjustment(16, true));
+	}
+
+	public SequenceLocation getOffsetUnclippedEndLoc() {
+		return unclippedEndHelper(false);
+	}
+
 	public int getOffsetUnclippedEnd() {
-		return record.getUnclippedEnd() - 1 - intronAdjustment(16, true);
+		return getOffsetUnclippedEndLoc().position;
+	}
+
+	private SequenceLocation unclippedStartHelper(boolean noMatePosition) {
+		return new SequenceLocation(getLocation().contigIndex, groupSettings.getContigNames(),
+			noMatePosition ? NO_MATE_POSITION : record.getUnclippedStart() - 1 + intronAdjustment(16, false));
+	}
+
+	public SequenceLocation getOffsetUnclippedStartLoc() {
+		return unclippedStartHelper(false);
 	}
 
 	public int getOffsetUnclippedStart() {
-		return record.getUnclippedStart() - 1 + intronAdjustment(16, false);
+		return getOffsetUnclippedStartLoc().position;
 	}
 
 	public int getMateOffsetUnclippedEnd() {
@@ -674,12 +692,28 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return nonNullify(mate).getOffsetUnclippedEnd();
 	}
 
+	public SequenceLocation getMateOffsetUnclippedEndLoc() {
+		checkMate();
+		if (mate == null) {
+			return unclippedEndHelper(true);
+		}
+		return nonNullify(mate).getOffsetUnclippedEndLoc();
+	}
+
 	public int getMateOffsetUnclippedStart() {
 		checkMate();
 		if (mate == null) {
 			return NO_MATE_POSITION;
 		}
 		return nonNullify(mate).getOffsetUnclippedStart();
+	}
+
+	public SequenceLocation getMateOffsetUnclippedStartLoc() {
+		checkMate();
+		if (mate == null) {
+			return unclippedStartHelper(true);
+		}
+		return nonNullify(mate).getOffsetUnclippedStartLoc();
 	}
 
 	public int getUnclippedEnd() {

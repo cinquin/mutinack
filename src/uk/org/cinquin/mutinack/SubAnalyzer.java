@@ -659,17 +659,13 @@ public final class SubAnalyzer {
 				}
 
 				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getOffsetUnclippedStart()));
+					rExtended.getOffsetUnclippedStartLoc());
 				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getOffsetUnclippedEnd()));
+					rExtended.getOffsetUnclippedEndLoc());
 				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getMateOffsetUnclippedStart()));
+					rExtended.getMateOffsetUnclippedStartLoc());
 				duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						rExtended.getReferenceName(), rExtended.getMateOffsetUnclippedEnd()));
+					rExtended.getMateOffsetUnclippedEndLoc());
 			} else {//Read on positive strand
 
 				if (rExtended.getMateAlignmentStart() == rExtended.getAlignmentStart()) {
@@ -690,17 +686,13 @@ public final class SubAnalyzer {
 				}
 
 				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getOffsetUnclippedStart()));
+					rExtended.getOffsetUnclippedStartLoc());
 				duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getOffsetUnclippedEnd()));
+					rExtended.getOffsetUnclippedEndLoc());
 				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getMateOffsetUnclippedStart()));
+					rExtended.getMateOffsetUnclippedStartLoc());
 				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
-					new SequenceLocation(rExtended.getReferenceIndex(),
-						r.getReferenceName(), rExtended.getMateOffsetUnclippedEnd()));
+					rExtended.getMateOffsetUnclippedEndLoc());
 			}
 
 			Assert.isFalse(
