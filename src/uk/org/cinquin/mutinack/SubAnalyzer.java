@@ -1231,7 +1231,7 @@ public final class SubAnalyzer {
 			final @NonNull SequenceLocation location
 		) {
 
-		if (!param.rnaSeq) {
+		if (false && !param.rnaSeq) {
 			candidate.getNonMutableConcurringReads().forEachKey(r -> {
 				final int refPosition = location.position;
 				final int readPosition = r.referencePositionToReadPosition(refPosition);

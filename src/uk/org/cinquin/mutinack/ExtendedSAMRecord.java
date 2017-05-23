@@ -37,7 +37,6 @@ import contrib.net.sf.samtools.SAMFileReader;
 import contrib.net.sf.samtools.SAMFileReader.QueryInterval;
 import contrib.net.sf.samtools.SAMRecord;
 import contrib.net.sf.samtools.SAMRecordIterator;
-import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
 import contrib.nf.fr.eraasoft.pool.PoolException;
 import contrib.uk.org.lidalia.slf4jext.Logger;
@@ -543,13 +542,45 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return mate;
 	}
 
+	//Adapted from SamPairUtil
+	public PairOrientation getPairOrientation() {
+		final boolean readIsOnReverseStrand = record.getReadNegativeStrandFlag();
+
+		if(record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
+			throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() + ". This method only works for SAMRecords " +
+				"that are paired reads with both reads aligned.");
+		}
+
+		if(readIsOnReverseStrand == record.getMateNegativeStrandFlag() )  {
+			return PairOrientation.TANDEM;
+		}
+
+		final long positiveStrandFivePrimePos =
+			readIsOnReverseStrand ?
+				getMateOffsetUnclippedStart()  //mate's 5' position  ( x---> )
+			:
+				getOffsetUnclippedStart();   //read's 5' position  ( x---> )
+
+		final long negativeStrandFivePrimePos =
+			readIsOnReverseStrand ?
+				getOffsetUnclippedEnd()                                   //read's 5' position  ( <---x )
+			:
+				getMateOffsetUnclippedEnd();  //mate's 5' position  ( <---x )
+
+		return
+			positiveStrandFivePrimePos < negativeStrandFivePrimePos ?
+				PairOrientation.FR
+			:
+				PairOrientation.RF;
+	}
+
 	public boolean formsWrongPair() {
 		if (formsWrongPair == null) {
 			formsWrongPair = record.getReadPairedFlag() && (
 					record.getReadUnmappedFlag() ||
 					record.getMateUnmappedFlag() ||
-					SamPairUtil.getPairOrientation(record) == PairOrientation.TANDEM ||
-					SamPairUtil.getPairOrientation(record) == PairOrientation.RF
+					getPairOrientation() == PairOrientation.TANDEM ||
+					getPairOrientation() == PairOrientation.RF
 				);
 		}
 		return formsWrongPair;
@@ -733,10 +764,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				while (it.hasNext()) {
 					SAMRecord record = it.next();
 					if (record.getReadName().equals(name) && record.getFirstOfPairFlag() == firstOfPair &&
-						record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
-						ExtendedSAMRecord extended = SubAnalyzer.getExtendedNoCaching(
-							record, location, analyzer);
-						return extended;
+							record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
+						return SubAnalyzer.getExtendedNoCaching(record,
+							new SequenceLocation(location.contigName, analyzer.groupSettings.indexContigNameReverseMap,
+								record.getAlignmentStart() - 1, false), analyzer);
 					}
 				}
 				return null;
