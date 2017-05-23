@@ -709,7 +709,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	boolean duplexLeft() {
 		return formsWrongPair() ?
-				getAlignmentStart() <= getMateAlignmentStart()
+				getOffsetUnclippedStart() <= getMateOffsetUnclippedStart()
 				: getReadPositiveStrand();
 	}
 
