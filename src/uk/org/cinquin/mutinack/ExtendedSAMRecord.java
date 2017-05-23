@@ -577,13 +577,16 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				PairOrientation.RF;
 	}
 
+	@SuppressWarnings("null")
 	public boolean formsWrongPair() {
+		PairOrientation po;
 		if (formsWrongPair == null) {
 			formsWrongPair = record.getReadPairedFlag() && (
 					record.getReadUnmappedFlag() ||
 					record.getMateUnmappedFlag() ||
-					getPairOrientation() == PairOrientation.TANDEM ||
-					getPairOrientation() == PairOrientation.RF
+					(((mate = checkMate()) != null) && !record.getReferenceIndex().equals(mate.record.getReferenceIndex())) ||
+					(po = getPairOrientation()) == PairOrientation.TANDEM ||
+					po == PairOrientation.RF
 				);
 		}
 		return formsWrongPair;
@@ -597,7 +600,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return !record.getReadNegativeStrandFlag();
 	}
 
-	private void checkMate() {
+	private ExtendedSAMRecord checkMate() {
 		if (mate == null) {
 			if (extSAMCache != null)
 				mate = extSAMCache.get(mateName);
@@ -608,6 +611,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				triedRetrievingMateFromFile = true;
 			}
 		}
+		return mate;
 	}
 
 	/** Indexing starts at 0
