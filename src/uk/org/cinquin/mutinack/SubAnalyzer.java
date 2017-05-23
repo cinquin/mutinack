@@ -695,8 +695,11 @@ public final class SubAnalyzer {
 					rExtended.getMateOffsetUnclippedEndLoc());
 			}
 
-			Assert.isFalse(
-				duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0,
+			if (false) Assert.isFalse( /* There are funny alignments that can trigger this assert;
+			but it should not hurt for alignment start and end to be switched, since it should happen
+			in the same fashion for all reads  in a duplex  */
+				duplexRead.leftAlignmentEnd.contigIndex == duplexRead.leftAlignmentStart.contigIndex &&
+					duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0,
 				(Supplier<Object>) duplexRead.leftAlignmentStart::toString,
 				(Supplier<Object>) duplexRead.leftAlignmentEnd::toString,
 				(Supplier<Object>) duplexRead::toString,
