@@ -549,27 +549,34 @@ public final class SubAnalyzer {
 		for (final DuplexRead duplexRead: duplexKeeper.getOverlapping(ed.temp)) {
 			//stats.nVariableBarcodeCandidateExaminations.increment(location);
 
+			boolean forceGrouping = false;
+			if (duplexRead.allDuplexRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
+				forceGrouping = true;
+			}
+
 			ed.set(duplexRead);
 
-			if (ed.getMaxDistance() > param.alignmentPositionMismatchAllowed) {
+			if (!forceGrouping && ed.getMaxDistance() > param.alignmentPositionMismatchAllowed) {
 				continue;
 			}
 
 			final boolean barcodeMatch;
 			//During first pass, do not allow any barcode mismatches
-			if (matchToLeft) {
+			if (forceGrouping) {
+				barcodeMatch = true;
+			} else if (matchToLeft) {
 				barcodeMatch = basesEqual(duplexRead.leftBarcode, barcode,
-						param.acceptNInBarCode) &&
-						basesEqual(duplexRead.rightBarcode, mateBarcode,
-								param.acceptNInBarCode);
+					param.acceptNInBarCode) &&
+					basesEqual(duplexRead.rightBarcode, mateBarcode,
+						param.acceptNInBarCode);
 			} else {
 				barcodeMatch = basesEqual(duplexRead.leftBarcode, mateBarcode,
-						param.acceptNInBarCode) &&
-						basesEqual(duplexRead.rightBarcode, barcode,
-								param.acceptNInBarCode);
+					param.acceptNInBarCode) &&
+					basesEqual(duplexRead.rightBarcode, barcode,
+						param.acceptNInBarCode);
 			}
 
-			if (barcodeMatch) {
+			if (forceGrouping || barcodeMatch) {
 				if (r.getInferredInsertSize() >= 0) {
 					if (r.getFirstOfPairFlag()) {
 						if (param.enableCostlyAssertions) {
@@ -595,7 +602,8 @@ public final class SubAnalyzer {
 						duplexRead.topStrandRecords.add(rExtended);
 					}
 				}
-				if (param.enableCostlyAssertions) {
+				if (param.enableCostlyAssertions) {//XXX May fail if there was a barcode
+					//read error and duplex grouping was forced for mate
 					Assert.noException(duplexRead::assertAllBarcodesEqual);
 				}
 				rExtended.duplexRead = duplexRead;
@@ -703,6 +711,10 @@ public final class SubAnalyzer {
 				(Supplier<Object>) rExtended::getFullName,
 				"Misordered duplex: %s -- %s %s %s");
 		}//End new duplex creation
+
+		if (param.enableCostlyAssertions) {
+			DuplexRead.checkNoEqualDuplexes(duplexKeeper.getIterable());
+		}
 
 	}
 
@@ -1399,18 +1411,18 @@ public final class SubAnalyzer {
 		return true;
 	}
 
-	@SuppressWarnings("null")
 	ExtendedSAMRecord getExtended(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
 		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
 		return extSAMCache.computeIfAbsent(readFullName, s ->
-			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, extSAMCache));
+			new ExtendedSAMRecord(record, readFullName, analyzer.stats, analyzer, location, extSAMCache));
 	}
 
 	@SuppressWarnings("null")
-	public @NonNull ExtendedSAMRecord getExtendedNoCaching(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
+	public static @NonNull ExtendedSAMRecord getExtendedNoCaching(@NonNull SAMRecord record,
+			@NonNull SequenceLocation location, Mutinack analyzer) {
 		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
 		return
-			new ExtendedSAMRecord(record, readFullName, analyzer.groupSettings, analyzer, location, null);
+			new ExtendedSAMRecord(record, readFullName, Collections.emptyList(), analyzer, location, null);
 	}
 
 	/**

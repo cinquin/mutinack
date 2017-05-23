@@ -196,7 +196,7 @@ public class Mutinack implements Actualizable, Closeable {
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
 	private final Date startDate;
 
-	final MutinackGroup groupSettings;
+	final @NonNull MutinackGroup groupSettings;
 	final @NonNull Parameters param;
 	public final @NonNull String name;
 	long timeStartProcessing;
@@ -257,7 +257,7 @@ public class Mutinack implements Actualizable, Closeable {
 	}
 
 	private Mutinack(
-			MutinackGroup groupSettings,
+			@NonNull MutinackGroup groupSettings,
 			Parameters param,
 			@NonNull String name,
 			@NonNull File inputBam,

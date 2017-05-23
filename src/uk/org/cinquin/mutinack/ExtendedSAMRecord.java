@@ -33,9 +33,13 @@ import contrib.edu.stanford.nlp.util.Interval;
 import contrib.net.sf.samtools.Cigar;
 import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
+import contrib.net.sf.samtools.SAMFileReader;
+import contrib.net.sf.samtools.SAMFileReader.QueryInterval;
 import contrib.net.sf.samtools.SAMRecord;
+import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.net.sf.samtools.SamPairUtil;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
+import contrib.nf.fr.eraasoft.pool.PoolException;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
@@ -57,10 +61,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	static final Logger logger = LoggerFactory.getLogger(ExtendedSAMRecord.class);
 
 	public boolean discarded = false;
-	private final @NonNull Map<String, ExtendedSAMRecord> extSAMCache;
+	private final @Nullable Map<String, ExtendedSAMRecord> extSAMCache;
 	public final @NonNull SAMRecord record;
 	private final @NonNull String name;
 	private @Nullable ExtendedSAMRecord mate;
+	private boolean triedRetrievingMateFromFile = false;
 	private final @NonNull String mateName;
 	private final int hashCode;
 	public @Nullable DuplexRead duplexRead;
@@ -92,6 +97,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public int tempIndex0 = -1, tempIndex1 = -1;
 
 	private final @NonNull MutinackGroup groupSettings;
+	private final @NonNull Mutinack analyzer;
 
 	public static @NonNull String getReadFullName(SAMRecord rec, boolean getMate) {
 		return (rec.getReadName() + "--" + ((getMate ^ rec.getFirstOfPairFlag())? "1" : "2") + "--" +
@@ -161,13 +167,15 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	@SuppressWarnings("static-access")
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName,
-			@NonNull MutinackGroup groupSettings, @NonNull Mutinack analyzer,
-			@NonNull SequenceLocation location, @NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+			@NonNull List<@NonNull AnalysisStats> stats,
+			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
+			@Nullable Map<String, ExtendedSAMRecord> extSAMCache) {
 
-		this.groupSettings = groupSettings;
+		this.groupSettings = Objects.requireNonNull(analyzer.groupSettings);
+		this.analyzer = Objects.requireNonNull(analyzer);
 		this.extSAMCache = extSAMCache;
-		this.name = fullName;
-		this.record = rec;
+		this.name = Objects.requireNonNull(fullName);
+		this.record = Objects.requireNonNull(rec);
 		this.cigar = rec.getCigar();
 		this.location = location;
 		hashCode = fullName.hashCode();
@@ -209,13 +217,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			nConsidered0++;
 			final byte b = baseQualities[index1];
 			sumBaseQualities0 += b;
-			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
-			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
+			stats.forEach(s -> s.nProcessedBases.add(location, 1));
+			stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
 
 		int avQuality = sumBaseQualities0 / nConsidered0;
-		analyzer.stats.forEach(s-> s.averageReadPhredQuality0.insert(avQuality));
+		stats.forEach(s-> s.averageReadPhredQuality0.insert(avQuality));
 
 		int sumBaseQualities1 = 0;
 		int nConsidered1 = 0;
@@ -223,19 +231,19 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			nConsidered1++;
 			final byte b = baseQualities[index1];
 			sumBaseQualities1 += b;
-			analyzer.stats.forEach(s -> s.nProcessedBases.add(location, 1));
-			analyzer.stats.forEach(s -> s.phredSumProcessedbases.add(b));
+			stats.forEach(s -> s.nProcessedBases.add(location, 1));
+			stats.forEach(s -> s.phredSumProcessedbases.add(b));
 			qualities.add(b);
 		}
 		if (nConsidered1 > 0) {
 			int avQuality1 = sumBaseQualities1 / nConsidered1;
-			analyzer.stats.forEach(s -> s.averageReadPhredQuality1.insert(avQuality1));
+			stats.forEach(s -> s.averageReadPhredQuality1.insert(avQuality1));
 		}
 
 		qualities.sort();
 		medianPhred = qualities.get(qualities.size() / 2);
 		averagePhred = (sumBaseQualities0 + sumBaseQualities1) / ((float) (nConsidered0 + nConsidered1));
-		analyzer.stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
+		stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 
 		Assert.isTrue(rec.getUnclippedEnd() - 1 >= getAlignmentEnd(),
 			(Supplier<Object>) () -> "" + (rec.getUnclippedEnd() - 1),
@@ -250,7 +258,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				final int firstIndex = name.indexOf("BC:Z:");
 				if (firstIndex == -1) {
 					throw new ParseRTException("Missing first barcode for read " + name +
-						' ' + record.toString() + " from analyzer " + analyzer);
+						' ' + record.toString());
 				}
 				final int index;
 				if (record.getFirstOfPairFlag()) {
@@ -259,7 +267,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 					index = name.indexOf("BC:Z:", firstIndex + 1);
 					if (index == -1) {
 						throw new ParseRTException("Missing second barcode for read " + name +
-							' ' + record.toString() + " from analyzer " + analyzer);
+							' ' + record.toString());
 					}
 				}
 				fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf('_', index)));
@@ -324,11 +332,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private static final byte @NonNull[] EMPTY_BARCODE = new byte [0];
 	private static final byte @NonNull[] DUMMY_BARCODE = {'N', 'N', 'N'};
 
-	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull MutinackGroup groupSettings,
+	public ExtendedSAMRecord(@NonNull SAMRecord rec,
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
 			@NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
 		this(rec, getReadFullName(rec, false),
-				groupSettings, analyzer, location, extSAMCache);
+				analyzer.stats, analyzer, location, extSAMCache);
 	}
 
 	public byte @NonNull[] getMateVariableBarcode() {
@@ -542,7 +550,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 					record.getMateUnmappedFlag() ||
 					SamPairUtil.getPairOrientation(record) == PairOrientation.TANDEM ||
 					SamPairUtil.getPairOrientation(record) == PairOrientation.RF
-															);
+				);
 		}
 		return formsWrongPair;
 	}
@@ -557,7 +565,14 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	private void checkMate() {
 		if (mate == null) {
-			mate = extSAMCache.get(mateName);
+			if (extSAMCache != null)
+				mate = extSAMCache.get(mateName);
+			if (mate == null && !triedRetrievingMateFromFile && !record.getMateUnmappedFlag()) {
+				mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
+					new SequenceLocation(record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
+						record.getMateAlignmentStart() - 1, false) , -1, 1);
+				triedRetrievingMateFromFile = true;
+			}
 		}
 	}
 
@@ -698,5 +713,36 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public List<ExtendedAlignmentBlock> getAlignmentBlocks() {
 		return ExtendedAlignmentBlock.getAlignmentBlocks(getCigar(), record.getAlignmentStart(), "read cigar");
+	}
+
+	public static @Nullable ExtendedSAMRecord getRead(Mutinack analyzer, String name, boolean firstOfPair,
+			SequenceLocation location, int avoidAlignmentStart0Based, int windowHalfWidth) {
+
+		SAMFileReader bamReader;
+		try {
+			bamReader = analyzer.readerPool.getObj();
+		} catch (PoolException e) {
+			throw new RuntimeException(e);
+		}
+
+		try {
+			final QueryInterval[] bamContig = {
+				bamReader.makeQueryInterval(location.contigName, location.position - windowHalfWidth, location.position + windowHalfWidth)};
+
+			try (SAMRecordIterator it = bamReader.queryOverlapping(bamContig)) {
+				while (it.hasNext()) {
+					SAMRecord record = it.next();
+					if (record.getReadName().equals(name) && record.getFirstOfPairFlag() == firstOfPair &&
+						record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
+						ExtendedSAMRecord extended = SubAnalyzer.getExtendedNoCaching(
+							record, location, analyzer);
+						return extended;
+					}
+				}
+				return null;
+			}
+		} finally {
+			analyzer.readerPool.returnObj(bamReader);
+		}
 	}
 }
