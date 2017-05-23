@@ -546,26 +546,26 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public PairOrientation getPairOrientation() {
 		final boolean readIsOnReverseStrand = record.getReadNegativeStrandFlag();
 
-		if(record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
+		if (record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
 			throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() + ". This method only works for SAMRecords " +
 				"that are paired reads with both reads aligned.");
 		}
 
-		if(readIsOnReverseStrand == record.getMateNegativeStrandFlag() )  {
+		if (readIsOnReverseStrand == record.getMateNegativeStrandFlag()) {
 			return PairOrientation.TANDEM;
 		}
 
-		final long positiveStrandFivePrimePos =
+		final int positiveStrandFivePrimePos =
 			readIsOnReverseStrand ?
-				getMateOffsetUnclippedStart()  //mate's 5' position  ( x---> )
+				getMateOffsetUnclippedStart()
 			:
-				getOffsetUnclippedStart();   //read's 5' position  ( x---> )
+				getOffsetUnclippedStart();
 
-		final long negativeStrandFivePrimePos =
+		final int negativeStrandFivePrimePos =
 			readIsOnReverseStrand ?
-				getOffsetUnclippedEnd()                                   //read's 5' position  ( <---x )
+				getOffsetUnclippedEnd()
 			:
-				getMateOffsetUnclippedEnd();  //mate's 5' position  ( <---x )
+				getMateOffsetUnclippedEnd();
 
 		return
 			positiveStrandFivePrimePos < negativeStrandFivePrimePos ?
