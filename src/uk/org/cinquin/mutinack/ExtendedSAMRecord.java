@@ -799,7 +799,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		try {
 			final QueryInterval[] bamContig = {
-				bamReader.makeQueryInterval(location.contigName, location.position - windowHalfWidth, location.position + windowHalfWidth)};
+				bamReader.makeQueryInterval(location.contigName, Math.max(location.position + 1 - windowHalfWidth, 1),
+					location.position + 1 + windowHalfWidth)};
 
 			try (SAMRecordIterator it = bamReader.queryOverlapping(bamContig)) {
 				while (it.hasNext()) {
