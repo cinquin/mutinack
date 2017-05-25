@@ -173,7 +173,7 @@ public class Util {
 		}
 
 		final List<@NonNull Integer> positionsInContig = l.stream().map
-				(s -> Integer.valueOf(s.split(":")[1])).collect(Collectors.toList());
+				(s -> Integer.valueOf(s.split(":")[1]) - 1).collect(Collectors.toList());
 
 		return new Pair<>(contigNames, positionsInContig);
 	}
