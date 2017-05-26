@@ -187,8 +187,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 				outer:
 				for (int position = saveLastProcessedPosition + 1;
-						position <= targetStopPosition &&
-						!groupSettings.terminateAnalysis; position ++) {
+						position <= targetStopPosition && !groupSettings.terminateAnalysis;
+						position ++) {
 
 					final @NonNull SequenceLocation location =
 						new SequenceLocation(contigIndex, contigName, position,
