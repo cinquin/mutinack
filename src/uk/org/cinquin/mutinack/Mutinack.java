@@ -1262,6 +1262,11 @@ public class Mutinack implements Actualizable, Closeable {
 				startContigAtPosition = 0;
 			}
 
+			if (startContigAtPosition > terminateContigAtPosition + 1) {
+				throw new IllegalArgumentException("Misordering of start and stop positions for contig " +
+					contigName + ": " + startContigAtPosition + " > " + terminateContigAtPosition + " + 1");
+			}
+
 			final int contigParallelizationFactor = getContigParallelizationFactor(
 				contigIndex, param, Objects.requireNonNull(contigSizes.get(contigNames.get(contigIndex))));
 			List<AnalysisChunk> contigAnalysisChunks = new ArrayList<>();
