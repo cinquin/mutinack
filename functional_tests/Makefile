@@ -189,13 +189,13 @@ ref.fa.info:
 %/ref.fa.fai:
 	@ln -f ref.fa.fai $@
 
-export CHRI="-stopAtPosition chrIII:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
-export CHRII="-stopAtPosition chrI:1 -stopAtPosition chrIII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
-export CHRIII="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
-export CHRIV="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIII:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
-export CHRV="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrIII:1 -stopAtPosition chrX:1 -stopAtPosition chrM:1"
-export CHRX="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrIII:1 -stopAtPosition chrM:1"
-export CHRM="-stopAtPosition chrI:1 -stopAtPosition chrII:1 -stopAtPosition chrIV:1 -stopAtPosition chrV:1 -stopAtPosition chrX:1 -stopAtPosition chrIII:1"
+export CHRI="-stopAtPosition chrIII:0 -stopAtPosition chrII:0 -stopAtPosition chrIV:0 -stopAtPosition chrV:0 -stopAtPosition chrX:0 -stopAtPosition chrM:0"
+export CHRII="-stopAtPosition chrI:0 -stopAtPosition chrIII:0 -stopAtPosition chrIV:0 -stopAtPosition chrV:0 -stopAtPosition chrX:0 -stopAtPosition chrM:0"
+export CHRIII="-stopAtPosition chrI:0 -stopAtPosition chrII:0 -stopAtPosition chrIV:0 -stopAtPosition chrV:0 -stopAtPosition chrX:0 -stopAtPosition chrM:0"
+export CHRIV="-stopAtPosition chrI:0 -stopAtPosition chrII:0 -stopAtPosition chrIII:0 -stopAtPosition chrV:0 -stopAtPosition chrX:0 -stopAtPosition chrM:0"
+export CHRV="-stopAtPosition chrI:0 -stopAtPosition chrII:0 -stopAtPosition chrIV:0 -stopAtPosition chrIII:0 -stopAtPosition chrX:0 -stopAtPosition chrM:0"
+export CHRX="-stopAtPosition chrI:0 -stopAtPosition chrII:0 -stopAtPosition chrIV:0 -stopAtPosition chrV:0 -stopAtPosition chrIII:0 -stopAtPosition chrM:0"
+export CHRM="-stopAtPosition chrI:0 -stopAtPosition chrII:0 -stopAtPosition chrIV:0 -stopAtPosition chrV:0 -stopAtPosition chrX:0 -stopAtPosition chrIII:0"
 
 #TODO: introduce optional dependency on %/alignment-2/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam
 .PRECIOUS: %.out

@@ -1284,7 +1284,7 @@ public class Mutinack implements Actualizable, Closeable {
 					terminateContigAtPosition
 					: startSubAt + subAnalyzerSpan - 1;
 
-				Assert.isTrue(terminateAtPosition >= startSubAt);
+				Assert.isTrue(terminateAtPosition >= startSubAt - 1);
 				analysisChunk.contig = contigIndex;
 				analysisChunk.startAtPosition = startSubAt;
 				analysisChunk.lastProcessedPosition = analysisChunk.startAtPosition - 1;
