@@ -96,6 +96,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import contrib.net.sf.picard.sam.BuildBamIndex;
 import contrib.net.sf.samtools.SAMFileHeader;
 import contrib.net.sf.samtools.SAMFileReader;
+import contrib.net.sf.samtools.SAMFileReader.ValidationStringency;
 import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMFileWriterFactory;
 import contrib.net.sf.samtools.SAMProgramRecord;
@@ -238,6 +239,7 @@ public class Mutinack implements Actualizable, Closeable {
 	final public ObjectPool<SAMFileReader> readerPool =
 		poolSettings.min(0).max(300).pool(true); 	//Need min(0) so inputBam is set before first
 										//reader is created
+	final ValidationStringency samValidationStringency;
 	final double @Nullable[] insertSizeProbSmooth;
 	private final double @Nullable[] insertSizeProbRaw;
 	final @NonNull Collection<File> intersectAlignmentFiles;
@@ -261,6 +263,7 @@ public class Mutinack implements Actualizable, Closeable {
 			Parameters param,
 			@NonNull String name,
 			@NonNull File inputBam,
+			@NonNull ValidationStringency samValidationStringency,
 			@NonNull PrintStream out,
 			@Nullable OutputStreamWriter mutationAnnotationWriter,
 			@Nullable Histogram approximateReadInsertSize,
@@ -276,6 +279,7 @@ public class Mutinack implements Actualizable, Closeable {
 		this.param = param;
 		this.name = name;
 		this.inputBam = inputBam;
+		this.samValidationStringency = samValidationStringency;
 		this.outputAlignmentWriter = outputAlignmentWriter;
 		if (approximateReadInsertSize != null) {
 			insertSizeProbRaw = approximateReadInsertSize.toProbabilityArray(false);
@@ -918,11 +922,27 @@ public class Mutinack implements Actualizable, Closeable {
 				alignmentWriter = null;
 			}
 
+			final ValidationStringency samValidationStringency;
+			switch (param.samValidation) {
+				case "none":
+					samValidationStringency = SAMFileReader.ValidationStringency.SILENT;
+					break;
+				case "warning":
+					samValidationStringency = SAMFileReader.ValidationStringency.LENIENT;
+					break;
+				case "error":
+					samValidationStringency = SAMFileReader.ValidationStringency.STRICT;
+					break;
+				default:
+					throw new AssertionFailedException();
+			}
+			SAMFileReader.setDefaultValidationStringency(samValidationStringency);
 			final Mutinack analyzer = new Mutinack(
 				groupSettings,
 				param,
 				name,
 				inputBam,
+				samValidationStringency,
 				out,
 				mutationWriterCopy,
 				param.variableBarcodeLength == 0 ?
@@ -1161,10 +1181,6 @@ public class Mutinack implements Actualizable, Closeable {
 			} catch (Exception e) {
 				throw new RuntimeException("Problem with traceField " + s, e);
 			}
-		}
-
-		if (param.lenientSamValidation) {
-			SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.LENIENT);
 		}
 
 		final List<Phaser> phasers = new ArrayList<>();

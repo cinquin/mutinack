@@ -192,7 +192,7 @@ public final class Parameters implements Serializable, Cloneable {
 			if (strings.length > 0) {
 				Assert.isTrue(obj instanceof String);
 				List<String> stringsList = Arrays.asList(strings);
-				if (stringsList.contains(obj)) {
+				if (!stringsList.contains(obj)) {
 					throw new IllegalArgumentException("Parameter " + field.getName() +
 						" must be one of " + stringsList + " but found " + obj);
 				}
@@ -372,9 +372,14 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeHashForBAMSmallerThanInGB", description = "A simple hash will be computed for all input BAM files whose size is below specified threshold (in GB)", required = false)
 	public float computeHashForBAMSmallerThanInGB = 0.5f;
 
-	@Parameter(names = "-lenientSamValidation", description = "Passed to Picard; seems at least sometimes necessary for" +
-		" alignments produced by BWA", required = false)
+	@Parameter(names = "-lenientSamValidation", description = "NOW IGNORED; use -samValidation instead. Passed to Picard; seems at least sometimes necessary for" +
+		" alignments produced by BWA", required = false, hidden = true)
 	public boolean lenientSamValidation = true;
+
+	@CheckValues(permissibleStrings = {"none", "warning", "error"})
+	@Parameter(names = "-samValidation", description = "Possible values: none, warning, or error; passed to Picard; errors on some" +
+		" alignments produced by BWA", required = false)
+	public String samValidation = "warning";
 
 	@Parameter(names = "-allowMissingSupplementaryFlag", description = "", required = false)
 	public boolean allowMissingSupplementaryFlag = false;
