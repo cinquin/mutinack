@@ -76,8 +76,7 @@ public final class Parameters implements Serializable, Cloneable {
 	}
 
 	public void validate1() {
-		if (parallelizationFactor != 1 &&
-			!contigByContigParallelization.isEmpty()) {
+		if (parallelizationFactor != 1 && !contigByContigParallelization.isEmpty()) {
 			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
 				+ "contigByContigParallelization at the same time");
 		}
