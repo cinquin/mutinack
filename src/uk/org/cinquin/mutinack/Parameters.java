@@ -85,10 +85,6 @@ public final class Parameters implements Serializable, Cloneable {
 			throw new IllegalArgumentException("Parameter ignoreFirstNBasesQ2 must be greater than ignoreFirstNBasesQ1");
 		}
 
-		checkRange(minTopAlleleFreqQ2, "minTopAlleleFreqQ2", 0, 1);
-		checkRange(maxTopAlleleFreqQ2, "maxTopAlleleFreqQ2", 0, 1);
-		checkRange(maxMutFreqForDisag, "maxMutFreqForDisag", 0, 1);
-
 		final int nMaxDupArg = maxNDuplexes.size();
 		if (nMaxDupArg > 0 && nMaxDupArg < inputReads.size()) {
 			throw new IllegalArgumentException("maxNDuplexes must be specified once for each input file or not at all");
@@ -182,18 +178,47 @@ public final class Parameters implements Serializable, Cloneable {
 			throw new IllegalArgumentException("Arguments -reportBreakdownForBED and " +
 				"-saveBEDBreakdownToPathPrefix must appear same number of times");
 		}
+
+		checkValues();
+	}
+
+	private void checkValues() {
+		FieldIteration.iterateFields((field, obj) -> {
+			CheckValues checkAnnotation = field.getAnnotation(CheckValues.class);
+			if (checkAnnotation == null || obj == null) {
+				return;
+			}
+			String [] strings = checkAnnotation.permissibleStrings();
+			if (strings.length > 0) {
+				Assert.isTrue(obj instanceof String);
+				List<String> stringsList = Arrays.asList(strings);
+				if (stringsList.contains(obj)) {
+					throw new IllegalArgumentException("Parameter " + field.getName() +
+						" must be one of " + stringsList + " but found " + obj);
+				}
+			}
+			Float min = checkAnnotation.min();
+			if (!Float.isNaN(min)) {
+				Assert.isTrue(obj instanceof Float);
+				if ((Float) obj < min) {
+					throw new IllegalArgumentException("Parameter " + field.getName() +
+						" must be at least " + min + " but found " + obj);
+				}
+			}
+			Float max = checkAnnotation.max();
+			if (!Float.isNaN(max)) {
+				Assert.isTrue(obj instanceof Float);
+				if ((Float) obj > max) {
+					throw new IllegalArgumentException("Parameter " + field.getName() +
+						" must be at most " + max + " but found " + obj);
+				}
+			}
+		}, this);
 	}
 
 	private static void throwIAEIfFalse(boolean b, String message) {
 		if (!b) {
 			throw new IllegalArgumentException(message);
-		}
-	}
-
-	private static void checkRange(float paramValue, String name, float min, float max) {
-		if (paramValue < min || paramValue > max) {
-			throw new IllegalArgumentException("Parameter " + name + " should be between " + min + " and " +
-				max + " but is " + paramValue);
 		}
 	}
 
@@ -499,6 +524,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@OnlyUsedAfterDuplexGrouping
 	public boolean Q2DisagCapsMatchingMutationQuality = true;
 
+	@CheckValues(min = 0, max = 1)
 	@Parameter(names = "-maxMutFreqForDisag", description = "Disagreements are marked as Q0 if the frequency of matching mutation candidates at the same position is greater than this threshold; " +
 		"note that this parameter does NOT affect coverage", required = false, arity = 1)
 	@OnlyUsedAfterDuplexGrouping
@@ -507,12 +533,15 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawMismatches = true;
 
+	@CheckValues(min = 0, max = 1)
 	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value are reported and marked with a % sign", required = false)
 	public float topAlleleFreqReport = 0.3f;
 
+	@CheckValues(min = 0, max = 1)
 	@Parameter(names = "-minTopAlleleFreqQ2", description = "Only positions where the frequency of the top allele is at least this high can contribute Q2 candidates", required = false)
 	public float minTopAlleleFreqQ2 = 0;
 
+	@CheckValues(min = 0, max = 1)
 	@Parameter(names = "-maxTopAlleleFreqQ2", description = "Only positions where the frequency of the top allele is at least this low can contribute Q2 candidates", required = false)
 	public float maxTopAlleleFreqQ2 = 1;
 
@@ -867,6 +896,13 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface FilePathList {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface CheckValues {
+		String [] permissibleStrings() default {};
+		float min() default Float.NaN;
+		float max() default Float.NaN;
+	}
 
 	public void canonifyFilePaths() {
 			transformFilePaths(s -> {
