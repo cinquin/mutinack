@@ -1168,4 +1168,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return r.getnClipped() < param.maxConcurringDuplexClipping &&
 			r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping;
 	}
+
+	public void updateQualities(@NonNull Parameters param) {
+	}
 }

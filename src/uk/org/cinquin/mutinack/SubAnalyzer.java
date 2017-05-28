@@ -1184,6 +1184,8 @@ public final class SubAnalyzer {
 			});
 		final @NonNull Quality maxDuplexQ = maxDuplexQHandle.get();
 
+		candidate.updateQualities(param);
+
 		switch(param.candidateQ2Criterion) {
 			case "1Q2Duplex":
 				candidate.getQuality().addUnique(MAX_Q_FOR_ALL_DUPLEXES, maxDuplexQ);
