@@ -1356,7 +1356,10 @@ public class Mutinack implements Actualizable, Closeable {
 							get(p);
 						final SubAnalyzer subAnalyzer = analysisChunk.subAnalyzers.get(analyzerIndex);
 
+						final String savedThreadName = Thread.currentThread().getName();
 						Runnable r = () -> {
+							Thread.currentThread().setName(analysisChunk.contigName + " " + analysisChunk.startAtPosition +
+								" " + analyzer.name);
 							try {
 								ReadLoader.load(analyzer, analyzer.param, groupSettings,
 									subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
@@ -1370,6 +1373,8 @@ public class Mutinack implements Actualizable, Closeable {
 									//Eat exceptions that are secondary
 									//to avoid a long, useless list being reported to the user
 								}
+							} finally {
+								Thread.currentThread().setName(savedThreadName);
 							}
 						};
 						futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(r));
