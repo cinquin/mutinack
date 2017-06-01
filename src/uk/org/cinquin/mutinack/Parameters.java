@@ -75,7 +75,7 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 	}
 
-	public void validate1() {
+	private void validate1() {
 		if (parallelizationFactor != 1 && !contigByContigParallelization.isEmpty()) {
 			throw new IllegalArgumentException("Cannot use parallelizationFactor and "
 				+ "contigByContigParallelization at the same time");
@@ -882,28 +882,28 @@ public final class Parameters implements Serializable, Cloneable {
 	public @interface HideInToString {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface IgnoreInHashcodeEquals {}
+	private @interface IgnoreInHashcodeEquals {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface OnlyUsedAfterDuplexGrouping {}
+	private @interface OnlyUsedAfterDuplexGrouping {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface ExplorationIncompatibleWithRawMismatches {}
+	private @interface ExplorationIncompatibleWithRawMismatches {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface UsedAtDuplexGrouping {}
+	private @interface UsedAtDuplexGrouping {}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface NoDuplicates {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface FilePath {}
+	private @interface FilePath {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface FilePathList {}
+	private @interface FilePathList {}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface CheckValues {
+	private @interface CheckValues {
 		String [] permissibleStrings() default {};
 		float min() default Float.NaN;
 		float max() default Float.NaN;
@@ -925,7 +925,7 @@ public final class Parameters implements Serializable, Cloneable {
 			});
 	}
 
-	public void transformFilePaths(Function<String, String> transformer) {
+	private void transformFilePaths(Function<String, String> transformer) {
 		FieldIteration.iterateFields((field, fieldValue) -> {
 			if (fieldValue == null) {
 				return;
@@ -1024,7 +1024,7 @@ public final class Parameters implements Serializable, Cloneable {
 				nonDefaultValuesString + '\n' + defaultValuesString + '\n';
 	}
 
-	public Object getFieldValue(String name) {
+	Object getFieldValue(String name) {
 		try {
 			Field f = Parameters.class.getDeclaredField(name);
 			return f.get(this);
@@ -1034,7 +1034,7 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 	}
 
-	public boolean isParameterInstanceOf(String name, Class<?> clazz) {
+	boolean isParameterInstanceOf(String name, Class<?> clazz) {
 		Field f;
 		try {
 			f = Parameters.class.getDeclaredField(name);
@@ -1044,7 +1044,7 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 	}
 
-	public void setFieldValue(String name, Object value) {
+	void setFieldValue(String name, Object value) {
 		try {
 			Field f = Parameters.class.getDeclaredField(name);
 			if (f.get(this) instanceof Integer) {
@@ -1063,7 +1063,7 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 	}
 
-	public static List<String> differingFields(Parameters obj1, Parameters obj2) {
+	private static List<String> differingFields(Parameters obj1, Parameters obj2) {
 		List<String> result = new ArrayList<>();
 		for (Field field: Parameters.class.getDeclaredFields()) {
 			try {
@@ -1083,7 +1083,8 @@ public final class Parameters implements Serializable, Cloneable {
 		return result;
 	}
 
-	public static Set<String> differingFields(List<Parameters> list) {
+	@SuppressWarnings("unused")
+	private static Set<String> differingFields(List<Parameters> list) {
 		Set<String> result = new HashSet<>();
 		for (int i = list.size() - 1; i >= 0; i--) {
 			for (int j = 0; j < i; j++) {
@@ -1104,7 +1105,7 @@ public final class Parameters implements Serializable, Cloneable {
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
 	 */
-	public static void getUnsortedUsage(JCommander jc, Class<?> paramClass, StringBuilder out)
+	static void getUnsortedUsage(JCommander jc, Class<?> paramClass, StringBuilder out)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		List<@NonNull Field> fields = Arrays.asList(paramClass.getDeclaredFields());
 		// Special treatment of main parameter.
