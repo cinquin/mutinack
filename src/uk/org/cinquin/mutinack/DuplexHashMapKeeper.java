@@ -19,15 +19,16 @@ package uk.org.cinquin.mutinack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import uk.org.cinquin.mutinack.misc_util.collections.TIntObjectListHashMap;
+import uk.org.cinquin.mutinack.misc_util.collections.TIntSortedSetHashMap;
 
-public class DuplexHashMapKeeper extends TIntObjectListHashMap<DuplexRead> implements DuplexKeeper {
+public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implements DuplexKeeper {
 
 	@Override
-	public @NonNull List<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull SortedSet<DuplexRead> getOverlapping(DuplexRead d) {
 		return getList(d.position0);
 	}
 

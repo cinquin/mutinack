@@ -17,19 +17,21 @@
 
 package uk.org.cinquin.mutinack.misc_util.collections;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import contrib.jdk.collections.TreeSetWithForEach;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 @SuppressWarnings("unchecked")
-public class TIntObjectListHashMap<V> extends TIntObjectCollectionHashMap<V> implements Iterable<V> {
+public class TIntSortedSetHashMap<V> extends TIntObjectCollectionHashMap<V> implements Iterable<V> {
 
-	private final TIntObjectHashMap<ArrayList<V>> map = new TIntObjectHashMap<>();
+	private final TIntObjectHashMap<TreeSetWithForEach<V>> map = new TIntObjectHashMap<>();
 
 	@Override
 	@SuppressWarnings("rawtypes")
@@ -37,31 +39,40 @@ public class TIntObjectListHashMap<V> extends TIntObjectCollectionHashMap<V> imp
 		return (TIntObjectHashMap) map;
 	}
 
+	@SuppressWarnings("rawtypes")
+	public static final @NonNull TreeSetWithForEach emptyTreeSet = new TreeSetWithForEach<>();
+
 	@Override
-	public @NonNull Collection<V> getList(int i) {
-		Collection<V> l = getMap().get(i);
+	public @NonNull TreeSetWithForEach<V> getList(int i) {
+		TreeSetWithForEach<V> l = map.get(i);
 		if (l != null) {
 			return l;
 		} else {
-			return Collections.emptyList();
+			if (!emptyTreeSet.isEmpty()) {
+				throw new AssertionFailedException();
+			}
+			return emptyTreeSet;
 		}
 	}
 
 	@Override
 	public boolean add(int i, V v) {
-		return getMap().computeIfAbsent(i, () -> new ArrayList<V>(100)).add(v);
+		return getMap().computeIfAbsent(i, () -> new TreeSetWithForEach<>(
+			DuplexRead.duplexCountQualComparator)).add(v);
 	}
 
 	@Override
-	public boolean forEach(Predicate<? super V> predicate) {
-		return map.forEachValue(list -> {
-			int size = list.size();
-			for (int index = 0; index < size; index++) {
-				if (!predicate.test(list.get(index))) {
-					return false;
-				}
-			}
+	public void forEach(Consumer<? super V> consumer) {
+		getMap().forEachValue(collection -> {
+			collection.forEach(consumer);
 			return true;
+		});
+	}
+
+	@Override
+	public boolean forEach(Predicate<? super V> consumer) {
+		return map.forEachValue(collection -> {
+			return collection.forEach(consumer);
 		});
 	}
 }

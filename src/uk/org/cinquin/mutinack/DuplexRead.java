@@ -44,6 +44,7 @@ import static uk.org.cinquin.mutinack.qualities.Quality.min;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -67,6 +68,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.edu.stanford.nlp.util.HasInterval;
 import contrib.edu.stanford.nlp.util.Interval;
+import contrib.jdk.collections.TreeSetWithForEach;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.TObjectIntMap;
@@ -78,6 +80,7 @@ import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
+import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.IntMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
@@ -411,7 +414,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		otherDuplex.invalid = true;
 	}
 
-	private static final Comparator<DuplexRead> duplexCountQualComparator =
+	public static final Comparator<DuplexRead> duplexCountQualComparator =
 		(d1, d2) -> {
 			int compResult;
 			compResult = Integer.compare(d2.allDuplexRecords.size(), d1.allDuplexRecords.size());
@@ -430,7 +433,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			if (compResult != 0) {
 				return compResult;
 			}
-			return 0;
+			return Integer.compare(System.identityHashCode(d1), System.identityHashCode(d2));
 		};
 
 
@@ -442,14 +445,16 @@ public final class DuplexRead implements HasInterval<Integer> {
 			AnalysisStats stats,
 			int callDepth) {
 
-		DuplexKeeper result = factory.get();
+		Handle<DuplexKeeper> result = new Handle<>(factory.get());
 
 		final DuplexRead[] sorted = new DuplexRead[duplexes.size()];
 		{
 			SettableInteger index = new SettableInteger(0);
 			duplexes.forEach(d -> sorted[index.getAndIncrement()] = d);
 		}
-		Arrays.parallelSort(sorted, duplexCountQualComparator);
+		Arrays.parallelSort(sorted, duplexCountQualComparator);//TODO Sorting could be done in
+		//smaller chunks when no alignment slop is aligned, and in any case be done more
+		//efficiently in the case of sorted sets
 
 		for (int index = 0; index < sorted.length; index++) {
 			final DuplexRead duplex1 = sorted[index];
@@ -460,76 +465,95 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 			Assert.isNonNull(duplex1.getInterval());
 
-			List<DuplexRead> overlapping = result.getOverlapping(duplex1);
+			Collection<DuplexRead> overlapping = result.get().getOverlapping(duplex1);
+			final boolean iterate;
 			if (overlapping instanceof ArrayList<?>) {
+				iterate = true;
 				Util.arrayListParallelSort((ArrayList<DuplexRead>) overlapping, duplexCountQualComparator);
+			} else if (overlapping instanceof List<?>) {
+				iterate = true;
+				Collections.sort((List<DuplexRead>) overlapping, duplexCountQualComparator);
 			} else {
-				Collections.sort(overlapping, duplexCountQualComparator);
+				// if the result is a sorted set, no need to sort
+				iterate = false;
+				mergedDuplex = ! ((TreeSetWithForEach<DuplexRead>) overlapping).forEach(duplex2 ->
+					{return group1(duplex2, param, preliminaryOp, duplex1, stats, callDepth, result, factory);});
 			}
 
-			for (DuplexRead duplex2: overlapping) {
-
-				preliminaryOp.accept(duplex2);
-
-				final int distance1 = duplex1.leftAlignmentStart.position - duplex2.leftAlignmentStart.position;
-				final int distance2 = param.requireMatchInAlignmentEnd && duplex1.leftAlignmentEnd != null && duplex2.leftAlignmentEnd != null ?
-						duplex1.leftAlignmentEnd.position - duplex2.leftAlignmentEnd.position : 0;
-				final int distance3 = duplex1.rightAlignmentEnd.position - duplex2.rightAlignmentEnd.position;
-				final int distance4 = param.requireMatchInAlignmentEnd && duplex1.rightAlignmentStart != null && duplex2.rightAlignmentStart != null ?
-						duplex1.rightAlignmentStart.position - duplex2.rightAlignmentStart.position : 0;
-
-				if (duplex1.distanceTo(duplex2) <= param.alignmentPositionMismatchAllowed &&
-						Math.abs(distance1) <= param.alignmentPositionMismatchAllowed &&
-						Math.abs(distance2) <= param.alignmentPositionMismatchAllowed &&
-						Math.abs(distance3) <= param.alignmentPositionMismatchAllowed &&
-						Math.abs(distance4) <= param.alignmentPositionMismatchAllowed) {
-
-					final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, param.acceptNInBarCode);
-					final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, param.acceptNInBarCode);
-
-					if (param.computeDuplexGroupingStats && leftMismatches > 0) {
-						registerMismatches(requireNonNull(duplex1.roughLocation), leftMismatches,
-								duplex1.leftBarcode, duplex2.leftBarcode,
-								duplex1.leftBarcodeNegativeStrand, duplex2.leftBarcodeNegativeStrand,
-								stats);
-					}
-					if (param.computeDuplexGroupingStats && rightMismatches > 0) {
-						registerMismatches(requireNonNull(duplex1.roughLocation), rightMismatches,
-								duplex1.rightBarcode, duplex2.rightBarcode,
-								duplex1.rightBarcodeNegativeStrand, duplex2.rightBarcodeNegativeStrand,
-								stats);
-					}
-
-					if (leftMismatches <= param.nVariableBarcodeMismatchesAllowed &&
-							rightMismatches <= param.nVariableBarcodeMismatchesAllowed) {
-
-						mergeDuplexes(duplex2, duplex1);
-
-						boolean changed =
-								duplex2.computeConsensus(false, param.variableBarcodeLength);
-
-						if (changed) {
-							result = groupDuplexes(result, d -> {}, factory, param, stats, callDepth + 1);
-						} else {
-							stats.duplexGroupingDepth.insert(callDepth);
-						}
-
+			if (iterate) {
+				for (DuplexRead duplex2: overlapping) {
+					if (!group1(duplex2, param, preliminaryOp, duplex1, stats, callDepth, result, factory)) {
 						mergedDuplex = true;
 						break;
-					}//End merge duplexes
-				}//End duplex alignment distance test
-			}//End loop over overlapping duplexes
+					}
+				}
+			}
 
 			if (!mergedDuplex) {
-				result.add(duplex1);
+				result.get().add(duplex1);
 			}
 		}//End duplex grouping
 
 		if (param.enableCostlyAssertions) {
-			checkNoEqualDuplexes(result.getIterable());
+			checkNoEqualDuplexes(result.get().getIterable());
 		}
 
-		return result;
+		return result.get();
+	}
+
+	private static boolean group1(DuplexRead duplex2, Parameters param, Consumer<DuplexRead> preliminaryOp,
+			DuplexRead duplex1, AnalysisStats stats, int callDepth, Handle<DuplexKeeper> result, Supplier<DuplexKeeper> factory) {
+
+		preliminaryOp.accept(duplex2);
+
+		final int distance1 = duplex1.leftAlignmentStart.position - duplex2.leftAlignmentStart.position;
+		final int distance2 = param.requireMatchInAlignmentEnd && duplex1.leftAlignmentEnd != null && duplex2.leftAlignmentEnd != null ?
+				duplex1.leftAlignmentEnd.position - duplex2.leftAlignmentEnd.position : 0;
+		final int distance3 = duplex1.rightAlignmentEnd.position - duplex2.rightAlignmentEnd.position;
+		final int distance4 = param.requireMatchInAlignmentEnd && duplex1.rightAlignmentStart != null && duplex2.rightAlignmentStart != null ?
+				duplex1.rightAlignmentStart.position - duplex2.rightAlignmentStart.position : 0;
+
+		if (duplex1.distanceTo(duplex2) <= param.alignmentPositionMismatchAllowed &&
+				Math.abs(distance1) <= param.alignmentPositionMismatchAllowed &&
+				Math.abs(distance2) <= param.alignmentPositionMismatchAllowed &&
+				Math.abs(distance3) <= param.alignmentPositionMismatchAllowed &&
+				Math.abs(distance4) <= param.alignmentPositionMismatchAllowed) {
+
+			final int leftMismatches = Util.nMismatches(duplex1.leftBarcode, duplex2.leftBarcode, param.acceptNInBarCode);
+			final int rightMismatches = Util.nMismatches(duplex1.rightBarcode, duplex2.rightBarcode, param.acceptNInBarCode);
+
+			if (param.computeDuplexGroupingStats && leftMismatches > 0) {
+				registerMismatches(requireNonNull(duplex1.roughLocation), leftMismatches,
+						duplex1.leftBarcode, duplex2.leftBarcode,
+						duplex1.leftBarcodeNegativeStrand, duplex2.leftBarcodeNegativeStrand,
+						stats);
+			}
+			if (param.computeDuplexGroupingStats && rightMismatches > 0) {
+				registerMismatches(requireNonNull(duplex1.roughLocation), rightMismatches,
+						duplex1.rightBarcode, duplex2.rightBarcode,
+						duplex1.rightBarcodeNegativeStrand, duplex2.rightBarcodeNegativeStrand,
+						stats);
+			}
+
+			if (leftMismatches <= param.nVariableBarcodeMismatchesAllowed &&
+					rightMismatches <= param.nVariableBarcodeMismatchesAllowed) {
+
+				mergeDuplexes(duplex2, duplex1);
+
+				boolean changed =
+						duplex2.computeConsensus(false, param.variableBarcodeLength);
+
+				if (changed) {
+					result.set(groupDuplexes(result.get(), d -> {}, factory, param, stats, callDepth + 1));
+				} else {
+					stats.duplexGroupingDepth.insert(callDepth);
+				}
+
+				return false;
+			}//End merge duplexes
+		}//End duplex alignment distance test
+
+		return true;
 	}
 
 	@SuppressWarnings("ReferenceEquality")
