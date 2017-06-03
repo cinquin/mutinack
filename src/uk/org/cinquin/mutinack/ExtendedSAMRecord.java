@@ -825,6 +825,17 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return ExtendedAlignmentBlock.getAlignmentBlocks(getCigar(), record.getAlignmentStart(), "read cigar");
 	}
 
+	/**
+	 *
+	 * @param analyzer
+	 * @param name
+	 * @param firstOfPair
+	 * @param location
+	 * @param avoidAlignmentStart0Based 	 Used to make sure we don't just retrieve the same read as the original,
+	 * in the case where both alignments are close together
+	 * @param windowHalfWidth
+	 * @return
+	 */
 	public static @Nullable ExtendedSAMRecord getRead(Mutinack analyzer, String name, boolean firstOfPair,
 			SequenceLocation location, int avoidAlignmentStart0Based, int windowHalfWidth) {
 
