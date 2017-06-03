@@ -8,6 +8,9 @@ emptyList
 emptyMap
  <K:Ljava/lang/Object;V:Ljava/lang/Object;>()Ljava/util/Map<TK;TV;>;
  <K:Ljava/lang/Object;V:Ljava/lang/Object;>()L1java/util/Map<TK;TV;>;
+emptySortedSet
+ <E:Ljava/lang/Object;>()Ljava/util/SortedSet<TE;>;
+ <E:Ljava/lang/Object;>()L1java/util/SortedSet<TE;>;
 unmodifiableList
  <T:Ljava/lang/Object;>(Ljava/util/List<+TT;>;)Ljava/util/List<TT;>;
  <T:Ljava/lang/Object;>(Ljava/util/List<+TT;>;)L1java/util/List<TT;>;
