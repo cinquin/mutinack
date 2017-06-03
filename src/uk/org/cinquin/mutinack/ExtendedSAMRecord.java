@@ -256,17 +256,17 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		final @NonNull String fullBarcodeString;
 		String bcAttr = (String) record.getAttribute("BC");
 		if (groupSettings.getVariableBarcodeEnd() > 0) {
+			final int firstBarcodeInNameIndex = name.indexOf("BC:Z:");
 			if (bcAttr == null) {
-				final int firstIndex = name.indexOf("BC:Z:");
-				if (firstIndex == -1) {
+				if (firstBarcodeInNameIndex == -1) {
 					throw new ParseRTException("Missing first barcode for read " + name +
 						' ' + record.toString());
 				}
 				final int index;
 				if (record.getFirstOfPairFlag()) {
-					index = firstIndex;
+					index = firstBarcodeInNameIndex;
 				} else {
-					index = name.indexOf("BC:Z:", firstIndex + 1);
+					index = name.indexOf("BC:Z:", firstBarcodeInNameIndex + 1);
 					if (index == -1) {
 						throw new ParseRTException("Missing second barcode for read " + name +
 							' ' + record.toString());
@@ -280,9 +280,12 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes());
 			constantBarcode = Util.getInternedCB(fullBarcodeString.substring(
 				groupSettings.getConstantBarcodeStart(), groupSettings.getConstantBarcodeEnd() + 1).getBytes());
+			if (firstBarcodeInNameIndex > -1) {
+				mateVariableBarcode = getMateBarcode(name, firstBarcodeInNameIndex);
+			}
 		} else {
 			variableBarcode = EMPTY_BARCODE;
-			constantBarcode = DUMMY_BARCODE;//EMPTY_BARCODE
+			constantBarcode = DUMMY_BARCODE;
 		}
 
 		String readName = record.getReadName();
@@ -295,6 +298,32 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		int endXLoc = readName.indexOf(':', endFirstChunk + 1);
 		yLoc = parseInt(readNameBytes, endXLoc + 1);
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
+	}
+
+	private byte[] getBarcode(String s) {
+		if (record.getFirstOfPairFlag()) {
+			return getBarcodeFromString(s, true, 0);
+		} else {
+			return getBarcodeFromString(s, false, 0);
+		}
+	}
+
+	private byte[] getMateBarcode(String s, int firstBarcodeInNameIndex) {
+		if (record.getFirstOfPairFlag()) {
+			return getBarcodeFromString(s, false, firstBarcodeInNameIndex);
+		} else {
+			return getBarcodeFromString(s, true, firstBarcodeInNameIndex);
+		}
+	}
+
+	@SuppressWarnings("static-access")
+	private byte[] getBarcodeFromString(String s, boolean firstOccurrence, int startIndex) {
+		int index = s.indexOf("BC:Z:", startIndex);
+		if (!firstOccurrence) {
+			return getBarcodeFromString(s, true, index + 1);
+		}
+		return Util.getInternedVB(s.substring(index + 5, s.indexOf('_', index)).substring(
+			groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes());
 	}
 
 	private static boolean LENIENT_COORDINATE_PARSING = true;
