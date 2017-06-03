@@ -34,6 +34,9 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -54,6 +57,7 @@ import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.SimpleCounter;
@@ -69,6 +73,11 @@ public class ReadLoader {
 
 	private static final Logger logger = LoggerFactory.getLogger("ReadLoader");
 	private static final Logger statusLogger = LoggerFactory.getLogger("ReadLoaderStatus");
+
+	private static final ThreadPoolExecutor distantMatePrefetcherService = new ThreadPoolExecutor(0, 30,
+    300, TimeUnit.SECONDS, new SynchronousQueue<>(),
+    new NamedPoolThreadFactory("Distant mate prefetcher - "),
+    new ThreadPoolExecutor.CallerRunsPolicy());
 
 	@SuppressWarnings("resource")
 	public static void load(
