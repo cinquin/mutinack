@@ -629,15 +629,24 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return !record.getReadNegativeStrandFlag();
 	}
 
-	private ExtendedSAMRecord checkMate() {
-		if (mate == null) {
-			if (extSAMCache != null)
-				mate = extSAMCache.get(mateName);
-			if (mate == null && !triedRetrievingMateFromFile && !record.getMateUnmappedFlag()) {
-				mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
-					new SequenceLocation(record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
-						record.getMateAlignmentStart() - 1, false) , -1, 1);
-				triedRetrievingMateFromFile = true;
+	public ExtendedSAMRecord checkMate() {
+		if (mate != null) {
+			return mate;
+		}
+		if (record.getMateUnmappedFlag()) {
+			return null;
+		}
+		if (extSAMCache != null) {
+			mate = extSAMCache.get(mateName);
+		}
+		if (mate == null && !triedRetrievingMateFromFile) {
+			synchronized (this) {
+				if (mate == null) {
+					mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
+						new SequenceLocation(record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
+							record.getMateAlignmentStart() - 1, false) , -1, 1);
+					triedRetrievingMateFromFile = true;
+				}
 			}
 		}
 		return mate;
