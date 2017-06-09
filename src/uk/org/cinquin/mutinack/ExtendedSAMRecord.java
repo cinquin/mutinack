@@ -64,7 +64,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public final @NonNull SAMRecord record;
 	private final @NonNull String name;
 	private @Nullable ExtendedSAMRecord mate;
-	private boolean triedRetrievingMateFromFile = false;
+	private volatile boolean triedRetrievingMateFromFile = false;
 	private final @NonNull String mateName;
 	private final int hashCode;
 	public @Nullable DuplexRead duplexRead;
@@ -638,10 +638,17 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 		if (extSAMCache != null) {
 			mate = extSAMCache.get(mateName);
+			if (mate != null) {
+				return mate;
+			}
 		}
-		if (mate == null && !triedRetrievingMateFromFile) {
+		if (Math.abs(record.getAlignmentStart() - record.getMateAlignmentStart()) < analyzer.param.maxInsertSize &&
+				Objects.equals(record.getReferenceIndex(), record.getMateReferenceIndex())) {
+			return null;
+		}
+		if (!triedRetrievingMateFromFile) {
 			synchronized (this) {
-				if (mate == null) {
+				if (!triedRetrievingMateFromFile) {
 					mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
 						new SequenceLocation(record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
 							record.getMateAlignmentStart() - 1, false) , -1, 1);
