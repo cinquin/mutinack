@@ -645,7 +645,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			}
 		}
 		final int inferredSize = record.getInferredInsertSize();
-		if (inferredSize != 0 && Math.abs(inferredSize) < analyzer.param.maxInsertSize) {
+		if (inferredSize != 0 && Math.abs(inferredSize) < analyzer.param.maxInsertSize &&
+				Objects.equals(record.getReferenceIndex(), record.getMateReferenceIndex())) {
 			return null;
 		}
 		if (!triedRetrievingMateFromFile) {
