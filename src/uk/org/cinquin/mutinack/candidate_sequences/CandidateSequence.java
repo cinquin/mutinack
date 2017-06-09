@@ -41,6 +41,7 @@ import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
+import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -474,6 +475,20 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public void setDuplexes(@NonNull MutableSet<@NonNull DuplexRead> duplexes) {
 		this.duplexes = duplexes;
+	}
+
+	public UnifiedSet<DuplexRead> computeSupportingDuplexes() {
+		UnifiedSet<DuplexRead> duplexesSupportingC = new UnifiedSet<>(30);
+		getNonMutableConcurringReads().forEachKey(r -> {
+			Assert.isFalse(r.discarded);
+			DuplexRead d = r.duplexRead;
+			if (d != null) {
+				Assert.isFalse(d.invalid);
+				duplexesSupportingC.add(d);
+			}
+			return true;
+		});//Collect *unique* duplexes
+		return duplexesSupportingC;
 	}
 
 	public static final int NO_ENTRY_VALUE = SingletonObjectIntMap.NO_ENTRY_VALUE;

@@ -112,7 +112,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		new LazyIterableAdapter<>(topStrandRecords).concatenate(bottomStrandRecords);
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
-	boolean invalid = false;//Only used for debugging
+	public boolean invalid = false;//Only used for debugging
 	boolean assignedToLocalGroup = false;
 	public int nReadsWrongPair = 0;
 	public int maxInsertSize = -1;

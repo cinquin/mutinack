@@ -69,7 +69,6 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
-import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -135,6 +134,7 @@ public final class SubAnalyzer {
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
 			new THashMap<>(10_000, 0.5f);
 	private final AtomicInteger threadCount = new AtomicInteger();
+	@SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 	@NonNull Map<@NonNull ExtendedSAMRecord, @NonNull SAMRecord> readsToWrite
 		= new THashMap<>();
 	private final Random random;
@@ -188,6 +188,7 @@ public final class SubAnalyzer {
 	}
 
 	void writeOutputReads() {
+		Assert.isFalse(writing);
 		writing = true;
 		try {
 			synchronized(analyzer.outputAlignmentWriter) {
@@ -576,6 +577,7 @@ public final class SubAnalyzer {
 						param.acceptNInBarCode);
 			}
 
+			//noinspection StatementWithEmptyBody
 			if (forceGrouping || barcodeMatch) {
 				if (r.getInferredInsertSize() >= 0) {
 					if (r.getFirstOfPairFlag()) {
@@ -686,7 +688,8 @@ public final class SubAnalyzer {
 
 			duplexKeeper.add(duplexRead);
 
-			if (false) Assert.isFalse( /* There are funny alignments that can trigger this assert;
+			if (false) //noinspection RedundantCast
+				Assert.isFalse( /* There are funny alignments that can trigger this assert;
 			but it should not hurt for alignment start and end to be switched, since it should happen
 			in the same fashion for all reads  in a duplex  */
 				duplexRead.leftAlignmentEnd.contigIndex == duplexRead.leftAlignmentStart.contigIndex &&
@@ -795,6 +798,7 @@ public final class SubAnalyzer {
 					}
 				}
 				@Nullable DuplexRead d = r.duplexRead;
+				//noinspection StatementWithEmptyBody
 				if (d != null) {
 					candidateDuplexReads.add(d);
 				} else {
@@ -911,10 +915,6 @@ public final class SubAnalyzer {
 			stats.nFractionWrongPairsAtPositionTooHigh.increment(location);
 		}
 
-		Quality maxQuality;
-		int totalGoodDuplexes, totalGoodOrDubiousDuplexes,
-			totalGoodDuplexesIgnoringDisag, totalAllDuplexes;
-
 		Handle<Byte> wildtypeBase = new Handle<>((byte) 'X');
 
 		candidateSet.forEach(candidate -> {
@@ -925,10 +925,14 @@ public final class SubAnalyzer {
 			}
 		});
 
+		Quality maxQuality;
+		int totalGoodDuplexes, totalGoodOrDubiousDuplexes,
+			totalGoodDuplexesIgnoringDisag, totalAllDuplexes;
 		boolean leave = false;
 		final boolean qualityOKBeforeTopAllele =
 			Quality.nullableMax(positionQualities.getValue(true), GOOD).atLeast(GOOD);
 		Quality topAlleleQuality = null;
+		//noinspection UnnecessaryBoxing
 		do {
 			maxQuality = MINIMUM;
 			totalAllDuplexes = 0;
@@ -971,9 +975,10 @@ public final class SubAnalyzer {
 				Assert.isTrue(topAlleleQuality == DUBIOUS);
 				positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, topAlleleQuality);
 				leave = true;//Just one more iteration
+				//noinspection UnnecessaryContinue
 				continue;
 			}
-		} while(Boolean.valueOf(null));//Assert never reached
+		} while (Boolean.valueOf(null));//Assert never reached
 
 		if (qualityOKBeforeTopAllele) {
 			registerDuplexMinFracTopCandidate(duplexReads,
@@ -1117,7 +1122,7 @@ public final class SubAnalyzer {
 				if (r.discarded) {
 					throw new AssertionFailedException("Discarded read " + r + " in duplex " + dr);
 				}
-				Assert.isTrue(dr.localAndGlobalQuality.getQuality(DuplexAssay.QUALITY_AT_POSITION) == null);
+				Assert.isTrue(dr.localAndGlobalQuality.getQuality(QUALITY_AT_POSITION) == null);
 				Assert.isFalse(dr.invalid);
 			}
 			return true;
@@ -1141,16 +1146,7 @@ public final class SubAnalyzer {
 		candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
 		candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
 
-		final MutableSet<DuplexRead> candidateDuplexes = Sets.mutable.empty();
-		candidate.getNonMutableConcurringReads().forEachKey(r -> {
-			Assert.isFalse(r.discarded);
-			DuplexRead dr = r.duplexRead;
-			if (dr != null) {
-				Assert.isFalse(dr.invalid);
-				candidateDuplexes.add(dr);
-			}
-			return true;
-		});
+		final MutableSet<DuplexRead> candidateDuplexes = candidate.computeSupportingDuplexes();
 		candidate.setDuplexes(candidateDuplexes);
 		candidate.setnDuplexes(candidateDuplexes.size());
 
@@ -1159,9 +1155,7 @@ public final class SubAnalyzer {
 		}
 
 		if (param.verbosity > 2) {
-			candidateDuplexes.forEach(d -> {
-				candidate.getIssues().put(d, d.localAndGlobalQuality.toLong());
-			});
+			candidateDuplexes.forEach(d -> candidate.getIssues().put(d, d.localAndGlobalQuality.toLong()));
 		}
 
 		final Quality posQMin =	positionQualities.getValue(true);
@@ -1170,7 +1164,7 @@ public final class SubAnalyzer {
 			if (posQMin != null) {
 				dr.localAndGlobalQuality.addUnique(QUALITY_AT_POSITION, posQMin);
 			}
-			maxDuplexQHandle.set(Quality.max(maxDuplexQHandle.get(),
+			maxDuplexQHandle.set(max(maxDuplexQHandle.get(),
 				candidate.filterQuality(dr.localAndGlobalQuality)));
 			});
 		final @NonNull Quality maxDuplexQ = maxDuplexQHandle.get();
@@ -1252,12 +1246,8 @@ public final class SubAnalyzer {
 				String other = er.record.getMateReferenceName();
 				if (!er.record.getReferenceName().equals(other)) {
 					String s = other + ':' + er.getMateAlignmentStart();
-					Integer found = stringCounts.get(s);
-					if (found == null){
-						stringCounts.put(s, 1);
-					} else {
-						stringCounts.put(s, found + 1);
-					}
+					int found = stringCounts.getOrDefault(s, 0);
+					stringCounts.put(s, found + 1);
 				}
 				return true;
 			});
@@ -1266,7 +1256,7 @@ public final class SubAnalyzer {
 				((entry.getValue() == 1) ? "" : (" (" + entry.getValue() + " repeats)")) + "; ").
 				sorted().reduce(String::concat);
 
-			final String hasMateOnOtherChromosome = mates.isPresent() ? mates.get() : "";
+			final String hasMateOnOtherChromosome = mates.orElse("");
 
 			IntSummaryStatistics insertSizeStats = candidate.getConcurringReadSummaryStatistics(er ->
 				Math.abs(er.getInsertSize()));
@@ -1279,8 +1269,6 @@ public final class SubAnalyzer {
 			if (localMaxInsertSize < param.minInsertSize || localMinInsertSize > param.maxInsertSize) {
 				candidate.getQuality().add(PositionAssay.INSERT_SIZE, DUBIOUS);
 			}
-
-			final boolean has0PredictedInsertSize = localMinInsertSize == 0;
 
 			final NumberFormat nf = DoubleAdderFormatter.nf.get();
 
@@ -1310,7 +1298,7 @@ public final class SubAnalyzer {
 				supplementalMessage.append("at least one read has no mate nearby; ");
 			}
 
-			if ("".equals(hasMateOnOtherChromosome) && !hasNoMate && has0PredictedInsertSize) {
+			if ("".equals(hasMateOnOtherChromosome) && !hasNoMate && localMinInsertSize == 0) {
 				supplementalMessage.append("at least one insert has 0 predicted size; ");
 			}
 
@@ -1326,6 +1314,7 @@ public final class SubAnalyzer {
 	private static void checkDuplexes(Iterable<DuplexRead> duplexReads) {
 		for (DuplexRead duplexRead: duplexReads) {
 			duplexRead.allDuplexRecords.each(r -> {
+				//noinspection ObjectEquality
 				if (r.duplexRead != duplexRead) {
 					throw new AssertionFailedException("Read " + r + " associated with duplexes " +
 						r.duplexRead + " and " + duplexRead);
@@ -1348,19 +1337,11 @@ public final class SubAnalyzer {
 			Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 				c.getMutableConcurringReads().keySet()));
 
-			Set<DuplexRead> duplexesSupportingC = new UnifiedSet<>(30);
-			c.getNonMutableConcurringReads().forEachKey(r -> {
-					Assert.isFalse(r.discarded);
-					DuplexRead d = r.duplexRead;
-					if (d != null) {
-						Assert.isFalse(d.invalid);
-						duplexesSupportingC.add(d);
-					}
-					return true;
-				});//Collect *unique* duplexes
+			Set<DuplexRead> duplexesSupportingC = c.computeSupportingDuplexes();
 			candidateSet.each(c2 -> {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 					c.getMutableConcurringReads().keySet()));
+				//noinspection ObjectEquality
 				if (c2 == c) {
 					return;
 				}
@@ -1386,6 +1367,7 @@ public final class SubAnalyzer {
 
 	private boolean checkConstantBarcode(byte[] bases, boolean allowN, int nAllowableMismatches) {
 		if (nAllowableMismatches == 0 && !allowN) {
+			//noinspection ArrayEquality
 			return bases == analyzer.constantBarcode;//OK because of interning
 		}
 		int nMismatches = 0;
@@ -1543,6 +1525,7 @@ public final class SubAnalyzer {
 			final SettableInteger readEndOfPreviousAlignment0,
 			final SettableInteger returnValue) {
 
+		@SuppressWarnings("AnonymousInnerClassMayBeStatic")
 		final CandidateFiller fillInCandidateInfo = new CandidateFiller() {
 			@Override
 			public void accept(CandidateSequence candidate) {
@@ -1806,7 +1789,9 @@ public final class SubAnalyzer {
 		candidate.setWildtypeSequence(wildType);
 		candidateFiller.fillInPhred(candidate, location, readPosition);
 		if (insertCandidateAtRegularPosition.get()) {
+			//noinspection UnusedAssignment
 			candidate = readLocalCandidates.add(candidate, location);
+			//noinspection UnusedAssignment
 			candidate = null;
 		}
 		if (locationPH != null) {
@@ -1816,7 +1801,9 @@ public final class SubAnalyzer {
 				candidate2.acceptLigSiteDistance(-distance);
 			}
 			candidate2.setWildtypeSequence(wildType);
+			//noinspection UnusedAssignment
 			candidate2 = readLocalCandidates.add(candidate2, locationPH);
+			//noinspection UnusedAssignment
 			candidate2 = null;
 		}
 	}
@@ -1882,7 +1869,9 @@ public final class SubAnalyzer {
 				getFromByteMap(wildType, readOnNegativeStrand), getFromByteMap(mutationUC, readOnNegativeStrand));
 		}
 		if (insertCandidateAtRegularPosition.get()) {
+			//noinspection UnusedAssignment
 			candidate = readLocalCandidates.add(candidate, location);
+			//noinspection UnusedAssignment
 			candidate = null;
 		}
 		if (locationPH != null) {
@@ -1892,7 +1881,9 @@ public final class SubAnalyzer {
 				candidate2.acceptLigSiteDistance(distance);
 			}
 			candidate2.setWildtypeSequence(wildType);
+			//noinspection UnusedAssignment
 			candidate2 = readLocalCandidates.add(candidate2, locationPH);
+			//noinspection UnusedAssignment
 			candidate2 = null;
 		}
 	}
@@ -1994,7 +1985,9 @@ public final class SubAnalyzer {
 					candidateFiller.accept(hiddenCandidate);
 					hiddenCandidate.setHidden(true);
 					hiddenCandidate.setPositionInRead(readPosition);
+					//noinspection UnusedAssignment
 					hiddenCandidate = readLocalCandidates.add(hiddenCandidate, location2);
+					//noinspection UnusedAssignment
 					hiddenCandidate = null;
 				}
 			}
@@ -2023,7 +2016,9 @@ public final class SubAnalyzer {
 					toUpperCase(deletedSequence, negativeStrand));
 
 			}
+			//noinspection UnusedAssignment
 			candidate = readLocalCandidates.add(candidate, newLocation);
+			//noinspection UnusedAssignment
 			candidate = null;
 		}
 	}
@@ -2090,7 +2085,9 @@ public final class SubAnalyzer {
 		if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
 			logger.info("Insertion of " + new String(candidate.getSequence()) + " at ref " + refPosition + " and read position " + readPosition + " for read " + extendedRec.getFullName());
 		}
+		//noinspection UnusedAssignment
 		candidate = readLocalCandidates.add(candidate, location);
+		//noinspection UnusedAssignment
 		candidate = null;
 		if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
 			logger.info("Added candidate at " + location /*+ "; readLocalCandidates now " + readLocalCandidates.build()*/);
