@@ -606,14 +606,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				PairOrientation.RF;
 	}
 
-	@SuppressWarnings("null")
 	public boolean formsWrongPair() {
-		PairOrientation po;
+		final PairOrientation po;
 		if (formsWrongPair == null) {
 			formsWrongPair = record.getReadPairedFlag() && (
 					record.getReadUnmappedFlag() ||
 					record.getMateUnmappedFlag() ||
-					(((mate = checkMate()) != null) && !record.getReferenceIndex().equals(mate.record.getReferenceIndex())) ||
+					!record.getReferenceIndex().equals(record.getMateReferenceIndex()) ||
 					(po = getPairOrientation()) == PairOrientation.TANDEM ||
 					po == PairOrientation.RF
 				);
