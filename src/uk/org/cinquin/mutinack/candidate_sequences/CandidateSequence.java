@@ -295,6 +295,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return result;
 	}
 
+	@SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -1115,7 +1116,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return goodCandidateForUniqueMutation;
 	}
 
-	@SuppressWarnings({"ReferenceEquality"})
+	@SuppressWarnings("ReferenceEquality")
 	public int computeNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
@@ -1129,6 +1130,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		//may cause an overestimate of that number
 		//Also exclude duplexes with clipping greater than maxConcurringDuplexClipping
 		final int nConcurringDuplexes = getDuplexes().count(d -> {
+			//noinspection ObjectEquality
 			if (d == bestSupporting) {
 				return true;
 			}

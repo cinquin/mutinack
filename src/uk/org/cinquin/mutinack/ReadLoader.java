@@ -122,8 +122,6 @@ public class ReadLoader {
 			final Set<String> switchedMatePairs = param.randomizeMates ? new THashSet<>(1_000_000) : null;
 			final Set<String> unswitchedMatePairs = param.randomizeMates ? new THashSet<>(1_000_000) : null;
 
-			final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigName, 0);
-
 			info = (stream, userRequestNumber) -> {
 				NumberFormat formatter = DoubleAdderFormatter.nf.get();
 				stream.println("Analyzer " + analyzer.name +
@@ -144,16 +142,14 @@ public class ReadLoader {
 			try {
 
 				if (contigs.get(0).equals(contigName)) {
+					final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigName, 0);
 					analyzer.stats.forEach(s -> s.nRecordsInFile.add(contigLocation, Util.getTotalReadCount(bamReader)));
 				}
 
-				int furthestPositionReadInContig = 0;
 				final int maxInsertSize = param.maxInsertSize;
 				final QueryInterval[] bamContig = {
 						bamReader.makeQueryInterval(contigName, Math.max(1, startAt - maxInsertSize + 1))};
 				analyzer.timeStartProcessing = System.nanoTime();
-				final TMap<String, Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence>>
-					readsToProcess = new THashMap<>(5_000);
 
 				subAnalyzer.truncateProcessingAt = truncateAtPosition;
 				subAnalyzer.startProcessingAt = startAt;
@@ -171,7 +167,6 @@ public class ReadLoader {
 					intersectionWaitUntil.put(z, -1);
 				}
 
-				int previous5p = -1;
 				SimpleCounter<Pair<String, Integer>> intersectReads = new SimpleCounter<>();
 				SimpleCounter<Pair<String, Integer>> readAheadStash = new SimpleCounter<>();
 
@@ -186,6 +181,9 @@ public class ReadLoader {
 
 				final InterningSet<@NonNull SequenceLocation> locationInterningSet = new InterningSet<>(10_000);
 
+				int furthestPositionReadInContig = 0;
+				final TMap<String, Pair<ExtendedSAMRecord, ReferenceSequence>> readsToProcess =
+					new THashMap<>(5_000);
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
 						e -> {
 							//Work around BWA output problem with reads that hang off the reference end
@@ -199,6 +197,7 @@ public class ReadLoader {
 						},
 						subAnalyzer.stats.nReadsInPrefetchQueue))//TODO Create a sample-wide stats object
 				{
+					int previous5p = -1;
 					while (iterator.hasNext() && !phaser.isTerminated() && !groupSettings.terminateAnalysis) {
 
 						final SAMRecord samRecord = iterator.next();
@@ -227,6 +226,7 @@ public class ReadLoader {
 							if (!samRecord.getMateUnmappedFlag() &&
 								samRecord.getMateReferenceIndex().equals(samRecord.getReferenceIndex())) {
 								String readName = samRecord.getReadName();
+								//noinspection StatementWithEmptyBody
 								if (unswitchedMatePairs.remove(readName)) {
 									//Nothing to do
 								} else if (switchedMatePairs.remove(readName)) {
@@ -424,9 +424,9 @@ public class ReadLoader {
 						final ExtendedSAMRecord extendedCopy = extended;
 						//Below duplicated to generate different stack traces
 						if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > 2 * param.maxInsertSize) {
-							distantMatePrefetcherService.submit(() -> extendedCopy.checkMate());
+							distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						} if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
-							distantMatePrefetcherService.submit(() -> extendedCopy.checkMate());
+							distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						}
 						furthestPositionReadInContig = Math.max(furthestPositionReadInContig,
 								samRecord.getAlignmentEnd() - 1);

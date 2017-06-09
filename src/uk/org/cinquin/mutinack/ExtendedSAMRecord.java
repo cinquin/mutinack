@@ -113,6 +113,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return hashCode;
 	}
 
+	@SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
 	@Override
 	public final boolean equals(Object obj) {
 		if (this == obj) {
@@ -247,16 +248,17 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		averagePhred = (sumBaseQualities0 + sumBaseQualities1) / ((float) (nConsidered0 + nConsidered1));
 		stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 
+		//noinspection RedundantCast
 		Assert.isTrue(rec.getUnclippedEnd() - 1 >= getAlignmentEnd(),
 			(Supplier<Object>) () -> "" + (rec.getUnclippedEnd() - 1),
 			(Supplier<Object>) this::toString,
 			"Unclipped end is %s for read %s");
 		Assert.isTrue(rec.getAlignmentStart() - 1 >= getUnclippedStart());
 
-		final @NonNull String fullBarcodeString;
 		String bcAttr = (String) record.getAttribute("BC");
 		if (groupSettings.getVariableBarcodeEnd() > 0) {
 			final int firstBarcodeInNameIndex = name.indexOf("BC:Z:");
+			final @NonNull String fullBarcodeString;
 			if (bcAttr == null) {
 				if (firstBarcodeInNameIndex == -1) {
 					throw new ParseRTException("Missing first barcode for read " + name +
@@ -371,6 +373,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public byte @NonNull[] getMateVariableBarcode() {
+		//noinspection ArrayEquality
 		if (mateVariableBarcode == null ||
 				mateVariableBarcode == groupSettings.getNs()) {
 			checkMate();
@@ -607,8 +610,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public boolean formsWrongPair() {
-		final PairOrientation po;
 		if (formsWrongPair == null) {
+			final PairOrientation po;
 			formsWrongPair = record.getReadPairedFlag() && (
 					record.getReadUnmappedFlag() ||
 					record.getMateUnmappedFlag() ||
@@ -847,6 +850,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 		SAMFileReader bamReader;
 		try {
+			//noinspection resource
 			bamReader = analyzer.readerPool.getObj();
 		} catch (PoolException e) {
 			throw new RuntimeException(e);

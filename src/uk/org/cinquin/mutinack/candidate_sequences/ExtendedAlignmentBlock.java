@@ -17,9 +17,9 @@ import contrib.net.sf.samtools.CigarOperator;
  * @author Tim Fennell
  */
 public class ExtendedAlignmentBlock {
-	private int readStart;
-	private int referenceStart;
-	private int length;
+	private final int readStart;
+	private final int referenceStart;
+	private final int length;
 
 	public CigarOperator previousCigarOperator, nextCigarOperator;
 

@@ -838,9 +838,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
-			analyzerCandidateLists.forEachKey(sa -> {
-				sa.incrementednPosDuplexQualityQ2OthersQ1Q2 = true;
-			});
+			analyzerCandidateLists.forEachKey(sa -> sa.incrementednPosDuplexQualityQ2OthersQ1Q2 = true);
 			stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
 			stats.nPosQualityQ2OthersQ1Q2.increment(location);
 			if (codingStrandTester != null &&
