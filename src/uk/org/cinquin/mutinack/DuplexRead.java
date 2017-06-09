@@ -194,6 +194,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		computeGlobalProperties();
 
 		//OK to do identity checks because of interning
+		@SuppressWarnings("ArrayEquality")
 		final boolean changed = (newLeft != leftBarcode) || (newRight != rightBarcode);
 		leftBarcode = newLeft;
 		rightBarcode = newRight;
@@ -276,6 +277,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return x * x;
 	}
 
+	@SuppressWarnings("NonFinalFieldReferencedInHashCode")
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
@@ -289,6 +291,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return result;
 	}
 
+	@SuppressWarnings({"NonFinalFieldReferenceInEquals", "ArrayEquality", "EqualsWhichDoesntCheckParameterClass"})
 	@Override
 	public final boolean equals(Object obj) {
 		if (this == obj)
@@ -555,6 +558,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	static Pair<DuplexRead, DuplexRead> checkNoEqualDuplexes(Iterable<DuplexRead> it) {
 		for (DuplexRead r: it) {
 			for (DuplexRead r2: it) {
+				//noinspection ObjectEquality
 				if (r != r2 && r.equals(r2)) {
 					//return new Pair<>(r, r2);
 					throw new AssertionFailedException("Duplexes " + r + " and " + r2 +
@@ -587,12 +591,13 @@ public final class DuplexRead implements HasInterval<Integer> {
 			lastExaminedPosition = location.position;
 		} finally {
 			if (result.threadCount.decrementAndGet() != 0) {
+				//noinspection ThrowFromFinallyBlock
 				throw new AssertionFailedException();
 			}
 		}
 	}
 
-	@SuppressWarnings({"ReferenceEquality"})
+	@SuppressWarnings("ReferenceEquality")
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
 			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
@@ -858,6 +863,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		if (!bothStrandsPresent) {
 			if (okForOneStrandedDisag && requireNonNull(nonNullEval).candidate.getMutationType() != MutationType.WILDTYPE) {
+				@SuppressWarnings("ObjectEquality")
 				final boolean reverseComplementDisag =
 					topStrandIsNegative ?
 						nonNullEval == top
@@ -886,10 +892,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 			final Mutation m2 = new Mutation(bottom.candidate);
 			final boolean noWildtype = !m1.mutationType.isWildtype() && !m2.mutationType.isWildtype();
 			final Mutation actualMutant = (!m1.mutationType.isWildtype()) ? m1 : m2;
+			@SuppressWarnings("ObjectEquality")
 			final Mutation wildtype = (actualMutant == m1) ? m2 : m1;
 
 			final CandidateSequence mutantCandidate;
 			final CandidateDuplexEval mutantEval;
+			//noinspection ObjectEquality
 			if (actualMutant == m1) {
 				mutantCandidate = top.candidate;
 				mutantEval = top;
@@ -898,6 +906,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				mutantEval = bottom;
 			}
 
+			@SuppressWarnings("ObjectEquality")
 			final boolean reverseComplementDisag =
 				topStrandIsNegative ?
 						mutantCandidate == top.candidate
@@ -946,10 +955,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 						:
 							requireNonNull(requireNonNull(bottom).candidate.getSequence())[0];
 
-					final boolean switchOrder = nonNullTop > nonNullBottom;
-
 					stats.nPosDuplexWithTopBottomDuplexDisagreementNoWT.accept(location);
 
+					final boolean switchOrder = nonNullTop > nonNullBottom;
 					duplexDisagreement = switchOrder ?
 							new DuplexDisagreement(m1, m2, false, GOOD)
 						:
@@ -1179,7 +1187,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			nDuplicates.get());
 	}
 
-	@SuppressWarnings("ReferenceEquality")
+	@SuppressWarnings({"ReferenceEquality", "ObjectEquality"})
 	private static void forEachDuplicate(
 			Parameters param,
 			AnalysisStats stats,
@@ -1201,6 +1209,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			if (other == read || other.visitedForOptDups) {
 				continue;
 			}
+			//noinspection StringEquality
 			if (rt != other.getRunAndTile()) {
 				stats.readDistance.insert(50);//Arbitrary high value so that read pairs that cannot
 				//be optical duplicates are accounted for
@@ -1244,6 +1253,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			Comparator.comparing(ExtendedSAMRecord::getAveragePhred)).get();
 		for (ExtendedSAMRecord read: duplicateSet) {
 			ExtendedSAMRecord mate;
+			//noinspection ObjectEquality
 			if (read == bestRead || ((mate = read.getMate()) != null && mate == bestRead)) {
 				read.hasOpticalDuplicates = true;
 			} else {
@@ -1307,26 +1317,22 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	@SuppressWarnings("ReferenceEquality")
 	public boolean checkReadOwnership() {
-		for (int i = topStrandRecords.size() - 1; i >= 0; --i) {
-			ExtendedSAMRecord r = topStrandRecords.get(i);
-			if (r.duplexRead != this) {
-				throw new AssertionFailedException();
-			}
-			if (bottomStrandRecords.contains(r)) {
-				throw new AssertionFailedException();
-			}
-		}
-
-		for (int i = bottomStrandRecords.size() - 1; i >= 0; --i) {
-			ExtendedSAMRecord r = bottomStrandRecords.get(i);
-			if (r.duplexRead != this) {
-				throw new AssertionFailedException();
-			}
-			if (topStrandRecords.contains(r)) {
-				throw new AssertionFailedException();
-			}
-		}
+		checkReadOwnerShip(topStrandRecords, bottomStrandRecords);
+		checkReadOwnerShip(bottomStrandRecords, topStrandRecords);
 		return true;
+	}
+
+	private void checkReadOwnerShip(@NonNull MutableList<ExtendedSAMRecord> list1,
+									@NonNull MutableList<ExtendedSAMRecord> list2) {
+		list1.each(r -> {
+			//noinspection ObjectEquality
+			if (r.duplexRead != this) {
+				throw new AssertionFailedException();
+			}
+			if (list2.contains(r)) {
+				throw new AssertionFailedException();
+			}
+		});
 	}
 
 }

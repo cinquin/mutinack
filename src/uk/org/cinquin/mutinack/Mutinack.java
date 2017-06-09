@@ -118,6 +118,7 @@ import uk.org.cinquin.mutinack.features.BedReader;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB;
+import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers;
 import uk.org.cinquin.mutinack.features.PosByPosNumbersPB.GenomeNumbers.Builder;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.BAMUtil;
@@ -192,6 +193,7 @@ public class Mutinack implements Actualizable, Closeable {
 			"highestAlleleFrequency", "smallestConcurringDuplexDistance", "largestConcurringDuplexDistance",
 			"supplementalMessage"
 	));
+	@SuppressWarnings("StaticVariableMayNotBeInitialized")
 	private volatile static ExecutorService contigThreadPool;
 
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
@@ -305,7 +307,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 		} else {
 			if (!param.includeInsertionsInParamExploration) {
-				statsNames = Arrays.asList("main_stats");
+				statsNames = Collections.singletonList("main_stats");
 			}
 			final BiConsumer<String, Parameters> consumer = (statsName, p) ->
 				stats.add(createStats(statsName, p, out,
@@ -624,8 +626,8 @@ public class Mutinack implements Actualizable, Closeable {
 		SAMFileHeader header = new SAMFileHeader();
 		factory.setCreateIndex(true);
 		header.setSortOrder(param.sortOutputAlignmentFile ?
-			contrib.net.sf.samtools.SAMFileHeader.SortOrder.coordinate
-			: contrib.net.sf.samtools.SAMFileHeader.SortOrder.unsorted);
+			SAMFileHeader.SortOrder.coordinate
+			: SAMFileHeader.SortOrder.unsorted);
 		if (param.sortOutputAlignmentFile) {
 			factory.setMaxRecordsInRam(10_000);
 		}
@@ -807,7 +809,7 @@ public class Mutinack implements Actualizable, Closeable {
 				throw new RuntimeException(e);
 			}
 		}
-		if (param.forceOutputAtPositionsBinFile.size() > 0) {
+		if (!param.forceOutputAtPositionsBinFile.isEmpty()) {
 			printUserMustSeeMessage("Forcing output at " + numberAddedPositions.get() + " of " +
 				numberConsideredPositions + " potential new positions read from " +
 				param.forceOutputAtPositionsBinFile.size() + " binary files");
@@ -835,9 +837,6 @@ public class Mutinack implements Actualizable, Closeable {
 			Util.truncateString(forceOutputString));
 
 		out.println(String.join("\t", outputHeader));
-
-		//Used to ensure that different analyzers do not use same output files
-		final Set<String> sampleNames = new HashSet<>();
 
 		Pair<List<@NonNull String>, List<Integer>> parsedPositions =
 			Util.parseListPositions(param.startAtPositions, true, "startAtPosition");
@@ -876,6 +875,8 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		final @Nullable OutputStreamWriter mutationWriterCopy = mutationAnnotationWriter;
+		//Used to ensure that different analyzers do not use same output files
+		final Set<String> sampleNames = new HashSet<>();
 
 		IntStream.range(0, param.inputReads.size()).parallel().forEach(i -> {
 			final String inputReads = param.inputReads.get(i);
@@ -925,13 +926,13 @@ public class Mutinack implements Actualizable, Closeable {
 			final ValidationStringency samValidationStringency;
 			switch (param.samValidation) {
 				case "none":
-					samValidationStringency = SAMFileReader.ValidationStringency.SILENT;
+					samValidationStringency = ValidationStringency.SILENT;
 					break;
 				case "warning":
-					samValidationStringency = SAMFileReader.ValidationStringency.LENIENT;
+					samValidationStringency = ValidationStringency.LENIENT;
 					break;
 				case "error":
-					samValidationStringency = SAMFileReader.ValidationStringency.STRICT;
+					samValidationStringency = ValidationStringency.STRICT;
 					break;
 				default:
 					throw new AssertionFailedException();
@@ -1003,7 +1004,7 @@ public class Mutinack implements Actualizable, Closeable {
 							"set readContigsFromFile option");
 					}
 					contigSizes.forEach((k,v) -> s.positionByPositionCoverage.put(k, new int [v]));
-					Builder builder = PosByPosNumbersPB.GenomeNumbers.newBuilder();
+					Builder builder = GenomeNumbers.newBuilder();
 					builder.setGeneratingProgramVersion(GitCommitInfo.getGitCommit());
 					builder.setGeneratingProgramArgs(param.toString());
 					builder.setSampleName(analyzer.finalOutputBaseName + '_' +
@@ -1128,7 +1129,7 @@ public class Mutinack implements Actualizable, Closeable {
 							new CounterWithBedFeatureBreakdown(filter, transcriptToGene, groupSettings);
 						counter.setNormalizedOutput(true);
 						counter.setAnalyzerName(name);
-						String outputPath = param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName();
+						String outputPath = param.saveBEDBreakdownToPathPrefix.get(index0) + '_' + s.getName();
 						if (!outputPaths.add(outputPath)) {
 							throw new AssertionFailedException();
 						}
@@ -1148,7 +1149,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 						counter = new CounterWithBedFeatureBreakdown(filter, transcriptToGene, groupSettings);
 						counter.setAnalyzerName(name);
-						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + "_" + s.getName() +
+						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + '_' + s.getName() +
 							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate("breakdown_" + f.getName(), filter, counter);
 					});
@@ -1182,8 +1183,6 @@ public class Mutinack implements Actualizable, Closeable {
 				throw new RuntimeException("Problem with traceField " + s, e);
 			}
 		}
-
-		final List<Phaser> phasers = new ArrayList<>();
 
 		final @NonNull Histogram dubiousOrGoodDuplexCovInAllInputs = new Histogram(500);
 		final @NonNull Histogram goodDuplexCovInAllInputs = new Histogram(500);
@@ -1245,8 +1244,6 @@ public class Mutinack implements Actualizable, Closeable {
 
 		statusLogger.info("Starting sequence analysis");
 
-		final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
-
 		int nParameterSets = -1;
 		for (Mutinack m: analyzers) {
 			int n = m.stats.size();
@@ -1258,6 +1255,9 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 		}
 
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		final List<Phaser> phasers = new ArrayList<>();
+		final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
 		for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
 			final int contigIndex = contigIndex0;
 
@@ -1336,6 +1336,7 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			}
 		}
+		@SuppressWarnings("StaticVariableUsedBeforeInitialization")
 		final ParFor parFor = new ParFor(0, endIndex, null, contigThreadPool, true);
 		parFor.setName("contig loop");
 
@@ -1358,8 +1359,8 @@ public class Mutinack implements Actualizable, Closeable {
 
 						final String savedThreadName = Thread.currentThread().getName();
 						Runnable r = () -> {
-							Thread.currentThread().setName(analysisChunk.contigName + " " + analysisChunk.startAtPosition +
-								" " + analyzer.name);
+							Thread.currentThread().setName(analysisChunk.contigName + ' ' + analysisChunk.startAtPosition +
+								' ' + analyzer.name);
 							try {
 								ReadLoader.load(analyzer, analyzer.param, groupSettings,
 									subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
@@ -1367,6 +1368,7 @@ public class Mutinack implements Actualizable, Closeable {
 									contigIndex, sharedAlignmentWriter,
 									StaticStuffToAvoidMutating::getContigSequence);
 							} catch (Exception e) {
+								//noinspection StatementWithEmptyBody
 								if (groupSettings.errorCause == null) {
 									throw e;
 								} else {
@@ -1405,6 +1407,7 @@ public class Mutinack implements Actualizable, Closeable {
 							analyzers.forEach(a -> {
 								boolean found = false;
 								for (int i = 0; i < a.subAnalyzers.size(); i++) {
+									//noinspection ObjectEquality
 									if (a.subAnalyzers.get(i) == sa) {
 										Assert.isFalse(found);
 										a.subAnalyzers.set(i, null);
