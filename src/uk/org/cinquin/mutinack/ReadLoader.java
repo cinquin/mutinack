@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -424,9 +425,11 @@ public class ReadLoader {
 						final ExtendedSAMRecord extendedCopy = extended;
 						//Below duplicated to generate different stack traces
 						if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > 2 * param.maxInsertSize) {
-							distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							@SuppressWarnings("unused")
+							Future f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						} if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
-							distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							@SuppressWarnings("unused")
+							Future f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						}
 						furthestPositionReadInContig = Math.max(furthestPositionReadInContig,
 								samRecord.getAlignmentEnd() - 1);

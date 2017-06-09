@@ -459,12 +459,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 			preliminaryOp.accept(duplex1);
 
-			boolean mergedDuplex = false;
-
 			Assert.isNonNull(duplex1.getInterval());
 
-			Collection<DuplexRead> overlapping = result.get().getOverlapping(duplex1);
 			final boolean iterate;
+			boolean mergedDuplex = false;
+			Collection<DuplexRead> overlapping = result.get().getOverlapping(duplex1);
 			if (overlapping instanceof ArrayList<?>) {
 				iterate = true;
 				Util.arrayListParallelSort((ArrayList<DuplexRead>) overlapping, duplexCountQualComparator);
@@ -1322,6 +1321,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return true;
 	}
 
+	@SuppressWarnings("ReferenceEquality")
 	private void checkReadOwnerShip(@NonNull MutableList<ExtendedSAMRecord> list1,
 									@NonNull MutableList<ExtendedSAMRecord> list2) {
 		list1.each(r -> {
