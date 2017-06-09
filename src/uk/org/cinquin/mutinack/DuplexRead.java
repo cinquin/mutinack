@@ -541,7 +541,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				mergeDuplexes(duplex2, duplex1);
 
 				boolean changed =
-						duplex2.computeConsensus(false, param.variableBarcodeLength);
+					duplex2.computeConsensus(false, param.variableBarcodeLength);
 
 				if (changed) {
 					result.set(groupDuplexes(result.get(), d -> {}, factory, param, stats, callDepth + 1));
