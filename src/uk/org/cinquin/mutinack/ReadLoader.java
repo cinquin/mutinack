@@ -421,6 +421,13 @@ public class ReadLoader {
 									analyzer.inputBam.getAbsolutePath());
 							}
 						}
+						final ExtendedSAMRecord extendedCopy = extended;
+						//Below duplicated to generate different stack traces
+						if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > 2 * param.maxInsertSize) {
+							distantMatePrefetcherService.submit(() -> extendedCopy.checkMate());
+						} if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
+							distantMatePrefetcherService.submit(() -> extendedCopy.checkMate());
+						}
 						furthestPositionReadInContig = Math.max(furthestPositionReadInContig,
 								samRecord.getAlignmentEnd() - 1);
 
