@@ -31,13 +31,11 @@ final class AlignmentExtremetiesDistance {
 
 	public void set(ExtendedSAMRecord r) {
 		if (r.duplexLeft()) {
-			temp.setPositions(
-					r.getOffsetUnclippedStart(),
-					r.getMateOffsetUnclippedEnd());
+			temp.leftAlignmentStart = r.getOffsetUnclippedStartLoc();
+			temp.rightAlignmentEnd = r.getMateOffsetUnclippedEndLoc();
 		} else {
-			temp.setPositions(
-					r.getMateOffsetUnclippedStart(),
-					r.getOffsetUnclippedEnd());
+			temp.leftAlignmentStart = r.getMateOffsetUnclippedStartLoc();
+			temp.rightAlignmentEnd = r.getOffsetUnclippedEndLoc();
 		}
 	}
 

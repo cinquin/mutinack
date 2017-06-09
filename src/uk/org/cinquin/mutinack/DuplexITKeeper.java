@@ -80,7 +80,7 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		duplexesAtPosition1.clear();
 		getOverlapping(Interval.toInterval(position, position), duplexesAtPosition0);
 		for (DuplexRead dr: duplexesAtPosition0) {
-			if (dr.position0 == position) {
+			if (dr.leftAlignmentStart.position == position) {
 				duplexesAtPosition1.add(dr);
 			}
 		}

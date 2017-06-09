@@ -51,7 +51,7 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
 		duplexesAtPosition.clear();
 		for (DuplexRead dr: this) {
-			if (dr.position0 == position) {
+			if (dr.leftAlignmentStart.position == position) {
 				duplexesAtPosition.add(dr);
 			}
 		}

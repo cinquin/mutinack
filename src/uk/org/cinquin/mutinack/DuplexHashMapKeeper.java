@@ -29,15 +29,15 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 
 	@Override
 	public @NonNull SortedSet<DuplexRead> getOverlapping(DuplexRead d) {
-		return getList(d.position0);
+		return getList(d.leftAlignmentStart.position);
 	}
 
 	@Override
 	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
 		List<DuplexRead> result = new ArrayList<>();
-		for (int i = d.position0 + shift - slop; i <=  d.position0 + shift + slop; i++) {
+		for (int i = d.leftAlignmentStart.position + shift - slop; i <=  d.leftAlignmentStart.position + shift + slop; i++) {
 			getList(i).forEach(d2 -> {
-				if (Math.abs(d2.position3 - d.position3) <= slop) {
+				if (Math.abs(d2.rightAlignmentEnd.position - d.rightAlignmentEnd.position) <= slop) {
 					result.add(d2);
 				}
 			});
@@ -53,7 +53,7 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 
 	@Override
 	public boolean add(DuplexRead d) {
-		return add(d.position0, d);
+		return add(d.leftAlignmentStart.position, d);
 	}
 
 	@Override

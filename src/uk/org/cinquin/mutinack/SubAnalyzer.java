@@ -421,7 +421,7 @@ public final class SubAnalyzer {
 			TIntObjectHashMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
 				(1_000, 0.5f, -999);
 			cleanedUpDuplexes.forEach(dr -> {
-				List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.position0,
+				List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.leftAlignmentStart.position,
 					(Supplier<List<DuplexRead>>) ArrayList::new);
 				list.add(dr);
 			});
@@ -480,8 +480,8 @@ public final class SubAnalyzer {
 
 	private static void insertDuplexGroupSizeStats(DuplexKeeper keeper, int offset, Histogram stats) {
 		keeper.forEach(duplexRead -> {
-			duplexRead.assignedToLocalGroup = duplexRead.position0 == ExtendedSAMRecord.NO_MATE_POSITION ||
-				duplexRead.position3 == ExtendedSAMRecord.NO_MATE_POSITION;//Ignore duplexes from reads that
+			duplexRead.assignedToLocalGroup = duplexRead.leftAlignmentStart.position == ExtendedSAMRecord.NO_MATE_POSITION ||
+				duplexRead.rightAlignmentEnd.position == ExtendedSAMRecord.NO_MATE_POSITION;//Ignore duplexes from reads that
 			//have a missing mate
 		});
 		keeper.forEach(duplexRead -> {
@@ -499,10 +499,10 @@ public final class SubAnalyzer {
 			if (od.assignedToLocalGroup) {
 				return;
 			}
-			int distance1 = od.position3 - (d.position3 + offset);
+			int distance1 = od.rightAlignmentEnd.position - (d.rightAlignmentEnd.position + offset);
 			if (Math.abs(distance1) <= windowWidth) {
 				Assert.isTrue(Math.abs(distance1) <= windowWidth + Math.abs(offset));
-				int distance2 = od.position0 - (d.position0 + offset);
+				int distance2 = od.leftAlignmentStart.position - (d.leftAlignmentStart.position + offset);
 				if (Math.abs(distance2) <= windowWidth) {
 					od.assignedToLocalGroup = true;
 					if (distance1 != 0 && distance2 != 0) {
@@ -624,17 +624,6 @@ public final class SubAnalyzer {
 			final DuplexRead duplexRead = matchToLeft ?
 					new DuplexRead(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
 					new DuplexRead(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
-			if (matchToLeft) {
-				duplexRead.setPositions(
-						rExtended.getOffsetUnclippedStart(),
-						rExtended.getMateOffsetUnclippedEnd());
-			} else {
-				duplexRead.setPositions(
-						rExtended.getMateOffsetUnclippedStart(),
-						rExtended.getOffsetUnclippedEnd());
-			}
-
-			duplexKeeper.add(duplexRead);
 
 			duplexRead.roughLocation = location;
 			rExtended.duplexRead = duplexRead;
@@ -694,6 +683,8 @@ public final class SubAnalyzer {
 				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
 					rExtended.getMateOffsetUnclippedEndLoc());
 			}
+
+			duplexKeeper.add(duplexRead);
 
 			if (false) Assert.isFalse( /* There are funny alignments that can trigger this assert;
 			but it should not hurt for alignment start and end to be switched, since it should happen

@@ -134,8 +134,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 	SequenceLocation roughLocation;
 	float referenceDisagreementRate;
 	int averageNClipped = -1;
-	public int position0;
-	int position3;
 	private int maxDistanceToLig = Integer.MIN_VALUE;
 	private final boolean leftBarcodeNegativeStrand;
 	private final boolean rightBarcodeNegativeStrand;
@@ -264,17 +262,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return maxDistanceToLig;
 	}
 
-	void setPositions(int position0, int position3) {
-		this.position0 = position0;
-		this.position3 = position3;
-	}
-
 	public int distanceTo(DuplexRead d2) {
-		return Math.max(Math.abs(position0 - d2.position0), Math.abs(position3 - d2.position3));
+		return Math.max(Math.abs(leftAlignmentStart.position - d2.leftAlignmentStart.position),
+			Math.abs(rightAlignmentEnd.position - d2.rightAlignmentEnd.position));
 	}
 
 	public int euclideanDistanceTo(DuplexRead d2) {
-		return (int) Math.sqrt(squareInt(position0 - d2.position0) + squareInt(position3 - d2.position3));
+		return (int) Math.sqrt(squareInt(leftAlignmentStart.position - d2.leftAlignmentStart.position) +
+			squareInt(rightAlignmentEnd.position - d2.rightAlignmentEnd.position));
 	}
 
 	private static int squareInt(int x) {
@@ -1303,11 +1298,11 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 
 	public int getUnclippedAlignmentStart() {
-		return position0;
+		return leftAlignmentStart.position;
 	}
 
 	public int getUnclippedAlignmentEnd() {
-		return position3;
+		return rightAlignmentEnd.position;
 	}
 
 	@SuppressWarnings("ReferenceEquality")
