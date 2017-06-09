@@ -277,7 +277,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			default:
 				throw new AssertionFailedException();
 		}
-		result += " at " + getLocation() + " " + matchingGenomeIntervals + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
+		result += " at " + getLocation() + ' ' + matchingGenomeIntervals + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
 		return result;
 	}
 
@@ -314,13 +314,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		final String result;
 		switch (getMutationType()) {
 			case DELETION:
-				result = "-" + new String(getSequence()) + "-";
+				result = '-' + new String(getSequence()) + '-';
 				break;
 			case INTRON:
 				result = "-INTRON-";
 				break;
 			case INSERTION:
-				result = "^" + new String(getSequence()) + "^";
+				result = '^' + new String(getSequence()) + '^';
 				break;
 			case SUBSTITUTION:
 				if (Boolean.TRUE.equals(getNegativeCodingStrand())) {
@@ -861,43 +861,43 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		 * Make sure columns stay in sync with Mutinack.outputHeader
 		 */
 		result.append(getnGoodDuplexes() + "\t" +
-			getnGoodOrDubiousDuplexes() + "\t" +
-			getnDuplexes() + "\t" +
-			getNonMutableConcurringReads().size() + "\t" +
-			formatter.format((getnGoodDuplexes() / ((float) getTotalGoodDuplexes()))) + "\t" +
-			formatter.format((getnGoodOrDubiousDuplexes() / ((float) getTotalGoodOrDubiousDuplexes()))) + "\t" +
-			formatter.format((getnDuplexes() / ((float) getTotalAllDuplexes()))) + "\t" +
-			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + "\t" +
-			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + "\t" +
-			nDuplexesSisterSamples + "\t" +
-			getInsertSize() + "\t" +
-			getInsertSizeAtPos10thP() + "\t" +
-			getInsertSizeAtPos90thP() + "\t" +
-			getMinDistanceToLigSite() + "\t" +
-			getMaxDistanceToLigSite() + "\t" +
+			getnGoodOrDubiousDuplexes() + '\t' +
+			getnDuplexes() + '\t' +
+			getNonMutableConcurringReads().size() + '\t' +
+			formatter.format((getnGoodDuplexes() / ((float) getTotalGoodDuplexes()))) + '\t' +
+			formatter.format((getnGoodOrDubiousDuplexes() / ((float) getTotalGoodOrDubiousDuplexes()))) + '\t' +
+			formatter.format((getnDuplexes() / ((float) getTotalAllDuplexes()))) + '\t' +
+			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + '\t' +
+			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + '\t' +
+			nDuplexesSisterSamples + '\t' +
+			getInsertSize() + '\t' +
+			getInsertSizeAtPos10thP() + '\t' +
+			getInsertSizeAtPos90thP() + '\t' +
+			getMinDistanceToLigSite() + '\t' +
+			getMaxDistanceToLigSite() + '\t' +
 			Optional.ofNullable(negativeCodingStrand).map(String::valueOf).orElse("?") + '\t' +
-			formatter.format(getMeanDistanceToLigSite()) + "\t" +
-			formatter.format(getProbCollision()) + "\t" +
-			getPositionInRead() + "\t" +
-			getReadEL() + "\t" +
-			getReadName() + "\t" +
-			getReadAlignmentStart()  + "\t" +
-			getMateReadAlignmentStart()  + "\t" +
-			getReadAlignmentEnd() + "\t" +
-			getMateReadAlignmentEnd() + "\t" +
-			getRefPositionOfMateLigationSite() + "\t" +
+			formatter.format(getMeanDistanceToLigSite()) + '\t' +
+			formatter.format(getProbCollision()) + '\t' +
+			getPositionInRead() + '\t' +
+			getReadEL() + '\t' +
+			getReadName() + '\t' +
+			getReadAlignmentStart()  + '\t' +
+			getMateReadAlignmentStart()  + '\t' +
+			getReadAlignmentEnd() + '\t' +
+			getMateReadAlignmentEnd() + '\t' +
+			getRefPositionOfMateLigationSite() + '\t' +
 			( ( param != null && (param.outputDuplexDetails || param.annotateMutationsInFile != null)) ?
 					qualityKDString
 				:
-					"" /*getIssues()*/) + "\t" +
-			getMedianPhredAtPosition() + "\t" +
-			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + "\t" +
-			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + "\t" +
-			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(0)) + "\t" +
-			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(1)) + "\t" +
-			getSmallestConcurringDuplexDistance() + "\t" +
-			getLargestConcurringDuplexDistance() + "\t" +
-			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + "\t"
+					"" /*getIssues()*/) + '\t' +
+			getMedianPhredAtPosition() + '\t' +
+			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + '\t' +
+			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + '\t' +
+			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(0)) + '\t' +
+			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(1)) + '\t' +
+			getSmallestConcurringDuplexDistance() + '\t' +
+			getLargestConcurringDuplexDistance() + '\t' +
+			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + '\t'
 			);
 
 		/*result.append(matchingGenomeIntervals.keyMultiValuePairsView().
