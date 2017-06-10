@@ -321,7 +321,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes());
 	}
 
-	private static boolean LENIENT_COORDINATE_PARSING = true;
+	private static final boolean LENIENT_COORDINATE_PARSING = true;
 
 	private static int parseInt(final byte[] b, final int fromIndex) {
 		final int end = b.length - 1;

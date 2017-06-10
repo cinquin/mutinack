@@ -93,8 +93,6 @@ public class ReadLoader {
 			SAMFileWriter alignmentWriter,
 			Function<String, ReferenceSequence> contigSequences) {
 
-		final @NonNull List<@NonNull AnalysisStats> stats = analyzer.stats;
-
 		final SettableInteger lastProcessable = subAnalyzer.lastProcessablePosition;
 		final int startAt = analysisChunk.startAtPosition;
 
@@ -185,6 +183,7 @@ public class ReadLoader {
 				int furthestPositionReadInContig = 0;
 				final TMap<String, Pair<ExtendedSAMRecord, ReferenceSequence>> readsToProcess =
 					new THashMap<>(5_000);
+				final @NonNull List<@NonNull AnalysisStats> stats = analyzer.stats;
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
 						e -> {
 							//Work around BWA output problem with reads that hang off the reference end
