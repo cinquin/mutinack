@@ -426,7 +426,7 @@ public class ReadLoader {
 						if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > 2 * param.maxInsertSize) {
 							@SuppressWarnings("unused")
 							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
-						} if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
+						} else if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
 							@SuppressWarnings("unused")
 							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						}
