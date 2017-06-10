@@ -198,8 +198,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			}
 			effectiveLength = readLength - i;
 		} else {
-			while (read[effectiveLength - 1] == 'N' &&
-					effectiveLength > 0) {
+			while (effectiveLength > 0 && read[effectiveLength - 1] == 'N') {
 				effectiveLength--;
 			}
 		}
@@ -219,7 +218,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			qualities.add(b);
 		}
 
-		int avQuality = sumBaseQualities0 / nConsidered0;
+		int avQuality = nConsidered0 == 0 ? 0 : sumBaseQualities0 / nConsidered0;
 		stats.forEach(s-> s.averageReadPhredQuality0.insert(avQuality));
 
 		int sumBaseQualities1 = 0;
@@ -238,7 +237,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		}
 
 		qualities.sort();
-		medianPhred = qualities.get(qualities.size() / 2);
+		medianPhred = qualities.isEmpty() ? 0 : qualities.get(qualities.size() / 2);
 		averagePhred = (sumBaseQualities0 + sumBaseQualities1) / ((float) (nConsidered0 + nConsidered1));
 		stats.forEach(s -> s.medianReadPhredQuality.insert(medianPhred));
 
