@@ -58,6 +58,7 @@ import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.statistics.PrintInStatus.OutputLevel;
 
+@SuppressWarnings({"DefaultAnnotationParam", "StringConcatenationInLoop"})
 @PersistenceCapable
 public final class Parameters implements Serializable, Cloneable {
 
@@ -1153,7 +1154,7 @@ public final class Parameters implements Serializable, Cloneable {
 				}
 				nIt++;
 				for (ParameterDescription p: params) {
-					List<String> names = Arrays.asList(((WrappedParameter) getWrapperParameter.get(p)).names()).stream().map(
+					List<String> names = Arrays.stream(((WrappedParameter) getWrapperParameter.get(p)).names()).map(
 							s -> s.substring(1) + suffix.get()).collect(Collectors.toList());
 					if (names.contains(f.getName())) {
 						out.append(p.getNames()).append('\n');
