@@ -18,18 +18,17 @@ package uk.org.cinquin.mutinack;
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
 import static java.util.Objects.requireNonNull;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.AVERAGE_N_CLIPPED;
-import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.BOTTOM_STRAND_MAP_Q2;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CLOSE_TO_LIG;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CONSENSUS_Q0;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CONSENSUS_Q1;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.CONSENSUS_THRESHOLDS_1;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.DISAGREEMENT;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.INSERT_SIZE;
+import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.MAPPING_QUALITY;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.MISSING_STRAND;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_READS_PER_STRAND;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_READS_WRONG_PAIR;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.N_STRAND_READS_ABOVE_Q2_PHRED;
-import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.TOP_STRAND_MAP_Q2;
 import static uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay.TOTAL_N_READS_Q2;
 import static uk.org.cinquin.mutinack.misc_util.Util.basesEqual;
 import static uk.org.cinquin.mutinack.misc_util.Util.shortLengthFloatFormatter;
@@ -688,13 +687,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
-		dq.addUnique(TOP_STRAND_MAP_Q2,
-			new IntMinMax<ExtendedSAMRecord>().
-				defaultMax(255).
-				acceptMax(topCounter.keptRecords,
-					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
-				getMax()
-			>= param.minMappingQualityQ2 ?
+		final int mapQ = computeMappingQuality(allDuplexRecords);
+		dq.addUnique(MAPPING_QUALITY, mapQ >= param.minMappingQualityQ2 ?
 				MAXIMUM
 			:
 				DUBIOUS);
@@ -726,16 +720,6 @@ public final class DuplexRead implements HasInterval<Integer> {
 				}
 			}
 		}
-
-		dq.addUnique(BOTTOM_STRAND_MAP_Q2,
-			new IntMinMax<ExtendedSAMRecord>().defaultMax(255).
-				acceptMax(bottomCounter.keptRecords,
-					er -> ((ExtendedSAMRecord) er).getMappingQuality()).
-			getMax()
-			>= param.minMappingQualityQ2 ?
-				MAXIMUM
-			:
-				DUBIOUS);
 
 		final boolean thresholds2Met, thresholds1Met;
 
@@ -1063,6 +1047,28 @@ public final class DuplexRead implements HasInterval<Integer> {
 		maxQuality = max(maxQuality, dq.getNonNullValue());
 		minQuality = min(minQuality, dq.getNonNullValue());
 
+	}
+
+	private static int computeMappingQuality(Iterable<ExtendedSAMRecord> recs) {
+		return new IntMinMax<ExtendedSAMRecord>().
+			defaultMax(255).
+			acceptMax(
+				recs,
+				er -> {
+					ExtendedSAMRecord cast = (ExtendedSAMRecord) er;
+					ExtendedSAMRecord mate = cast.getMate();
+					//TODO It might make more sense either to assert that mate is non-null
+					//or to set quality to 0 if it is null
+					return mate != null ?
+						Math.min(cast.record.getMappingQuality(), mate.record.getMappingQuality())
+					:
+						cast.record.getMappingQuality();
+				}).
+			getMax();
+	}
+
+	public int computeMappingQuality() {
+		return computeMappingQuality(allDuplexRecords);
 	}
 
 	public void randomizeStrands(Random random) {

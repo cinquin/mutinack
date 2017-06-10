@@ -47,12 +47,7 @@ public enum DuplexAssay implements AssayInfo {
 	/**
 	 * Also used for Q2 raw disagreements
 	 */
-	TOP_STRAND_MAP_Q2,
-
-	/**
-	 * Also used for Q2 raw disagreements
-	 */
-	BOTTOM_STRAND_MAP_Q2,
+	MAPPING_QUALITY,
 
 	CONSENSUS_THRESHOLDS_1,
 
