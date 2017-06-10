@@ -56,16 +56,16 @@ public class SAMRecordMock extends MockUp<SAMRecord> {
 		if ("BC".equals(attribute))
 				return "AAA";
 		else throw new RuntimeException();
-	};
+	}
 
 	@Mock
-	int getAlignmentStart() {return 1;};
+	int getAlignmentStart() {return 1;}
 
 	@Mock
 	int getUnclippedStart() {return 1;}
 
 	@Mock
-	int getAlignmentEnd() {return bases.length;};
+	int getAlignmentEnd() {return bases.length;}
 
 	@Mock
 	int getUnclippedEnd() {

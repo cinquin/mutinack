@@ -295,6 +295,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
 	}
 
+	@SuppressWarnings("unused")
 	private byte[] getBarcode(String s) {
 		if (record.getFirstOfPairFlag()) {
 			return getBarcodeFromString(s, true, 0);

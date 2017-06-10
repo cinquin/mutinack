@@ -44,12 +44,14 @@ public class Assert {
 
 	public static void isTrue(boolean condition, String message) {
 		if (!condition) {
+			//noinspection ConstantConditions
 			isTrue(condition, message, "");
 		}
 	}
 
 	public static void isTrue(boolean condition, Supplier<String> format, Object... args) {
 		if (!condition) {
+			//noinspection ConstantConditions
 			isTrue(condition, format.get(), args);
 		}
 	}
@@ -60,6 +62,7 @@ public class Assert {
 
 	public static void isFalse(boolean condition, String message) {
 		if (condition) {
+			//noinspection ConstantConditions
 			isFalse(condition, message, "");
 		}
 	}

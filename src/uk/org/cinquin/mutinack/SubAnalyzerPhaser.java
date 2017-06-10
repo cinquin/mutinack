@@ -324,6 +324,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			LocationExaminationResults results = sa.examineLocation(location);
 			if (NONTRIVIAL_ASSERTIONS) {
 				for (CandidateSequence c: results.analyzedCandidateSequences) {
+					//noinspection ObjectEquality
 					Assert.isTrue(c.getOwningAnalyzer() == sa.analyzer);
 				}
 			}
@@ -357,7 +358,8 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		locationExamResultsMap.forEachKeyValue((sa, ler) -> {
 			SettableInteger sum = new SettableInteger(0);
-			locationExamResultsMap.forEachKeyValue((k , v) -> {if (k != sa) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
+			locationExamResultsMap.forEachKeyValue((k , v) -> {//noinspection ObjectEquality
+				if (k != sa) sum.addAndGet(v.nGoodOrDubiousDuplexes);});
 			ler.nGoodOrDubiousDuplexesSisterSamples = sum.get();
 			ler.analyzedCandidateSequences.each(c -> c.setnDuplexesSisterSamples(sum.get()));
 		});
@@ -414,7 +416,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			minTopAlleleFreq < param.topAlleleFreqReport;
 
 		locationExamResults.flatCollect(c -> c.analyzedCandidateSequences).forEach(candidate -> {
-			if (candidate.getQuality().getNonNullValue().atLeast(Quality.GOOD)) {
+			if (candidate.getQuality().getNonNullValue().atLeast(GOOD)) {
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
 				candidate.computeNQ1PlusConcurringDuplexes(stats.concurringDuplexDistance, param);

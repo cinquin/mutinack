@@ -37,7 +37,7 @@ public class MutationHistogramMapSerializer extends JsonSerializer<@NonNull Muta
 			SerializerProvider serializers) throws IOException {
         gen.writeStartObject();
         Map<String, Histogram> values = new HashMap<>();
-        value.entrySet().forEach(e ->values.put(e.getKey().toLongString(), e.getValue()));
+        value.entrySet().forEach(e -> values.put(e.getKey().toLongString(), e.getValue()));
         gen.writeObjectField("values", values);
         gen.writeEndObject();
 	}

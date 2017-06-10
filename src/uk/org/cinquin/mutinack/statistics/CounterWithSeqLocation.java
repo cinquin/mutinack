@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.SerializableFunction;
@@ -48,7 +50,7 @@ public class CounterWithSeqLocation<T> extends Counter<T> implements Serializabl
 		this(false, groupSettings);
 	}
 
-	public void accept(SequenceLocation loc, Object o) {
+	public void accept(SequenceLocation loc, @NonNull Object o) {
 		super.acceptVarArgs(1d, o, loc.contigIndex, loc.position / groupSettings.BIN_SIZE);
 	}
 }

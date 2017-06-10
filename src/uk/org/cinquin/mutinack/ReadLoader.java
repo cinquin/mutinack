@@ -181,7 +181,7 @@ public class ReadLoader {
 				final InterningSet<@NonNull SequenceLocation> locationInterningSet = new InterningSet<>(10_000);
 
 				int furthestPositionReadInContig = 0;
-				final TMap<String, Pair<ExtendedSAMRecord, ReferenceSequence>> readsToProcess =
+				final TMap<String, Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence>> readsToProcess =
 					new THashMap<>(5_000);
 				final @NonNull List<@NonNull AnalysisStats> stats = analyzer.stats;
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
@@ -386,7 +386,7 @@ public class ReadLoader {
 						ReferenceSequence ref = Objects.requireNonNull(contigSequences.apply(contigName));
 
 						//Put samRecord into the cache
-						ExtendedSAMRecord extended = subAnalyzer.getExtended(samRecord, location);
+						@NonNull ExtendedSAMRecord extended = subAnalyzer.getExtended(samRecord, location);
 
 						if (!extended.getReferenceName().equals(contigName)) {
 							throw new AssertionFailedException(extended.getReferenceName() + " vs " + contigName);
@@ -425,10 +425,10 @@ public class ReadLoader {
 						//Below duplicated to generate different stack traces
 						if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > 2 * param.maxInsertSize) {
 							@SuppressWarnings("unused")
-							Future f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						} if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
 							@SuppressWarnings("unused")
-							Future f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						}
 						furthestPositionReadInContig = Math.max(furthestPositionReadInContig,
 								samRecord.getAlignmentEnd() - 1);

@@ -906,6 +906,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 					qualityKDString
 				:
 					"" /*getIssues()*/) + '\t' +
+			//getIssues() + '\t' +
 			getMedianPhredAtPosition() + '\t' +
 			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + '\t' +
 			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + '\t' +
