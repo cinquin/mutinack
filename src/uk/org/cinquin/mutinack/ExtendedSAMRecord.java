@@ -116,13 +116,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	@SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
 	@Override
 	public final boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		return name.equals(((ExtendedSAMRecord) obj).name);
+		return this == obj || (obj != null && name.equals(((ExtendedSAMRecord) obj).name));
 	}
 
 	private void computeNClipped() {
