@@ -1488,6 +1488,10 @@ public final class SubAnalyzer {
 			}
 		}
 
+		if (rec.getMappingQuality() < param.minMappingQualityQ1) {
+			return -1;
+		}
+
 		for (ExtendedAlignmentBlock block: extendedRec.getAlignmentBlocks()) {
 			processAlignmentBlock(
 				location,

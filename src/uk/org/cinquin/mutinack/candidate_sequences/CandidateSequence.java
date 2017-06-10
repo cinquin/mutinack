@@ -1139,7 +1139,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreIncludingDuplexNStrands()).
 					atLeast(Quality.GOOD) &&
 				d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
-				d.allDuplexRecords.anySatisfy(r -> concurringDuplexReadClippingOK(r, param));
+				d.allDuplexRecords.anySatisfy(r -> concurringDuplexReadClippingOK(r, param)) &&
+				d.computeMappingQuality() >= param.minMappingQualityQ1;
 			if (good) {
 				final int distance = d.distanceTo(bestSupporting);
 				alignmentStarts.add(distance);

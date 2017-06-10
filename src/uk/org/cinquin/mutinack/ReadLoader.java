@@ -364,7 +364,7 @@ public class ReadLoader {
 						stats.forEach(s -> s.mappingQualityAllRecords.insert(mappingQuality));
 						if (mappingQuality < param.minMappingQualityQ1) {
 							stats.forEach(s -> s.nRecordsBelowMappingQualityThreshold.increment(location));
-							continue;
+							//continue;
 						}
 
 						if (lastContigName != null && !contigName.equals(lastContigName)) {
