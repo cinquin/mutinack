@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
+import contrib.it.unimi.dsi.io.ByteBufferInputStream;
 import contrib.net.sf.samtools.FileTruncatedException;
 import contrib.net.sf.samtools.seekablestream.SeekableBufferedStream;
 import contrib.net.sf.samtools.seekablestream.SeekableFileStream;
@@ -85,7 +86,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      */
     public BlockCompressedInputStream(final File file)
         throws IOException {
-        mFile = new SeekableFileStream(file);
+        mFile = ByteBufferInputStream.map(new RandomAccessFile(file, "r").getChannel());
         mStream = null;
 
     }
