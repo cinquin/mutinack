@@ -111,6 +111,8 @@ public class ReadLoader {
 		final @NonNull Phaser phaser = Objects.requireNonNull(analysisChunk.phaser);
 		String lastContigName = null;
 		BiConsumer<PrintStream, Integer> info = null;
+		int previous5p = -1;
+
 		try {
 			final String contigName = contigs.get(contigIndex);
 			final int truncateAtPosition = analysisChunk.terminateAtPosition;
@@ -197,7 +199,6 @@ public class ReadLoader {
 						},
 						subAnalyzer.stats.nReadsInPrefetchQueue))//TODO Create a sample-wide stats object
 				{
-					int previous5p = -1;
 					while (iterator.hasNext() && !phaser.isTerminated() && !groupSettings.terminateAnalysis) {
 
 						final SAMRecord samRecord = iterator.next();
@@ -501,8 +502,8 @@ public class ReadLoader {
 				analyzer.readerPool.returnObj(bamReader);
 			}
 		} catch (Throwable t) {
-			Util.printUserMustSeeMessage("Exception " + t +
-					" on thread " + Thread.currentThread());
+			Util.printUserMustSeeMessage("Exception " + t + " on thread " + Thread.currentThread() +
+				" at rough position " + previous5p);
 			groupSettings.errorOccurred(t);
 			phaser.forceTermination();
 			throw new RuntimeException("Exception while processing contig " + lastContigName +
