@@ -110,7 +110,7 @@ public class ReadLoader {
 
 		final @NonNull Phaser phaser = Objects.requireNonNull(analysisChunk.phaser);
 		String lastContigName = null;
-		BiConsumer<PrintStream, Integer> info = null;
+		String statusUpdateName = null;
 		int previous5p = -1;
 
 		try {
@@ -123,20 +123,20 @@ public class ReadLoader {
 			final Set<String> switchedMatePairs = param.randomizeMates ? new THashSet<>(1_000_000) : null;
 			final Set<String> unswitchedMatePairs = param.randomizeMates ? new THashSet<>(1_000_000) : null;
 
-			info = (stream, userRequestNumber) -> {
+			statusUpdateName = "Analyzer " + analyzer.name + " contig " + contigName +
+				" range: " + (analysisChunk.startAtPosition + "-" + analysisChunk.terminateAtPosition);
+			final String prefix = statusUpdateName;
+			BiConsumer<PrintStream, Integer> info = (stream, userRequestNumber) -> {
 				NumberFormat formatter = DoubleAdderFormatter.nf.get();
-				stream.println("Analyzer " + analyzer.name +
-						" contig " + contigName +
-						" range: " + (analysisChunk.startAtPosition + "-" + analysisChunk.terminateAtPosition) +
-						"; pauseAtPosition: " + formatter.format(analysisChunk.pauseAtPosition) +
-						"; lastProcessedPosition: " + formatter.format(analysisChunk.lastProcessedPosition) + "; " +
-						formatter.format(100f * (analysisChunk.lastProcessedPosition - analysisChunk.startAtPosition) /
-								(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
-						);
+				stream.println(
+					prefix +
+					"; pauseAtPosition: " + formatter.format(analysisChunk.pauseAtPosition) +
+					"; lastProcessedPosition: " + formatter.format(analysisChunk.lastProcessedPosition) + "; " +
+					formatter.format(100f * (analysisChunk.lastProcessedPosition - analysisChunk.startAtPosition) /
+							(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
+					);
 			};
-			synchronized(groupSettings.statusUpdateTasks) {
-				groupSettings.statusUpdateTasks.add(info);
-			}
+			groupSettings.addStatusUpdateTask(statusUpdateName, info);
 
 			final SAMFileReader bamReader = analyzer.readerPool.getObj();
 			SAMRecordIterator it0 = null;
@@ -509,12 +509,10 @@ public class ReadLoader {
 			throw new RuntimeException("Exception while processing contig " + lastContigName +
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
 		} finally {
-			if (info != null) {
-				synchronized(groupSettings.statusUpdateTasks) {
-					if (!groupSettings.statusUpdateTasks.remove(info)) {
+			if (statusUpdateName != null) {
+					if (!groupSettings.removeStatusUpdateTask(statusUpdateName)) {
 						logger.warn("Could not remove status udpate task");
 					}
-				}
 			}
 			if (groupSettings.terminateAnalysis) {
 				phaser.forceTermination();

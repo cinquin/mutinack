@@ -20,12 +20,12 @@ package uk.org.cinquin.mutinack;
 import java.io.Closeable;
 import java.io.PrintStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
@@ -62,8 +62,8 @@ public class MutinackGroup implements Closeable, Serializable {
 	private static final int CONSTANT_BARCODE_END = 5;
 	private byte[] Ns;
 
-	public final transient Collection<BiConsumer<PrintStream, Integer>>
-		statusUpdateTasks = new ArrayList<>();
+	private final transient SortedMap<String, BiConsumer<PrintStream, Integer>>
+		statusUpdateTasks = new TreeMap<>();
 	private List<@NonNull String> contigNames;
 	private Map<@NonNull String, @NonNull Integer> contigSizes;
 	public final @NonNull Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
@@ -182,4 +182,26 @@ public class MutinackGroup implements Closeable, Serializable {
 	public boolean isRnaSeq() {
 		return rnaSeq;
 	}
+
+	public void addStatusUpdateTask(String name, BiConsumer<PrintStream, Integer> task) {
+		synchronized(statusUpdateTasks) {
+			if (statusUpdateTasks.put(name, task) != null) {
+				throw new IllegalArgumentException("Duplicate status update task " + name);
+			}
+		}
+	}
+
+	public boolean removeStatusUpdateTask(String name) {
+		synchronized(statusUpdateTasks) {
+			return statusUpdateTasks.remove(name) != null;
+		}
+	}
+
+
+	public void statusUpdate() {
+		synchronized(statusUpdateTasks) {
+			statusUpdateTasks.forEach((name, task) -> task.accept(System.err, 0));
+		}
+	}
+
 }

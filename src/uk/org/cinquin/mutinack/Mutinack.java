@@ -1198,11 +1198,7 @@ public class Mutinack implements Actualizable, Closeable {
 			printStream.flush();
 
 			if (signal != null) {
-				synchronized(groupSettings.statusUpdateTasks) {
-					for (BiConsumer<PrintStream, Integer> update: groupSettings.statusUpdateTasks) {
-						update.accept(System.err, 0);
-					}
-				}
+				groupSettings.statusUpdate();
 			} else {
 				//TODO Print short status?
 			}
