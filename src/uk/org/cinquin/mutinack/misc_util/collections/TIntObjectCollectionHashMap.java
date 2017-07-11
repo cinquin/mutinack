@@ -48,15 +48,12 @@ public abstract class TIntObjectCollectionHashMap<V> implements Iterable<V> {
 	}
 
 	public boolean containsValue(V v) {
-		Handle<Boolean> found = new Handle<>(false);
-		getMap().forEachValue(l -> {
+		return !getMap().forEachValue(l -> {
 			if (l.contains(v)) {
-				found.set(true);
 				return false;
 			}
 			return true;
 		});
-		return found.get();
 	}
 
 	public @NonNull Iterable<V> getIterable() {
