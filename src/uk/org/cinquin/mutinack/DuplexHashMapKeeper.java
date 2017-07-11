@@ -29,26 +29,26 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 
 	@Override
 	public @NonNull SortedSet<DuplexRead> getOverlapping(DuplexRead d) {
-		return getList(d.leftAlignmentStart.position);
+		return getCollection(d.leftAlignmentStart.position);
 	}
 
 	@Override
 	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
 		List<DuplexRead> result = new ArrayList<>();
 		for (int i = d.leftAlignmentStart.position + shift - slop; i <=  d.leftAlignmentStart.position + shift + slop; i++) {
-			getList(i).forEach(d2 -> {
+			getCollection(i).forEach(d2 -> {
 				if (Math.abs(d2.rightAlignmentEnd.position - d.rightAlignmentEnd.position) <= slop) {
 					result.add(d2);
 				}
 			});
-			result.addAll(getList(i));
+			result.addAll(getCollection(i));
 		}
 		return result;
 	}
 
 	@Override
 	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
-		return getList(position);
+		return getCollection(position);
 	}
 
 	@Override

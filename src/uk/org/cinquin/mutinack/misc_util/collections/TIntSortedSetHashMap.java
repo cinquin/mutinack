@@ -43,7 +43,7 @@ public class TIntSortedSetHashMap<V> extends TIntObjectCollectionHashMap<V> impl
 	public static final @NonNull TreeSetWithForEach emptyTreeSet = new TreeSetWithForEach<>();
 
 	@Override
-	public @NonNull TreeSetWithForEach<V> getList(int i) {
+	public @NonNull TreeSetWithForEach<V> getCollection(int i) {
 		TreeSetWithForEach<V> l = map.get(i);
 		if (l != null) {
 			return l;

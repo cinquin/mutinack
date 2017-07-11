@@ -32,7 +32,7 @@ import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public abstract class TIntObjectCollectionHashMap<V> implements Iterable<V> {
 
-	public abstract @NonNull Collection<V> getList(int i);
+	public abstract @NonNull Collection<V> getCollection(int i);
 	public abstract boolean add(int i, V v);
 	public abstract boolean forEach(Predicate<? super V> predicate);
 

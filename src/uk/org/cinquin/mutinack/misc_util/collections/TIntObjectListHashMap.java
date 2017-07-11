@@ -38,7 +38,7 @@ public class TIntObjectListHashMap<V> extends TIntObjectCollectionHashMap<V> imp
 	}
 
 	@Override
-	public @NonNull Collection<V> getList(int i) {
+	public @NonNull Collection<V> getCollection(int i) {
 		Collection<V> l = getMap().get(i);
 		if (l != null) {
 			return l;
