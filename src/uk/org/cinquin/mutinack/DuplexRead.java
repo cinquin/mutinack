@@ -463,7 +463,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				Util.arrayListParallelSort((ArrayList<DuplexRead>) overlapping, duplexCountQualComparator);
 			} else if (overlapping instanceof List<?>) {
 				iterate = true;
-				Collections.sort((List<DuplexRead>) overlapping, duplexCountQualComparator);
+				((List<DuplexRead>) overlapping).sort(duplexCountQualComparator);
 			} else {
 				// if the result is a sorted set, no need to sort
 				iterate = false;
