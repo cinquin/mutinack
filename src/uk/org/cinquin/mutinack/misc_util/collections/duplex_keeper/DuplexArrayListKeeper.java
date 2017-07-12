@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.misc_util.collections.duplex_keeper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +23,7 @@ import java.util.List;
 import org.eclipse.jdt.annotation.NonNull;
 
 import contrib.net.sf.picard.util.IterableAdapter;
+import uk.org.cinquin.mutinack.Duplex;
 
 public class DuplexArrayListKeeper extends ArrayList<Duplex> implements DuplexKeeper {
 

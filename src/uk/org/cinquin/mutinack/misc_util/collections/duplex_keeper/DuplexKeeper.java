@@ -15,12 +15,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.misc_util.collections.duplex_keeper;
 
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
+
+import uk.org.cinquin.mutinack.Duplex;
 
 public interface DuplexKeeper extends Collection<Duplex> {
 	@NonNull Collection<Duplex> getOverlapping(Duplex d);

@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.misc_util.collections.duplex_keeper;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -27,6 +27,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import contrib.edu.stanford.nlp.util.Interval;
 import contrib.edu.stanford.nlp.util.IntervalTree;
 import contrib.net.sf.picard.util.IterableAdapter;
+import uk.org.cinquin.mutinack.Duplex;
 
 public class DuplexITKeeper extends IntervalTree<Integer, Duplex> implements DuplexKeeper  {
 

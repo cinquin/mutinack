@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.misc_util.collections.duplex_keeper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +24,7 @@ import java.util.SortedSet;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.misc_util.collections.TIntSortedSetHashMap;
 
 public class DuplexHashMapKeeper extends TIntSortedSetHashMap<Duplex> implements DuplexKeeper {

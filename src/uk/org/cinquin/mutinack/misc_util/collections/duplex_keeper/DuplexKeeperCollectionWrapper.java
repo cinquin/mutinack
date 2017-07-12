@@ -1,10 +1,12 @@
-package uk.org.cinquin.mutinack;
+package uk.org.cinquin.mutinack.misc_util.collections.duplex_keeper;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
+
+import uk.org.cinquin.mutinack.Duplex;
 
 public class DuplexKeeperCollectionWrapper implements DuplexKeeper {
 
