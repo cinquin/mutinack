@@ -1123,7 +1123,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 		final DuplexRead bestSupporting = getDuplexes().stream().
 			max(Comparator.comparing((DuplexRead dr) -> filterQuality(dr.localAndGlobalQuality)).
-				thenComparing(Comparator.comparing((DuplexRead dr) -> dr.allDuplexRecords.size())).
+				thenComparing(Comparator.comparing((DuplexRead dr) -> dr.allRecords.size())).
 				thenComparing(DuplexRead::getUnclippedAlignmentStart)).get();
 
 		//Exclude duplexes whose reads all have an unmapped mate from the count
@@ -1136,11 +1136,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				return true;
 			}
 			boolean good =
-				d.allDuplexRecords.size() >= param.minConcurringDuplexReads * 2 /* double to account for mates */ &&
+				d.allRecords.size() >= param.minConcurringDuplexReads * 2 /* double to account for mates */ &&
 				d.localAndGlobalQuality.getValueIgnoring(assaysToIgnoreIncludingDuplexNStrands()).
 					atLeast(Quality.GOOD) &&
-				d.allDuplexRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
-				d.allDuplexRecords.anySatisfy(r -> concurringDuplexReadClippingOK(r, param)) &&
+				d.allRecords.anySatisfy(r -> !r.record.getMateUnmappedFlag()) &&
+				d.allRecords.anySatisfy(r -> concurringDuplexReadClippingOK(r, param)) &&
 				d.computeMappingQuality() >= param.minMappingQualityQ1;
 			if (good) {
 				final int distance = d.distanceTo(bestSupporting);

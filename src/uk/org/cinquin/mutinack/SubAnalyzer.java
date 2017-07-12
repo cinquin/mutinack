@@ -551,7 +551,7 @@ public final class SubAnalyzer {
 			//stats.nVariableBarcodeCandidateExaminations.increment(location);
 
 			boolean forceGrouping = false;
-			if (duplexRead.allDuplexRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
+			if (duplexRead.allRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
 				forceGrouping = true;
 			}
 
@@ -1062,7 +1062,7 @@ public final class SubAnalyzer {
 
 	private static void registerDuplexMinFracTopCandidate(TCustomHashSet<DuplexRead> duplexReads, Histogram hist) {
 		duplexReads.forEach(dr -> {
-			if (dr.allDuplexRecords.size() < 2 || dr.minFracTopCandidate == Float.MAX_VALUE) {
+			if (dr.allRecords.size() < 2 || dr.minFracTopCandidate == Float.MAX_VALUE) {
 				return true;
 			}
 			hist.insert((int) (dr.minFracTopCandidate * 10));
@@ -1178,7 +1178,7 @@ public final class SubAnalyzer {
 			case "NQ1Duplexes":
 				int duplexCount = candidateDuplexes.count(d ->
 					d.localAndGlobalQuality.getValueIgnoring(ASSAYS_TO_IGNORE_FOR_DUPLEX_NSTRANDS).atLeast(GOOD) &&
-						d.allDuplexRecords.size() > 1 * 2);
+						d.allRecords.size() > 1 * 2);
 				setNQ1DupQuality(candidate, duplexCount, param.minQ1Duplexes, param.minTotalReadsForNQ1Duplexes);
 				break;
 			default:
@@ -1313,7 +1313,7 @@ public final class SubAnalyzer {
 	@SuppressWarnings("ReferenceEquality")
 	private static void checkDuplexes(Iterable<DuplexRead> duplexReads) {
 		for (DuplexRead duplexRead: duplexReads) {
-			duplexRead.allDuplexRecords.each(r -> {
+			duplexRead.allRecords.each(r -> {
 				//noinspection ObjectEquality
 				if (r.duplexRead != duplexRead) {
 					throw new AssertionFailedException("Read " + r + " associated with duplexes " +
@@ -1355,7 +1355,7 @@ public final class SubAnalyzer {
 					Assert.isFalse(r.discarded);
 					DuplexRead d = r.duplexRead;
 					if (d != null && duplexesSupportingC.contains(d)) {
-						boolean disowned = !d.allDuplexRecords.contains(r);
+						boolean disowned = !d.allRecords.contains(r);
 
 						throw new AssertionFailedException(disowned + " Duplex " + d +
 							" associated with candidates " + c + " and " + c2);

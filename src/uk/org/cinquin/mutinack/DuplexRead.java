@@ -107,7 +107,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
 	public final @NonNull MutableList<@NonNull ExtendedSAMRecord> topStrandRecords = new FastList<>(100),
 			bottomStrandRecords = new FastList<>(100);
-	public final LazyIterable<@NonNull ExtendedSAMRecord> allDuplexRecords =
+	public final LazyIterable<@NonNull ExtendedSAMRecord> allRecords =
 		new LazyIterableAdapter<>(topStrandRecords).concatenate(bottomStrandRecords);
 	public final @NonNull List<String> issues = new ArrayList<>(10);
 	private @Nullable Interval<Integer> interval;
@@ -148,14 +148,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	void assertAllBarcodesEqual() {
 		if (DebugLogControl.NONTRIVIAL_ASSERTIONS) {
-			allDuplexRecords.forEach(r -> {
+			allRecords.forEach(r -> {
 				if (!r.duplexLeft()) {
 					if (!basesEqual(rightBarcode, r.variableBarcode, true, 0)) {
 						throw new AssertionFailedException("Unequal barcodes: " +
 								new String(rightBarcode) + " vs " + new String(r.variableBarcode) +
 								"; other barcode is " + new String(leftBarcode) + " and mate is " +
 								new String(r.getMateVariableBarcode()) + "; nRecords=" +
-								allDuplexRecords.size() + " (1)");
+								allRecords.size() + " (1)");
 					}
 				} else {
 					if (!basesEqual(leftBarcode, r.variableBarcode, true, 0)) {
@@ -163,7 +163,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 								new String(leftBarcode) + " vs " + new String(r.variableBarcode) +
 								"; other barcode is " + new String(rightBarcode) + " and mate is " +
 								new String(r.getMateVariableBarcode()) + "; nRecords=" +
-								allDuplexRecords.size() + " (2)");
+								allRecords.size() + " (2)");
 					}
 				}
 			});
@@ -179,14 +179,14 @@ public final class DuplexRead implements HasInterval<Integer> {
 	boolean computeConsensus(boolean allReadsSameBarcode, int barcodeLength) {
 		final byte @NonNull[] newLeft, newRight;
 		if (allReadsSameBarcode) {
-			newLeft = (allDuplexRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() >= 0).
+			newLeft = (allRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() >= 0).
 					map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
-			newRight = (allDuplexRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() < 0).
+			newRight = (allRecords.detectOptional(rExt -> rExt.record.getInferredInsertSize() < 0).
 					map(r -> r.variableBarcode).orElse(groupSettings.getNs()));
 		} else {
-			newLeft = SimpleCounter.getBarcodeConsensus(allDuplexRecords.collectIf(
+			newLeft = SimpleCounter.getBarcodeConsensus(allRecords.collectIf(
 				rExt -> rExt.record.getInferredInsertSize() >= 0, r -> r.variableBarcode), barcodeLength);
-			newRight = SimpleCounter.getBarcodeConsensus(allDuplexRecords.collectIf(
+			newRight = SimpleCounter.getBarcodeConsensus(allRecords.collectIf(
 				rExt -> rExt.record.getInferredInsertSize() < 0, r -> r.variableBarcode), barcodeLength);
 		}
 
@@ -203,7 +203,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	void computeGlobalProperties() {
 		//TODO compute consensus insert size instead of extremes
 		final IntMinMax<ExtendedSAMRecord> insertSizeStats = new IntMinMax<ExtendedSAMRecord>().
-			acceptMinMax(allDuplexRecords,
+			acceptMinMax(allRecords,
 				er -> Math.abs(((ExtendedSAMRecord) er).getInsertSize()));
 
 		maxInsertSize = insertSizeStats.getMax();
@@ -325,7 +325,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	public int getMinMedianPhred() {
 		SettableInteger result = new SettableInteger(Integer.MAX_VALUE);
-		allDuplexRecords.each(r -> {
+		allRecords.each(r -> {
 			int i = r.medianPhred;
 			if (i < result.get()) {
 				result.set(i);
@@ -401,7 +401,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		mergeInto.bottomStrandRecords.addAll(otherDuplex.bottomStrandRecords);
 		mergeInto.topStrandRecords.addAll(otherDuplex.topStrandRecords);
 
-		otherDuplex.allDuplexRecords.each(r -> r.duplexRead = mergeInto);
+		otherDuplex.allRecords.each(r -> r.duplexRead = mergeInto);
 
 		otherDuplex.invalid = true;
 	}
@@ -409,7 +409,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public static final Comparator<DuplexRead> duplexCountQualComparator =
 		(d1, d2) -> {
 			int compResult;
-			compResult = Integer.compare(d2.allDuplexRecords.size(), d1.allDuplexRecords.size());
+			compResult = Integer.compare(d2.allRecords.size(), d1.allRecords.size());
 			if (compResult != 0) {
 				return compResult;
 			}
@@ -696,7 +696,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
-		final int mapQ = computeMappingQuality(allDuplexRecords);
+		final int mapQ = computeMappingQuality(allRecords);
 		dq.addUnique(MAPPING_QUALITY, mapQ >= param.minMappingQualityQ2 ?
 				MAXIMUM
 			:
@@ -1012,7 +1012,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 			final int noEntryValue = CandidateSequence.NO_ENTRY_VALUE;
 			SettableInteger nRemoved = new SettableInteger(0);
 
-			allDuplexRecords.each(r -> {
+			allRecords.each(r -> {
 				if (candidate.removeConcurringRead(r) != noEntryValue) {
 					nRemoved.incrementAndGet();
 					if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {
@@ -1077,7 +1077,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 
 	public int computeMappingQuality() {
-		return computeMappingQuality(allDuplexRecords);
+		return computeMappingQuality(allRecords);
 	}
 
 	public void randomizeStrands(Random random) {
@@ -1106,18 +1106,18 @@ public final class DuplexRead implements HasInterval<Integer> {
 	void analyzeForStats(Parameters param, AnalysisStats stats) {
 		Assert.isFalse(invalid);
 
-		stats.duplexTotalRecords.insert(allDuplexRecords.size());
+		stats.duplexTotalRecords.insert(allRecords.size());
 
 		if (param.filterOpticalDuplicates) {
-			markDuplicates(param, stats, allDuplexRecords);
+			markDuplicates(param, stats, allRecords);
 		}
 
-		final boolean alreadyVisitedForStats = allDuplexRecords.anySatisfy(
+		final boolean alreadyVisitedForStats = allRecords.anySatisfy(
 				r -> r.duplexAlreadyVisitedForStats);
 
 		if (!alreadyVisitedForStats) {
-			allDuplexRecords.each(r -> r.duplexAlreadyVisitedForStats = true);
-			stats.duplexinsertSize.insert(Math.abs(allDuplexRecords.getFirst().getInsertSize()));
+			allRecords.each(r -> r.duplexAlreadyVisitedForStats = true);
+			stats.duplexinsertSize.insert(Math.abs(allRecords.getFirst().getInsertSize()));
 		}
 
 		int i = 0;
@@ -1125,7 +1125,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		int sumNClipped = 0;
 		int nReadsWrongPairRecomputed = 0;
 
-		for (ExtendedSAMRecord r: allDuplexRecords) {
+		for (ExtendedSAMRecord r: allRecords) {
 			if (r.formsWrongPair()) {
 				nReadsWrongPairRecomputed++;
 			}
@@ -1156,7 +1156,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		}
 
 
-		final int inferredSize = Math.abs(allDuplexRecords.getFirst().getInsertSize());
+		final int inferredSize = Math.abs(allRecords.getFirst().getInsertSize());
 		if (inferredSize < 130) {
 			stats.duplexInsert100_130AverageNClipped.insert(averageNClipped);
 		} else if (inferredSize < 180) {
