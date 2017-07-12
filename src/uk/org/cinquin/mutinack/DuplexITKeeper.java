@@ -34,7 +34,6 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		throw new RuntimeException();
 	}
 
-	@Override
 	public @NonNull Iterable<DuplexRead> getIterable() {
 		return new IterableAdapter<>(iterator());
 	}
@@ -70,7 +69,6 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 	private final List<DuplexRead> duplexesAtPosition0 = new ArrayList<>(10_000);
 	private final List<DuplexRead> duplexesAtPosition1 = new ArrayList<>(10_000);
 
-	@Override
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
 	 * is set up this way to minimize object turnover).
@@ -88,12 +86,10 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 	}
 
 
-	@Override
-	public boolean supportsMutableDuplexes() {
+	public static boolean supportsMutableDuplexes() {
 		return false;
 	}
 
-	@Override
 	public DuplexRead getAndRemove(DuplexRead d) {
 		return super.getAndRemove(d);
 	}

@@ -47,6 +47,16 @@ public abstract class TIntObjectCollectionHashMap<V> implements Iterable<V> {
 		return i.get();
 	}
 
+	public boolean isEmpty() {
+		return !getMap().forEachValue(l -> {
+			return !l.isEmpty();
+		});
+	}
+
+	public void clear() {
+		getMap().clear();
+	}
+
 	public boolean containsValue(V v) {
 		return !getMap().forEachValue(l -> {
 			if (l.contains(v)) {

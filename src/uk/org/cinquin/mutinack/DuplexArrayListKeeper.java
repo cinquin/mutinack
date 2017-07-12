@@ -43,7 +43,7 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 	}
 
 	private final transient List<DuplexRead> duplexesAtPosition = new ArrayList<>(10_000);
-	@Override
+
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
 	 * is set up this way to minimize object turnover).
@@ -58,24 +58,16 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 		return new IterableAdapter<>(duplexesAtPosition.iterator());
 	}
 
-	@Override
 	public @NonNull Iterable<DuplexRead> getIterable() {
 		return this;
 	}
 
-	@Override
-	public DuplexRead getAndRemove(DuplexRead d) {
+	public static DuplexRead getAndRemove(DuplexRead d) {
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public boolean supportsMutableDuplexes() {
+	public static boolean supportsMutableDuplexes() {
 		return true;
-	}
-
-	@Override
-	public boolean contains(DuplexRead duplexRead) {
-		return super.contains(duplexRead);
 	}
 
 }

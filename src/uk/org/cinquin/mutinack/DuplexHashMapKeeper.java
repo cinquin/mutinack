@@ -18,6 +18,7 @@
 package uk.org.cinquin.mutinack;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
 
@@ -46,7 +47,6 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 		return result;
 	}
 
-	@Override
 	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
 		return getCollection(position);
 	}
@@ -56,19 +56,58 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 		return add(d.leftAlignmentStart.position, d);
 	}
 
-	@Override
+	@SuppressWarnings("static-method")
 	public DuplexRead getAndRemove(DuplexRead d) {
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
+	@SuppressWarnings("static-method")
 	public boolean supportsMutableDuplexes() {
 		return true;
 	}
 
-	@Override
 	public boolean contains(DuplexRead duplexRead) {
 		return containsValue(duplexRead);
+	}
+
+	@Override
+	public boolean contains(Object o) {
+		return containsValue((DuplexRead) o);
+	}
+
+	@Override
+	public Object[] toArray() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public <T> T[] toArray(T[] a) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean remove(Object o) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean containsAll(Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean addAll(Collection<? extends DuplexRead> c) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean removeAll(Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean retainAll(Collection<?> c) {
+		throw new UnsupportedOperationException();
 	}
 
 }

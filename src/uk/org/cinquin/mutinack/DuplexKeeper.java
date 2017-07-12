@@ -19,20 +19,11 @@ package uk.org.cinquin.mutinack;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-public interface DuplexKeeper {
+public interface DuplexKeeper extends Collection<DuplexRead> {
 	@NonNull Collection<DuplexRead> getOverlapping(DuplexRead d);
 	@NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop);
-	@NonNull Iterable<DuplexRead> getStartingAtPosition(int position);
-	@NonNull Iterable<DuplexRead> getIterable();
-	void forEach(Consumer<? super DuplexRead> consumer);
-	boolean add(DuplexRead d);
-	DuplexRead getAndRemove(DuplexRead d);
-	boolean supportsMutableDuplexes();
-	boolean contains(DuplexRead duplexRead);
-	int size();
 
 }

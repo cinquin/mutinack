@@ -383,14 +383,14 @@ public final class SubAnalyzer {
 		Pair<DuplexRead, DuplexRead> pair;
 		if (param.enableCostlyAssertions &&
 				(pair =
-					DuplexRead.checkNoEqualDuplexes(duplexKeeper.getIterable())) != null) {
+					DuplexRead.checkNoEqualDuplexes(duplexKeeper)) != null) {
 			throw new AssertionFailedException("Equal duplexes: " +
 				pair.fst + " and " + pair.snd);
 		}
 
 		if (param.enableCostlyAssertions) {
 			Assert.isTrue(checkReadsOccurOnceInDuplexes(extSAMCache.values(),
-				duplexKeeper.getIterable(), nReadsExcludedFromDuplexes.get()));
+				duplexKeeper, nReadsExcludedFromDuplexes.get()));
 		}
 
 		//Group duplexes that have alignment positions that differ by at most
@@ -702,7 +702,7 @@ public final class SubAnalyzer {
 		}//End new duplex creation
 
 		if (param.enableCostlyAssertions) {
-			DuplexRead.checkNoEqualDuplexes(duplexKeeper.getIterable());
+			DuplexRead.checkNoEqualDuplexes(duplexKeeper);
 		}
 
 	}
