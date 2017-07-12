@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import org.eclipse.jdt.annotation.NonNull;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
-import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.IterableAdapter;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 
