@@ -822,8 +822,7 @@ public final class SubAnalyzer {
 		SettableInteger index = new SettableInteger(0);
 		duplexReads.forEach(duplexRead -> {
 			Assert.isFalse(duplexRead.invalid);
-			Assert.isTrue(duplexRead.averageNClipped >= 0,
-				() -> duplexRead.toString());
+			Assert.isTrue(duplexRead.averageNClipped >= 0, () -> duplexRead.toString());
 			Assert.isTrue(param.variableBarcodeLength > 0 ||
 				Double.isNaN(duplexRead.probAtLeastOneCollision) ||
 				duplexRead.probAtLeastOneCollision >= 0);
