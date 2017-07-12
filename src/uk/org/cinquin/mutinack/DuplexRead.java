@@ -492,6 +492,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return result.get();
 	}
 
+	private static final Consumer<DuplexRead> NO_OP = x -> {};
+
 	private static boolean group1(DuplexRead duplex2, Parameters param, Consumer<DuplexRead> preliminaryOp,
 			DuplexRead duplex1, AnalysisStats stats, int callDepth, Handle<DuplexKeeper> result, Supplier<DuplexKeeper> factory) {
 
@@ -535,7 +537,19 @@ public final class DuplexRead implements HasInterval<Integer> {
 					duplex2.computeConsensus(false, param.variableBarcodeLength);
 
 				if (changed) {
-					result.set(groupDuplexes(result.get(), d -> {}, factory, param, stats, callDepth + 1));
+					final DuplexKeeper keeper = result.get();
+					if (keeper instanceof DuplexHashMapKeeper) {//No alignment slop allowed
+						//Restart the grouping just at this position
+						final Collection<DuplexRead> overlapping = keeper.getOverlapping(duplex2);
+						final Collection<DuplexRead> overlappingCopy = new ArrayList<>();
+						overlappingCopy.addAll(overlapping);
+						overlapping.clear();
+						DuplexKeeper regrouped = groupDuplexes(new DuplexKeeperCollectionWrapper(overlappingCopy),
+							NO_OP, factory, param, stats, callDepth + 1);
+						overlapping.addAll(regrouped);
+					} else {
+						result.set(groupDuplexes(result.get(), NO_OP, factory, param, stats, callDepth + 1));
+					}
 				} else {
 					stats.duplexGroupingDepth.insert(callDepth);
 				}
