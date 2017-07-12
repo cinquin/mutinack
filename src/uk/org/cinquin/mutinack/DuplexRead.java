@@ -401,12 +401,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		mergeInto.bottomStrandRecords.addAll(otherDuplex.bottomStrandRecords);
 		mergeInto.topStrandRecords.addAll(otherDuplex.topStrandRecords);
 
-		for (ExtendedSAMRecord rec: otherDuplex.bottomStrandRecords) {
-			rec.duplexRead = mergeInto;
-		}
-		for (ExtendedSAMRecord rec: otherDuplex.topStrandRecords) {
-			rec.duplexRead = mergeInto;
-		}
+		otherDuplex.allDuplexRecords.each(r -> r.duplexRead = mergeInto);
 
 		otherDuplex.invalid = true;
 	}
