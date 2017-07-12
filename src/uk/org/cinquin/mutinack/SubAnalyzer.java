@@ -467,7 +467,7 @@ public final class SubAnalyzer {
 		insertDuplexGroupSizeStats(cleanedUpDuplexes, 0, stats.duplexLocalGroupSize);
 		insertDuplexGroupSizeStats(cleanedUpDuplexes, 15, stats.duplexLocalShiftedGroupSize);
 
-		if (cleanedUpDuplexes.size() < analyzer.maxNDuplexes) {
+		if (param.computeDuplexDistances && cleanedUpDuplexes.size() < analyzer.maxNDuplexes) {
 			cleanedUpDuplexes.forEach(d1 -> cleanedUpDuplexes.forEach(d2 ->
 				stats.duplexDistance.insert(d1.euclideanDistanceTo(d2))));
 		}

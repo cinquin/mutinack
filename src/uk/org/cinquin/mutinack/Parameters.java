@@ -672,6 +672,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeDuplexGroupingStats", description = "Off by default for higher performance", required = false)
 	public boolean computeDuplexGroupingStats = false;
 
+	@Parameter(names = "-computeDuplexDistances", description = "Compute pairwise distances between duplexes", arity = 1, required = false)
+	public boolean computeDuplexDistances = false;
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)
