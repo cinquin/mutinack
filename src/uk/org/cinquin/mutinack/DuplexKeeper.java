@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-public interface DuplexKeeper extends Collection<DuplexRead> {
-	@NonNull Collection<DuplexRead> getOverlapping(DuplexRead d);
-	@NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop);
+public interface DuplexKeeper extends Collection<Duplex> {
+	@NonNull Collection<Duplex> getOverlapping(Duplex d);
+	@NonNull List<Duplex> getOverlappingWithSlop(Duplex d, int shift, int slop);
 
 }

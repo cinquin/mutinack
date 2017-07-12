@@ -22,11 +22,11 @@ final class AlignmentExtremetiesDistance {
 
 	private static final byte @NonNull[] EMPTY_BARCODE = new byte[0];
 
-	private DuplexRead dr;
-	public final @NonNull DuplexRead temp;
+	private Duplex dr;
+	public final @NonNull Duplex temp;
 
 	public AlignmentExtremetiesDistance(MutinackGroup groupSettings, Parameters param) {
-		temp = new DuplexRead(groupSettings, EMPTY_BARCODE, EMPTY_BARCODE, false, false);
+		temp = new Duplex(groupSettings, EMPTY_BARCODE, EMPTY_BARCODE, false, false);
 	}
 
 	public void set(ExtendedSAMRecord r) {
@@ -39,7 +39,7 @@ final class AlignmentExtremetiesDistance {
 		}
 	}
 
-	public void set(DuplexRead d) {
+	public void set(Duplex d) {
 		dr = d;
 	}
 

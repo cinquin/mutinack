@@ -128,7 +128,7 @@ public final class SubAnalyzer {
 			new THashMap<>(1_000);
 	int truncateProcessingAt = Integer.MAX_VALUE;
 	int startProcessingAt = 0;
-	MutableList<@NonNull DuplexRead> analyzedDuplexes;
+	MutableList<@NonNull Duplex> analyzedDuplexes;
 	float[] averageClipping;
 	int averageClippingOffset = Integer.MAX_VALUE;
 	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
@@ -253,7 +253,7 @@ public final class SubAnalyzer {
 			if (toPosition < fromPosition) {
 				throw new IllegalArgumentException("Going from " + fromPosition + " to " + toPosition);
 			}
-			final MutableList<@NonNull DuplexRead> resultDuplexes = new FastList<>(3_000);
+			final MutableList<@NonNull Duplex> resultDuplexes = new FastList<>(3_000);
 			loadAll(fromPosition, toPosition, resultDuplexes);
 			analyzedDuplexes = resultDuplexes;
 		} finally {
@@ -332,7 +332,7 @@ public final class SubAnalyzer {
 	private void loadAll(
 			final int fromPosition,
 			final int toPosition,
-			final @NonNull List<DuplexRead> finalResult) {
+			final @NonNull List<Duplex> finalResult) {
 
 		/**
 		 * Use a custom hash map type to keep track of duplexes when
@@ -378,12 +378,12 @@ public final class SubAnalyzer {
 			duplexKeeper.forEach(dr -> dr.randomizeStrands(random));
 		}
 
-		duplexKeeper.forEach(DuplexRead::computeGlobalProperties);
+		duplexKeeper.forEach(Duplex::computeGlobalProperties);
 
-		Pair<DuplexRead, DuplexRead> pair;
+		Pair<Duplex, Duplex> pair;
 		if (param.enableCostlyAssertions &&
 				(pair =
-					DuplexRead.checkNoEqualDuplexes(duplexKeeper)) != null) {
+					Duplex.checkNoEqualDuplexes(duplexKeeper)) != null) {
 			throw new AssertionFailedException("Equal duplexes: " +
 				pair.fst + " and " + pair.snd);
 		}
@@ -400,7 +400,7 @@ public final class SubAnalyzer {
 
 		final DuplexKeeper cleanedUpDuplexes;
 		if (param.nVariableBarcodeMismatchesAllowed > 0 /*&& duplexKeeper.size() < analyzer.maxNDuplexes*/) {
-			cleanedUpDuplexes = DuplexRead.groupDuplexes(
+			cleanedUpDuplexes = Duplex.groupDuplexes(
 					duplexKeeper,
 					duplex -> duplex.computeConsensus(false, param.variableBarcodeLength),
 					() -> getDuplexKeeper(fallBackOnIntervalTree),
@@ -409,7 +409,7 @@ public final class SubAnalyzer {
 					0);
 		} else {
 			cleanedUpDuplexes = duplexKeeper;
-			cleanedUpDuplexes.forEach(DuplexRead::computeGlobalProperties);
+			cleanedUpDuplexes.forEach(Duplex::computeGlobalProperties);
 		}
 
 		if (param.nVariableBarcodeMismatchesAllowed == 0) {
@@ -419,17 +419,17 @@ public final class SubAnalyzer {
 
 		if (param.variableBarcodeLength == 0) {
 			//Group duplexes by alignment start (or equivalent)
-			TIntObjectHashMap<List<DuplexRead>> duplexPositions = new TIntObjectHashMap<>
+			TIntObjectHashMap<List<Duplex>> duplexPositions = new TIntObjectHashMap<>
 				(1_000, 0.5f, -999);
 			cleanedUpDuplexes.forEach(dr -> {
-				List<DuplexRead> list = duplexPositions.computeIfAbsent(dr.leftAlignmentStart.position,
-					(Supplier<List<DuplexRead>>) ArrayList::new);
+				List<Duplex> list = duplexPositions.computeIfAbsent(dr.leftAlignmentStart.position,
+					(Supplier<List<Duplex>>) ArrayList::new);
 				list.add(dr);
 			});
 			final double @NonNull[] insertSizeProb =
 				Objects.requireNonNull(analyzer.insertSizeProbSmooth);
 			duplexPositions.forEachValue(list -> {
-				for (DuplexRead dr: list) {
+				for (Duplex dr: list) {
 					double sizeP = insertSizeProb[
 					  Math.min(insertSizeProb.length - 1, dr.maxInsertSize)];
 					Assert.isTrue(Double.isNaN(sizeP) || sizeP >= 0,
@@ -494,7 +494,7 @@ public final class SubAnalyzer {
 		});
 	}
 
-	private static int countDuplexesInWindow(DuplexRead d, DuplexKeeper dk, int offset, int windowWidth) {
+	private static int countDuplexesInWindow(Duplex d, DuplexKeeper dk, int offset, int windowWidth) {
 		SettableInteger result = new SettableInteger(0);
 		dk.getOverlappingWithSlop(d, offset, windowWidth).forEach(od -> {
 			if (od.assignedToLocalGroup) {
@@ -547,15 +547,15 @@ public final class SubAnalyzer {
 
 		ed.set(rExtended);
 
-		for (final DuplexRead duplexRead: duplexKeeper.getOverlapping(ed.temp)) {
+		for (final Duplex duplex: duplexKeeper.getOverlapping(ed.temp)) {
 			//stats.nVariableBarcodeCandidateExaminations.increment(location);
 
 			boolean forceGrouping = false;
-			if (duplexRead.allRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
+			if (duplex.allRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
 				forceGrouping = true;
 			}
 
-			ed.set(duplexRead);
+			ed.set(duplex);
 
 			if (!forceGrouping && ed.getMaxDistance() > param.alignmentPositionMismatchAllowed) {
 				continue;
@@ -566,14 +566,14 @@ public final class SubAnalyzer {
 			if (forceGrouping) {
 				barcodeMatch = true;
 			} else if (matchToLeft) {
-				barcodeMatch = basesEqual(duplexRead.leftBarcode, barcode,
+				barcodeMatch = basesEqual(duplex.leftBarcode, barcode,
 					param.acceptNInBarCode) &&
-					basesEqual(duplexRead.rightBarcode, mateBarcode,
+					basesEqual(duplex.rightBarcode, mateBarcode,
 						param.acceptNInBarCode);
 			} else {
-				barcodeMatch = basesEqual(duplexRead.leftBarcode, mateBarcode,
+				barcodeMatch = basesEqual(duplex.leftBarcode, mateBarcode,
 					param.acceptNInBarCode) &&
-					basesEqual(duplexRead.rightBarcode, barcode,
+					basesEqual(duplex.rightBarcode, barcode,
 						param.acceptNInBarCode);
 			}
 
@@ -582,33 +582,33 @@ public final class SubAnalyzer {
 				if (r.getInferredInsertSize() >= 0) {
 					if (r.getFirstOfPairFlag()) {
 						if (param.enableCostlyAssertions) {
-							Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
+							Assert.isFalse(duplex.topStrandRecords.contains(rExtended));
 						}
-						duplexRead.topStrandRecords.add(rExtended);
+						duplex.topStrandRecords.add(rExtended);
 					} else {
 						if (param.enableCostlyAssertions) {
-							Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
+							Assert.isFalse(duplex.bottomStrandRecords.contains(rExtended));
 						}
-						duplexRead.bottomStrandRecords.add(rExtended);
+						duplex.bottomStrandRecords.add(rExtended);
 					}
 				} else {
 					if (r.getFirstOfPairFlag()) {
 						if (param.enableCostlyAssertions) {
-							Assert.isFalse(duplexRead.bottomStrandRecords.contains(rExtended));
+							Assert.isFalse(duplex.bottomStrandRecords.contains(rExtended));
 						}
-						duplexRead.bottomStrandRecords.add(rExtended);
+						duplex.bottomStrandRecords.add(rExtended);
 					} else {
 						if (param.enableCostlyAssertions) {
-							Assert.isFalse(duplexRead.topStrandRecords.contains(rExtended));
+							Assert.isFalse(duplex.topStrandRecords.contains(rExtended));
 						}
-						duplexRead.topStrandRecords.add(rExtended);
+						duplex.topStrandRecords.add(rExtended);
 					}
 				}
 				if (param.enableCostlyAssertions) {//XXX May fail if there was a barcode
 					//read error and duplex grouping was forced for mate
-					Assert.noException(duplexRead::assertAllBarcodesEqual);
+					Assert.noException(duplex::assertAllBarcodesEqual);
 				}
-				rExtended.duplexRead = duplexRead;
+				rExtended.duplex = duplex;
 				//stats.nVariableBarcodeMatchAfterPositionCheck.increment(location);
 				foundDuplexRead = true;
 				break;
@@ -623,12 +623,12 @@ public final class SubAnalyzer {
 		}//End loop over duplexReads
 
 		if (!foundDuplexRead) {
-			final DuplexRead duplexRead = matchToLeft ?
-					new DuplexRead(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
-					new DuplexRead(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
+			final Duplex duplex = matchToLeft ?
+					new Duplex(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
+					new Duplex(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 
-			duplexRead.roughLocation = location;
-			rExtended.duplexRead = duplexRead;
+			duplex.roughLocation = location;
+			rExtended.duplex = duplex;
 
 			if (!matchToLeft) {
 
@@ -640,22 +640,22 @@ public final class SubAnalyzer {
 				//Arbitrarily choose top strand as the one associated with
 				//first of pair that maps to the lowest position in the contig
 				if (!r.getFirstOfPairFlag()) {
-					duplexRead.topStrandRecords.add(rExtended);
+					duplex.topStrandRecords.add(rExtended);
 				} else {
-					duplexRead.bottomStrandRecords.add(rExtended);
+					duplex.bottomStrandRecords.add(rExtended);
 				}
 
 				if (param.enableCostlyAssertions) {
-					Assert.noException(duplexRead::assertAllBarcodesEqual);
+					Assert.noException(duplex::assertAllBarcodesEqual);
 				}
 
-				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
+				duplex.rightAlignmentStart = sequenceLocationCache.intern(
 					rExtended.getOffsetUnclippedStartLoc());
-				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
+				duplex.rightAlignmentEnd = sequenceLocationCache.intern(
 					rExtended.getOffsetUnclippedEndLoc());
-				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
+				duplex.leftAlignmentStart = sequenceLocationCache.intern(
 					rExtended.getMateOffsetUnclippedStartLoc());
-				duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
+				duplex.leftAlignmentEnd = sequenceLocationCache.intern(
 					rExtended.getMateOffsetUnclippedEndLoc());
 			} else {//Read on positive strand
 
@@ -667,55 +667,55 @@ public final class SubAnalyzer {
 				//Arbitrarily choose top strand as the one associated with
 				//first of pair that maps to the lowest position in the contig
 				if (r.getFirstOfPairFlag()) {
-					duplexRead.topStrandRecords.add(rExtended);
+					duplex.topStrandRecords.add(rExtended);
 				} else {
-					duplexRead.bottomStrandRecords.add(rExtended);
+					duplex.bottomStrandRecords.add(rExtended);
 				}
 
 				if (param.enableCostlyAssertions) {
-					Assert.noException(duplexRead::assertAllBarcodesEqual);
+					Assert.noException(duplex::assertAllBarcodesEqual);
 				}
 
-				duplexRead.leftAlignmentStart = sequenceLocationCache.intern(
+				duplex.leftAlignmentStart = sequenceLocationCache.intern(
 					rExtended.getOffsetUnclippedStartLoc());
-				duplexRead.leftAlignmentEnd = sequenceLocationCache.intern(
+				duplex.leftAlignmentEnd = sequenceLocationCache.intern(
 					rExtended.getOffsetUnclippedEndLoc());
-				duplexRead.rightAlignmentStart = sequenceLocationCache.intern(
+				duplex.rightAlignmentStart = sequenceLocationCache.intern(
 					rExtended.getMateOffsetUnclippedStartLoc());
-				duplexRead.rightAlignmentEnd = sequenceLocationCache.intern(
+				duplex.rightAlignmentEnd = sequenceLocationCache.intern(
 					rExtended.getMateOffsetUnclippedEndLoc());
 			}
 
-			duplexKeeper.add(duplexRead);
+			duplexKeeper.add(duplex);
 
 			if (false) //noinspection RedundantCast
 				Assert.isFalse( /* There are funny alignments that can trigger this assert;
 			but it should not hurt for alignment start and end to be switched, since it should happen
 			in the same fashion for all reads  in a duplex  */
-				duplexRead.leftAlignmentEnd.contigIndex == duplexRead.leftAlignmentStart.contigIndex &&
-					duplexRead.leftAlignmentEnd.compareTo(duplexRead.leftAlignmentStart) < 0,
-				(Supplier<Object>) duplexRead.leftAlignmentStart::toString,
-				(Supplier<Object>) duplexRead.leftAlignmentEnd::toString,
-				(Supplier<Object>) duplexRead::toString,
+				duplex.leftAlignmentEnd.contigIndex == duplex.leftAlignmentStart.contigIndex &&
+					duplex.leftAlignmentEnd.compareTo(duplex.leftAlignmentStart) < 0,
+				(Supplier<Object>) duplex.leftAlignmentStart::toString,
+				(Supplier<Object>) duplex.leftAlignmentEnd::toString,
+				(Supplier<Object>) duplex::toString,
 				(Supplier<Object>) rExtended::getFullName,
 				"Misordered duplex: %s -- %s %s %s");
 		}//End new duplex creation
 
 		if (param.enableCostlyAssertions) {
-			DuplexRead.checkNoEqualDuplexes(duplexKeeper);
+			Duplex.checkNoEqualDuplexes(duplexKeeper);
 		}
 
 	}
 
 	private static boolean checkReadsOccurOnceInDuplexes(
 			Collection<@NonNull ExtendedSAMRecord> reads,
-			@NonNull Iterable<DuplexRead> duplexes,
+			@NonNull Iterable<Duplex> duplexes,
 			int nReadsExcludedFromDuplexes) {
 		ExtendedSAMRecord lostRead = null;
 		int nUnfoundReads = 0;
 		for (final @NonNull ExtendedSAMRecord rExtended: reads) {
 			boolean found = false;
-			for (DuplexRead dr: duplexes) {
+			for (Duplex dr: duplexes) {
 				if (dr.topStrandRecords.contains(rExtended)) {
 					if (found) {
 						throw new AssertionFailedException("Two occurrences of read " + rExtended);
@@ -779,12 +779,12 @@ public final class SubAnalyzer {
 		//objects we use in this method should be equal according to the equals() method
 		//(although when grouping duplexes we don't check equality for the inner ends of
 		//the reads since they depend on read length)
-		final TCustomHashSet<DuplexRead> duplexReads =
+		final TCustomHashSet<Duplex> duplexes =
 			new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 
 		candidateSet.forEach(candidate -> {
 			candidate.reset();
-			final Set<DuplexRead> candidateDuplexReads =
+			final Set<Duplex> candidateDuplexReads =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			List<ExtendedSAMRecord> discarded = Lists.mutable.empty();
 			candidate.getMutableConcurringReads().retainEntries((r, c) -> {
@@ -797,7 +797,7 @@ public final class SubAnalyzer {
 						return false;
 					}
 				}
-				@Nullable DuplexRead d = r.duplexRead;
+				@Nullable Duplex d = r.duplex;
 				//noinspection StatementWithEmptyBody
 				if (d != null) {
 					candidateDuplexReads.add(d);
@@ -810,17 +810,17 @@ public final class SubAnalyzer {
 			if (param.enableCostlyAssertions) {
 				checkDuplexes(candidateDuplexReads);
 			}
-			duplexReads.addAll(candidateDuplexReads);
+			duplexes.addAll(candidateDuplexReads);
 		});
 
 		//Allocate here to avoid repeated allocation in DuplexRead::examineAtLoc
 		final CandidateCounter topCounter = new CandidateCounter(candidateSet, location);
 		final CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
 
-		int[] insertSizes = new int [duplexReads.size()];
+		int[] insertSizes = new int [duplexes.size()];
 		SettableDouble averageCollisionProbS = new SettableDouble(0d);
 		SettableInteger index = new SettableInteger(0);
-		duplexReads.forEach(duplexRead -> {
+		duplexes.forEach(duplexRead -> {
 			Assert.isFalse(duplexRead.invalid);
 			Assert.isTrue(duplexRead.averageNClipped >= 0, () -> duplexRead.toString());
 			Assert.isTrue(param.variableBarcodeLength > 0 ||
@@ -850,7 +850,7 @@ public final class SubAnalyzer {
 		});
 
 		if (param.enableCostlyAssertions) {
-			Assert.noException(() -> checkDuplexAndCandidates(duplexReads, candidateSet));
+			Assert.noException(() -> checkDuplexAndCandidates(duplexes, candidateSet));
 			candidateSet.forEach(candidate -> checkCandidateDupNoQ(candidate, location));
 		}
 
@@ -861,7 +861,7 @@ public final class SubAnalyzer {
 		}
 
 		double averageCollisionProb = averageCollisionProbS.get();
-		averageCollisionProb /= duplexReads.size();
+		averageCollisionProb /= duplexes.size();
 		if (param.variableBarcodeLength == 0) {
 			stats.duplexCollisionProbability.insert((int) (1_000d * averageCollisionProb));
 		}
@@ -876,7 +876,7 @@ public final class SubAnalyzer {
 		}
 
 		if (param.enableCostlyAssertions) {
-			Assert.noException(() -> duplexReads.forEach((Consumer<DuplexRead>) DuplexRead::checkReadOwnership));
+			Assert.noException(() -> duplexes.forEach((Consumer<Duplex>) Duplex::checkReadOwnership));
 		}
 
 		final int totalReadsAtPosition = (int) candidateSet.sumOfInt(
@@ -943,15 +943,15 @@ public final class SubAnalyzer {
 				if (leave) {
 					candidate.getQuality().addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, DUBIOUS);
 				}
-				@NonNull MutableSetMultimap<Quality, DuplexRead> map = candidate.getDuplexes().
+				@NonNull MutableSetMultimap<Quality, Duplex> map = candidate.getDuplexes().
 					groupBy(dr -> candidate.filterQuality(dr.localAndGlobalQuality));
 				if (param.enableCostlyAssertions) {
 					map.forEachKeyMultiValues((k, v) -> Assert.isTrue(Util.getDuplicates(v).isEmpty()));
 					Assert.isTrue(map.multiValuesView().collectInt(RichIterable::size).sum() == candidate.getDuplexes().size());
 				}
-				@Nullable MutableSet<DuplexRead> gd = map.get(GOOD);
+				@Nullable MutableSet<Duplex> gd = map.get(GOOD);
 				candidate.setnGoodDuplexes(gd == null ? 0 : gd.size());
-				@Nullable MutableSet<DuplexRead> db = map.get(DUBIOUS);
+				@Nullable MutableSet<Duplex> db = map.get(DUBIOUS);
 				candidate.setnGoodOrDubiousDuplexes(candidate.getnGoodDuplexes() + (db == null ? 0 : db.size()));
 				candidate.setnGoodDuplexesIgnoringDisag(candidate.getDuplexes().
 					count(dr -> dr.localAndGlobalQuality.getValueIgnoring(ASSAYS_TO_IGNORE_FOR_DISAGREEMENT_QUALITY).atLeast(GOOD)));
@@ -981,7 +981,7 @@ public final class SubAnalyzer {
 		} while (Boolean.valueOf(null));//Assert never reached
 
 		if (qualityOKBeforeTopAllele) {
-			registerDuplexMinFracTopCandidate(duplexReads,
+			registerDuplexMinFracTopCandidate(duplexes,
 				topAlleleQuality == null ?
 					stats.minTopCandFreqQ2PosTopAlleleFreqOK
 				:
@@ -1060,8 +1060,8 @@ public final class SubAnalyzer {
 		return result;
 	}//End examineLocation
 
-	private static void registerDuplexMinFracTopCandidate(TCustomHashSet<DuplexRead> duplexReads, Histogram hist) {
-		duplexReads.forEach(dr -> {
+	private static void registerDuplexMinFracTopCandidate(TCustomHashSet<Duplex> duplexes, Histogram hist) {
+		duplexes.forEach(dr -> {
 			if (dr.allRecords.size() < 2 || dr.minFracTopCandidate == Float.MAX_VALUE) {
 				return true;
 			}
@@ -1113,7 +1113,7 @@ public final class SubAnalyzer {
 
 	private static void checkCandidateDupNoQ(CandidateSequence candidate, SequenceLocation location) {
 		candidate.getNonMutableConcurringReads().forEachKey(r -> {
-			DuplexRead dr = r.duplexRead;
+			Duplex dr = r.duplex;
 			if (dr != null) {
 				if (dr.lastExaminedPosition != location.position) {
 					throw new AssertionFailedException("Last examined position is " + dr.lastExaminedPosition +
@@ -1146,7 +1146,7 @@ public final class SubAnalyzer {
 		candidate.setInsertSizeAtPos10thP(result.duplexInsertSize10thP);
 		candidate.setInsertSizeAtPos90thP(result.duplexInsertSize90thP);
 
-		final MutableSet<DuplexRead> candidateDuplexes = candidate.computeSupportingDuplexes();
+		final MutableSet<Duplex> candidateDuplexes = candidate.computeSupportingDuplexes();
 		candidate.setDuplexes(candidateDuplexes);
 		candidate.setnDuplexes(candidateDuplexes.size());
 
@@ -1311,33 +1311,33 @@ public final class SubAnalyzer {
 	}
 
 	@SuppressWarnings("ReferenceEquality")
-	private static void checkDuplexes(Iterable<DuplexRead> duplexReads) {
-		for (DuplexRead duplexRead: duplexReads) {
-			duplexRead.allRecords.each(r -> {
+	private static void checkDuplexes(Iterable<Duplex> duplexes) {
+		for (Duplex duplex: duplexes) {
+			duplex.allRecords.each(r -> {
 				//noinspection ObjectEquality
-				if (r.duplexRead != duplexRead) {
+				if (r.duplex != duplex) {
 					throw new AssertionFailedException("Read " + r + " associated with duplexes " +
-						r.duplexRead + " and " + duplexRead);
+						r.duplex + " and " + duplex);
 				}
 			});
 		}
-		@NonNull Set<DuplexRead> duplicates = Util.getDuplicates(duplexReads);
+		@NonNull Set<Duplex> duplicates = Util.getDuplicates(duplexes);
 		if (!duplicates.isEmpty()) {
 			throw new AssertionFailedException("Duplicate duplexes: " + duplicates);
 		}
 	}
 
 	@SuppressWarnings("ReferenceEquality")
-	private static void checkDuplexAndCandidates(Set<DuplexRead> duplexReads,
+	private static void checkDuplexAndCandidates(Set<Duplex> duplexes,
 			ImmutableSet<CandidateSequence> candidateSet) {
 
-		checkDuplexes(duplexReads);
+		checkDuplexes(duplexes);
 
 		candidateSet.each(c -> {
 			Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 				c.getMutableConcurringReads().keySet()));
 
-			Set<DuplexRead> duplexesSupportingC = c.computeSupportingDuplexes();
+			Set<Duplex> duplexesSupportingC = c.computeSupportingDuplexes();
 			candidateSet.each(c2 -> {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 					c.getMutableConcurringReads().keySet()));
@@ -1353,7 +1353,7 @@ public final class SubAnalyzer {
 					//	return;
 					//}
 					Assert.isFalse(r.discarded);
-					DuplexRead d = r.duplexRead;
+					Duplex d = r.duplex;
 					if (d != null && duplexesSupportingC.contains(d)) {
 						boolean disowned = !d.allRecords.contains(r);
 

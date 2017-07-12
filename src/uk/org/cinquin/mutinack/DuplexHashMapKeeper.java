@@ -26,16 +26,16 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.mutinack.misc_util.collections.TIntSortedSetHashMap;
 
-public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implements DuplexKeeper {
+public class DuplexHashMapKeeper extends TIntSortedSetHashMap<Duplex> implements DuplexKeeper {
 
 	@Override
-	public @NonNull SortedSet<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull SortedSet<Duplex> getOverlapping(Duplex d) {
 		return getCollection(d.leftAlignmentStart.position);
 	}
 
 	@Override
-	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
-		List<DuplexRead> result = new ArrayList<>();
+	public @NonNull List<Duplex> getOverlappingWithSlop(Duplex d, int shift, int slop) {
+		List<Duplex> result = new ArrayList<>();
 		for (int i = d.leftAlignmentStart.position + shift - slop; i <=  d.leftAlignmentStart.position + shift + slop; i++) {
 			getCollection(i).forEach(d2 -> {
 				if (Math.abs(d2.rightAlignmentEnd.position - d.rightAlignmentEnd.position) <= slop) {
@@ -47,17 +47,17 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 		return result;
 	}
 
-	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
+	public @NonNull Iterable<Duplex> getStartingAtPosition(int position) {
 		return getCollection(position);
 	}
 
 	@Override
-	public boolean add(DuplexRead d) {
+	public boolean add(Duplex d) {
 		return add(d.leftAlignmentStart.position, d);
 	}
 
 	@SuppressWarnings("static-method")
-	public DuplexRead getAndRemove(DuplexRead d) {
+	public Duplex getAndRemove(Duplex d) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -66,13 +66,13 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 		return true;
 	}
 
-	public boolean contains(DuplexRead duplexRead) {
-		return containsValue(duplexRead);
+	public boolean contains(Duplex duplex) {
+		return containsValue(duplex);
 	}
 
 	@Override
 	public boolean contains(Object o) {
-		return containsValue((DuplexRead) o);
+		return containsValue((Duplex) o);
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<DuplexRead> implem
 	}
 
 	@Override
-	public boolean addAll(Collection<? extends DuplexRead> c) {
+	public boolean addAll(Collection<? extends Duplex> c) {
 		throw new UnsupportedOperationException();
 	}
 

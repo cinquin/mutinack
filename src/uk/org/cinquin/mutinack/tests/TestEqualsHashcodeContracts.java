@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
-import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
@@ -43,7 +43,7 @@ public class TestEqualsHashcodeContracts {
 	@Test
 	@Ignore//Fails because of code generation error internal to EqualsVerifier
 	public void duplexReadEqualsContract1() {
-		EqualsVerifier.forClass(DuplexRead.class).
+		EqualsVerifier.forClass(Duplex.class).
 			suppress(Warning.NONFINAL_FIELDS).
 			suppress(Warning.NULL_FIELDS).
 			withPrefabValues(Thread.class, new Thread(), new Thread()).

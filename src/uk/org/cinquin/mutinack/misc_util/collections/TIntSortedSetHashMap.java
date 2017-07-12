@@ -25,7 +25,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import contrib.jdk.collections.TreeSetWithForEach;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 @SuppressWarnings("unchecked")
@@ -58,7 +58,7 @@ public class TIntSortedSetHashMap<V> extends TIntObjectCollectionHashMap<V> impl
 	@Override
 	public boolean add(int i, V v) {
 		return getMap().computeIfAbsent(i, () -> new TreeSetWithForEach<>(
-			DuplexRead.duplexCountQualComparator)).add(v);
+			Duplex.duplexCountQualComparator)).add(v);
 	}
 
 	@Override

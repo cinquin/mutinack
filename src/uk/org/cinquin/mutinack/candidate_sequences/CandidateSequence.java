@@ -55,7 +55,7 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import uk.org.cinquin.final_annotation.Final;
-import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
@@ -98,10 +98,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private transient @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
 	@Persistent private DetailedQualities<PositionAssay> quality;
-	private transient TObjectLongHashMap<DuplexRead> issues;
+	private transient TObjectLongHashMap<Duplex> issues;
 	private @Nullable StringBuilder supplementalMessage;
 	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
-	private transient @Nullable MutableSet<@NonNull DuplexRead> duplexes;
+	private transient @Nullable MutableSet<@NonNull Duplex> duplexes;
 	private int nGoodDuplexes;
 	private int nGoodDuplexesIgnoringDisag;
 	private int nGoodOrDubiousDuplexes;
@@ -466,7 +466,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@SuppressWarnings("null")
 	@Override
-	public @NonNull MutableSet<@NonNull DuplexRead> getDuplexes() {
+	public @NonNull MutableSet<@NonNull Duplex> getDuplexes() {
 		if (duplexes == null) {
 			 duplexes = Sets.mutable.empty();
 		}
@@ -474,15 +474,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public void setDuplexes(@NonNull MutableSet<@NonNull DuplexRead> duplexes) {
+	public void setDuplexes(@NonNull MutableSet<@NonNull Duplex> duplexes) {
 		this.duplexes = duplexes;
 	}
 
-	public UnifiedSet<DuplexRead> computeSupportingDuplexes() {
-		UnifiedSet<DuplexRead> duplexesSupportingC = new UnifiedSet<>(30);
+	public UnifiedSet<Duplex> computeSupportingDuplexes() {
+		UnifiedSet<Duplex> duplexesSupportingC = new UnifiedSet<>(30);
 		getNonMutableConcurringReads().forEachKey(r -> {
 			Assert.isFalse(r.discarded);
-			DuplexRead d = r.duplexRead;
+			Duplex d = r.duplex;
 			if (d != null) {
 				Assert.isFalse(d.invalid);
 				duplexesSupportingC.add(d);
@@ -733,7 +733,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull TObjectLongHashMap<DuplexRead> getIssues() {
+	public @NonNull TObjectLongHashMap<Duplex> getIssues() {
 		if (issues == null) {
 			issues = new TObjectLongHashMap<>();
 		}
@@ -1121,10 +1121,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public int computeNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
-		final DuplexRead bestSupporting = getDuplexes().stream().
-			max(Comparator.comparing((DuplexRead dr) -> filterQuality(dr.localAndGlobalQuality)).
-				thenComparing(Comparator.comparing((DuplexRead dr) -> dr.allRecords.size())).
-				thenComparing(DuplexRead::getUnclippedAlignmentStart)).get();
+		final Duplex bestSupporting = getDuplexes().stream().
+			max(Comparator.comparing((Duplex dr) -> filterQuality(dr.localAndGlobalQuality)).
+				thenComparing(Comparator.comparing((Duplex dr) -> dr.allRecords.size())).
+				thenComparing(Duplex::getUnclippedAlignmentStart)).get();
 
 		//Exclude duplexes whose reads all have an unmapped mate from the count
 		//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads

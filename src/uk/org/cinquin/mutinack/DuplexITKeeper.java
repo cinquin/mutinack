@@ -28,56 +28,56 @@ import contrib.edu.stanford.nlp.util.Interval;
 import contrib.edu.stanford.nlp.util.IntervalTree;
 import contrib.net.sf.picard.util.IterableAdapter;
 
-public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements DuplexKeeper  {
+public class DuplexITKeeper extends IntervalTree<Integer, Duplex> implements DuplexKeeper  {
 
 	public DuplexITKeeper() {
 		throw new RuntimeException();
 	}
 
-	public @NonNull Iterable<DuplexRead> getIterable() {
+	public @NonNull Iterable<Duplex> getIterable() {
 		return new IterableAdapter<>(iterator());
 	}
 
 	@Override
-	public void forEach(Consumer<? super DuplexRead> consumer) {
-		Iterator<DuplexRead> it = iterator();
+	public void forEach(Consumer<? super Duplex> consumer) {
+		Iterator<Duplex> it = iterator();
 		while (it.hasNext()) {
 			consumer.accept(it.next());
 		}
 	}
 
-	private final @NonNull List<DuplexRead> overlappingDuplexes = new ArrayList<>(10_000);
+	private final @NonNull List<Duplex> overlappingDuplexes = new ArrayList<>(10_000);
 	@Override
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
 	 * is set up this way to minimize object turnover).
 	 */
-	public @NonNull List<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull List<Duplex> getOverlapping(Duplex d) {
 		overlappingDuplexes.clear();
 		getOverlapping(d.getInterval(), overlappingDuplexes);
 		return overlappingDuplexes;
 	}
 
 	@Override
-	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
-		List<DuplexRead> result = new ArrayList<>();
+	public @NonNull List<Duplex> getOverlappingWithSlop(Duplex d, int shift, int slop) {
+		List<Duplex> result = new ArrayList<>();
 		getOverlapping(d.getIntervalWithSlop(shift, slop), result);
 		return result;
 	}
 
 
-	private final List<DuplexRead> duplexesAtPosition0 = new ArrayList<>(10_000);
-	private final List<DuplexRead> duplexesAtPosition1 = new ArrayList<>(10_000);
+	private final List<Duplex> duplexesAtPosition0 = new ArrayList<>(10_000);
+	private final List<Duplex> duplexesAtPosition1 = new ArrayList<>(10_000);
 
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
 	 * is set up this way to minimize object turnover).
 	 */
-	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
+	public @NonNull Iterable<Duplex> getStartingAtPosition(int position) {
 		duplexesAtPosition0.clear();
 		duplexesAtPosition1.clear();
 		getOverlapping(Interval.toInterval(position, position), duplexesAtPosition0);
-		for (DuplexRead dr: duplexesAtPosition0) {
+		for (Duplex dr: duplexesAtPosition0) {
 			if (dr.leftAlignmentStart.position == position) {
 				duplexesAtPosition1.add(dr);
 			}
@@ -90,7 +90,7 @@ public class DuplexITKeeper extends IntervalTree<Integer, DuplexRead> implements
 		return false;
 	}
 
-	public DuplexRead getAndRemove(DuplexRead d) {
+	public Duplex getAndRemove(Duplex d) {
 		return super.getAndRemove(d);
 	}
 

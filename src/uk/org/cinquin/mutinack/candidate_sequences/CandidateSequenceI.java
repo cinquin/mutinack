@@ -27,7 +27,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import gnu.trove.TByteCollection;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
-import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.Mutation;
 import uk.org.cinquin.mutinack.MutationType;
@@ -69,8 +69,8 @@ public interface CandidateSequenceI extends Serializable {
 	void setnGoodOrDubiousDuplexes(int nGoodOrDubiousDuplexes);
 	int getnGoodDuplexes();
 	void setnGoodDuplexes(int nGoodDuplexes);
-	MutableSet<@NonNull DuplexRead> getDuplexes();
-	void setDuplexes(@NonNull MutableSet<@NonNull DuplexRead> duplexes);
+	MutableSet<@NonNull Duplex> getDuplexes();
+	void setDuplexes(@NonNull MutableSet<@NonNull Duplex> duplexes);
 	@NonNull TObjectIntMap<ExtendedSAMRecord> getMutableConcurringReads();
 	@NonNull TObjectIntMap<ExtendedSAMRecord> getNonMutableConcurringReads();
 	StringBuilder getSupplementalMessage();
@@ -109,7 +109,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setProbCollision(float probAtLeastOneCollision);
 	void setnWrongPairs(int count);
 	int getnWrongPairs();
-	@NonNull TObjectLongHashMap<DuplexRead> getIssues();
+	@NonNull TObjectLongHashMap<Duplex> getIssues();
 	void reset();
 	void acceptLigSiteDistance(int maxDistanceToLigSite);
 	void setnGoodDuplexesIgnoringDisag(int size);

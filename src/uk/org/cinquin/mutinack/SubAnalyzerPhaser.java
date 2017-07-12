@@ -836,7 +836,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).
 				flatCollect(CandidateSequence::getDuplexes).
 				collectIf(dr -> dr.localAndGlobalQuality.getNonNullValue().atLeast(GOOD),
-					DuplexRead::getMaxDistanceToLigSite).
+					Duplex::getMaxDistanceToLigSite).
 				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
 					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
 
@@ -880,7 +880,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			stats.rawInsertionLengthQ2.insert(var.snd.length());
 		}
 
-		for (Entry<DuplexDisagreement, List<DuplexRead>> entry: examResults.disagreements) {
+		for (Entry<DuplexDisagreement, List<Duplex>> entry: examResults.disagreements) {
 
 			DuplexDisagreement d = entry.getKey();
 

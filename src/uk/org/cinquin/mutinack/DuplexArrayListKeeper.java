@@ -24,7 +24,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import contrib.net.sf.picard.util.IterableAdapter;
 
-public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements DuplexKeeper {
+public class DuplexArrayListKeeper extends ArrayList<Duplex> implements DuplexKeeper {
 
 	private static final long serialVersionUID = 4777255573227700343L;
 
@@ -33,24 +33,24 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 	}
 
 	@Override
-	public @NonNull List<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull List<Duplex> getOverlapping(Duplex d) {
 		return this;
 	}
 
 	@Override
-	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
+	public @NonNull List<Duplex> getOverlappingWithSlop(Duplex d, int shift, int slop) {
 		return this;
 	}
 
-	private final transient List<DuplexRead> duplexesAtPosition = new ArrayList<>(10_000);
+	private final transient List<Duplex> duplexesAtPosition = new ArrayList<>(10_000);
 
 	/**
 	 * NOT thread-safe because of overlappingDuplexes reuse (the code
 	 * is set up this way to minimize object turnover).
 	 */
-	public @NonNull Iterable<DuplexRead> getStartingAtPosition(int position) {
+	public @NonNull Iterable<Duplex> getStartingAtPosition(int position) {
 		duplexesAtPosition.clear();
-		for (DuplexRead dr: this) {
+		for (Duplex dr: this) {
 			if (dr.leftAlignmentStart.position == position) {
 				duplexesAtPosition.add(dr);
 			}
@@ -58,11 +58,11 @@ public class DuplexArrayListKeeper extends ArrayList<DuplexRead> implements Dupl
 		return new IterableAdapter<>(duplexesAtPosition.iterator());
 	}
 
-	public @NonNull Iterable<DuplexRead> getIterable() {
+	public @NonNull Iterable<Duplex> getIterable() {
 		return this;
 	}
 
-	public static DuplexRead getAndRemove(DuplexRead d) {
+	public static Duplex getAndRemove(Duplex d) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -30,7 +30,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.mutinack.DuplexDisagreement;
-import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
@@ -50,7 +50,7 @@ public final class LocationExaminationResults implements Serializable {
 	public int nMissingStrands;
 	public MutableFloatList alleleFrequencies;
 	public final transient @NonNull
-		MapOfLists<@NonNull DuplexDisagreement, @NonNull DuplexRead>
+		MapOfLists<@NonNull DuplexDisagreement, @NonNull Duplex>
 		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable
 	public int disagQ2Coverage = 0;
 	public int disagOneStrandedCoverage = 0;

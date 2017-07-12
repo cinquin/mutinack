@@ -67,7 +67,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private volatile boolean triedRetrievingMateFromFile = false;
 	private final @NonNull String mateName;
 	private final int hashCode;
-	public @Nullable DuplexRead duplexRead;
+	public @Nullable Duplex duplex;
 	private byte @Nullable[] mateVariableBarcode;
 	public final byte @NonNull[] variableBarcode;
 	public final byte @Nullable[] constantBarcode;

@@ -8,9 +8,9 @@ import org.eclipse.jdt.annotation.NonNull;
 
 public class DuplexKeeperCollectionWrapper implements DuplexKeeper {
 
-	private final Collection<DuplexRead> wrapped;
+	private final Collection<Duplex> wrapped;
 
-	public DuplexKeeperCollectionWrapper(Collection<DuplexRead> wrapped) {
+	public DuplexKeeperCollectionWrapper(Collection<Duplex> wrapped) {
 		this.wrapped = wrapped;
 	}
 
@@ -30,7 +30,7 @@ public class DuplexKeeperCollectionWrapper implements DuplexKeeper {
 	}
 
 	@Override
-	public Iterator<DuplexRead> iterator() {
+	public Iterator<Duplex> iterator() {
 		return wrapped.iterator();
 	}
 
@@ -45,7 +45,7 @@ public class DuplexKeeperCollectionWrapper implements DuplexKeeper {
 	}
 
 	@Override
-	public boolean add(DuplexRead e) {
+	public boolean add(Duplex e) {
 		return wrapped.add(e);
 	}
 
@@ -60,7 +60,7 @@ public class DuplexKeeperCollectionWrapper implements DuplexKeeper {
 	}
 
 	@Override
-	public boolean addAll(Collection<? extends DuplexRead> c) {
+	public boolean addAll(Collection<? extends Duplex> c) {
 		return wrapped.addAll(c);
 	}
 
@@ -80,12 +80,12 @@ public class DuplexKeeperCollectionWrapper implements DuplexKeeper {
 	}
 
 	@Override
-	public @NonNull Collection<DuplexRead> getOverlapping(DuplexRead d) {
+	public @NonNull Collection<Duplex> getOverlapping(Duplex d) {
 		return this;
 	}
 
 	@Override
-	public @NonNull List<DuplexRead> getOverlappingWithSlop(DuplexRead d, int shift, int slop) {
+	public @NonNull List<Duplex> getOverlappingWithSlop(Duplex d, int shift, int slop) {
 		throw new UnsupportedOperationException();
 	}
 

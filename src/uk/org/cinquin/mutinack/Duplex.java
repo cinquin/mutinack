@@ -98,9 +98,9 @@ import uk.org.cinquin.mutinack.statistics.Histogram;
  * @author olivier
  *
  */
-public final class DuplexRead implements HasInterval<Integer> {
+public final class Duplex implements HasInterval<Integer> {
 
-	private static final Logger logger = LoggerFactory.getLogger(DuplexRead.class);
+	private static final Logger logger = LoggerFactory.getLogger(Duplex.class);
 
 	private final MutinackGroup groupSettings;
 	public byte @NonNull[] leftBarcode, rightBarcode;
@@ -137,7 +137,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	private final boolean leftBarcodeNegativeStrand;
 	private final boolean rightBarcodeNegativeStrand;
 
-	public DuplexRead(MutinackGroup groupSettings, byte @NonNull [] leftBarcode, byte @NonNull [] rightBarcode,
+	public Duplex(MutinackGroup groupSettings, byte @NonNull [] leftBarcode, byte @NonNull [] rightBarcode,
 					  boolean leftBarcodeNegativeStrand, boolean rightBarcodeNegativeStrand) {
 		this.groupSettings = groupSettings;
 		this.leftBarcode = leftBarcode;
@@ -262,12 +262,12 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return maxDistanceToLig;
 	}
 
-	public int distanceTo(DuplexRead d2) {
+	public int distanceTo(Duplex d2) {
 		return Math.max(Math.abs(leftAlignmentStart.position - d2.leftAlignmentStart.position),
 			Math.abs(rightAlignmentEnd.position - d2.rightAlignmentEnd.position));
 	}
 
-	public int euclideanDistanceTo(DuplexRead d2) {
+	public int euclideanDistanceTo(Duplex d2) {
 		return (int) Math.sqrt(squareInt(leftAlignmentStart.position - d2.leftAlignmentStart.position) +
 			squareInt(rightAlignmentEnd.position - d2.rightAlignmentEnd.position));
 	}
@@ -295,7 +295,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 	public final boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		DuplexRead other = (DuplexRead) obj;
+		Duplex other = (Duplex) obj;
 		if (leftAlignmentEnd == null) {
 			if (other.leftAlignmentEnd != null)
 				return false;
@@ -395,18 +395,18 @@ public final class DuplexRead implements HasInterval<Integer> {
 	 * @param mergeInto; will receive the reads associated with duplex1
 	 * @param otherDuplex; will be marked invalid
 	 */
-	private static void mergeDuplexes(DuplexRead mergeInto, DuplexRead otherDuplex) {
+	private static void mergeDuplexes(Duplex mergeInto, Duplex otherDuplex) {
 		Assert.isFalse(mergeInto.invalid);
 		Assert.isFalse(otherDuplex.invalid);
 		mergeInto.bottomStrandRecords.addAll(otherDuplex.bottomStrandRecords);
 		mergeInto.topStrandRecords.addAll(otherDuplex.topStrandRecords);
 
-		otherDuplex.allRecords.each(r -> r.duplexRead = mergeInto);
+		otherDuplex.allRecords.each(r -> r.duplex = mergeInto);
 
 		otherDuplex.invalid = true;
 	}
 
-	public static final Comparator<DuplexRead> duplexCountQualComparator =
+	public static final Comparator<Duplex> duplexCountQualComparator =
 		(d1, d2) -> {
 			int compResult;
 			compResult = Integer.compare(d2.allRecords.size(), d1.allRecords.size());
@@ -431,7 +431,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 	static DuplexKeeper groupDuplexes(
 			DuplexKeeper duplexes,
-			Consumer<DuplexRead> preliminaryOp,
+			Consumer<Duplex> preliminaryOp,
 			Supplier<DuplexKeeper> factory,
 			Parameters param,
 			AnalysisStats stats,
@@ -439,7 +439,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 		Handle<DuplexKeeper> result = new Handle<>(factory.get());
 
-		final DuplexRead[] sorted = new DuplexRead[duplexes.size()];
+		final Duplex[] sorted = new Duplex[duplexes.size()];
 		{
 			SettableInteger index = new SettableInteger(0);
 			duplexes.forEach(d -> sorted[index.getAndIncrement()] = d);
@@ -449,7 +449,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 		//efficiently in the case of sorted sets
 
 		for (int index = 0; index < sorted.length; index++) {
-			final DuplexRead duplex1 = sorted[index];
+			final Duplex duplex1 = sorted[index];
 
 			preliminaryOp.accept(duplex1);
 
@@ -457,22 +457,22 @@ public final class DuplexRead implements HasInterval<Integer> {
 
 			final boolean iterate;
 			boolean mergedDuplex = false;
-			Collection<DuplexRead> overlapping = result.get().getOverlapping(duplex1);
+			Collection<Duplex> overlapping = result.get().getOverlapping(duplex1);
 			if (overlapping instanceof ArrayList<?>) {
 				iterate = true;
-				Util.arrayListParallelSort((ArrayList<DuplexRead>) overlapping, duplexCountQualComparator);
+				Util.arrayListParallelSort((ArrayList<Duplex>) overlapping, duplexCountQualComparator);
 			} else if (overlapping instanceof List<?>) {
 				iterate = true;
-				((List<DuplexRead>) overlapping).sort(duplexCountQualComparator);
+				((List<Duplex>) overlapping).sort(duplexCountQualComparator);
 			} else {
 				// if the result is a sorted set, no need to sort
 				iterate = false;
-				mergedDuplex = ! ((TreeSetWithForEach<DuplexRead>) overlapping).forEach(duplex2 ->
+				mergedDuplex = ! ((TreeSetWithForEach<Duplex>) overlapping).forEach(duplex2 ->
 					{return group1(duplex2, param, preliminaryOp, duplex1, stats, callDepth, result, factory);});
 			}
 
 			if (iterate) {
-				for (DuplexRead duplex2: overlapping) {
+				for (Duplex duplex2: overlapping) {
 					if (!group1(duplex2, param, preliminaryOp, duplex1, stats, callDepth, result, factory)) {
 						mergedDuplex = true;
 						break;
@@ -492,10 +492,10 @@ public final class DuplexRead implements HasInterval<Integer> {
 		return result.get();
 	}
 
-	private static final Consumer<DuplexRead> NO_OP = x -> {};
+	private static final Consumer<Duplex> NO_OP = x -> {};
 
-	private static boolean group1(DuplexRead duplex2, Parameters param, Consumer<DuplexRead> preliminaryOp,
-			DuplexRead duplex1, AnalysisStats stats, int callDepth, Handle<DuplexKeeper> result, Supplier<DuplexKeeper> factory) {
+	private static boolean group1(Duplex duplex2, Parameters param, Consumer<Duplex> preliminaryOp,
+			Duplex duplex1, AnalysisStats stats, int callDepth, Handle<DuplexKeeper> result, Supplier<DuplexKeeper> factory) {
 
 		preliminaryOp.accept(duplex2);
 
@@ -540,8 +540,8 @@ public final class DuplexRead implements HasInterval<Integer> {
 					final DuplexKeeper keeper = result.get();
 					if (keeper instanceof DuplexHashMapKeeper) {//No alignment slop allowed
 						//Restart the grouping just at this position
-						final Collection<DuplexRead> overlapping = keeper.getOverlapping(duplex2);
-						final Collection<DuplexRead> overlappingCopy = new ArrayList<>();
+						final Collection<Duplex> overlapping = keeper.getOverlapping(duplex2);
+						final Collection<Duplex> overlappingCopy = new ArrayList<>();
 						overlappingCopy.addAll(overlapping);
 						overlapping.clear();
 						DuplexKeeper regrouped = groupDuplexes(new DuplexKeeperCollectionWrapper(overlappingCopy),
@@ -562,9 +562,9 @@ public final class DuplexRead implements HasInterval<Integer> {
 	}
 
 	@SuppressWarnings("ReferenceEquality")
-	static Pair<DuplexRead, DuplexRead> checkNoEqualDuplexes(Iterable<DuplexRead> it) {
-		for (DuplexRead r: it) {
-			for (DuplexRead r2: it) {
+	static Pair<Duplex, Duplex> checkNoEqualDuplexes(Iterable<Duplex> it) {
+		for (Duplex r: it) {
+			for (Duplex r2: it) {
 				//noinspection ObjectEquality
 				if (r != r2 && r.equals(r2)) {
 					//return new Pair<>(r, r2);
@@ -1341,7 +1341,7 @@ public final class DuplexRead implements HasInterval<Integer> {
 									@NonNull MutableList<ExtendedSAMRecord> list2) {
 		list1.each(r -> {
 			//noinspection ObjectEquality
-			if (r.duplexRead != this) {
+			if (r.duplex != this) {
 				throw new AssertionFailedException();
 			}
 			if (list2.contains(r)) {

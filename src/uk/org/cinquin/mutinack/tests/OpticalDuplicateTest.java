@@ -33,7 +33,7 @@ import mockit.Mocked;
 import mockit.NonStrictExpectations;
 import mockit.integration.junit4.JMockit;
 import uk.org.cinquin.mutinack.AnalysisStats;
-import uk.org.cinquin.mutinack.DuplexRead;
+import uk.org.cinquin.mutinack.Duplex;
 import uk.org.cinquin.mutinack.ExtendedSAMRecord;
 import uk.org.cinquin.mutinack.Mutinack;
 import uk.org.cinquin.mutinack.MutinackGroup;
@@ -88,7 +88,7 @@ public class OpticalDuplicateTest {
 		ExtendedSAMRecord e9 = esrtInstance.getMockedESR(sr1,
 			"@NS500169:19:H0WJ9BGXX:2:21XXXXX309:26246:13357" + bcStuff, true, stats, settings, analyzer, lowBaseQ);
 
-		DuplexRead dr = new DuplexRead(settings, "AAA".getBytes(), "TTT".getBytes(), false, false);
+		Duplex dr = new Duplex(settings, "AAA".getBytes(), "TTT".getBytes(), false, false);
 		dr.leftAlignmentStart = e1.getLocation();
 
 		param.opticalDuplicateDistance = 10;
