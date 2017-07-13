@@ -23,14 +23,15 @@
  */
 package contrib.net.sf.samtools.util;
 
-import java.util.zip.Inflater;
 
-import contrib.net.sf.samtools.SAMFormatException;
-
-import java.util.zip.CRC32;
-import java.util.zip.DataFormatException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.zip.CRC32;
+import java.util.zip.DataFormatException;
+
+import contrib.com.jcraft.jzlib.Inflater;
+import contrib.com.jcraft.jzlib.JZlib;
+import contrib.net.sf.samtools.SAMFormatException;
 
 /**
  * Alternative to GZIPInputStream, for decompressing GZIP blocks that are already loaded into a byte[].
@@ -44,7 +45,7 @@ import java.nio.ByteOrder;
  * @author alecw@broadinstitute.org
  */
 public class BlockGunzipper {
-    private final Inflater inflater = new Inflater(true); // GZIP mode
+    private final Inflater inflater = new Inflater(JZlib.DEF_WBITS + 32); // GZIP mode
     private final CRC32 crc32 = new CRC32();
     private boolean checkCrcs = false;
 
@@ -90,13 +91,15 @@ public class BlockGunzipper {
             byteBuffer.position(byteBuffer.position() + deflatedSize);
             int expectedCrc = byteBuffer.getInt();
             int uncompressedSize = byteBuffer.getInt();
-            inflater.reset();
+            inflater.inflateInit(JZlib.DEF_WBITS + 32);
 
             // Decompress
-            inflater.setInput(compressedBlock, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, deflatedSize);
-            final int inflatedBytes = inflater.inflate(uncompressedBlock, 0, uncompressedSize);
-            if (inflatedBytes != uncompressedSize) {
-                throw new SAMFormatException("Did not inflate expected amount");
+            inflater.setInput(compressedBlock, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, deflatedSize, false);
+            //final int inflatedBytes = inflater.inflate(uncompressedBlock, 0, uncompressedSize);
+            inflater.setOutput(uncompressedBlock, 0, uncompressedSize);
+            int err = inflater.inflate(JZlib.Z_NO_FLUSH);
+            if (err != JZlib.Z_OK && err != JZlib.Z_STREAM_END) {
+                throw new DataFormatException("Decompression error: " + err);
             }
 
             // Validate CRC if so desired
