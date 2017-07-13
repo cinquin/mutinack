@@ -404,7 +404,8 @@ public class ReadLoader {
 								readsToProcess.put(extended.getFullName(), previous);//Put back previous record
 								if (extended.record.getSupplementaryAlignmentFlag() ||
 										previous.fst.record.getSupplementaryAlignmentFlag()) {
-									throw new RuntimeException();
+									throw new RuntimeException("Multiple supplementary alignments starting at same position? " +
+										extended + " and " + previous);
 								}
 								//TODO This essentially picks one of the alignments at random to mark as supplementary
 								//That does not affect anything else, but that should be improved as some point
