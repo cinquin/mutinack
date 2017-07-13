@@ -48,6 +48,7 @@ import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 /**
@@ -149,6 +150,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		nClippedRight = Math.max(0, nClippedRight);
 
 		nClipped = nClippedLeft + nClippedRight;
+
+		if (nClipped < 0) {
+			throw new AssertionFailedException("nClipped < 0: " + nClipped + "; " + nClippedLeft + " " + nClippedRight + " " +
+				getAlignmentStart() + " " + getUnclippedStart() + " " + getAlignmentStart() + " " +
+				getMateAlignmentStart() + " " + getUnclippedStart() + " " + readLength + " " + effectiveLength + " " +
+				getUnclippedEnd() + " " + getAlignmentEnd() + " " + getMateAlignmentEnd());
+		}
 	}
 
 	public int getnClipped() {
