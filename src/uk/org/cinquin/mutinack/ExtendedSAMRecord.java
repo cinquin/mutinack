@@ -101,7 +101,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public static @NonNull String getReadFullName(SAMRecord rec, boolean getMate) {
 		return (   rec.getReadName() + "--" + ((getMate ^ rec.getFirstOfPairFlag())? "1" : "2") + "--" +
-			(getMate ? rec.getMateReferenceName() : rec.getReferenceName()) +
+			(getMate ? rec.getMateNegativeStrandFlag() : rec.getReadNegativeStrandFlag()) +
 			(getMate ? rec.getMateAlignmentStart() : rec.getAlignmentStart()) +
 			(!getMate && rec.getSupplementaryAlignmentFlag() ? "--suppl" : "")   ) /*.intern()*/;
 	}

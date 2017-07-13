@@ -398,22 +398,27 @@ public class ReadLoader {
 						}
 
 						//Put samRecord into map of reads to possibly be processed in next batch
-						final @Nullable Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence> previous;
-						if ((previous = readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref))) != null) {
+						final @Nullable Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence> previousEntry, best,
+							newEntry = new Pair<>(extended, ref);
+						if ((previousEntry = readsToProcess.put(extended.getFullName(), newEntry)) != null) {
 							if (param.allowMissingSupplementaryFlag) {
-								readsToProcess.put(extended.getFullName(), previous);//Put back previous record
 								if (extended.record.getSupplementaryAlignmentFlag() ||
-										previous.fst.record.getSupplementaryAlignmentFlag()) {
-									throw new RuntimeException("Multiple supplementary alignments starting at same position? " +
-										extended + " and " + previous);
-								}
-								//TODO This essentially picks one of the alignments at random to mark as supplementary
-								//That does not affect anything else, but that should be improved as some point
-								samRecord.setSupplementaryAlignmentFlag(true);
-								extended = subAnalyzer.getExtended(samRecord, location);
-								if (readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref)) != null) {
-									throw new RuntimeException("Read " + extended.getFullName() + " read twice from " +
-										analyzer.inputBam.getAbsolutePath());
+										previousEntry.fst.record.getSupplementaryAlignmentFlag()) {
+									//throw new RuntimeException("Multiple supplementary alignments starting at same position? " +
+									//	extended + " and " + previous);
+									best = previousEntry.fst.getMappingQuality() > newEntry.fst.getMappingQuality() ?
+										previousEntry : newEntry;
+									readsToProcess.put(extended.getFullName(), best);
+								} else {
+									readsToProcess.put(extended.getFullName(), previousEntry);//Put back previous record
+									//TODO This essentially picks one of the alignments at random to mark as supplementary
+									//That does not affect anything else, but that should be improved as some point
+									samRecord.setSupplementaryAlignmentFlag(true);
+									extended = subAnalyzer.getExtended(samRecord, location);
+									if (readsToProcess.put(extended.getFullName(), new Pair<>(extended, ref)) != null) {
+										throw new RuntimeException("Read " + extended.getFullName() + " read twice from " +
+											analyzer.inputBam.getAbsolutePath());
+									}
 								}
 							} else if (!param.randomizeMates) {//The assertion can be triggered when randomizing, probably
 								//because of supplementary alignments; just suppress the assertion when randomizing:
