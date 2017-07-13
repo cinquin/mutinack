@@ -136,7 +136,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 							getAlignmentStart() - getUnclippedStart() - adapterClipped));
 		nClippedLeft = Math.max(0, nClippedLeft);
 
-		int nClippedRight =	getReadNegativeStrandFlag() ?
+		int nClippedRight = getReadNegativeStrandFlag() ?
 
 						/* negative strand */
 						getUnclippedEnd() - getAlignmentEnd() :
