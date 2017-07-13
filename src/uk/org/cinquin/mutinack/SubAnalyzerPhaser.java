@@ -310,6 +310,18 @@ public class SubAnalyzerPhaser extends Phaser {
 		return returnValue;
 	}//End onAdvance
 
+	private static void examineLocation(SubAnalyzer sa, @NonNull SequenceLocation location,
+			MutableMap<SubAnalyzer, LocationExaminationResults> resultsMap) {
+		LocationExaminationResults results = sa.examineLocation(location);
+		if (NONTRIVIAL_ASSERTIONS) {
+			for (CandidateSequence c: results.analyzedCandidateSequences) {
+				//noinspection ObjectEquality
+				Assert.isTrue(c.getOwningAnalyzer() == sa.analyzer);
+			}
+		}
+		resultsMap.put(sa, results);
+	}
+
 	private void onAdvance1(
 			final @NonNull SequenceLocation location
 		) {
@@ -320,16 +332,11 @@ public class SubAnalyzerPhaser extends Phaser {
 		//without causing structural modifications, obviating the need for synchronization
 		analysisChunk.subAnalyzers.forEach(sa -> locationExamResultsMap0.put(sa, null));
 
-		analysisChunk.subAnalyzersParallel.forEach(sa -> {
-			LocationExaminationResults results = sa.examineLocation(location);
-			if (NONTRIVIAL_ASSERTIONS) {
-				for (CandidateSequence c: results.analyzedCandidateSequences) {
-					//noinspection ObjectEquality
-					Assert.isTrue(c.getOwningAnalyzer() == sa.analyzer);
-				}
-			}
-			locationExamResultsMap0.put(sa, results);
-		});
+		if (analysisChunk.subAnalyzers.getFirst().analyzedDuplexes.size() > 50_000) {
+			analysisChunk.subAnalyzersParallel.forEach(sa -> examineLocation(sa, location, locationExamResultsMap0));
+		} else {
+			analysisChunk.subAnalyzers.forEach(sa -> examineLocation(sa, location, locationExamResultsMap0));
+		}
 
 		@SuppressWarnings("null")
 		final @NonNull MutableMap<SubAnalyzer, @NonNull LocationExaminationResults> locationExamResultsMap =
