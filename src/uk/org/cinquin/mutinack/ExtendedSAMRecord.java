@@ -100,9 +100,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private final @NonNull Mutinack analyzer;
 
 	public static @NonNull String getReadFullName(SAMRecord rec, boolean getMate) {
-		return (rec.getReadName() + "--" + ((getMate ^ rec.getFirstOfPairFlag())? "1" : "2") + "--" +
-			(getMate ? rec.getMateAlignmentStart() : rec.getAlignmentStart())) +
-			(!getMate && rec.getSupplementaryAlignmentFlag() ? "--suppl" : "")/*.intern()*/;
+		return (   rec.getReadName() + "--" + ((getMate ^ rec.getFirstOfPairFlag())? "1" : "2") + "--" +
+			(getMate ? rec.getMateReferenceName() : rec.getReferenceName()) +
+			(getMate ? rec.getMateAlignmentStart() : rec.getAlignmentStart()) +
+			(!getMate && rec.getSupplementaryAlignmentFlag() ? "--suppl" : "")   ) /*.intern()*/;
 	}
 
 	public @NonNull String getFullName() {
