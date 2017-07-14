@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -143,11 +144,9 @@ public class StaticStuffToAvoidMutating {
 							contigSizes0.put(curName, currentLength.get());
 							currentLength.set(0);
 						}
-						int endName = l.indexOf(' ');
-						if (endName == -1) {
-							endName = l.length();
+						try (Scanner scanner = new Scanner(l.substring(1))) {
+							currentName.set(scanner.next());
 						}
-						currentName.set(l.substring(1, endName));
 					} else {
 						int lineLength = 0;
 						int n = l.length();
