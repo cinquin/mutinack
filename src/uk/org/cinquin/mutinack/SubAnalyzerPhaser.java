@@ -540,16 +540,15 @@ public class SubAnalyzerPhaser extends Phaser {
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
 						candidate.getnDuplexesSisterSamples() >= param.minNumberDuplexesSisterSamples) &&
 					(!param.Q2DisagCapsMatchingMutationQuality ||
-						(//Disagreements from the same sample will have already-downgraded mutation quality,
+						//Disagreements from the same sample will have already-downgraded mutation quality,
 						//if analysis parameter dictates it, but check again in case a matching disagreement is
 						//present in another sample
 						candidate.getQuality().downgradeIfFalse(AT_LEAST_ONE_DISAG,
 								!allQ2DuplexDisagreements.anySatisfy(
 									disag -> disag.snd.equals(candidate.getMutation()) ||
 									disag.fst.equals(candidate.getMutation())))
-						)
 					)
-					) {
+				) {
 
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
