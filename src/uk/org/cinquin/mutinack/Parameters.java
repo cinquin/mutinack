@@ -28,7 +28,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -160,13 +159,6 @@ public final class Parameters implements Serializable, Cloneable {
 			}
 			if (!(value instanceof Integer) && !(value instanceof Float) && !(value instanceof Boolean)) {
 				throw new IllegalArgumentException("Parameter " + paramName + " is not a number or boolean");
-			}
-		}
-
-		if (randomOutputRate != 0) {
-			if (!readContigsFromFile) {
-				throw new IllegalArgumentException("Option randomOutputRate "
-					+ "requires readContigsFromFiles");
 			}
 		}
 
@@ -428,12 +420,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-contigNamesToProcess", description =
 			"Reads not mapped to any of these contigs will be ignored")
 	@NoDuplicates
-	@NonNull List<@NonNull String> contigNamesToProcess =
-		Arrays.asList("chrI", "chrII", "chrIII", "chrIV", "chrV", "chrX", "chrM");
-
-	{
-		Collections.sort(contigNamesToProcess);
-	}
+	@NonNull List<@NonNull String> contigNamesToProcess = new ArrayList<>();
 
 	@Parameter(names = "-startAtPosition", description = "Formatted as chrI:12,000,000 or chrI:12000000; specify up to once per contig", required = false,
 			converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
@@ -443,7 +430,7 @@ public final class Parameters implements Serializable, Cloneable {
 			converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
 	public List<@NonNull String> stopAtPositions = new ArrayList<>();
 
-	@Parameter(names = "-readContigsFromFile", description = "Read contig names from reference genome file")
+	@Parameter(names = "-readContigsFromFile", description = "OBSOLETE; kept for backward compatibility", hidden = true)
 	public boolean readContigsFromFile = false;
 
 	@Parameter(names = "-traceField", description = "Output each position at which" +

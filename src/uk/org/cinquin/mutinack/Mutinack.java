@@ -691,38 +691,32 @@ public class Mutinack implements Actualizable, Closeable {
 		final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes;
 		final @NonNull List<@NonNull String> contigNamesToProcess;
 
-		if (param.readContigsFromFile) {
-			final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 =
-				new HashMap<>(
-					StaticStuffToAvoidMutating.loadContigsFromFile(param.referenceGenome));
+		final @NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 =
+			new HashMap<>(
+				StaticStuffToAvoidMutating.loadContigsFromFile(param.referenceGenome));
 
-			try (SAMFileReader tempReader = new SAMFileReader(
-				new File(param.inputReads.get(0)))) {
-				final List<String> sequenceNames = tempReader.getFileHeader().
-					getSequenceDictionary().getSequences().stream().
-					map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList());
+		try (SAMFileReader tempReader = new SAMFileReader(new File(param.inputReads.get(0)))) {
+			final List<String> sequenceNames = tempReader.getFileHeader().
+				getSequenceDictionary().getSequences().stream().
+				map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList());
 
-				contigSizes0.entrySet().removeIf(e -> {
-						if (!sequenceNames.contains(e.getKey())) {
-							printUserMustSeeMessage("Reference sequence " + e.getKey() + " not present in sample header; ignoring");
-							return true;
-						}
-						return false;
-					}
-				);
-			}
-			contigSizes = Collections.unmodifiableMap(contigSizes0);
-			List<@NonNull String> contigNames0 = new ArrayList<>(contigSizes0.keySet());
-			contigNames0.sort(null);
-			contigNames = Collections.unmodifiableList(contigNames0);
+			contigSizes0.entrySet().removeIf(e -> {
+				if (!sequenceNames.contains(e.getKey())) {
+					printUserMustSeeMessage("Reference sequence " + e.getKey() + " not present in sample header; ignoring");
+					return true;
+				}
+				return false;
+			});
+		}
+		contigSizes = Collections.unmodifiableMap(contigSizes0);
+		List<@NonNull String> contigNames0 = new ArrayList<>(contigSizes0.keySet());
+		contigNames0.sort(null);
+		contigNames = Collections.unmodifiableList(contigNames0);
+		if (param.contigNamesToProcess.isEmpty()) {
 			contigNamesToProcess = contigNames;
-		} else if (!param.contigNamesToProcess.equals(new Parameters().contigNamesToProcess)) {
-			throw new IllegalArgumentException("Contig names specified both in file and as " +
-				"command line argument; pick only one method");
-		} else {
-			contigNames = param.contigNamesToProcess;
-			contigSizes = Collections.emptyMap();
-			contigNamesToProcess = param.contigNamesToProcess;
+		}	else {
+			contigNamesToProcess = new ArrayList<>(param.contigNamesToProcess);
+			contigNamesToProcess.sort(null);
 		}
 
 		for (int i = 0; i < contigNames.size(); i++) {
@@ -1254,12 +1248,12 @@ public class Mutinack implements Actualizable, Closeable {
 		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 		final List<Phaser> phasers = new ArrayList<>();
 		final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
-		for (int contigIndex0 = 0; contigIndex0 < contigNames.size(); contigIndex0++) {
+		for (int contigIndex0 = 0; contigIndex0 < contigNamesToProcess.size(); contigIndex0++) {
 			final int contigIndex = contigIndex0;
 
 			final int startContigAtPosition;
 			final int terminateContigAtPosition;
-			final String contigName = contigNames.get(contigIndex);
+			final String contigName = contigNamesToProcess.get(contigIndex);
 			int idx = truncateAtContigs.indexOf(contigName);
 			if (idx > -1) {
 				terminateContigAtPosition = truncateAtPositions.get(idx);
@@ -1267,7 +1261,7 @@ public class Mutinack implements Actualizable, Closeable {
 				terminateContigAtPosition =
 					Objects.requireNonNull(contigSizes.get(contigName)) - 1;
 			}
-			idx = startAtContigs.indexOf(contigNames.get(contigIndex));
+			idx = startAtContigs.indexOf(contigNamesToProcess.get(contigIndex));
 			if (idx > -1) {
 				startContigAtPosition = startAtPositions.get(idx);
 			} else {
@@ -1280,7 +1274,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			final int contigParallelizationFactor = getContigParallelizationFactor(
-				contigIndex, param, Objects.requireNonNull(contigSizes.get(contigNames.get(contigIndex))));
+				contigIndex, param, Objects.requireNonNull(contigSizes.get(contigNamesToProcess.get(contigIndex))));
 			List<AnalysisChunk> contigAnalysisChunks = new ArrayList<>();
 			analysisChunks.add(contigAnalysisChunks);
 
@@ -1288,7 +1282,7 @@ public class Mutinack implements Actualizable, Closeable {
 				contigParallelizationFactor;
 			for (int p = 0; p < contigParallelizationFactor; p++) {
 				final AnalysisChunk analysisChunk = new AnalysisChunk(
-					Objects.requireNonNull(contigNames.get(contigIndex)), nParameterSets, groupSettings);
+					Objects.requireNonNull(contigNamesToProcess.get(contigIndex)), nParameterSets, groupSettings);
 				contigAnalysisChunks.add(analysisChunk);
 
 				final int startSubAt = startContigAtPosition + p * subAnalyzerSpan;
@@ -1314,7 +1308,7 @@ public class Mutinack implements Actualizable, Closeable {
 					groupSettings.forceOutputAtLocations,
 					dubiousOrGoodDuplexCovInAllInputs,
 					goodDuplexCovInAllInputs,
-					contigNames.get(contigIndex), contigIndex,
+					contigNamesToProcess.get(contigIndex), contigIndex,
 					excludeBEDs, repetitiveBEDs,
 					groupSettings.PROCESSING_CHUNK);
 				analysisChunk.phaser = phaser;
@@ -1323,7 +1317,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}//End parallelization loop over analysisChunks
 		}//End loop over contig index
 
-		final int endIndex = contigNames.size() - 1;
+		final int endIndex = contigNamesToProcess.size() - 1;
 		if (contigThreadPool == null) {
 			synchronized(Mutinack.class) {
 				if (contigThreadPool == null) {
@@ -1339,8 +1333,10 @@ public class Mutinack implements Actualizable, Closeable {
 		for (int worker = 0; worker < parFor.getNThreads(); worker++)
 			parFor.addLoopWorker((final int contigIndex, final int threadIndex) -> {
 
+				final String contigName = contigNamesToProcess.get(contigIndex);
+
 				final int contigParallelizationFactor = getContigParallelizationFactor(
-					contigIndex, param, Objects.requireNonNull(contigSizes.get(contigNames.get(contigIndex))));
+					contigIndex, param, Objects.requireNonNull(contigSizes.get(contigName)));
 
 				final List<Future<?>> futures = new ArrayList<>();
 				int analyzerIndex = -1;
@@ -1360,7 +1356,7 @@ public class Mutinack implements Actualizable, Closeable {
 							try {
 								ReadLoader.load(analyzer, analyzer.param, groupSettings,
 									subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
-									contigNames,
+									contigNamesToProcess,
 									contigIndex, sharedAlignmentWriter,
 									StaticStuffToAvoidMutating::getContigSequence);
 							} catch (Exception e) {
