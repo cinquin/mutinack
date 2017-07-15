@@ -61,6 +61,26 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 			case 'c': return 'g';
 			case 'n': return 'n';
 			case 'N': return 'N';
+			case 'Y': return 'R';
+			case 'R': return 'Y';
+			case 'W': return 'W';
+			case 'S': return 'S';
+			case 'B': return 'V';
+			case 'D': return 'H';
+			case 'H': return 'D';
+			case 'K': return 'M';
+			case 'M': return 'K';
+			case 'V': return 'B';
+			case 'y': return 'r';
+			case 'r': return 'y';
+			case 'w': return 'w';
+			case 's': return 's';
+			case 'b': return 'b';
+			case 'd': return 'd';
+			case 'h': return 'h';
+			case 'k': return 'k';
+			case 'm': return 'm';
+			case 'v': return 'v';
 			case 0 : return 0;
 			default : throw new AssertionFailedException("Cannot complement " +
 					new String(new byte[] {b}));

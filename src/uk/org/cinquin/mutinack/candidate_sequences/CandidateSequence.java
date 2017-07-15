@@ -269,6 +269,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 					case 'G':
 					case 'C':
 					case 'N':
+					case 'Y':
+					case 'R':
 						break;
 					default:
 						throw new IllegalArgumentException("Unknown base " + b + " at " + location + " from read " +

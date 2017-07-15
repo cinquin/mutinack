@@ -152,31 +152,71 @@ public final class SubAnalyzer {
 	static final @NonNull TByteObjectMap<@NonNull String> byteMap;
 	static {
 		byteMap = new TByteObjectHashMap<>();
-		byteMap.put((byte) 'A', "A");
-		byteMap.put((byte) 'a', "A");
-		byteMap.put((byte) 'T', "T");
-		byteMap.put((byte) 't', "T");
-		byteMap.put((byte) 'G', "G");
-		byteMap.put((byte) 'g', "G");
-		byteMap.put((byte) 'C', "C");
-		byteMap.put((byte) 'c', "C");
-		byteMap.put((byte) 'N', "N");
-		byteMap.put((byte) 'n', "N");
+		Assert.isNull(byteMap.put((byte) 'A', "A"));
+		Assert.isNull(byteMap.put((byte) 'a', "A"));
+		Assert.isNull(byteMap.put((byte) 'T', "T"));
+		Assert.isNull(byteMap.put((byte) 't', "T"));
+		Assert.isNull(byteMap.put((byte) 'G', "G"));
+		Assert.isNull(byteMap.put((byte) 'g', "G"));
+		Assert.isNull(byteMap.put((byte) 'C', "C"));
+		Assert.isNull(byteMap.put((byte) 'c', "C"));
+		Assert.isNull(byteMap.put((byte) 'N', "N"));
+		Assert.isNull(byteMap.put((byte) 'n', "N"));
+		Assert.isNull(byteMap.put((byte) 'W', "W"));
+		Assert.isNull(byteMap.put((byte) 'w', "W"));
+		Assert.isNull(byteMap.put((byte) 'S', "S"));
+		Assert.isNull(byteMap.put((byte) 's', "S"));
+		Assert.isNull(byteMap.put((byte) 'Y', "Y"));
+		Assert.isNull(byteMap.put((byte) 'y', "Y"));
+		Assert.isNull(byteMap.put((byte) 'R', "R"));
+		Assert.isNull(byteMap.put((byte) 'r', "R"));
+		Assert.isNull(byteMap.put((byte) 'B', "B"));
+		Assert.isNull(byteMap.put((byte) 'b', "B"));
+		Assert.isNull(byteMap.put((byte) 'D', "D"));
+		Assert.isNull(byteMap.put((byte) 'd', "D"));
+		Assert.isNull(byteMap.put((byte) 'H', "H"));
+		Assert.isNull(byteMap.put((byte) 'h', "H"));
+		Assert.isNull(byteMap.put((byte) 'K', "K"));
+		Assert.isNull(byteMap.put((byte) 'k', "K"));
+		Assert.isNull(byteMap.put((byte) 'M', "M"));
+		Assert.isNull(byteMap.put((byte) 'm', "M"));
+		Assert.isNull(byteMap.put((byte) 'V', "V"));
+		Assert.isNull(byteMap.put((byte) 'v', "V"));
 	}
 
 	static final @NonNull TByteObjectMap<byte @NonNull[]> byteArrayMap;
 	static {
 		byteArrayMap = new TByteObjectHashMap<>();
-		byteArrayMap.put((byte) 'A', new byte[] {'A'});
-		byteArrayMap.put((byte) 'a', new byte[] {'a'});
-		byteArrayMap.put((byte) 'T', new byte[] {'T'});
-		byteArrayMap.put((byte) 't', new byte[] {'t'});
-		byteArrayMap.put((byte) 'G', new byte[] {'G'});
-		byteArrayMap.put((byte) 'g', new byte[] {'g'});
-		byteArrayMap.put((byte) 'C', new byte[] {'C'});
-		byteArrayMap.put((byte) 'c', new byte[] {'c'});
-		byteArrayMap.put((byte) 'N', new byte[] {'N'});
-		byteArrayMap.put((byte) 'n', new byte[] {'n'});
+		Assert.isNull(byteArrayMap.put((byte) 'A', new byte[] {'A'}));
+		Assert.isNull(byteArrayMap.put((byte) 'a', new byte[] {'a'}));
+		Assert.isNull(byteArrayMap.put((byte) 'T', new byte[] {'T'}));
+		Assert.isNull(byteArrayMap.put((byte) 't', new byte[] {'t'}));
+		Assert.isNull(byteArrayMap.put((byte) 'G', new byte[] {'G'}));
+		Assert.isNull(byteArrayMap.put((byte) 'g', new byte[] {'g'}));
+		Assert.isNull(byteArrayMap.put((byte) 'C', new byte[] {'C'}));
+		Assert.isNull(byteArrayMap.put((byte) 'c', new byte[] {'c'}));
+		Assert.isNull(byteArrayMap.put((byte) 'N', new byte[] {'N'}));
+		Assert.isNull(byteArrayMap.put((byte) 'n', new byte[] {'n'}));
+		Assert.isNull(byteArrayMap.put((byte) 'W', new byte[] {'W'}));
+		Assert.isNull(byteArrayMap.put((byte) 'w', new byte[] {'w'}));
+		Assert.isNull(byteArrayMap.put((byte) 'S', new byte[] {'S'}));
+		Assert.isNull(byteArrayMap.put((byte) 's', new byte[] {'s'}));
+		Assert.isNull(byteArrayMap.put((byte) 'Y', new byte[] {'Y'}));
+		Assert.isNull(byteArrayMap.put((byte) 'y', new byte[] {'y'}));
+		Assert.isNull(byteArrayMap.put((byte) 'R', new byte[] {'R'}));
+		Assert.isNull(byteArrayMap.put((byte) 'r', new byte[] {'r'}));
+		Assert.isNull(byteArrayMap.put((byte) 'B', new byte[] {'B'}));
+		Assert.isNull(byteArrayMap.put((byte) 'D', new byte[] {'D'}));
+		Assert.isNull(byteArrayMap.put((byte) 'H', new byte[] {'H'}));
+		Assert.isNull(byteArrayMap.put((byte) 'K', new byte[] {'K'}));
+		Assert.isNull(byteArrayMap.put((byte) 'M', new byte[] {'M'}));
+		Assert.isNull(byteArrayMap.put((byte) 'V', new byte[] {'V'}));
+		Assert.isNull(byteArrayMap.put((byte) 'b', new byte[] {'b'}));
+		Assert.isNull(byteArrayMap.put((byte) 'd', new byte[] {'d'}));
+		Assert.isNull(byteArrayMap.put((byte) 'h', new byte[] {'h'}));
+		Assert.isNull(byteArrayMap.put((byte) 'k', new byte[] {'k'}));
+		Assert.isNull(byteArrayMap.put((byte) 'm', new byte[] {'m'}));
+		Assert.isNull(byteArrayMap.put((byte) 'v', new byte[] {'v'}));
 	}
 
 	private volatile boolean writing = false;
@@ -1660,7 +1700,7 @@ public final class SubAnalyzer {
 			}
 			stats.nCandidateSubstitutionsConsidered.increment(location);
 			byte wildType = StringUtil.toUpperCase(ref.getBases()[refPosition]);
-			if (readBases[readPosition] != wildType) {/*Mismatch*/
+			if (isMutation(wildType, readBases[readPosition])) {/*Mismatch*/
 
 				final boolean tooLate = readOnNegativeStrand ? readPosition < param.ignoreLastNBases :
 					readPosition > (rec.getReadLength() - 1) - param.ignoreLastNBases;
@@ -1702,6 +1742,17 @@ public final class SubAnalyzer {
 					insertCandidateAtRegularPosition);
 			}//End of wildtype case
 		}//End of loop over alignment bases
+	}
+
+	private static boolean isMutation(byte ucReferenceBase, byte ucReadBase) {
+		Assert.isTrue(ucReferenceBase < 91);//Assert base is upper case
+		Assert.isTrue(ucReadBase < 91);
+		switch (ucReferenceBase) {
+			case 'Y': return ucReadBase != 'C' && ucReadBase != 'T';
+			case 'R': return ucReadBase != 'G' && ucReadBase != 'A';
+			case 'W': return ucReadBase != 'A' && ucReadBase != 'T';
+			default: return ucReadBase != ucReferenceBase;
+		}
 	}
 
 	private interface CandidateFiller {
