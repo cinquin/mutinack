@@ -599,6 +599,8 @@ public final class Duplex implements HasInterval<Integer> {
 			examineAtLoc1(location, result, candidateSet,
 				topCounter, bottomCounter, analyzer, param, stats);
 			lastExaminedPosition = location.position;
+		} catch (Exception e) {
+			throw new RuntimeException("Problem with duplex " + this, e);
 		} finally {
 			if (result.threadCount.decrementAndGet() != 0) {
 				//noinspection ThrowFromFinallyBlock
