@@ -48,6 +48,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import contrib.net.sf.samtools.util.StringUtil;
 import gnu.trove.TByteCollection;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.map.TMap;
@@ -259,6 +260,22 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		Assert.isFalse(mutationType == MutationType.UNKNOWN);
 		this.mutationType = Objects.requireNonNull(mutationType);
 		this.sequence = sequence;
+		if (sequence != null) {
+			for (byte b: sequence) {
+				byte up = StringUtil.toUpperCase(b);
+				switch (up) {
+					case 'A':
+					case 'T':
+					case 'G':
+					case 'C':
+					case 'N':
+						break;
+					default:
+						throw new IllegalArgumentException("Unknown base " + b + " at " + location + " from read " +
+							initialConcurringRead);
+				}
+			}
+		}
 		this.location = location;
 		this.initialConcurringRead = initialConcurringRead;
 		this.initialLigationSiteD = initialLigationSiteD;
