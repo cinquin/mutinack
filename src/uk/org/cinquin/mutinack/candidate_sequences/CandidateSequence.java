@@ -132,6 +132,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int smallestConcurringDuplexDistance = -1;
 	private int largestConcurringDuplexDistance = -1;
 	private int nQ1PlusConcurringDuplexes = -1;
+	private float fractionTopStrandReads;
+	private boolean topAndBottomStrandsPresent;
 
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
@@ -910,6 +912,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			formatter.format((getnDuplexes() / ((float) getTotalAllDuplexes()))) + '\t' +
 			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + '\t' +
 			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + '\t' +
+			formatter.format(fractionTopStrandReads) + '\t' +
+			topAndBottomStrandsPresent + '\t' +
 			nDuplexesSisterSamples + '\t' +
 			getInsertSize() + '\t' +
 			getInsertSizeAtPos10thP() + '\t' +
@@ -1214,5 +1218,21 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	public void updateQualities(@NonNull Parameters param) {
+	}
+
+	public void setFractionTopStrandReads(float f) {
+		this.fractionTopStrandReads = f;
+	}
+
+	public float getFractionTopStrandReads() {
+		return fractionTopStrandReads;
+	}
+
+	public boolean getTopAndBottomStrandsPresent() {
+		return topAndBottomStrandsPresent;
+	}
+
+	public void setTopAndBottomStrandsPresent(boolean topAndBottomStrandsPresent) {
+		this.topAndBottomStrandsPresent = topAndBottomStrandsPresent;
 	}
 }
