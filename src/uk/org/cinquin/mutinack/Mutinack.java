@@ -1304,14 +1304,17 @@ public class Mutinack implements Actualizable, Closeable {
 					analysisChunk.subAnalyzers.add(subAnalyzer);
 				});
 
-				final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(param,
+				final SubAnalyzerPhaser phaser = new SubAnalyzerPhaser(
+					param,
 					analysisChunk,
 					!param.outputAlignmentFile.isEmpty(),
 					groupSettings.forceOutputAtLocations,
 					dubiousOrGoodDuplexCovInAllInputs,
 					goodDuplexCovInAllInputs,
-					contigNamesToProcess.get(contigIndex), contigIndex,
-					excludeBEDs, repetitiveBEDs,
+					contigNamesToProcess.get(contigIndex),
+					contigIndex,
+					excludeBEDs,
+					repetitiveBEDs,
 					groupSettings.PROCESSING_CHUNK);
 				analysisChunk.phaser = phaser;
 				phaser.bulkRegister(analyzers.size());
