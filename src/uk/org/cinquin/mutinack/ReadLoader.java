@@ -108,6 +108,13 @@ public class ReadLoader {
 			:
 				null;
 
+		final AnalysisChunk.ProcessingStats processingStats = new AnalysisChunk.ProcessingStats();
+		if (analysisChunk.processingStats.put(subAnalyzer, processingStats) != null ) {
+			throw new IllegalStateException();
+		}
+
+		processingStats.timeStarted = System.nanoTime();
+
 		final @NonNull Phaser phaser = Objects.requireNonNull(analysisChunk.phaser);
 		String lastContigName = null;
 		String statusUpdateName = null;
@@ -133,7 +140,8 @@ public class ReadLoader {
 					"; pauseAtPosition: " + formatter.format(analysisChunk.pauseAtPosition) +
 					"; lastProcessedPosition: " + formatter.format(analysisChunk.lastProcessedPosition) + "; " +
 					formatter.format(100f * (analysisChunk.lastProcessedPosition - analysisChunk.startAtPosition) /
-							(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done"
+							(analysisChunk.terminateAtPosition - analysisChunk.startAtPosition)) + "% done; processing at "
+							+ processingStats.throughput() + " records / s"
 					);
 			};
 			groupSettings.addStatusUpdateTask(statusUpdateName, info);
@@ -201,6 +209,7 @@ public class ReadLoader {
 				{
 					while (iterator.hasNext() && !phaser.isTerminated() && !groupSettings.terminateAnalysis) {
 
+						processingStats.nRecordsProcessed++;
 						final SAMRecord samRecord = iterator.next();
 
 						if (alignmentWriter != null) {
@@ -515,6 +524,7 @@ public class ReadLoader {
 			throw new RuntimeException("Exception while processing contig " + lastContigName +
 					" of file " + analyzer.inputBam.getAbsolutePath(), t);
 		} finally {
+			processingStats.timeStopped = System.nanoTime();
 			if (statusUpdateName != null) {
 					if (!groupSettings.removeStatusUpdateTask(statusUpdateName)) {
 						logger.warn("Could not remove status udpate task");

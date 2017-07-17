@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -1183,13 +1184,18 @@ public class Mutinack implements Actualizable, Closeable {
 		final @NonNull Histogram dubiousOrGoodDuplexCovInAllInputs = new Histogram(500);
 		final @NonNull Histogram goodDuplexCovInAllInputs = new Histogram(500);
 
+		final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
+
 		SignalProcessor infoSignalHandler = signal -> {
 			final PrintStream printStream = (signal == null) ? out : err;
 			for (Mutinack analyzer: analyzers) {
 				analyzer.printStatus(printStream, signal != null);
-				printStream.println("Processing at " + ((int) analyzer.stats.get(0).processingThroughput(
-						analyzer.timeStartProcessing)) +
-					" records / s");
+				final int processingThroughput = analyzer.getProcessingThroughput(analysisChunks);
+				if (processingThroughput != -1) {
+					printStream.println("Processed at " + processingThroughput + " records / s");
+				} else {
+					printStream.println("Processing not yet started");
+				}
 			}
 			printStream.flush();
 
@@ -1249,7 +1255,6 @@ public class Mutinack implements Actualizable, Closeable {
 
 		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 		final List<Phaser> phasers = new ArrayList<>();
-		final List<List<AnalysisChunk>> analysisChunks = new ArrayList<>();
 		for (int contigIndex0 = 0; contigIndex0 < contigNamesToProcess.size(); contigIndex0++) {
 			final int contigIndex = contigIndex0;
 
@@ -1426,15 +1431,15 @@ public class Mutinack implements Actualizable, Closeable {
 
 		infoSignalHandler.handle(null);
 		if (!param.noStatusMessages) {
-			printUserMustSeeMessage("Analysis of samples " + analyzers.stream().map(a -> a.name +
-				" at " + ((int) a.stats.get(0).processingThroughput(a.timeStartProcessing)) +
-				" records / s").//TODO Improve reporting
-				collect(Collectors.joining(", ")) + " completed on host " +
-				StaticStuffToAvoidMutating.hostName +
+			printUserMustSeeMessage("Analysis of samples " +
+				analyzers.stream().map(a -> a.name).collect(Collectors.joining(", ")) +
+				" completed on host " + StaticStuffToAvoidMutating.hostName +
 				" at " + new SimpleDateFormat("E dd MMM yy HH:mm:ss").format(new Date()) +
 				" (elapsed time " +
-				(System.nanoTime() - analyzers.get(0).timeStartProcessing) / 1_000_000_000d +
-				" s)");
+				Util.shortLengthFloatFormatter.get().format((System.nanoTime() - analyzers.get(0).timeStartProcessing) /
+					60_000_000_000d) + " min; " +
+				"processing throughput: " + analyzers.stream().mapToInt(a -> a.getProcessingThroughput(analysisChunks)).sum() +
+				" records / s)");
 			ManagementFactory.getGarbageCollectorMXBeans().forEach(gc ->
 				printUserMustSeeMessage(gc.getName() + " (" +
 					Arrays.toString(gc.getMemoryPoolNames()) + "): " + gc.getCollectionCount() +
@@ -1503,6 +1508,28 @@ public class Mutinack implements Actualizable, Closeable {
 				}
 			}
 		}
+	}
+
+	private int getProcessingThroughput(List<List<AnalysisChunk>> analysisChunks) {
+		List<AnalysisChunk.ProcessingStats> chunkStats =
+			analysisChunks.stream().flatMap(l -> l.stream()).
+			flatMap(ac -> ac.processingStats.entrySet().stream()).
+			filter(e -> e.getKey().analyzer == this).
+			map(e -> e.getValue()).
+			collect(Collectors.toList());
+		OptionalLong timeFirstStart = chunkStats.stream().
+			mapToLong(s -> s.timeStarted).
+			filter(time -> time > 0).min();
+		long nRecords = chunkStats.stream().
+			mapToLong(s -> s.nRecordsProcessed).
+			sum();
+		if (timeFirstStart.isPresent()) {
+			long timeDelta = Math.max(1, (System.nanoTime() - timeFirstStart.getAsLong()) / 1_000_000_000L);
+			return (int) (nRecords / timeDelta);
+		} else {
+			return -1;
+		}
+
 	}
 
 	private static int getContigParallelizationFactor(int contigIndex, Parameters param, int contigSize) {
