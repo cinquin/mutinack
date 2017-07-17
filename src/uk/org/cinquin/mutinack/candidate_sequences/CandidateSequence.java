@@ -275,8 +275,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 					case 'R':
 						break;
 					default:
-						throw new IllegalArgumentException("Unknown base " + b + " at " + location + " from read " +
-							initialConcurringRead);
+						throw new IllegalArgumentException("Unknown base " + new String(new byte[] {b}) + " at " + location +
+							" from deleted reference sequence or from sequence of read " + initialConcurringRead);
 				}
 			}
 		}
