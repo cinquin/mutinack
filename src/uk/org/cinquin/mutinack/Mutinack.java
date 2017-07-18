@@ -728,7 +728,7 @@ public class Mutinack implements Actualizable, Closeable {
 		groupSettings.setContigNames(contigNames);
 		groupSettings.setContigSizes(contigSizes);
 
-		StaticStuffToAvoidMutating.loadContigs(param.referenceGenome,
+		StaticStuffToAvoidMutating.loadContigs(param.referenceGenomeShortName, param.referenceGenome,
 			contigNames);
 
 		groupSettings.forceOutputAtLocations.clear();

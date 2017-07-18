@@ -39,7 +39,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -91,7 +91,7 @@ public class ReadLoader {
 			@NonNull List<@NonNull String> contigs,
 			final int contigIndex,
 			SAMFileWriter alignmentWriter,
-			Function<String, ReferenceSequence> contigSequences) {
+			BiFunction<String, String, ReferenceSequence> contigSequences) {
 
 		final SettableInteger lastProcessable = subAnalyzer.lastProcessablePosition;
 		final int startAt = analysisChunk.startAtPosition;
@@ -393,7 +393,8 @@ public class ReadLoader {
 							finishUp = false;
 						}
 
-						ReferenceSequence ref = Objects.requireNonNull(contigSequences.apply(contigName));
+						ReferenceSequence ref = Objects.requireNonNull(contigSequences.apply
+							(param.referenceGenomeShortName, contigName));
 
 						//Put samRecord into the cache
 						@NonNull ExtendedSAMRecord extended = subAnalyzer.getExtended(samRecord, location);

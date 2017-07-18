@@ -47,9 +47,9 @@ public class StaticStuffToAvoidMutating {
 
 	static final Logger logger = LoggerFactory.getLogger(StaticStuffToAvoidMutating.class);
 
-	private static final Map<String, ReferenceSequence> contigSequences =
+	private static final Map<String, Map<String, ReferenceSequence>> contigSequences =
 		new ConcurrentHashMap<>();
-	private static ReferenceSequenceFile refFile;
+	private static final Map<String, ReferenceSequenceFile> refFiles = new ConcurrentHashMap<>();
 
 	private static ExecutorService executorService;
 
@@ -100,18 +100,25 @@ public class StaticStuffToAvoidMutating {
 		StaticStuffToAvoidMutating.executorService = executorService;
 	}
 
-	public static void loadContigs(String referenceGenome, List<@NonNull String> contigNames) {
-		if (refFile == null) {
+	public static void loadContigs(
+			String referenceGenomeName,
+			String referenceGenomePath,
+			List<@NonNull String> contigNames) {
+		ReferenceSequenceFile refFile = refFiles.computeIfAbsent(referenceGenomeName, name -> {
 			try {
-				refFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
-					new File(referenceGenome));
+				return ReferenceSequenceFileFactory.getReferenceSequenceFile(
+					new File(referenceGenomePath));
 			} catch (Exception e) {
-				throw new RuntimeException("Problem reading reference file " + referenceGenome, e);
+				throw new RuntimeException("Problem reading reference file for genome " + referenceGenomeName +
+					" at " + referenceGenomePath, e);
 			}
-		}
+		});
+
+		Map<String, ReferenceSequence> sequences = contigSequences.computeIfAbsent(referenceGenomeName, name ->
+			new ConcurrentHashMap<>());
 
 		for (String contigName: contigNames) {
-			contigSequences.computeIfAbsent(contigName, name -> {
+			sequences.computeIfAbsent(contigName, name -> {
 				try {
 					ReferenceSequence ref = refFile.getSequence(contigName);
 					if (ref.getBases()[0] == 0) {
@@ -120,14 +127,18 @@ public class StaticStuffToAvoidMutating {
 					}
 					return ref;
 				} catch (Exception e) {
-					throw new RuntimeException("Problem reading reference file " + referenceGenome, e);
+					throw new RuntimeException("Problem reading reference file " + referenceGenomePath, e);
 				}
 			});
 		}
 	}
 
-	public static ReferenceSequence getContigSequence(String name) {
-		return contigSequences.get(name);
+	public static ReferenceSequence getContigSequence(String referenceGenomeName, String contigName) {
+		Map<String, ReferenceSequence> sequences = contigSequences.get(referenceGenomeName);
+		if (sequences == null) {
+			throw new IllegalStateException("Reference genome " + referenceGenomeName + " not loaded");
+		}
+		return sequences.get(contigName);
 	}
 
 	public static @NonNull Map<@NonNull String, @NonNull Integer> loadContigsFromFile(
