@@ -733,7 +733,7 @@ public class Mutinack implements Actualizable, Closeable {
 
 		groupSettings.forceOutputAtLocations.clear();
 
-		Util.parseListStartStopLocations(param.forceOutputAtPositions,
+		Util.parseListStartStopLocations(param.referenceGenomeShortName, param.forceOutputAtPositions,
 			groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
 			if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 				printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
@@ -741,7 +741,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 		});
 
-		param.tracePositions.stream().map(s -> SequenceLocation.parse(s, groupSettings.indexContigNameReverseMap)).
+		param.tracePositions.stream().map(s -> SequenceLocation.parse(param.referenceGenomeShortName, s, groupSettings.indexContigNameReverseMap)).
 			forEach(param.parsedTracePositions::add);
 
 		for (String forceOutputFilePath: param.forceOutputAtPositionsTextFile) {
@@ -761,7 +761,7 @@ public class Mutinack implements Actualizable, Closeable {
 								throw new IllegalArgumentException("Unknown contig " + contig + "; known contigs are " +
 									contigNames);
 							}
-							final SequenceLocation parsedLocation = new SequenceLocation(contigIndex, contig,
+							final SequenceLocation parsedLocation = new SequenceLocation(param.referenceGenomeShortName, contigIndex, contig,
 								(int) Math.floor(position), position - Math.floor(position) > 0);
 							if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 								printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
@@ -819,6 +819,7 @@ public class Mutinack implements Actualizable, Closeable {
 				for (int i = 0; i < param.randomOutputRate * c.getValue(); i++) {
 					@SuppressWarnings("null")
 					SequenceLocation l = new SequenceLocation(
+						param.referenceGenome,
 						groupSettings.indexContigNameReverseMap.get(c.getKey()),
 						c.getKey(), (int) (random.nextDouble() * (c.getValue() - 1)));
 					if (groupSettings.forceOutputAtLocations.put(l, true) == null) {
@@ -853,7 +854,7 @@ public class Mutinack implements Actualizable, Closeable {
 		for (String bed: param.excludeRegionsInBED) {
 			try {
 				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-					groupSettings.getContigNames(), bed);
+					groupSettings.getContigNames(), bed, param.referenceGenomeShortName);
 				excludeBEDs.add(reader);
 			} catch (Exception e) {
 				throw new RuntimeException("Problem with BED file " + bed, e);
@@ -864,7 +865,7 @@ public class Mutinack implements Actualizable, Closeable {
 		for (String bed: param.repetiveRegionBED) {
 			try {
 				final BedReader reader = BedReader.getCachedBedFileReader(bed, ".cached",
-					groupSettings.getContigNames(), bed);
+					groupSettings.getContigNames(), bed, param.referenceGenomeShortName);
 				repetitiveBEDs.add(reader);
 			} catch (Exception e) {
 				throw new RuntimeException("Problem with BED file " + bed, e);
@@ -1047,7 +1048,7 @@ public class Mutinack implements Actualizable, Closeable {
 			if (param.bedDisagreementOrienter != null) {
 				try {
 					analyzer.codingStrandTester = BedReader.getCachedBedFileReader(param.bedDisagreementOrienter, ".cached",
-						groupSettings.getContigNames(), "");
+						groupSettings.getContigNames(), "", param.referenceGenomeShortName);
 				} catch (Exception e) {
 					throw new RuntimeException("Problem with BED file " +
 						param.bedDisagreementOrienter, e);
@@ -1076,7 +1077,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final String filterName = f.getName();
 					final @NonNull GenomeFeatureTester filter =
 						BedReader.getCachedBedFileReader(fileName, ".cached",
-							groupSettings.getContigNames(), filterName, transcriptToGene);
+							groupSettings.getContigNames(), filterName, param.referenceGenomeShortName, transcriptToGene);
 					final BedComplement notFilter = new BedComplement(filter);
 					final String notFilterName = "NOT " + f.getName();
 					analyzer.addFilterForCandidateReporting(filterName, filter);
@@ -1095,7 +1096,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final File f = new File(fileName);
 					final String filterName = "NOT " + f.getName();
 					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
-						groupSettings.getContigNames(), filterName, transcriptToGene);
+						groupSettings.getContigNames(), filterName, param.referenceGenomeShortName, transcriptToGene);
 					final BedComplement filter = new BedComplement(filter0);
 					analyzer.stats.forEach(s -> {
 						s.addLocationPredicate(filterName, filter);
@@ -1115,6 +1116,7 @@ public class Mutinack implements Actualizable, Closeable {
 						groupSettings.getContigNames(),
 						new BufferedReader(new FileReader(f)),
 						f.getName(),
+						param.referenceGenomeShortName,
 						Optional.ofNullable(param.bedFeatureSuppInfoFile).map(Functions.throwing(file ->
 							new BufferedReader(new FileReader(file)))).orElse(null),
 						transcriptToGene, false);
@@ -1160,7 +1162,7 @@ public class Mutinack implements Actualizable, Closeable {
 		if (param.annotateMutationsInFile != null) {
 			Set<String> unknownSampleNames = new TreeSet<>();
 			groupSettings.mutationsToAnnotate.putAll(MutationListReader.readMutationList(
-				param.annotateMutationsInFile, param.annotateMutationsInFile, contigNames,
+				param.annotateMutationsInFile, param.annotateMutationsInFile, contigNames, param.referenceGenomeShortName,
 				sampleNames, unknownSampleNames));
 			if (!unknownSampleNames.isEmpty()) {
 				printUserMustSeeMessage("Warning: unrecognized sample names in annotateMutationsInFile " +
@@ -1289,6 +1291,7 @@ public class Mutinack implements Actualizable, Closeable {
 				contigParallelizationFactor;
 			for (int p = 0; p < contigParallelizationFactor; p++) {
 				final AnalysisChunk analysisChunk = new AnalysisChunk(
+					param.referenceGenomeShortName,
 					Objects.requireNonNull(contigNamesToProcess.get(contigIndex)), nParameterSets, groupSettings);
 				contigAnalysisChunks.add(analysisChunk);
 

@@ -45,7 +45,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	public @Final @NonNull String contigName;
 	public @Final int position;
 	public @Final boolean plusHalf;
-	public @Final String referenceGenome = "N/A";
+	public @Final @NonNull String referenceGenome;
 
 	//Unused for now, until potential data store uniqueness and performance issues are resolved
 	public static class PK implements Serializable {
@@ -79,7 +79,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 			result = prime * result + contigIndex;
 			result = prime * result + (plusHalf ? 1231 : 1237);
 			result = prime * result + position;
-			result = prime * result + ((referenceGenome == null) ? 0 : referenceGenome.hashCode());
+			result = prime * result + referenceGenome.hashCode();
 			return result;
 		}
 
@@ -98,10 +98,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 				return false;
 			if (position != other.position)
 				return false;
-			if (referenceGenome == null) {
-				if (other.referenceGenome != null)
-					return false;
-			} else if (!referenceGenome.equals(other.referenceGenome))
+			if (!referenceGenome.equals(other.referenceGenome))
 				return false;
 			return true;
 		}
@@ -146,8 +143,9 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		return true;
 	}
 
-	public SequenceLocation(int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
+	public SequenceLocation(@NonNull String referenceGenome, int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
 		Assert.isFalse(contigIndex < 0);
+		this.referenceGenome = referenceGenome;
 		this.contigName = contigName;
 		this.contigIndex = contigIndex;
 		this.position = position;
@@ -157,33 +155,33 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 	}
 
 	public static @NonNull SequenceLocation get(InterningSet<@NonNull SequenceLocation> interningSet,
-			int contigIndex, @NonNull String contigName, int position, boolean plusHalf) {
+			int contigIndex, @NonNull String referenceGenome, @NonNull String contigName, int position, boolean plusHalf) {
 		//TODO Since escape analysis does not remove the allocation below (as shown by HotSpot logs;
 		//removing the allocation would need to be done only for objects not already present in the set),
 		//create a custom method to retrieve pre-existing objects from the set based only on the
 		//constructor parameters (without instantiating a temporary object).
-		return interningSet.intern(new SequenceLocation(contigIndex, contigName, position, plusHalf));
+		return interningSet.intern(new SequenceLocation(referenceGenome, contigIndex, contigName, position, plusHalf));
 	}
 
 	public static @NonNull SequenceLocation get(InterningSet<@NonNull SequenceLocation> interningSet,
-			int contigIndex, @NonNull String contigName, int position) {
-		return get(interningSet, contigIndex, contigName, position, false);
+			int contigIndex, @NonNull String referenceGenome, @NonNull String contigName, int position) {
+		return get(interningSet, contigIndex, referenceGenome, contigName, position, false);
 	}
 
 
-	public SequenceLocation(int contigIndex, List<String> contigNames, int position, boolean plusHalf) {
-		this(contigIndex, Objects.requireNonNull(contigNames.get(contigIndex)), position, plusHalf);
+	public SequenceLocation(@NonNull String referenceGenome, int contigIndex, List<String> contigNames, int position, boolean plusHalf) {
+		this(referenceGenome, contigIndex, Objects.requireNonNull(contigNames.get(contigIndex)), position, plusHalf);
 	}
 
-	public SequenceLocation(int contigIndex, @NonNull String contigName, int position) {
-		this(contigIndex, contigName, position, false);
+	public SequenceLocation(@NonNull String referenceGenome, int contigIndex, @NonNull String contigName, int position) {
+		this(referenceGenome, contigIndex, contigName, position, false);
 	}
 
-	public SequenceLocation(int contigIndex, List<String> contigNames, int position) {
-		this(contigIndex, Objects.requireNonNull(contigNames.get(contigIndex)), position, false);
+	public SequenceLocation(@NonNull String referenceGenome, int contigIndex, List<String> contigNames, int position) {
+		this(referenceGenome, contigIndex, Objects.requireNonNull(contigNames.get(contigIndex)), position, false);
 	}
 
-	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
+	public SequenceLocation(@NonNull String referenceGenome, @NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
 			int position, boolean plusHalf) {
 		final int contigIndex1;
 		try {
@@ -196,18 +194,19 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		this.contigIndex = contigIndex1;
 		this.position = position;
 		this.plusHalf = plusHalf;
+		this.referenceGenome = referenceGenome;
 		this.contigName = contigName;
 
 		this.hash = computeHash();
 	}
 
-	public SequenceLocation(@NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
+	public SequenceLocation(@NonNull String referenceGenome, @NonNull String contigName, Map<String, Integer> indexContigNameReverseMap,
 			int position) {
-		this(contigName, indexContigNameReverseMap, position, false);
+		this(referenceGenome, contigName, indexContigNameReverseMap, position, false);
 	}
 
 	public @NonNull SequenceLocation add(int offset) {
-		return new SequenceLocation(contigIndex, contigName, position + offset, plusHalf);
+		return new SequenceLocation(referenceGenome, contigIndex, contigName, position + offset, plusHalf);
 	}
 
 	/*
@@ -232,11 +231,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		if (other == null) {
 			return false;
 		}
-		if (referenceGenome == null) {
-			if (other.referenceGenome != null) {
-				return false;
-			}
-		} else if (!referenceGenome.equals(other.referenceGenome)) {
+		if (!referenceGenome.equals(other.referenceGenome)) {
 			return false;
 		}
 		return true;
@@ -284,7 +279,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		}
 	}
 
-	public static SequenceLocation parse(String location,
+	public static SequenceLocation parse(@NonNull String referenceGenome, String location,
 			Map<String, Integer> indexContigNameReverseMap) {
 		@NonNull String [] split = location.split(":");
 		if (split.length != 2) {
@@ -296,7 +291,7 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 		} catch (Exception e) {
 			throw new ParseRTException("Could not parse number in location " + location, e);
 		}
-		return new SequenceLocation(split[0], indexContigNameReverseMap, position);
+		return new SequenceLocation(referenceGenome, split[0], indexContigNameReverseMap, position);
 	}
 
 }

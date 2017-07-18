@@ -108,7 +108,7 @@ public class ExtendedSAMRecordTest {
 		alignmentStart1.value = 2;
 
 		Map<String, ExtendedSAMRecord> extSAMCache = new HashMap<>();
-		SequenceLocation location = new SequenceLocation(sr1.getReferenceIndex(),
+		SequenceLocation location = new SequenceLocation("", sr1.getReferenceIndex(),
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		ExtendedSAMRecord e1 =
@@ -315,7 +315,7 @@ public class ExtendedSAMRecordTest {
 		}};
 
 		Map<String, ExtendedSAMRecord> extSAMCache = new HashMap<>();
-		SequenceLocation location = new SequenceLocation(sr1.getReferenceIndex(),
+		SequenceLocation location = new SequenceLocation("", sr1.getReferenceIndex(),
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		ExtendedSAMRecord e1 =
@@ -503,7 +503,7 @@ public class ExtendedSAMRecordTest {
 		}};
 
 		Map<String, ExtendedSAMRecord> extSAMCache = new HashMap<>();
-		SequenceLocation location = new SequenceLocation(sr1.getReferenceIndex(),
+		SequenceLocation location = new SequenceLocation("", sr1.getReferenceIndex(),
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		ExtendedSAMRecord e1 =
@@ -571,7 +571,7 @@ public class ExtendedSAMRecordTest {
 		}};
 
 		Map<String, ExtendedSAMRecord> extSAMCache = new HashMap<>();
-		SequenceLocation location = new SequenceLocation(sr1.getReferenceIndex(),
+		SequenceLocation location = new SequenceLocation("", sr1.getReferenceIndex(),
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);

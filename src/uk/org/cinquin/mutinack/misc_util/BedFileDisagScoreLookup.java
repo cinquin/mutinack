@@ -62,7 +62,7 @@ public class BedFileDisagScoreLookup {
 		final BedReader scores;
 		try (BufferedReader br = new BufferedReader(new FileReader(
 				new File(scoreBedFile)))) {
-			scores = new BedReader(contigNames, br, "scores reader", null, Collections.emptyMap(), true);
+			scores = new BedReader(contigNames, br, "scores reader", "", null, Collections.emptyMap(), true);
 		}
 
 		SettableInteger inRange = new SettableInteger(0);
@@ -85,7 +85,7 @@ public class BedFileDisagScoreLookup {
 				final String contig = split[0];
 				final int position = Integer.parseInt(split[1]);
 				Collection<GenomeInterval> intervals = scores.apply(
-					new SequenceLocation(contigNames.indexOf(contig),
+					new SequenceLocation("", contigNames.indexOf(contig),
 						contigNames, position));
 
 				List<String> addToEnd = new ArrayList<>();

@@ -238,7 +238,7 @@ public class PosByPosProtoManip {
 			final int contigId = Objects.requireNonNull(contigIndices.get(contigName));
 
 			for (int i = initialI; i <= finalI; i++) {
-				processor.accept(new SequenceLocation(contigId, contigName, i), numbers1[i]);
+				processor.accept(new SequenceLocation("", contigId, contigName, i), numbers1[i]);
 			}
 		}
 	}
@@ -266,7 +266,7 @@ public class PosByPosProtoManip {
 		GenomeFeatureTester reader;
 		try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 			GenomeFeatureTester reader0 = new BedReader(contigNames0,
-					new BufferedReader(fileReader),
+					new BufferedReader(fileReader), "",
 					argValues.domainBedFile, null);
 			if (argValues.invertInputs) {
 				System.err.println("Inverting input bed " + argValues.domainBedFile);
@@ -304,7 +304,7 @@ public class PosByPosProtoManip {
 		for (String s: contigNames0) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
-					new GenomeInterval("", contigIndex++, s, -1, -1, null, Util.emptyOptional(), 0, null)));
+					new GenomeInterval("", contigIndex++, "", s, -1, -1, null, Util.emptyOptional(), 0, null)));
 		}
 
 		for (GenomeInterval interval: resultIntervals) {
@@ -375,7 +375,7 @@ public class PosByPosProtoManip {
 		if (!argValues.domainBedFile.isEmpty()) {
 			try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 				GenomeFeatureTester reader0 = new BedReader(contigNames0,
-						new BufferedReader(fileReader),
+						new BufferedReader(fileReader), "",
 						argValues.domainBedFile, null);
 				if (argValues.invertInputs) {
 					System.err.println("Inverting input bed " + argValues.domainBedFile);
@@ -417,7 +417,7 @@ public class PosByPosProtoManip {
 
 				for (int i = initialI; i <= finalI; i++) {
 					if (reader != null) {
-						if (!reader.test(new SequenceLocation(contigId, contigName, i))) {
+						if (!reader.test(new SequenceLocation("", contigId, contigName, i))) {
 							continue;
 						}
 					}

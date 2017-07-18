@@ -60,7 +60,7 @@ public class TestPhredLigSiteFormatting {
 				new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, settings),
 					null, false);
 
-			phredAndLigSiteDistance.accept(new SequenceLocation(0, "chrI", 0),
+			phredAndLigSiteDistance.accept(new SequenceLocation("", 0, "chrI", 0),
 				new ComparablePair<>(2,3));
 
 			ObjectMapper mapper = new ObjectMapper();

@@ -84,12 +84,13 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 	@SuppressWarnings("resource")
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			List<@NonNull String> contigNames, @NonNull String readerName,
+			List<@NonNull String> contigNames, @NonNull String readerName, @NonNull String referenceGenomeName,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap) {
 		@NonNull BedReader result = FileCache.getCached(path0, cacheExtension, path -> {
 			try {
 				return new BedReader(contigNames,
-					new BufferedReader(new FileReader(new File(path))), readerName, null, transcriptToGeneNameMap, false);
+					new BufferedReader(new FileReader(new File(path))), readerName, referenceGenomeName, null,
+						transcriptToGeneNameMap, false);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -99,8 +100,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	}
 
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			List<@NonNull String> contigNames, @NonNull String readerName) {
-		return getCachedBedFileReader(path0, cacheExtension, contigNames, readerName,
+			List<@NonNull String> contigNames, @NonNull String readerName, @NonNull String referenceGenomeName) {
+		return getCachedBedFileReader(path0, cacheExtension, contigNames, readerName, referenceGenomeName,
 			Collections.emptyMap());
 	}
 
@@ -128,14 +129,16 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			List<@NonNull String> contigNames,
 			BufferedReader reader,
 			@NonNull String readerName,
+			@NonNull String referenceGenomeName,
 			BufferedReader suppInfoReader) {
-		this(contigNames, reader, readerName, suppInfoReader, Collections.emptyMap(), false);
+		this(contigNames, reader, readerName, referenceGenomeName, suppInfoReader, Collections.emptyMap(), false);
 	}
 
 	public BedReader(
 			List<@NonNull String> contigNames,
 			BufferedReader reader,
 			@NonNull String readerName,
+			@NonNull String referenceGenomeName,
 			@Nullable BufferedReader suppInfoReader,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
 			boolean parseScore) throws ParseRTException {
@@ -151,7 +154,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		for (int i = 0; i < contigNames.size(); i++) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(contigNames.get(i), new IntervalTree.IntervalData<>(-1, -1,
-					new GenomeInterval("", i, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null)));
+					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null)));
 		}
 
 		try(Stream<String> lines = reader.lines()) {
@@ -228,7 +231,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 							throw new IllegalArgumentException("Could not find contig " + components[0]);
 						}
 					}
-					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex,
+					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex, referenceGenomeName,
 							/*contig*/ components[0].intern(), start, end, length, strandPolarity, score,
 							transcriptToGeneNameMap.get(name));
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));

@@ -206,7 +206,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 													loc.position >= min &&
 													loc.position < max;
 										});
-								counter.accept(new SequenceLocation(contig,
+								counter.accept(new SequenceLocation(analysisParameters.referenceGenomeShortName, contig,
 									Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE), 0);
 							} catch (IllegalArgumentException | IllegalAccessException e) {
 								throw new RuntimeException(e);
@@ -235,7 +235,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 				for (int contig = 0; contig < contigNames.size(); contig++) {
 					for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
 							contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
-						SequenceLocation location = new SequenceLocation(contig,
+						SequenceLocation location = new SequenceLocation(analysisParameters.referenceGenomeShortName, contig,
 							Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE);
 						topBottomSubstDisagreementsQ2.accept(location, disag, 0);
 						codingStrandSubstQ2.accept(location, cpMut, 0);

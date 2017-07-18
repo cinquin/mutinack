@@ -43,11 +43,11 @@ public class MutationListReader {
 	@SuppressWarnings("resource")
 	public static Map<Pair<@NonNull SequenceLocation, @NonNull String>,
 			@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> readMutationList(
-		String path, String readerName, List<@NonNull String> contigNames,
+				String path, String readerName, List<@NonNull String> contigNames, @NonNull String referenceGenomeName,
 		@NonNull Set<String> sampleNames, @NonNull Set<String> unknownSamples) {
 		try {
 			return readMutationList(new BufferedReader(new FileReader(new File(path))), readerName,
-				contigNames, sampleNames, unknownSamples);
+				contigNames, referenceGenomeName, sampleNames, unknownSamples);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -55,8 +55,9 @@ public class MutationListReader {
 
 	public static ConcurrentMap<Pair<@NonNull SequenceLocation, @NonNull String>,
 		@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> readMutationList(
-		BufferedReader reader, String readerName, List<@NonNull String> contigNames,
-		@NonNull Set<String> sampleNames, @NonNull Set<String> unknownSamples) {
+			BufferedReader reader, String readerName, List<@NonNull String> contigNames,
+			@NonNull String referenceGenomeName,
+			@NonNull Set<String> sampleNames, @NonNull Set<String> unknownSamples) {
 
 		final ConcurrentMap<Pair<@NonNull SequenceLocation, @NonNull String>,
 				@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> result =
@@ -85,7 +86,7 @@ public class MutationListReader {
 						throw new IllegalArgumentException("Could not find contig " + contigName);
 					}
 					final SequenceLocation location =
-						new SequenceLocation(contigIndex, contigName, (int) position, mutationKind.equals("insertion"));
+						new SequenceLocation(referenceGenomeName, contigIndex, contigName, (int) position, mutationKind.equals("insertion"));
 					final Mutation mutation;
 					switch(mutationKind) {
 						case "substitution":

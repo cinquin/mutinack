@@ -177,7 +177,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				for (int i = 0; i < nSubAnalyzers; i++) {
 					SubAnalyzer sub = analysisChunk.subAnalyzers.get(i);
 					if (NONTRIVIAL_ASSERTIONS && nIterations > 1 && sub.candidateSequences.containsKey(
-							new SequenceLocation(contigIndex, contigName, analysisChunk.lastProcessedPosition))) {
+							new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName, analysisChunk.lastProcessedPosition))) {
 						throw new AssertionFailedException();
 					}
 					if (saveLastProcessedPosition + 1 <= targetStopPosition && (statsIndex == 0 || !sub.stats.canSkipDuplexLoading)) {
@@ -191,7 +191,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						position ++) {
 
 					final @NonNull SequenceLocation location =
-						new SequenceLocation(contigIndex, contigName, position,
+						new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName, position,
 							Objects.requireNonNull(insertion));
 
 					for (GenomeFeatureTester tester: excludeBEDs) {
@@ -212,7 +212,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						//however that different parameter sets may lead to different duplex
 						//grouping, which will not be apparent in BAM output
 						final @NonNull SequenceLocation locationNoPH =
-							new SequenceLocation(contigIndex, contigName, position, false);
+							new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName, position, false);
 						prepareReadsToWrite(
 							locationNoPH,
 							analysisChunk,
@@ -258,7 +258,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			if (nIterations < 2) {
 				nIterations++;
 				final SequenceLocation lowerBound =
-					new SequenceLocation(contigIndex, contigName, analysisChunk.lastProcessedPosition);
+					new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName, analysisChunk.lastProcessedPosition);
 				analysisChunk.subAnalyzers.
 				forEach(subAnalyzer -> subAnalyzer.candidateSequences.retainEntries((key, val) -> {
 					Assert.isTrue(key.contigIndex == contigIndex,
@@ -272,7 +272,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				//Check no sequences have been left behind
 				analysisChunk.subAnalyzersParallel.
 				forEach(subAnalyzer -> {
-					final SequenceLocation lowerBound = new SequenceLocation(contigIndex, contigName,
+					final SequenceLocation lowerBound = new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName,
 						analysisChunk.lastProcessedPosition);
 					subAnalyzer.candidateSequences.forEach(
 							e -> {

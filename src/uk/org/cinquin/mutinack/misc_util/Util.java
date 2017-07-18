@@ -121,8 +121,8 @@ public class Util {
 		}
 	}
 
-	public static @NonNull List<@NonNull SequenceLocation> parseListStartStopLocations(List<String> l,
-			Map<String, Integer> indexContigNameReverseMap) {
+	public static @NonNull List<@NonNull SequenceLocation> parseListStartStopLocations(
+			@NonNull String referenceGenomeName, List<String> l, Map<String, Integer> indexContigNameReverseMap) {
 		return l.stream().flatMap
 			(s -> {
 				final List<SequenceLocation> result = new ArrayList<>();
@@ -132,9 +132,9 @@ public class Util {
 				}
 				final SequenceLocation start, stop;
 				try {
-					start = SequenceLocation.parse(startStop[0], indexContigNameReverseMap);
+					start = SequenceLocation.parse(referenceGenomeName, startStop[0], indexContigNameReverseMap);
 					stop = startStop.length == 1 ? start :
-						SequenceLocation.parse(startStop[1], indexContigNameReverseMap);
+						SequenceLocation.parse(referenceGenomeName, startStop[1], indexContigNameReverseMap);
 				} catch (RuntimeException e) {
 					throw new ParseRTException("Error parsing start/stop positions in " +
 						s, e);
@@ -145,7 +145,7 @@ public class Util {
 				}
 
 				for (int i = start.position; i <= stop.position; i++) {
-					result.add(new SequenceLocation(start.contigName, indexContigNameReverseMap,
+					result.add(new SequenceLocation(referenceGenomeName, start.contigName, indexContigNameReverseMap,
 						i));
 				}
 

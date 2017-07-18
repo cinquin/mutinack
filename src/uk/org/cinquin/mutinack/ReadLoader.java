@@ -151,7 +151,7 @@ public class ReadLoader {
 			try {
 
 				if (contigs.get(0).equals(contigName)) {
-					final SequenceLocation contigLocation = new SequenceLocation(contigIndex, contigName, 0);
+					final SequenceLocation contigLocation = new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName, 0);
 					analyzer.stats.forEach(s -> s.nRecordsInFile.add(contigLocation, Util.getTotalReadCount(bamReader)));
 				}
 
@@ -218,7 +218,8 @@ public class ReadLoader {
 						}
 
 						final @NonNull SequenceLocation location =
-							SequenceLocation.get(locationInterningSet, contigIndex, contigName, samRecord.getAlignmentStart());
+							SequenceLocation.get(locationInterningSet, contigIndex, param.referenceGenomeShortName,
+								contigName, samRecord.getAlignmentStart());
 
 						if (!samRecord.getReadPairedFlag()) {
 							if (!analyzer.notifiedUnpairedReads) {
@@ -494,8 +495,8 @@ public class ReadLoader {
 
 				if (analysisChunk.lastProcessedPosition < truncateAtPosition) {
 					readsToProcess.forEach((k, v) -> {
-						final SequenceLocation location = SequenceLocation.get(locationInterningSet, contigIndex, contigName,
-							v.fst.record.getAlignmentStart());
+						final SequenceLocation location = SequenceLocation.get(locationInterningSet, contigIndex,
+							param.referenceGenomeShortName, contigName, v.fst.record.getAlignmentStart());
 						subAnalyzer.processRead(location, locationInterningSet, v.fst, v.snd);
 					});
 				}

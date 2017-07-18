@@ -656,7 +656,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			synchronized (this) {
 				if (!triedRetrievingMateFromFile) {
 					mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
-						new SequenceLocation(record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
+						new SequenceLocation(location.referenceGenome, record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
 							record.getMateAlignmentStart() - 1, false) , -1, 1);
 					triedRetrievingMateFromFile = true;
 				}
@@ -710,7 +710,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	private SequenceLocation unclippedEndHelper(boolean noMatePosition) {
-		return new SequenceLocation(getLocation().contigIndex, groupSettings.getContigNames(),
+		return new SequenceLocation(location.referenceGenome, getLocation().contigIndex, groupSettings.getContigNames(),
 			noMatePosition ? NO_MATE_POSITION : record.getUnclippedEnd() - 1 - intronAdjustment(16, true));
 	}
 
@@ -723,7 +723,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	private SequenceLocation unclippedStartHelper(boolean noMatePosition) {
-		return new SequenceLocation(getLocation().contigIndex, groupSettings.getContigNames(),
+		return new SequenceLocation(location.referenceGenome, getLocation().contigIndex, groupSettings.getContigNames(),
 			noMatePosition ? NO_MATE_POSITION : record.getUnclippedStart() - 1 + intronAdjustment(16, false));
 	}
 
@@ -871,7 +871,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 					if (record.getReadName().equals(name) && record.getFirstOfPairFlag() == firstOfPair &&
 							record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
 						return SubAnalyzer.getExtendedNoCaching(record,
-							new SequenceLocation(location.contigName, analyzer.groupSettings.indexContigNameReverseMap,
+							new SequenceLocation(location.referenceGenome, location.contigName, analyzer.groupSettings.indexContigNameReverseMap,
 								record.getAlignmentStart() - 1, false), analyzer);
 					}
 				}

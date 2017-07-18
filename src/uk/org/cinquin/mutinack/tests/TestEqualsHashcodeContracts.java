@@ -37,7 +37,7 @@ public class TestEqualsHashcodeContracts {
 	@Ignore//Fails because hashCode does not rely on referenceGenome, which is by design
 	public void seqLocEqualsContract1() {
 		EqualsVerifier.forClass(SequenceLocation.class).withCachedHashCode(
-				"hash", "computeHash", new SequenceLocation(0, "", 0)).suppress(Warning.NULL_FIELDS).verify();
+				"hash", "computeHash", new SequenceLocation("", 0, "", 0)).suppress(Warning.NULL_FIELDS).verify();
 	}
 
 	@Test

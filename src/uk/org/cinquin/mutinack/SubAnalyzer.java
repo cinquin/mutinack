@@ -1683,12 +1683,12 @@ public final class SubAnalyzer {
 			final SequenceLocation locationPH =
 				i < nBlockBases - 1 ? //No insertion or deletion; make a note of it
 					SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-						extendedRec.getLocation().getContigName(), refPosition, true)
+						param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refPosition, true)
 				:
 					null;
 
 			location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-				extendedRec.getLocation().getContigName(), refPosition);
+				param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refPosition);
 
 			if (baseQualities[readPosition] < param.minBasePhredScoreQ1) {
 				stats.nBasesBelowPhredScore.increment(location);
@@ -2027,9 +2027,9 @@ public final class SubAnalyzer {
 			final int deletionLength = refPosition - (refEndOfPreviousAlignment + 1);
 			final @NonNull SequenceLocation newLocation =
 				SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-					extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1);
+					param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1);
 			final @NonNull SequenceLocation deletionEnd = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-				extendedRec.getLocation().getContigName(), newLocation.position + deletionLength);
+				param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), newLocation.position + deletionLength);
 
 			final byte @Nullable[] deletedSequence = isIntron ? null :
 				Arrays.copyOfRange(ref.getBases(), refEndOfPreviousAlignment + 1, refPosition);
@@ -2040,7 +2040,7 @@ public final class SubAnalyzer {
 			if (!isIntron) {
 				for (int i = 1; i < deletionLength; i++) {
 					SequenceLocation location2 = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-						extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
+						param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment + 1 + i);
 					CandidateSequence hiddenCandidate = new CandidateDeletion(
 						this, deletedSequence, location2, extendedRec, Integer.MAX_VALUE, MutationType.DELETION,
 						newLocation, deletionEnd);
@@ -2057,7 +2057,7 @@ public final class SubAnalyzer {
 			CandidateSequence candidate = new CandidateDeletion(this,
 				deletedSequence, newLocation, extendedRec, distance, isIntron ? MutationType.INTRON : MutationType.DELETION,
 				newLocation, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-					extendedRec.getLocation().getContigName(), refPosition));
+					param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refPosition));
 
 			if (!extendedRec.formsWrongPair()) {
 				candidate.acceptLigSiteDistance(distance);
@@ -2097,7 +2097,7 @@ public final class SubAnalyzer {
 			final boolean readOnNegativeStrand) {
 
 		final @NonNull SequenceLocation location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-			extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
+			param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
 		int distance0 = extendedRec.tooCloseToBarcode(readEndOfPreviousAlignment, param.ignoreFirstNBasesQ1);
 		int distance1 = extendedRec.tooCloseToBarcode(readPosition, param.ignoreFirstNBasesQ1);
 		int distance = Math.max(distance0, distance1);

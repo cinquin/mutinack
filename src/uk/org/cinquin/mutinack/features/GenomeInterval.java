@@ -38,6 +38,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 
 	private static final long serialVersionUID = -8173244932350184778L;
 	public final String name;
+	public final @NonNull String referenceGenomeName;
 	public final @Nullable String geneName;
 	public final @NonNull String contigName;
 	public final int contigIndex;
@@ -48,9 +49,11 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	private final @JsonIgnore Interval<Integer> interval;
 	private @Nullable Boolean negativeStrand;
 
-	public GenomeInterval(String name, int contigIndex, @NonNull String contigName, int start, int end, Integer length,
+	public GenomeInterval(String name, int contigIndex, @NonNull String referenceGenomeName,
+			@NonNull String contigName, int start, int end, Integer length,
 			@NonNull Optional<Boolean> negativeStrand, float score, String geneName) {
 		this.name = name;
+		this.referenceGenomeName = referenceGenomeName;
 		this.contigName = contigName;
 		this.contigIndex = contigIndex;
 		this.start = start;
@@ -71,7 +74,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	}
 
 	public @NonNull SequenceLocation getStartLocation() {
-		return new SequenceLocation(contigIndex, contigName, start);
+		return new SequenceLocation(referenceGenomeName, contigIndex, contigName, start);
 	}
 
 	public void setNegativeStrand(@NonNull Optional<Boolean> negativeStrand) {

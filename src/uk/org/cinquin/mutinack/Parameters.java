@@ -412,10 +412,10 @@ public final class Parameters implements Serializable, Cloneable {
 	@FilePath
 	@Parameter(names = "-referenceGenome", description = "Reference genome in FASTA format; index file must be present",
 		required = true)
-	public @Column(length = 1_000) String referenceGenome = "";
+	public @NonNull @Column(length = 1_000) String referenceGenome = "";
 
 	@Parameter(names = "-referenceGenomeShortName", description = "e.g. ce10, hg19, etc.", required = true)
-	public String referenceGenomeShortName = "";
+	public @NonNull String referenceGenomeShortName = "";
 
 	@Parameter(names = "-contigNamesToProcess", description =
 			"Reads not mapped to any of these contigs will be ignored")

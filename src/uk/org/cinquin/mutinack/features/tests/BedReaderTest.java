@@ -39,7 +39,7 @@ public class BedReaderTest {
 
 	public BedReaderTest() throws IOException {
 		contigNames1 = new ArrayList<>(contigNames);
-		bc = new BedReader(contigNames1, new BufferedReader(new StringReader(bed)),
+		bc = new BedReader(contigNames1, new BufferedReader(new StringReader(bed)), "",
 			"test reader", null);
 	}
 
@@ -59,25 +59,25 @@ public class BedReaderTest {
 	final BedReader bc;
 	@Test
 	public void test() throws ParseRTException {
-		assertTrue(bc.test(new SequenceLocation(0, contigNames1, 6_028_500)));
-		assertFalse(bc.test(new SequenceLocation(0, contigNames1, 6_028_499)));
-		assertFalse(bc.test(new SequenceLocation(1, contigNames1, 6_028_500)));
-		assertTrue(bc.test(new SequenceLocation(6, contigNames1, 7_824_630)));
-		assertTrue(bc.test(new SequenceLocation(6, contigNames1, 7_824_631)));
-		assertFalse(bc.test(new SequenceLocation(6, contigNames1, 7_825_216)));
-		assertFalse(bc.test(new SequenceLocation(6, contigNames1, 0)));
-		assertFalse(bc.test(new SequenceLocation(6, contigNames1, Integer.MAX_VALUE)));
-		assertFalse(bc.test(new SequenceLocation(0, contigNames1, 0)));
+		assertTrue(bc.test(new SequenceLocation("", 0, contigNames1, 6_028_500)));
+		assertFalse(bc.test(new SequenceLocation("", 0, contigNames1, 6_028_499)));
+		assertFalse(bc.test(new SequenceLocation("", 1, contigNames1, 6_028_500)));
+		assertTrue(bc.test(new SequenceLocation("", 6, contigNames1, 7_824_630)));
+		assertTrue(bc.test(new SequenceLocation("", 6, contigNames1, 7_824_631)));
+		assertFalse(bc.test(new SequenceLocation("", 6, contigNames1, 7_825_216)));
+		assertFalse(bc.test(new SequenceLocation("", 6, contigNames1, 0)));
+		assertFalse(bc.test(new SequenceLocation("", 6, contigNames1, Integer.MAX_VALUE)));
+		assertFalse(bc.test(new SequenceLocation("", 0, contigNames1, 0)));
 	}
 
 	@Test(expected=IndexOutOfBoundsException.class)
 	public void testOutOfBounds() {
-		assertFalse(bc.test(new SequenceLocation(7, "", 7)));
+		assertFalse(bc.test(new SequenceLocation("", 7, "", 7)));
 	}
 
 	@Test(expected=IndexOutOfBoundsException.class)
 	public void testOutOfBounds2() {
-		assertFalse(bc.test(new SequenceLocation(Integer.MAX_VALUE, "", Integer.MAX_VALUE)));
+		assertFalse(bc.test(new SequenceLocation("", Integer.MAX_VALUE, "", Integer.MAX_VALUE)));
 	}
 
 	@SuppressWarnings("unused")
@@ -92,7 +92,7 @@ public class BedReaderTest {
 				"chrX	7823625	7825216	NM_182444	0	+	7823625	7825216	0	4	\"313,32,687,258,\"	\"0,463,597,1333,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" +
 				"";
 
-		new BedReader(contigNames1, new BufferedReader(new StringReader(bed1)),
+		new BedReader(contigNames1, new BufferedReader(new StringReader(bed1)), "",
 			"test reader", null);
 		throw new RuntimeException();
 	}
@@ -109,7 +109,7 @@ public class BedReaderTest {
 				"chrX	7823625	7825216	NM_182444	0	+	7823625	7825216	0	4	\"313,32,687,258,\"	\"0,463,597,1333,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" +
 				"";
 
-		new BedReader(contigNames1, new BufferedReader(new StringReader(bed2)),
+		new BedReader(contigNames1, new BufferedReader(new StringReader(bed2)), "",
 			"test reader", null);
 		throw new RuntimeException();
 	}
@@ -124,7 +124,7 @@ public class BedReaderTest {
 				"chrX	7823625	7825216	NM_182444	0	+	7823625	7825216	0	4	\"313,32,687,258,\"	\"0,463,597,1333,\"	R03G5.1	Caenorhabditis elegans	Elongation FacTor\n" +
 				"";
 
-		new BedReader(contigNames1, new BufferedReader(new StringReader(bed3)),
+		new BedReader(contigNames1, new BufferedReader(new StringReader(bed3)), "",
 			"test reader", null);
 		throw new RuntimeException();
 	}

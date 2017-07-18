@@ -45,19 +45,22 @@ public class AnalysisChunk {
 		subAnalyzers.asParallel(StaticStuffToAvoidMutating.getExecutorService(), 1);
 	public @NonNull final MutinackGroup groupSettings;
 	public final int nParameterSets;
+	public final @NonNull String referenceGenomeName;
 
 	public final Map<SubAnalyzer, ProcessingStats> processingStats = new HashMap<>();
 
-	public AnalysisChunk(@NonNull String contigName, int nParameterSets, @NonNull MutinackGroup groupSettings) {
+	public AnalysisChunk(@NonNull String referenceGenomeName, @NonNull String contigName, int nParameterSets,
+			@NonNull MutinackGroup groupSettings) {
 		this.contigName = contigName;
 		this.nParameterSets = nParameterSets;
 		this.groupSettings = groupSettings;
+		this.referenceGenomeName = referenceGenomeName;
 	}
 
 	@Override
 	public String toString() {
-		return new SequenceLocation(contig, contigName, startAtPosition) + " -> " +
-			new SequenceLocation(contig, contigName, terminateAtPosition);
+		return new SequenceLocation(referenceGenomeName, contig, contigName, startAtPosition) + " -> " +
+			new SequenceLocation(referenceGenomeName, contig, contigName, terminateAtPosition);
 	}
 
 	public static class ProcessingStats {
