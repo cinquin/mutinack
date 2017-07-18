@@ -186,7 +186,7 @@ public class Mutinack implements Actualizable, Closeable {
 			"nQ1Q2Duplexes", "nDuplexes", "nConcurringReads", "fractionConcurringQ2Duplexes",
 			"fractionConcurringQ1Q2Duplexes", "fractionConcurringDuplexes", "fractionConcurringReads",
 			"averageMappingQuality",
-			"fractionTopStrandReads", "topAndBottomStrandsPresent",
+			"fractionTopStrandReads", "topAndBottomStrandsPresent", "sequenceContext",
 			"nDuplexesSisterArm", "insertSize", "insertSizeAtPos10thP",
 			"insertSizeAtPos90thP", "minDistanceLigSite", "maxDistanceLigSite", "negativeCodingStrand",
 			"meanDistanceLigSite", "probCollision", "positionInRead", "readEffectiveLength",
