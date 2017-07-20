@@ -822,7 +822,9 @@ public final class Duplex implements HasInterval<Integer> {
 							(presentStrand.count / total));
 				}
 			}
-			dq.addUnique(MISSING_STRAND, DUBIOUS);
+			if (param.minReadsPerStrandQ2 > 0) {
+				dq.addUnique(MISSING_STRAND, DUBIOUS);
+			}
 		}
 
 		final boolean enoughReadsForQ2Disag =
