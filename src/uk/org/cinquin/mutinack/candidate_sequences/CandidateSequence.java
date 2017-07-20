@@ -1156,14 +1156,21 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return goodCandidateForUniqueMutation;
 	}
 
+	@SuppressWarnings("static-method")
+	protected Comparator<Duplex> getDuplexQualityComparator() {
+		return duplexQualitycomparator;
+	}
+
+	private static final Comparator<Duplex> duplexQualitycomparator =
+		Comparator.comparing((Duplex dr) -> CandidateSequence.staticFilterQuality(dr.localAndGlobalQuality)).
+		thenComparing(Comparator.comparing((Duplex dr) -> dr.allRecords.size())).
+		thenComparing(Duplex::getUnclippedAlignmentStart);
+
 	@SuppressWarnings("ReferenceEquality")
 	public int computeNQ1PlusConcurringDuplexes(Histogram concurringDuplexDistances, Parameters param) {
 		MutableIntList alignmentStarts = IntLists.mutable.empty();
 
-		final Duplex bestSupporting = getDuplexes().stream().
-			max(Comparator.comparing((Duplex dr) -> filterQuality(dr.localAndGlobalQuality)).
-				thenComparing(Comparator.comparing((Duplex dr) -> dr.allRecords.size())).
-				thenComparing(Duplex::getUnclippedAlignmentStart)).get();
+		final Duplex bestSupporting = getDuplexes().max(getDuplexQualityComparator());
 
 		//Exclude duplexes whose reads all have an unmapped mate from the count
 		//of Q1-Q2 duplexes that agree with the mutation; otherwise failed reads
@@ -1211,9 +1218,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return matchingGenomeIntervals;
 	}
 
+	public static @NonNull Quality staticFilterQuality(DetailedQualities<DuplexAssay> localAndGlobalQuality) {
+		return localAndGlobalQuality.getNonNullValue();
+	}
+
 	@SuppressWarnings("static-method")
 	public @NonNull Quality filterQuality(DetailedQualities<DuplexAssay> localAndGlobalQuality) {
-		return localAndGlobalQuality.getNonNullValue();
+		return staticFilterQuality(localAndGlobalQuality);
 	}
 
 	@SuppressWarnings("static-method")
