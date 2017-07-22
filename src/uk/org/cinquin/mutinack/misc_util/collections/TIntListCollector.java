@@ -19,12 +19,15 @@ package uk.org.cinquin.mutinack.misc_util.collections;
 
 import java.util.stream.Collector;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 
 public class TIntListCollector {
 
-	public static<T> Collector<Integer, TIntList, TIntList> tIntListCollector() {
+	//Unused
+	public static<T> Collector<@NonNull Integer, TIntList, TIntList> tIntListCollector() {
 		return Collector.of(
 				TIntArrayList::new,
 				TIntList::add,
