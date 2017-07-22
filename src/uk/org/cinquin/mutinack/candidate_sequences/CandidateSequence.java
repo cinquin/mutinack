@@ -135,6 +135,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int nQ1PlusConcurringDuplexes = -1;
 	private float fractionTopStrandReads;
 	private boolean topAndBottomStrandsPresent;
+	private int topStrandDuplexes = -1;
+	private int bottomStrandDuplexes = -1;
 
 	private int negativeStrandCount = 0, positiveStrandCount = 0;
 
@@ -1241,7 +1243,17 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public void updateQualities(@NonNull Parameters param) {
 	}
 
-	public void setFractionTopStrandReads(float f) {
+	public void computeNBottomTopStrandReads() {
+		final long topReads = getDuplexes().sumOfInt(d -> d.topStrandRecords.size());
+		final float bottomReads = getDuplexes().sumOfInt(d -> d.bottomStrandRecords.size());
+		setFractionTopStrandReads(topReads / (topReads + bottomReads));
+		setTopAndBottomStrandsPresent(topReads > 0 && bottomReads > 0);
+
+		topStrandDuplexes = (int) getDuplexes().sumOfInt(d -> Math.min(1, d.topStrandRecords.size()));
+		bottomStrandDuplexes = (int) getDuplexes().sumOfInt(d -> Math.min(1, d.bottomStrandRecords.size()));
+	}
+
+	private void setFractionTopStrandReads(float f) {
 		this.fractionTopStrandReads = f;
 	}
 
@@ -1253,7 +1265,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return topAndBottomStrandsPresent;
 	}
 
-	public void setTopAndBottomStrandsPresent(boolean topAndBottomStrandsPresent) {
+	private void setTopAndBottomStrandsPresent(boolean topAndBottomStrandsPresent) {
 		this.topAndBottomStrandsPresent = topAndBottomStrandsPresent;
+	}
+
+	public int getTopStrandDuplexes() {
+		return topStrandDuplexes;
+	}
+
+	public int getBottomStrandDuplexes() {
+		return bottomStrandDuplexes;
 	}
 }

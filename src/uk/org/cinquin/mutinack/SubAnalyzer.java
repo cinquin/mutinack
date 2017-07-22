@@ -1067,10 +1067,7 @@ public final class SubAnalyzer {
 			candidate.setTotalGoodDuplexes(totalGoodDuplexes);
 			candidate.setTotalGoodOrDubiousDuplexes(totalGoodOrDubiousDuplexes);
 			candidate.setTotalReadsAtPosition(totalReadsAtPosition);
-			final long topReads = candidate.getDuplexes().sumOfInt(d -> d.topStrandRecords.size());
-			final float bottomReads = candidate.getDuplexes().sumOfInt(d -> d.bottomStrandRecords.size());
-			candidate.setFractionTopStrandReads(topReads / (topReads + bottomReads));
-			candidate.setTopAndBottomStrandsPresent(topReads > 0 && bottomReads > 0);
+			candidate.computeNBottomTopStrandReads();
 		}
 
 		result.nGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;
