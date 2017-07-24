@@ -112,11 +112,11 @@ public class ExtendedSAMRecordTest {
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		ExtendedSAMRecord e1 =
-				new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+				new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
 		ExtendedSAMRecord e2 =
-				new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+				new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(6, e1.getnClipped());
@@ -138,8 +138,8 @@ public class ExtendedSAMRecordTest {
 		alignmentStart1.value = 2;
 		alignmentEnd1.value = 35;
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 
 		Assert.assertEquals(1, e1.getnClipped());
 
@@ -168,8 +168,8 @@ public class ExtendedSAMRecordTest {
 		alignmentEnd1.value = 13;
 		alignmentStart1.value = 4;//3 clipped 3'
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 
 		Assert.assertEquals(28, e1.getnClipped());
 
@@ -180,8 +180,8 @@ public class ExtendedSAMRecordTest {
 		//altogether (on the 5' end)
 
 		alignmentEnd1.value = 14;
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 
 		Assert.assertEquals(3, e1.getnClipped());
 
@@ -205,8 +205,8 @@ public class ExtendedSAMRecordTest {
 		alignmentStart1.value = 4;//3 clipped 3'
 		alignmentEnd1.value = 13;
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 
 		Assert.assertEquals(7, e1.getnClipped());//3 + 4
 
@@ -228,8 +228,8 @@ public class ExtendedSAMRecordTest {
 		alignmentStart1.value = 4;//3 clipped 3'
 		alignmentEnd1.value = 14;
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 
 		Assert.assertEquals(3, e1.getnClipped());//only 3' clipping
 
@@ -251,7 +251,7 @@ public class ExtendedSAMRecordTest {
 		alignmentStart1.value = 4;//3 clipped 3'
 		alignmentEnd1.value = 15;
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 
 		Assert.assertEquals(3, e1.getnClipped());//only 3' clipping
 	}
@@ -319,11 +319,11 @@ public class ExtendedSAMRecordTest {
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		ExtendedSAMRecord e1 =
-				new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+				new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
 		ExtendedSAMRecord e2 =
-				new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+				new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(0, e2.getnClipped());
@@ -339,10 +339,10 @@ public class ExtendedSAMRecordTest {
 
 		}};
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(5, e2.getnClipped());
@@ -358,10 +358,10 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedStart(); result = 31;
 		}};
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(0, e2.getnClipped());
@@ -384,10 +384,10 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedStart(); result = 39;
 		}};
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(5, e2.getnClipped());
@@ -409,10 +409,10 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedStart(); result = 16;
 		}};
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(0, e2.getnClipped());
@@ -434,10 +434,10 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedStart(); result = 17;
 		}};
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(5, e2.getnClipped());
@@ -459,10 +459,10 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedStart(); result = 15;
 		}};
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
-		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache);
+		e2 = new ExtendedSAMRecord(sr2, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e2.getFullName(), e2);
 
 		Assert.assertEquals(0, e2.getnClipped());
@@ -507,7 +507,7 @@ public class ExtendedSAMRecordTest {
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
 		ExtendedSAMRecord e1 =
-				new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+				new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 		extSAMCache.put(e1.getFullName(), e1);
 
 		return e1;
@@ -574,7 +574,7 @@ public class ExtendedSAMRecordTest {
 		SequenceLocation location = new SequenceLocation("", sr1.getReferenceIndex(),
 			sr1.getReferenceName(), sr1.getAlignmentStart());
 
-		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache);
+		e1 = new ExtendedSAMRecord(sr1, analyzer, location, extSAMCache, true);
 
 		Assert.assertArrayEquals("CGGA".getBytes(), e1.variableBarcode);
 		Assert.assertArrayEquals("TTT".getBytes(), e1.constantBarcode);

@@ -1429,15 +1429,17 @@ public final class SubAnalyzer {
 	@NonNull ExtendedSAMRecord getExtended(@NonNull SAMRecord record, @NonNull SequenceLocation location) {
 		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
 		return extSAMCache.computeIfAbsent(readFullName, s ->
-			new ExtendedSAMRecord(record, readFullName, analyzer.stats, analyzer, location, extSAMCache));
+			new ExtendedSAMRecord(record, readFullName, analyzer.stats, analyzer, location, extSAMCache,
+				param.filterOpticalDuplicates));
 	}
 
 	@SuppressWarnings("null")
 	public static @NonNull ExtendedSAMRecord getExtendedNoCaching(@NonNull SAMRecord record,
-			@NonNull SequenceLocation location, Mutinack analyzer) {
+			@NonNull SequenceLocation location, Mutinack analyzer, boolean parseReadNameForPosition) {
 		final @NonNull String readFullName = ExtendedSAMRecord.getReadFullName(record, false);
 		return
-			new ExtendedSAMRecord(record, readFullName, Collections.emptyList(), analyzer, location, null);
+			new ExtendedSAMRecord(record, readFullName, Collections.emptyList(), analyzer, location, null,
+				parseReadNameForPosition);
 	}
 
 	/**

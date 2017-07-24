@@ -175,7 +175,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public ExtendedSAMRecord(@NonNull SAMRecord rec, @NonNull String fullName,
 			@NonNull List<@NonNull AnalysisStats> stats,
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
-			@Nullable Map<String, ExtendedSAMRecord> extSAMCache) {
+			@Nullable Map<String, ExtendedSAMRecord> extSAMCache,
+			boolean parseReadNameForPosition) {
 
 		this.groupSettings = Objects.requireNonNull(analyzer.groupSettings);
 		this.analyzer = Objects.requireNonNull(analyzer);
@@ -292,16 +293,22 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			constantBarcode = DUMMY_BARCODE;
 		}
 
-		String readName = record.getReadName();
-		int endFirstChunk = nthIndexOf(readName, ':', 5);
-		//Interning below required for equality checks performed in optical duplicate detection
-		runAndTile = record.getReadName().substring(0, endFirstChunk).intern();
-		byte[] readNameBytes = readName.getBytes();
+		if (parseReadNameForPosition) {
+			String readName = record.getReadName();
+			int endFirstChunk = nthIndexOf(readName, ':', 5);
+			//Interning below required for equality checks performed in optical duplicate detection
+			runAndTile = record.getReadName().substring(0, endFirstChunk).intern();
+			byte[] readNameBytes = readName.getBytes();
 
-		xLoc = parseInt(readNameBytes, endFirstChunk + 1);
-		int endXLoc = readName.indexOf(':', endFirstChunk + 1);
-		yLoc = parseInt(readNameBytes, endXLoc + 1);
-		//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
+			xLoc = parseInt(readNameBytes, endFirstChunk + 1);
+			int endXLoc = readName.indexOf(':', endFirstChunk + 1);
+			yLoc = parseInt(readNameBytes, endXLoc + 1);
+			//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
+		} else {
+			xLoc = -1;
+			yLoc = -1;
+			runAndTile = "";
+		}
 	}
 
 	@SuppressWarnings("unused")
@@ -370,9 +377,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public ExtendedSAMRecord(@NonNull SAMRecord rec,
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
-			@NonNull Map<String, ExtendedSAMRecord> extSAMCache) {
+			@NonNull Map<String, ExtendedSAMRecord> extSAMCache,
+			boolean parseReadNameForPosition) {
 		this(rec, getReadFullName(rec, false),
-				analyzer.stats, analyzer, location, extSAMCache);
+				analyzer.stats, analyzer, location, extSAMCache, parseReadNameForPosition);
 	}
 
 	public byte @NonNull[] getMateVariableBarcode() {
@@ -657,7 +665,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				if (!triedRetrievingMateFromFile) {
 					mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
 						new SequenceLocation(location.referenceGenome, record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
-							record.getMateAlignmentStart() - 1, false) , -1, 1);
+							record.getMateAlignmentStart() - 1, false) , -1, 1, !runAndTile.isEmpty());
 					triedRetrievingMateFromFile = true;
 				}
 			}
@@ -850,7 +858,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	 * @return
 	 */
 	public static @Nullable ExtendedSAMRecord getRead(Mutinack analyzer, String name, boolean firstOfPair,
-			SequenceLocation location, int avoidAlignmentStart0Based, int windowHalfWidth) {
+			SequenceLocation location, int avoidAlignmentStart0Based, int windowHalfWidth,
+			boolean parseReadNameForPosition) {
 
 		SAMFileReader bamReader;
 		try {
@@ -872,7 +881,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 							record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
 						return SubAnalyzer.getExtendedNoCaching(record,
 							new SequenceLocation(location.referenceGenome, location.contigName, analyzer.groupSettings.indexContigNameReverseMap,
-								record.getAlignmentStart() - 1, false), analyzer);
+								record.getAlignmentStart() - 1, false), analyzer, parseReadNameForPosition);
 					}
 				}
 				return null;
