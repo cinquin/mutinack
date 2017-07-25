@@ -120,10 +120,15 @@ public class StaticStuffToAvoidMutating {
 		Map<String, ReferenceSequence> sequences = contigSequences.computeIfAbsent(referenceGenomeName, name ->
 			new ConcurrentHashMap<>());
 
-		if (contigNames == null)
+		if (contigNames == null) {
+			if (refFile.getSequenceDictionary() == null) {
+				throw new IllegalArgumentException("Cannot have null contigNames if .dict file is missing for genome "
+					+ referenceGenomePath);
+			}
 			contigNames = refFile.getSequenceDictionary().getSequences().stream().map(x ->
 					Objects.requireNonNull(x.getSequenceName())).
 				collect(Collectors.toList());
+		}
 		for (String contigName: contigNames) {
 			sequences.computeIfAbsent(contigName, name -> {
 				try {
