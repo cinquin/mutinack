@@ -21,9 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
@@ -32,9 +32,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import contrib.net.sf.picard.reference.ReferenceSequence;
 import contrib.net.sf.picard.reference.ReferenceSequenceFile;
@@ -100,10 +102,11 @@ public class StaticStuffToAvoidMutating {
 		StaticStuffToAvoidMutating.executorService = executorService;
 	}
 
+	@SuppressWarnings("null")
 	public static void loadContigs(
 			String referenceGenomeName,
 			String referenceGenomePath,
-			List<@NonNull String> contigNames) {
+			@Nullable Collection<@NonNull String> contigNames) {
 		ReferenceSequenceFile refFile = refFiles.computeIfAbsent(referenceGenomeName, name -> {
 			try {
 				return ReferenceSequenceFileFactory.getReferenceSequenceFile(
@@ -117,6 +120,10 @@ public class StaticStuffToAvoidMutating {
 		Map<String, ReferenceSequence> sequences = contigSequences.computeIfAbsent(referenceGenomeName, name ->
 			new ConcurrentHashMap<>());
 
+		if (contigNames == null)
+			contigNames = refFile.getSequenceDictionary().getSequences().stream().map(x ->
+					Objects.requireNonNull(x.getSequenceName())).
+				collect(Collectors.toList());
 		for (String contigName: contigNames) {
 			sequences.computeIfAbsent(contigName, name -> {
 				try {
