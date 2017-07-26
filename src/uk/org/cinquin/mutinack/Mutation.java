@@ -201,15 +201,35 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 		if (this.equals(o)) {
 			return 0;
 		}
-		if (mutationSequence != null && o.mutationSequence != null &&
-				mutationSequence.length > 0 && o.mutationSequence.length > 0 ){
-			return Byte.compare(mutationSequence[0], o.mutationSequence[0]);
-		}
 		int mutationTypeCompare = mutationType.compareTo(o.mutationType);
 		if (mutationTypeCompare != 0) {
 			return mutationTypeCompare;
 		}
-		return Byte.compare(wildtype, o.wildtype);
+		int c1 = Byte.compare(wildtype, o.wildtype);
+		if (c1 != 0)
+			return c1;
+		if (mutationSequence != null && o.mutationSequence != null) {
+			return compareByteArray(mutationSequence, o.mutationSequence);
+		}
+		throw new AssertionFailedException();
+	}
+
+	//Copied from JDK's String::compareTo
+	public static int compareByteArray(byte [] a1, byte [] a2) {
+		int len1 = a1.length;
+		int len2 = a2.length;
+		int lim = Math.min(len1, len2);
+
+		int k = 0;
+		while (k < lim) {
+			byte c1 = a1[k];
+			byte c2 = a2[k];
+			if (c1 != c2) {
+				return c1 - c2;
+			}
+			k++;
+		}
+		return len1 - len2;
 	}
 
 	public @NonNull Optional<Boolean> isTemplateStrand() {
