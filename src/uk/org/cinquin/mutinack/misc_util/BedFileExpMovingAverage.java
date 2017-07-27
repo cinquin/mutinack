@@ -55,7 +55,7 @@ public class BedFileExpMovingAverage {
 		try (FileReader fileReader = new FileReader(new File(refFile))) {
 
 			BedReader bedReader = new BedReader(contigNames,
-					new BufferedReader(fileReader), "", refFile, null);
+					new BufferedReader(fileReader), "", refFile, null, null);
 
 			for (int contig = 0; contig < contigNames.size(); contig++) {
 				double v = 0;

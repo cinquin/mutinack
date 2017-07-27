@@ -40,7 +40,7 @@ public class BedReaderTest {
 	public BedReaderTest() throws IOException {
 		contigNames1 = new ArrayList<>(contigNames);
 		bc = new BedReader(contigNames1, new BufferedReader(new StringReader(bed)), "",
-			"test reader", null);
+			"test reader", null, null);
 	}
 
 	private final List<@NonNull String> contigNames = Arrays.asList(
@@ -93,7 +93,7 @@ public class BedReaderTest {
 				"";
 
 		new BedReader(contigNames1, new BufferedReader(new StringReader(bed1)), "",
-			"test reader", null);
+			"test reader", null, null);
 		throw new RuntimeException();
 	}
 
@@ -110,7 +110,7 @@ public class BedReaderTest {
 				"";
 
 		new BedReader(contigNames1, new BufferedReader(new StringReader(bed2)), "",
-			"test reader", null);
+			"test reader", null, null);
 		throw new RuntimeException();
 	}
 
@@ -125,7 +125,7 @@ public class BedReaderTest {
 				"";
 
 		new BedReader(contigNames1, new BufferedReader(new StringReader(bed3)), "",
-			"test reader", null);
+			"test reader", null, null);
 		throw new RuntimeException();
 	}
 

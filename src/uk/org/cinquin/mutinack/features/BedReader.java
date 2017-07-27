@@ -24,23 +24,28 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -49,6 +54,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
 import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
+import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
@@ -85,12 +91,12 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	@SuppressWarnings("resource")
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
 			List<@NonNull String> contigNames, @NonNull String readerName, @NonNull String referenceGenomeName,
-			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap) {
+			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap, Parameters param) {
 		@NonNull BedReader result = FileCache.getCached(path0, cacheExtension, path -> {
 			try {
 				return new BedReader(contigNames,
 					new BufferedReader(new FileReader(new File(path))), readerName, referenceGenomeName, null,
-						transcriptToGeneNameMap, false);
+						transcriptToGeneNameMap, false, param);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -100,9 +106,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	}
 
 	public static @NonNull BedReader getCachedBedFileReader(String path0, String cacheExtension,
-			List<@NonNull String> contigNames, @NonNull String readerName, @NonNull String referenceGenomeName) {
+			List<@NonNull String> contigNames, @NonNull String readerName, @NonNull String referenceGenomeName,
+			Parameters param) {
 		return getCachedBedFileReader(path0, cacheExtension, contigNames, readerName, referenceGenomeName,
-			Collections.emptyMap());
+			Collections.emptyMap(), param);
 	}
 
 	public final static <K, V> Map<V, K> invertMap(Map<K, V> map) {
@@ -130,8 +137,9 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			BufferedReader reader,
 			@NonNull String readerName,
 			@NonNull String referenceGenomeName,
-			BufferedReader suppInfoReader) {
-		this(contigNames, reader, readerName, referenceGenomeName, suppInfoReader, Collections.emptyMap(), false);
+			BufferedReader suppInfoReader,
+			Parameters param) {
+		this(contigNames, reader, readerName, referenceGenomeName, suppInfoReader, Collections.emptyMap(), false, param);
 	}
 
 	public BedReader(
@@ -141,7 +149,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			@NonNull String referenceGenomeName,
 			@Nullable BufferedReader suppInfoReader,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
-			boolean parseScore) throws ParseRTException {
+			boolean parseScore,
+			@Nullable Parameters param) throws ParseRTException {
 
 		Map<String, Integer> reverseIndex = invertList(contigNames);
 
@@ -158,34 +167,77 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		}
 
 		try(Stream<String> lines = reader.lines()) {
-			lines.forEachOrdered(l -> {
+			Iterator<String> lineIt = lines.iterator();
+			final Stream<String> remaining = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+				lineIt, Spliterator.ORDERED), false);
+
+			final String line1String = lineIt.next();
+			final String[] line1 = line1String.split("\t");
+
+			final int contigNameColumn;
+			final int entryNameColumn;
+			final int entryStartColumn;
+			final int entryEndColumn;
+			final int entryOrientationColumn;
+			final int scoreColumn;
+			final int blockLengthsColumn;
+			final boolean autogenerateName;
+
+			final Stream<String> lines1;
+
+			if (line1[0].startsWith("#")) {
+				final Parameters param1 = param == null ? new Parameters() : param;
+				line1[0] = line1[0].substring(1);
+				final List<String> components = Arrays.asList(line1);
+				Set<String> eatenColumnNames = new HashSet<>();
+				contigNameColumn = getIndexOf(components, param1.bedContigNameColumn, eatenColumnNames, false);
+				entryNameColumn = getIndexOf(components, param1.bedEntryNameColumn, eatenColumnNames, true);
+				entryStartColumn = getIndexOf(components, param1.bedEntryStartColumn, eatenColumnNames, false);
+				entryEndColumn = getIndexOf(components, param1.bedEntryEndColumn, eatenColumnNames, false);
+				entryOrientationColumn = getIndexOf(components, param1.bedEntryOrientationColumn, eatenColumnNames, true);
+				scoreColumn = getIndexOf(components, param1.bedEntryScoreColumn, eatenColumnNames, true);
+				autogenerateName = entryNameColumn == -1;
+				blockLengthsColumn = getIndexOf(components, param1.bedBlockLengthsColumn, eatenColumnNames, true);
+				lines1 = remaining;
+			} else {
+				contigNameColumn = 0;
+				entryNameColumn = 3;
+				entryStartColumn = 1;
+				entryEndColumn = 2;
+				scoreColumn = 4;
+				entryOrientationColumn = line1.length > 5 ? 5 : -1;
+				autogenerateName = line1.length == 3;
+				blockLengthsColumn = line1.length >= 11 ? 10 : -1;
+				lines1 = Stream.concat(Stream.of(line1String), remaining);
+			}
+
+			lines1.forEach(l -> {
 				try {
 					final int line = lineCount.incrementAndGet();
 					@NonNull String[] components = l.split("\t");
 					if (components.length < (parseScore ? 4 : 3)) {
 						throw new ParseRTException("Missing fields");
 					}
-					final boolean autogenerateName = components.length == 3;
-					int start = Integer.parseInt(underscorePattern.matcher(components[1]).replaceAll("")) - 1;
-					int end = Integer.parseInt(underscorePattern.matcher(components[2]).replaceAll("")) - 1;
+					int start = Integer.parseInt(underscorePattern.matcher(components[entryStartColumn]).replaceAll("")) - 1;
+					int end = Integer.parseInt(underscorePattern.matcher(components[entryEndColumn]).replaceAll("")) - 1;
 					final String name;
 					if (autogenerateName) {
 						name = "line_" + line;
 					} else {
-						name = components[3];
+						name = components[entryNameColumn];
 					}
 					final Integer length;
 					final @NonNull Optional<Boolean> strandPolarity;
-					if (components.length >= 6) {
-						switch (components[5]) {
+					if (entryOrientationColumn != -1) {
+						switch (components[entryOrientationColumn]) {
 							case "+": strandPolarity = Optional.of(false); break;
 							case "-": strandPolarity = Optional.of(true); break;
 							default: throw new ParseRTException("Expected + or - in strand field " +
-									" but found " + components[5]);
+								" but found " + components[entryOrientationColumn]);
 						}
 						try {
-							if (components.length >= 11) {
-								String[] blockLengths = quotePattern.matcher(components[10]).replaceAll("").split(",");
+							if (blockLengthsColumn != -1) {
+								String[] blockLengths = quotePattern.matcher(components[blockLengthsColumn]).replaceAll("").split(",");
 								int totalLength = 0;
 								boolean foundEmptyBlock = false;
 								for (String bl: blockLengths) {
@@ -212,28 +264,28 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					final float score;
 					if (parseScore) {
 						try {
-							score = Float.parseFloat(components[4]);
+							score = Float.parseFloat(components[scoreColumn]);
 						} catch (NumberFormatException e) {
 							throw new ParseRTException("Could not parse score " +
-								components[4], e);
+								components[scoreColumn], e);
 						}
 					} else {
 						score = 0f;
 					}
 
-					Integer contigIndex = reverseIndex.get(components[0]);
+					Integer contigIndex = reverseIndex.get(components[contigNameColumn]);
 					if (contigIndex == null) {
 						if (IGNORE_MISSING_CONTIGS) {
-							warnMissingContigOnce(components[0], readerName);
+							warnMissingContigOnce(components[contigNameColumn], readerName);
 							skipped.incrementAndGet();
 							return;
 						} else {
-							throw new IllegalArgumentException("Could not find contig " + components[0]);
+							throw new IllegalArgumentException("Could not find contig " + components[contigNameColumn]);
 						}
 					}
 					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex, referenceGenomeName,
-							/*contig*/ components[0].intern(), start, end, length, strandPolarity, score,
-							transcriptToGeneNameMap.get(name));
+						/*contig*/ components[contigNameColumn].intern(), start, end, length, strandPolarity, score,
+						transcriptToGeneNameMap.get(name));
 					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
 				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);
@@ -266,6 +318,21 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		} else {
 			suppInfo = TSVMapReader.getMap(suppInfoReader);
 		}
+	}
+
+	private static int getIndexOf(@NonNull List<String> components, String string,
+			Set<String> eatenColumnNames, boolean allowMissing) {
+		final int index = components.indexOf(string);
+		if (!allowMissing && index == -1) {
+			throw new IllegalArgumentException("Missing entry " + string);
+		}
+		if (index != -1 && !eatenColumnNames.add(string)) {
+			throw new IllegalArgumentException("Repeated column name " + string);
+		}
+		if (components.lastIndexOf(string) != index) {
+			throw new IllegalArgumentException("Repeated entry " + string);
+		}
+		return index;
 	}
 
 	private synchronized static void warnMissingContigOnce(@NonNull String name,

@@ -756,6 +756,27 @@ public final class Parameters implements Serializable, Cloneable {
 		" the union of regions listed by BED file whose path follows", required = false)
 	public List<@NonNull String> reportStatsForBED = new ArrayList<>();
 
+	@Parameter(names = "-bedContigNameColumn", description = "", required = false, arity = 1)
+	public String bedContigNameColumn = "contigName";
+
+	@Parameter(names = "-bedEntryNameColumn", description = "", required = false, arity = 1)
+	public String bedEntryNameColumn = "geneName";
+
+	@Parameter(names = "-bedEntryStartColumn", description = "", required = false, arity = 1)
+	public String bedEntryStartColumn = "XXXXXX";
+
+	@Parameter(names = "-bedBlockLengthsColumn", description = "", required = false, arity = 1)
+	public String bedBlockLengthsColumn = "XXXXXX";
+
+	@Parameter(names = "-bedEntryEndColumn", description = "", required = false, arity = 1)
+	public String bedEntryEndColumn = "XXXXXX";
+
+	@Parameter(names = "-bedEntryOrientationColumn", description = "", required = false, arity = 1)
+	public String bedEntryOrientationColumn = "geneName";
+
+	@Parameter(names = "-bedEntryScoreColumn", description = "", required = false, arity = 1)
+	public String bedEntryScoreColumn = "XXXXXX";
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-reportStatsForNotBED", description = "Report number of observations that do *not* fall within" +

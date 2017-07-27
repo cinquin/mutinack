@@ -267,7 +267,7 @@ public class PosByPosProtoManip {
 		try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 			GenomeFeatureTester reader0 = new BedReader(contigNames0,
 					new BufferedReader(fileReader), "",
-					argValues.domainBedFile, null);
+					argValues.domainBedFile, null, null);
 			if (argValues.invertInputs) {
 				System.err.println("Inverting input bed " + argValues.domainBedFile);
 				reader = new BedComplement(reader0);
@@ -376,7 +376,7 @@ public class PosByPosProtoManip {
 			try (FileReader fileReader = new FileReader(new File(argValues.domainBedFile))) {
 				GenomeFeatureTester reader0 = new BedReader(contigNames0,
 						new BufferedReader(fileReader), "",
-						argValues.domainBedFile, null);
+						argValues.domainBedFile, null, null);
 				if (argValues.invertInputs) {
 					System.err.println("Inverting input bed " + argValues.domainBedFile);
 					reader = new BedComplement(reader0);

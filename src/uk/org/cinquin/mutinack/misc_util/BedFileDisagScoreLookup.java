@@ -62,7 +62,7 @@ public class BedFileDisagScoreLookup {
 		final BedReader scores;
 		try (BufferedReader br = new BufferedReader(new FileReader(
 				new File(scoreBedFile)))) {
-			scores = new BedReader(contigNames, br, "scores reader", "", null, Collections.emptyMap(), true);
+			scores = new BedReader(contigNames, br, "scores reader", "", null, Collections.emptyMap(), true, null);
 		}
 
 		SettableInteger inRange = new SettableInteger(0);
