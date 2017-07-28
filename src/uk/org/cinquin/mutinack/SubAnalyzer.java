@@ -1022,7 +1022,7 @@ public final class SubAnalyzer {
 				//noinspection UnnecessaryContinue
 				continue;
 			}
-		} while (Boolean.valueOf(null));//Assert never reached
+		} while (true);
 
 		if (qualityOKBeforeTopAllele) {
 			registerDuplexMinFracTopCandidate(duplexes,
