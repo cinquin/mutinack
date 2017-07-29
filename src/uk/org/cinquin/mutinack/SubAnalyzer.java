@@ -1952,7 +1952,11 @@ public final class SubAnalyzer {
 
 	private static @NonNull String getFromByteMap(byte b, boolean reverseComplement) {
 		String result = reverseComplement ? byteMap.get(Mutation.complement(b)) : byteMap.get(b);
-		return Objects.requireNonNull(result);
+		if (Util.nullableify(result) == null) {
+			throw new AssertionFailedException("Could not find " + new String(new byte[] {b}) + " " +
+				reverseComplement);
+		}
+		return result;
 	}
 
 	private void registerRawMismatch(
