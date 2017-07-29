@@ -803,7 +803,7 @@ public final class SubAnalyzer {
 	 */
 	@NonNull
 	private LocationExaminationResults examineLocation0(final @NonNull SequenceLocation location) {
-		final LocationExaminationResults result = new LocationExaminationResults();
+		final LocationExaminationResults result = new LocationExaminationResults(param);
 
 		final THashSet<CandidateSequence> candidateSet0 = candidateSequences.get(location);
 		if (candidateSet0 == null) {
@@ -1950,7 +1950,7 @@ public final class SubAnalyzer {
 		}
 	}
 
-	private static @NonNull String getFromByteMap(byte b, boolean reverseComplement) {
+	public static @NonNull String getFromByteMap(byte b, boolean reverseComplement) {
 		String result = reverseComplement ? byteMap.get(Mutation.complement(b)) : byteMap.get(b);
 		if (Util.nullableify(result) == null) {
 			throw new AssertionFailedException("Could not find " + new String(new byte[] {b}) + " " +

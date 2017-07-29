@@ -151,6 +151,10 @@ public class AnalysisStats implements Serializable, Actualizable {
 		rawDeletionLengthQ2 = new Histogram(200);
 		rawInsertionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawInsertionLengthQ2 = new Histogram(200);
+		intraStrandNReads = new Histogram(200);
+		intraStrandSubstitutions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		intraStrandDeletions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		intraStrandInsertions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		alleleFrequencies = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
@@ -559,6 +563,19 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram rawInsertionLengthQ2;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	Histogram 	intraStrandNReads;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> intraStrandSubstitutions;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> intraStrandDeletions;
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> intraStrandInsertions;
 
 	@PrintInStatus(outputLevel = TERSE)
 	@AddChromosomeBins

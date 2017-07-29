@@ -100,4 +100,9 @@ public final class CandidateCounter {
 		this.records = records;
 	}
 
+	public boolean hasWildtype() {
+		return candidateCounts.anySatisfy(eval -> eval.candidate.getMutationType().isWildtype() &&
+			eval.count > 0);
+	}
+
 }

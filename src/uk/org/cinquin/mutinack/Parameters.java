@@ -526,6 +526,13 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawMismatches = true;
 
+	@Parameter(names = "-computeIntraStrandMismatches", description = "Compute mismatches between reads that belong to the same duplex strand", arity = 1, required = false)
+	public boolean computeIntraStrandMismatches = false;
+
+	@Parameter(names = "-intraStrandMismatchReportingThreshold", description = "If top candidate is less than this fraction of the reads of a duplex, repeated intra-strand mismatches are recorded", arity = 1, required = false)
+	@OnlyUsedAfterDuplexGrouping
+	public float intraStrandMismatchReportingThreshold = 1.0f;
+
 	@CheckValues(min = 0, max = 1)
 	@Parameter(names = "-topAlleleFreqReport", description = "Sites at which the top allele frequency is below this value are reported and marked with a % sign", required = false)
 	public float topAlleleFreqReport = 0.3f;

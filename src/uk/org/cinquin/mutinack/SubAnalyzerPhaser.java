@@ -885,6 +885,11 @@ public class SubAnalyzerPhaser extends Phaser {
 			stats.rawInsertionLengthQ2.insert(var.snd.length());
 		}
 
+		stats.intraStrandNReads.insert(examResults.intraStrandNReads);
+		stats.intraStrandSubstitutions.accept(location, examResults.intraStrandSubstitutions);
+		stats.intraStrandDeletions.accept(location, examResults.intraStrandDeletions);
+		stats.intraStrandInsertions.accept(location, examResults.intraStrandInsertions);
+
 		for (Entry<DuplexDisagreement, List<Duplex>> entry: examResults.disagreements) {
 
 			DuplexDisagreement d = entry.getKey();

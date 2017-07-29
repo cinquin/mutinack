@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.output;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jdo.annotations.PersistenceCapable;
@@ -29,8 +30,9 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import uk.org.cinquin.mutinack.DuplexDisagreement;
 import uk.org.cinquin.mutinack.Duplex;
+import uk.org.cinquin.mutinack.DuplexDisagreement;
+import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
@@ -56,9 +58,14 @@ public final class LocationExaminationResults implements Serializable {
 	public int disagOneStrandedCoverage = 0;
 	@JsonIgnore
 	public final transient @NonNull Collection<@NonNull ComparablePair<String, String>>
-		rawMismatchesQ2 = new ArrayList<>(),
-		rawDeletionsQ2 = new ArrayList<>(),
-		rawInsertionsQ2 = new ArrayList<>();
+		rawMismatchesQ2,
+		rawDeletionsQ2,
+		rawInsertionsQ2,
+		intraStrandSubstitutions,
+		intraStrandDeletions,
+		intraStrandInsertions;
+
+	public int intraStrandNReads = 0;
 
 	public int duplexInsertSize10thP = -1;
 	public int duplexInsertSize90thP = -1;
@@ -68,4 +75,26 @@ public final class LocationExaminationResults implements Serializable {
 	//multiple threads
 	@JsonIgnore
 	public final transient AtomicInteger threadCount = new AtomicInteger();
+
+	public LocationExaminationResults(Parameters param) {
+		if (param.computeRawMismatches) {
+			rawMismatchesQ2 = new ArrayList<>();
+			rawDeletionsQ2 = new ArrayList<>();
+			rawInsertionsQ2 = new ArrayList<>();
+		} else {
+			rawMismatchesQ2 = Collections.emptyList();
+			rawDeletionsQ2 = Collections.emptyList();
+			rawInsertionsQ2 = Collections.emptyList();
+		}
+
+		if (param.computeIntraStrandMismatches) {
+			intraStrandSubstitutions = new ArrayList<>();
+			intraStrandDeletions = new ArrayList<>();
+			intraStrandInsertions = new ArrayList<>();
+		} else {
+			intraStrandSubstitutions = Collections.emptyList();
+			intraStrandDeletions = Collections.emptyList();
+			intraStrandInsertions = Collections.emptyList();
+		}
+	}
 }

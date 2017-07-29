@@ -48,6 +48,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -707,10 +708,13 @@ public final class Duplex implements HasInterval<Integer> {
 			:
 				DUBIOUS);
 
+		final boolean countedWithQ2Phred;
+
 		if (dq.getNonNullValue().atLeast(GOOD)) {
 			//Check if criteria are met even if ignoring bases with
 			//Phred quality scores that do not meet Q2 threshold
 
+			countedWithQ2Phred = true;
 			topCounter.minBasePhredScore = param.minBasePhredScoreQ2;
 			topCounter.compute();
 			bottomCounter.minBasePhredScore = param.minBasePhredScoreQ2;
@@ -733,6 +737,8 @@ public final class Duplex implements HasInterval<Integer> {
 						issues.add(location + "_TFR2T");
 				}
 			}
+		} else {
+			countedWithQ2Phred = false;
 		}
 
 		final boolean thresholds2Met, thresholds1Met;
@@ -740,8 +746,11 @@ public final class Duplex implements HasInterval<Integer> {
 		thresholds2Met = ((top != null) && top.count >= param.minConsensusThresholdQ2 * nTopStrandsWithCandidate) &&
 			(bottom != null && bottom.count >= param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate);
 
-		thresholds1Met = (top == null || top.count >= param.minConsensusThresholdQ1 * nTopStrandsWithCandidate) &&
-			(bottom == null || bottom.count >= param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate);
+		final boolean topConsensusPassedQ1 =
+			top == null || top.count >= param.minConsensusThresholdQ1 * nTopStrandsWithCandidate;
+		final boolean bottomConsensusPassedQ1 =
+			bottom == null || bottom.count >= param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate;
+		thresholds1Met = topConsensusPassedQ1 && bottomConsensusPassedQ1;
 
 		if (top != null) {
 			minFracTopCandidate = top.count / ((float) nTopStrandsWithCandidate);
@@ -749,6 +758,14 @@ public final class Duplex implements HasInterval<Integer> {
 
 		if (bottom != null) {
 			minFracTopCandidate = Math.min(minFracTopCandidate, bottom.count / ((float) nBottomStrandsWithCandidate));
+		}
+
+		if (countedWithQ2Phred && param.computeIntraStrandMismatches &&
+				nTopStrandsWithCandidate + nBottomStrandsWithCandidate >= 3 &&//Only strands with at least
+				//1 wt and 2 [concordant] mutant reads can contribute a registered intraStrand mismatch
+				(topCounter.hasWildtype() || bottomCounter.hasWildtype())) {
+			registerRepeatedMismatch(param, top, topCounter, nTopReadsWithCandidate, result, topStrandIsNegative);
+			registerRepeatedMismatch(param, bottom, bottomCounter, nBottomReadsWithCandidate, result, !topStrandIsNegative);
 		}
 
 		if (!thresholds1Met) {
@@ -1063,6 +1080,78 @@ public final class Duplex implements HasInterval<Integer> {
 		maxQuality = max(maxQuality, dq.getNonNullValue());
 		minQuality = min(minQuality, dq.getNonNullValue());
 
+	}
+
+	private static @NonNull String abbreviateString(byte [] s, int keep) {
+		if (s.length == 1) {
+			return SubAnalyzer.getFromByteMap(s[0], false);
+		}
+		if (s.length <= keep) {
+			return new String(s);
+		}
+		return new String(s, 0, keep) + "...";
+	}
+
+	private static void registerRepeatedMismatch(
+			final Parameters param,
+			final @Nullable CandidateDuplexEval topCandidate,
+			final @NonNull CandidateCounter counter,
+			final int nStrandsWithCandidate,
+			final LocationExaminationResults result,
+			boolean reverseComplement) {
+
+		if (nStrandsWithCandidate == 0) {
+			return;//Optimization
+		}
+
+		final int strandNReads = (int) counter.candidateCounts.sumOfInt(eval -> eval.count);
+		if (strandNReads < 2) {
+			return;
+		}
+		result.intraStrandNReads += strandNReads;
+
+		//Only report mismatch if there is poor consensus, i.e. if the top candidate
+		//count is sufficiently low; the default value of intraStrandMismatchReportingThreshold
+		//is such that this return branch is never taken
+		if (Objects.requireNonNull(topCandidate).count >
+				param.intraStrandMismatchReportingThreshold * nStrandsWithCandidate) {
+			return;
+		}
+
+		IntMinMax<CandidateDuplexEval> ir = new IntMinMax<>();
+		counter.candidateCounts.forEachValue(si -> {
+			if (!si.candidate.getMutationType().isWildtype()) {
+				ir.acceptMax(si.count, si);
+		}});
+		CandidateDuplexEval mutantEval = ir.getKeyMax();
+		if (mutantEval == null) {
+			//Can happen e.g. if a subset of duplex reads are clipped at a position but others are not
+			return;
+		}
+
+		//Only report mismatch if the same mismatch is seen twice or more in the same strand
+		if (mutantEval.count < 2) {
+			return;
+		}
+
+		final Mutation m0 = mutantEval.candidate.getMutation();
+		final Mutation mAdj = reverseComplement ? m0.reverseComplement() : m0;
+		ComparablePair<String, String> mutString = new ComparablePair<>(
+			mAdj.wildtype == 0 ? "" : SubAnalyzer.getFromByteMap(mAdj.wildtype, false),
+			abbreviateString(mAdj.mutationSequence, 4));
+		switch (mAdj.mutationType) {
+			case SUBSTITUTION:
+				result.intraStrandSubstitutions.add(mutString);
+				break;
+			case DELETION:
+				result.intraStrandDeletions.add(mutString);
+				break;
+			case INSERTION:
+				result.intraStrandInsertions.add(mutString);
+				break;
+			default:
+				//Ignore the other cases
+		}
 	}
 
 	private static int computeMappingQuality(Iterable<ExtendedSAMRecord> recs) {
