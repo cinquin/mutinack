@@ -48,7 +48,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableFloatList;
@@ -392,14 +391,14 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 		);
 
-		RichIterable<CandidateSequence> mutantCandidates = locationExamResults.
-			flatCollect(c -> c.analyzedCandidateSequences).
-			select(c -> {
+		MutableList<CandidateSequence> mutantCandidates = Lists.mutable.empty();
+		locationExamResults.
+			each(a -> a.analyzedCandidateSequences.each(c -> {
 				boolean isMutant = !c.getMutationType().isWildtype();
-				return isMutant;
-			});
+				if (isMutant) mutantCandidates.add(c);
+			}));
 
-		final Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
+		final @NonNull Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
 			(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
 			acceptMax(mutantCandidates, c -> {
 				CandidateSequence c0 = (CandidateSequence) c;
@@ -422,13 +421,13 @@ public class SubAnalyzerPhaser extends Phaser {
 		final boolean lowTopAlleleFreq = minTopAlleleFreq != 0 &&
 			minTopAlleleFreq < param.topAlleleFreqReport;
 
-		locationExamResults.flatCollect(c -> c.analyzedCandidateSequences).forEach(candidate -> {
+		locationExamResults.forEach(c -> c.analyzedCandidateSequences.forEach(candidate -> {
 			if (candidate.getQuality().getNonNullValue().atLeast(GOOD)) {
 				final @NonNull AnalysisStats stats = Objects.requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
 				candidate.computeNQ1PlusConcurringDuplexes(stats.concurringDuplexDistance, param);
 			}
-		});
+		}));
 
 		final boolean forceReporting =
 			forceOutputAtLocations.get(location) != null ||
@@ -482,10 +481,13 @@ public class SubAnalyzerPhaser extends Phaser {
 				return c.getQuality().getNonNullValue().greaterThan(POOR) && !c.isHidden();
 				}, new FastList<>());
 
-		final RichIterable<@NonNull DuplexDisagreement> allQ2DuplexDisagreements = //Distinct disagreements
-			locationExamResults.
-			flatCollect(ler -> ler.disagreements.keySet()).
-			select(d -> d.quality.atLeast(GOOD), Sets.mutable.empty());//Filtering is a NOP right now since all disags are Q2
+		final MutableSet<@NonNull DuplexDisagreement> allQ2DuplexDisagreements =
+			Sets.mutable.empty(); //Distinct disagreements
+		locationExamResults.
+			each(ler -> ler.disagreements.forEachKey(d -> {
+				if (d.quality.atLeast(GOOD)) allQ2DuplexDisagreements.add(d);
+				return true;
+			}));//Filtering is a NOP right now since all disags are Q2
 
 		final CrossSampleLocationAnalysis csla = new CrossSampleLocationAnalysis(location);
 		csla.randomlySelected = randomlySelected;
@@ -839,12 +841,15 @@ public class SubAnalyzerPhaser extends Phaser {
 				examResults.nGoodOrDubiousDuplexesSisterSamples >= stats.analysisParameters.minNumberDuplexesSisterSamples
 			) {
 
-			examResults.analyzedCandidateSequences.select(c -> !c.isHidden()).
-				flatCollect(CandidateSequence::getDuplexes).
-				collectIf(dr -> dr.localAndGlobalQuality.getNonNullValue().atLeast(GOOD),
-					Duplex::getMaxDistanceToLigSite).
-				forEach(i -> {if (i != Integer.MIN_VALUE && i != Integer.MAX_VALUE)
-					stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(i);});
+			examResults.analyzedCandidateSequences.each(c -> {
+				if (c.isHidden()) return;
+				c.getDuplexes().each(d -> {
+					if (!d.localAndGlobalQuality.getNonNullValue().atLeast(GOOD)) return;
+					int q = d.getMaxDistanceToLigSite();
+					if (q != Integer.MIN_VALUE && q != Integer.MAX_VALUE)
+						stats.crossAnalyzerQ2CandidateDistanceToLigationSite.insert(q);
+				});
+			});
 
 			analyzerCandidateLists.forEachKey(sa -> sa.incrementednPosDuplexQualityQ2OthersQ1Q2 = true);
 			stats.nPosDuplexQualityQ2OthersQ1Q2.accept(location, examResults.nGoodDuplexes);
