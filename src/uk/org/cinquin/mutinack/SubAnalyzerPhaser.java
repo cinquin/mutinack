@@ -872,9 +872,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull LocationExaminationResults examResults,
 			final @NonNull AnalysisStats stats,
 			final @NonNull SequenceLocation location) {
-		for (@NonNull ComparablePair<String, String> var: examResults.rawMismatchesQ2) {
-			stats.rawMismatchesQ2.accept(location, var);
-		}
+
+		stats.rawMismatchesQ2.accept(location, examResults.rawMismatchesQ2);
 
 		for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
 			stats.rawDeletionsQ2.accept(location, var);

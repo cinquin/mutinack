@@ -173,6 +173,12 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 			accept(loc, t, 1d);
 	}
 
+	public void accept(@NonNull SequenceLocation loc, @NonNull Iterable<@NonNull T> t) {
+		if (on) {
+			t.forEach(e -> accept(loc, e, 1d));
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public String toString() {
