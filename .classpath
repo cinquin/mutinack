@@ -31,8 +31,8 @@
 	<classpathentry kind="lib" path="lib_build_run_test/datanucleus-core-5.0.7-SNAPSHOT.jar" sourcepath="lib_build_run_test/datanucleus-core-5.0.7-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="lib" path="lib_build_run_test/datanucleus-rdbms-5.0.6-SNAPSHOT.jar" sourcepath="lib_build_run_test/datanucleus-rdbms-5.0.6-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="lib" path="lib_build_run_test/final_annotation.jar"/>
-	<classpathentry kind="lib" path="lib/eclipse-collections-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-8.1.0-sources.jar"/>
-	<classpathentry kind="lib" path="lib/eclipse-collections-api-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-api-8.1.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/eclipse-collections-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-8.2.0-SNAPSHOT-sources.jar"/>
+	<classpathentry kind="lib" path="lib/eclipse-collections-api-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-api-8.2.0-SNAPSHOT-sources.jar"/>
         <classpathentry kind="lib" path="lib/xchart-3.3.1-SNAPSHOT.jar" sourcepath="lib_build_run_test/xchart-3.3.1-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
