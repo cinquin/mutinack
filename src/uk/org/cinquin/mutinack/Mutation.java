@@ -18,8 +18,11 @@ package uk.org.cinquin.mutinack;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -49,7 +52,15 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 		this.setTemplateStrand(templateStrand);
 	}
 
-	static byte complement (byte b) {
+	public static final List<Character> KNOWN_BASES_AS_CHARS = Arrays.asList(
+			'A', 'T', 'G', 'C', 'N', 'Y', 'R', 'W', 'S', 'B', 'D', 'H', 'K', 'M', 'V'
+		);
+
+	public static final List<Byte> KNOWN_BASES = Collections.unmodifiableList(
+		KNOWN_BASES_AS_CHARS.stream().map(c -> Byte.valueOf((byte) c.charValue())).
+			collect(Collectors.toList()));
+
+	public static byte complement (byte b) {
 		switch (b) {
 			case 'A': return 'T';
 			case 'T': return 'A';
@@ -82,7 +93,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 			case 'm': return 'm';
 			case 'v': return 'v';
 			case 0 : return 0;
-			default : throw new AssertionFailedException("Cannot complement " +
+			default : throw new IllegalArgumentException("Cannot complement " +
 					new String(new byte[] {b}));
 		}
 	}
