@@ -1053,9 +1053,9 @@ public final class SubAnalyzer {
 			stats.nPosDuplexCandidatesForDisagreementQ2.acceptSkip0(location, result.disagQ2Coverage);
 			stats.nPosDuplexCandidatesForDisagreementQ1.acceptSkip0(location, result.disagOneStrandedCoverage);
 			if (param.computeRawMismatches) {
-				candidateSet.forEach(c -> result.rawMismatchesQ2.addAll(c.getRawMismatchesQ2()));
-				candidateSet.forEach(c -> result.rawInsertionsQ2.addAll(c.getRawInsertionsQ2()));
-				candidateSet.forEach(c -> result.rawDeletionsQ2.addAll(c.getRawDeletionsQ2()));
+				candidateSet.forEach(c -> result.rawMismatchesQ2.addAllIterable(c.getRawMismatchesQ2()));
+				candidateSet.forEach(c -> result.rawInsertionsQ2.addAllIterable(c.getRawInsertionsQ2()));
+				candidateSet.forEach(c -> result.rawDeletionsQ2.addAllIterable(c.getRawDeletionsQ2()));
 			}
 		}
 

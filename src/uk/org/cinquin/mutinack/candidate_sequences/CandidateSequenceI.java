@@ -17,8 +17,9 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.io.Serializable;
-import java.util.Collection;
 
+import org.eclipse.collections.api.bag.Bag;
+import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.multimap.set.SetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.jdt.annotation.NonNull;
@@ -86,12 +87,12 @@ public interface CandidateSequenceI extends Serializable {
 	void mergeWith(@NonNull CandidateSequenceI c);
 	int getMaxDistanceToLigSite();
 	int getMinDistanceToLigSite();
-	Collection<ComparablePair<String, String>> getRawMismatchesQ2();
-	Collection<ComparablePair<String, String>> getMutableRawMismatchesQ2();
-	Collection<ComparablePair<String, String>> getRawDeletionsQ2();
-	Collection<ComparablePair<String, String>> getMutableRawDeletionsQ2();
-	Collection<ComparablePair<String, String>> getRawInsertionsQ2();
-	Collection<ComparablePair<String, String>> getMutableRawInsertionsQ2();
+	Bag<ComparablePair<String, String>> getRawMismatchesQ2();
+	@NonNull MutableBag<ComparablePair<String, String>> getMutableRawMismatchesQ2();
+	Bag<ComparablePair<String, String>> getRawDeletionsQ2();
+	MutableBag<ComparablePair<String, String>> getMutableRawDeletionsQ2();
+	Bag<ComparablePair<String, String>> getRawInsertionsQ2();
+	MutableBag<ComparablePair<String, String>> getMutableRawInsertionsQ2();
 	float getMeanDistanceToLigSite();
 	int getInsertSizeAtPos10thP();
 	void setInsertSizeAtPos10thP(int insertSizeAtPos10thP);

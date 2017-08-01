@@ -17,10 +17,7 @@
 package uk.org.cinquin.mutinack.candidate_sequences;
 import java.io.Serializable;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.IntSummaryStatistics;
 import java.util.Iterator;
@@ -35,10 +32,13 @@ import java.util.stream.Stream;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
+import org.eclipse.collections.api.bag.Bag;
+import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.api.multimap.set.SetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
+import org.eclipse.collections.impl.factory.Bags;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
@@ -98,7 +98,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private static final long serialVersionUID = 8222086925028013360L;
 
 	@JsonIgnore
-	private transient @Nullable Collection<ComparablePair<String, String>> rawMismatchesQ2,
+	private transient @Nullable MutableBag<ComparablePair<String, String>> rawMismatchesQ2,
 		rawDeletionsQ2, rawInsertionsQ2;
 	@Persistent private DetailedQualities<PositionAssay> quality;
 	private transient TObjectLongHashMap<Duplex> issues;
@@ -760,15 +760,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		incrementNegativeStrandCount(candidate.getNegativeStrandCount());
 		incrementPositiveStrandCount(candidate.getPositiveStrandCount());
 		if (!candidate.getRawMismatchesQ2().isEmpty()) {
-			getMutableRawMismatchesQ2().addAll(candidate.getRawMismatchesQ2()); //TODO Is it
+			getMutableRawMismatchesQ2().addAllIterable(candidate.getRawMismatchesQ2()); //TODO Is it
 			//worth optimizing this out if not keeping track of raw disagreements? That would
 			//save one list allocation per position
 		}
 		if (!candidate.getRawDeletionsQ2().isEmpty()) {
-			getMutableRawDeletionsQ2().addAll(candidate.getRawDeletionsQ2());
+			getMutableRawDeletionsQ2().addAllIterable(candidate.getRawDeletionsQ2());
 		}
 		if (!candidate.getRawInsertionsQ2().isEmpty()) {
-			getMutableRawInsertionsQ2().addAll(candidate.getRawInsertionsQ2());
+			getMutableRawInsertionsQ2().addAllIterable(candidate.getRawInsertionsQ2());
 		}
 	}
 
@@ -783,54 +783,54 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Collection<ComparablePair<String, String>> getMutableRawMismatchesQ2() {
+	public @NonNull MutableBag<ComparablePair<String, String>> getMutableRawMismatchesQ2() {
 		if (rawMismatchesQ2 == null) {
-			rawMismatchesQ2 = new ArrayList<>();
+			rawMismatchesQ2 = Bags.mutable.empty();
 		}
 		return rawMismatchesQ2;
 	}
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Collection<ComparablePair<String, String>> getRawMismatchesQ2() {
+	public @NonNull Bag<ComparablePair<String, String>> getRawMismatchesQ2() {
 		if (rawMismatchesQ2 == null) {
-			return Collections.emptyList();
+			return Bags.immutable.empty();
 		}
 		return rawMismatchesQ2;
 	}
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Collection<ComparablePair<String, String>> getMutableRawDeletionsQ2() {
+	public @NonNull MutableBag<ComparablePair<String, String>> getMutableRawDeletionsQ2() {
 		if (rawDeletionsQ2 == null) {
-			rawDeletionsQ2 = new ArrayList<>();
+			rawDeletionsQ2 = Bags.mutable.empty();
 		}
 		return rawDeletionsQ2;
 	}
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Collection<ComparablePair<String, String>> getRawDeletionsQ2() {
+	public @NonNull Bag<ComparablePair<String, String>> getRawDeletionsQ2() {
 		if (rawDeletionsQ2 == null) {
-			return Collections.emptyList();
+			return Bags.immutable.empty();
 		}
 		return rawDeletionsQ2;
 	}
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Collection<ComparablePair<String, String>> getMutableRawInsertionsQ2() {
+	public @NonNull MutableBag<ComparablePair<String, String>> getMutableRawInsertionsQ2() {
 		if (rawInsertionsQ2 == null) {
-			rawInsertionsQ2 = new ArrayList<>();
+			rawInsertionsQ2 = Bags.mutable.empty();
 		}
 		return rawInsertionsQ2;
 	}
 
 	@Override
 	@SuppressWarnings("null")
-	public @NonNull Collection<ComparablePair<String, String>> getRawInsertionsQ2() {
+	public @NonNull Bag<ComparablePair<String, String>> getRawInsertionsQ2() {
 		if (rawInsertionsQ2 == null) {
-			return Collections.emptyList();
+			return Bags.immutable.empty();
 		}
 		return rawInsertionsQ2;
 	}

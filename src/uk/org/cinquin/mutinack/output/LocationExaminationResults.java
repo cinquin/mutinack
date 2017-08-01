@@ -29,7 +29,9 @@ import java.util.function.BiConsumer;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.set.sorted.SortedSetIterable;
+import org.eclipse.collections.impl.factory.Bags;
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -60,10 +62,12 @@ public final class LocationExaminationResults implements Serializable {
 	public int disagQ2Coverage = 0;
 	public int disagOneStrandedCoverage = 0;
 	@JsonIgnore
-	public final transient @NonNull Collection<@NonNull ComparablePair<String, String>>
+	public final transient @NonNull MutableBag<@NonNull ComparablePair<String, String>>
 		rawMismatchesQ2,
 		rawDeletionsQ2,
-		rawInsertionsQ2,
+		rawInsertionsQ2;
+	@JsonIgnore
+	public final transient @NonNull Collection<@NonNull ComparablePair<String, String>>
 		intraStrandSubstitutions,
 		intraStrandDeletions,
 		intraStrandInsertions;
@@ -79,15 +83,18 @@ public final class LocationExaminationResults implements Serializable {
 	@JsonIgnore
 	public final transient AtomicInteger threadCount = new AtomicInteger();
 
+	MutableBag<@NonNull ComparablePair<String, String>> EMPTY_BAG =
+		Bags.mutable.empty();
+
 	public LocationExaminationResults(Parameters param) {
 		if (param.computeRawMismatches) {
-			rawMismatchesQ2 = new ArrayList<>();
-			rawDeletionsQ2 = new ArrayList<>();
-			rawInsertionsQ2 = new ArrayList<>();
+			rawMismatchesQ2 = Bags.mutable.empty();
+			rawDeletionsQ2 = Bags.mutable.empty();
+			rawInsertionsQ2 = Bags.mutable.empty();
 		} else {
-			rawMismatchesQ2 = Collections.emptyList();
-			rawDeletionsQ2 = Collections.emptyList();
-			rawInsertionsQ2 = Collections.emptyList();
+			rawMismatchesQ2 = EMPTY_BAG;
+			rawDeletionsQ2 = EMPTY_BAG;
+			rawInsertionsQ2 = EMPTY_BAG;
 		}
 
 		if (param.computeIntraStrandMismatches) {
