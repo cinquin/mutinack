@@ -1029,6 +1029,7 @@ public final class SubAnalyzer {
 
 		if (positionQualities.getValue(true) != null && positionQualities.getValue(true).lowerThan(GOOD)) {
 			result.disagreements.clear();
+			result.ignoreDisagreements = true;
 		} else {
 			if (param.maxMutFreqForDisag < 1f) {
 				final int finalTotalGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;

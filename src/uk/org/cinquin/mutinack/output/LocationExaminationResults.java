@@ -61,6 +61,7 @@ public final class LocationExaminationResults implements Serializable {
 		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable
 	public int disagQ2Coverage = 0;
 	public int disagOneStrandedCoverage = 0;
+	public boolean ignoreDisagreements;
 	@JsonIgnore
 	public final transient @NonNull MutableBag<@NonNull ComparablePair<String, String>>
 		rawMismatchesQ2,

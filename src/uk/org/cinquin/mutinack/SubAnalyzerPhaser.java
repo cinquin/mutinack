@@ -866,25 +866,27 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull SequenceLocation location,
 			final boolean rawMismatchesOnlyAtWtPos) {
 
+		if (examResults.ignoreDisagreements) {
+			return;
+		}
 		examResults.analyzedCandidateSequences.getFirstOptional().ifPresent(topCandidate -> {
 			if (!rawMismatchesOnlyAtWtPos ||
 					(topCandidate.getMutation().mutationType.isWildtype() && topCandidate.getFrequencyAtPosition() >= 0.7f)) {
 
+				stats.intraStrandAndRawMismatchNPositions.increment();
+
 				stats.rawMismatchesNReads.add(topCandidate.getTotalReadsAtPosition());
-
 				stats.rawMismatchesQ2.accept(location, examResults.rawMismatchesQ2);
-
 				for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
 					stats.rawDeletionsQ2.accept(location, var);
 					stats.rawDeletionLengthQ2.insert(var.snd.length());
 				}
-
 				for (@NonNull ComparablePair<String, String> var: examResults.rawInsertionsQ2) {
 					stats.rawInsertionsQ2.accept(location, var);
 					stats.rawInsertionLengthQ2.insert(var.snd.length());
 				}
 
-				stats.intraStrandNReads.insert(examResults.intraStrandNReads);
+				stats.intraStrandNReads.add(examResults.intraStrandNReads);
 				stats.intraStrandSubstitutions.accept(location, examResults.intraStrandSubstitutions);
 				stats.intraStrandDeletions.accept(location, examResults.intraStrandDeletions);
 				stats.intraStrandInsertions.accept(location, examResults.intraStrandInsertions);

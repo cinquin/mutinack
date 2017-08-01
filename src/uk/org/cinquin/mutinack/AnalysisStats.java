@@ -151,7 +151,6 @@ public class AnalysisStats implements Serializable, Actualizable {
 		rawDeletionLengthQ2 = new Histogram(200);
 		rawInsertionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawInsertionLengthQ2 = new Histogram(200);
-		intraStrandNReads = new Histogram(200);
 		intraStrandSubstitutions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		intraStrandDeletions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		intraStrandInsertions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
@@ -569,7 +568,11 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
-	Histogram 	intraStrandNReads;
+	LongAdderFormatter intraStrandAndRawMismatchNPositions = new LongAdderFormatter();
+
+	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
+	LongAdderFormatter intraStrandNReads = new LongAdderFormatter();
 
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> intraStrandSubstitutions;
