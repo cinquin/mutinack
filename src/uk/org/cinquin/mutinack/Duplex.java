@@ -1129,6 +1129,9 @@ public final class Duplex implements HasInterval<Integer> {
 			return;
 		}
 
+		if (mutantEval.candidate.isHidden()) {
+			return;//Without this e.g. deletions longer than 1 will be reported multiple times
+		}
 		//Only report mismatch if the same mismatch is seen twice or more in the same strand
 		if (mutantEval.count < 2) {
 			return;
