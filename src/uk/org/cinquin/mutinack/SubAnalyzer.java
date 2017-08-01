@@ -919,9 +919,6 @@ public final class SubAnalyzer {
 			Assert.noException(() -> duplexes.forEach((Consumer<Duplex>) Duplex::checkReadOwnership));
 		}
 
-		final int totalReadsAtPosition = (int) candidateSet.sumOfInt(
-			c -> c.getNonMutableConcurringReads().size());
-
 		final TByteArrayList allPhredQualitiesAtPosition = new TByteArrayList(500);
 		final SettableInteger nWrongPairsAtPosition = new SettableInteger(0);
 		final SettableInteger nPairsAtPosition = new SettableInteger(0);
@@ -1058,6 +1055,9 @@ public final class SubAnalyzer {
 				candidateSet.forEach(c -> result.rawDeletionsQ2.addAllIterable(c.getRawDeletionsQ2()));
 			}
 		}
+
+		final int totalReadsAtPosition = (int) candidateSet.sumOfInt(
+			c -> c.getNonMutableConcurringReads().size());
 
 		for (CandidateSequence candidate: candidateSet) {
 			candidate.setTotalAllDuplexes(totalAllDuplexes);
