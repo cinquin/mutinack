@@ -61,14 +61,13 @@ import java.util.stream.Collectors;
 
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.list.primitive.MutableFloatList;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
-import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.MutableSet;
+import org.eclipse.collections.api.set.SetIterable;
+import org.eclipse.collections.api.set.sorted.MutableSortedSet;
 import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.impl.factory.SortedSets;
 import org.eclipse.collections.impl.list.mutable.FastList;
-import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -808,14 +807,11 @@ public final class SubAnalyzer {
 		final THashSet<CandidateSequence> candidateSet0 = candidateSequences.get(location);
 		if (candidateSet0 == null) {
 			stats.nPosUncovered.increment(location);
-			result.analyzedCandidateSequences = Sets.immutable.empty();
+			result.analyzedCandidateSequences = SortedSets.immutable.empty();
 			return result;
 		}
-		final ImmutableSet<CandidateSequence> candidateSet =
-//			DebugLogControl.COSTLY_ASSERTIONS ?
-//				Collections.unmodifiableSet(candidateSet0)
-//			:
-				Sets.immutable.ofAll(candidateSet0);
+		MutableSortedSet<CandidateSequence> candidateSet =
+				SortedSets.mutable.ofAll(CandidateSequence.reverseFrequencyComparator, candidateSet0);
 
 		//Retrieve relevant duplex reads
 		//It is necessary not to duplicate the duplex reads, hence the use of a set
@@ -975,7 +971,7 @@ public final class SubAnalyzer {
 		boolean leave = false;
 		final boolean qualityOKBeforeTopAllele =
 			Quality.nullableMax(positionQualities.getValue(true), GOOD).atLeast(GOOD);
-		Quality topAlleleQuality = null;
+		Optional<Quality> topAlleleQuality = Optional.empty();
 		//noinspection UnnecessaryBoxing
 		do {
 			maxQuality = MINIMUM;
@@ -1012,12 +1008,13 @@ public final class SubAnalyzer {
 				break;
 			} else {
 				result.nGoodOrDubiousDuplexes = totalGoodOrDubiousDuplexes;
-				topAlleleQuality = getAlleleFrequencyQuality(candidateSet, result);
-				if (topAlleleQuality == null) {
+				Assert.isFalse(topAlleleQuality.isPresent());
+				topAlleleQuality = alleleFrequencyQuality(candidateSet, totalGoodOrDubiousDuplexes, param);
+				if (!topAlleleQuality.isPresent()) {
 					break;
 				}
-				Assert.isTrue(topAlleleQuality == DUBIOUS);
-				positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, topAlleleQuality);
+				Assert.isTrue(topAlleleQuality.get() == DUBIOUS);
+				topAlleleQuality.ifPresent(q -> positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, q));
 				leave = true;//Just one more iteration
 				//noinspection UnnecessaryContinue
 				continue;
@@ -1089,10 +1086,8 @@ public final class SubAnalyzer {
 				case 'T' : stats.nPosQualityPoorT.increment(location); break;
 				case 'G' : stats.nPosQualityPoorG.increment(location); break;
 				case 'C' : stats.nPosQualityPoorC.increment(location); break;
-				case 'X' :
-				case 'N' :
-					break;//Ignore because we do not have a record of wildtype sequence
-				default : throw new AssertionFailedException();
+				default :
+					break;//Ignore to keep things simple
 			}
 		} else if (maxQuality == DUBIOUS) {
 			stats.nPosQualityQ1.increment(location);
@@ -1115,7 +1110,7 @@ public final class SubAnalyzer {
 		});
 	}
 
-	private boolean lowMutFreq(Mutation mut, ImmutableSet<CandidateSequence> candidateSet, int nGOrDDuplexes) {
+	private boolean lowMutFreq(Mutation mut, SetIterable<CandidateSequence> candidateSet, int nGOrDDuplexes) {
 		Objects.requireNonNull(mut);
 		Handle<Boolean> result = new Handle<>(true);
 		candidateSet.detect((CandidateSequence c) -> {
@@ -1135,25 +1130,28 @@ public final class SubAnalyzer {
 		return f2 == 0f ? 0 : f1 / f2;
 	}
 
-	private @Nullable Quality getAlleleFrequencyQuality(
-			ImmutableSet<CandidateSequence> candidateSet,
-			LocationExaminationResults result) {
-		MutableFloatList frequencyList = candidateSet.collectFloat(c ->
-				divideWithNanToZero(c.getnGoodOrDubiousDuplexes(), result.nGoodOrDubiousDuplexes),
-				new FloatArrayList(Math.max(2, candidateSet.size()))).//Need second argument to collectInt
-				//to avoid collecting into a set
-			sortThis();
-		result.alleleFrequencies = frequencyList;
-		while (frequencyList.size() < 2) {
-			frequencyList.addAtIndex(0, Float.NaN);
-		}
+	private final static Optional<Quality> OPTIONAL_DUBIOUS = Optional.of(DUBIOUS);
 
-		float topAlleleFrequency = frequencyList.getLast();
-		if (!(topAlleleFrequency >= param.minTopAlleleFreqQ2 &&
-				topAlleleFrequency <= param.maxTopAlleleFreqQ2)) {
-			return DUBIOUS;
-		}
-		return null;
+	private static Optional<Quality> alleleFrequencyQuality(
+			MutableSortedSet<CandidateSequence> candidateSet,
+			final int nGoodOrDubiousDuplexes,
+			Parameters param) {
+		candidateSet.forEach(c -> c.setFrequencyAtPosition(
+				divideWithNanToZero(c.getnGoodOrDubiousDuplexes(), nGoodOrDubiousDuplexes)));
+
+		//Make sure candidateSet is sorted after modification of
+		//frequencyAtPosition above
+		List<CandidateSequence> tempHolder = Arrays.asList(
+			candidateSet.toArray(new CandidateSequence [candidateSet.size()]));
+		candidateSet.clear();
+		candidateSet.addAll(tempHolder);
+
+		return LocationExaminationResults.getTopAlleleFrequency(candidateSet).flatMap(topFreq ->
+			!(topFreq >= param.minTopAlleleFreqQ2 && topFreq <= param.maxTopAlleleFreqQ2) ?
+					OPTIONAL_DUBIOUS
+				:
+					Optional.empty()
+		);
 	}
 
 	private static void checkCandidateDupNoQ(CandidateSequence candidate, SequenceLocation location) {
@@ -1374,7 +1372,7 @@ public final class SubAnalyzer {
 
 	@SuppressWarnings("ReferenceEquality")
 	private static void checkDuplexAndCandidates(Set<Duplex> duplexes,
-			ImmutableSet<CandidateSequence> candidateSet) {
+			SetIterable<CandidateSequence> candidateSet) {
 
 		checkDuplexes(duplexes);
 

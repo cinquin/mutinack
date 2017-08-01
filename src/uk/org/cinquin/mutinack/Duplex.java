@@ -58,7 +58,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.SetIterable;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.lazy.LazyIterableAdapter;
 import org.eclipse.collections.impl.list.mutable.FastList;
@@ -585,7 +585,7 @@ public final class Duplex implements HasInterval<Integer> {
 
 	public void examineAtLoc(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
+			@NonNull SetIterable<@NonNull CandidateSequence> candidateSet,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
 			Mutinack analyzer,
@@ -613,7 +613,7 @@ public final class Duplex implements HasInterval<Integer> {
 	@SuppressWarnings("ReferenceEquality")
 	private void examineAtLoc1(@NonNull SequenceLocation location,
 			LocationExaminationResults result,
-			@NonNull ImmutableSet<@NonNull CandidateSequence> candidateSet,
+			@NonNull SetIterable<@NonNull CandidateSequence> candidateSet,
 			@NonNull CandidateCounter topCounter,
 			@NonNull CandidateCounter bottomCounter,
 			Mutinack analyzer,

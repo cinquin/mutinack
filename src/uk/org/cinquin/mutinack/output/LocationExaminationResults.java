@@ -18,14 +18,18 @@ package uk.org.cinquin.mutinack.output;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import javax.jdo.annotations.PersistenceCapable;
 
-import org.eclipse.collections.api.list.primitive.MutableFloatList;
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.sorted.SortedSetIterable;
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -42,7 +46,7 @@ public final class LocationExaminationResults implements Serializable {
 	private static final long serialVersionUID = -2966237959317593137L;
 
 	@JsonIgnore //Already listed in LocationAnalysis
-	public transient ImmutableSet<CandidateSequence> analyzedCandidateSequences;
+	public transient SortedSetIterable<CandidateSequence> analyzedCandidateSequences;
 	public int nGoodOrDubiousDuplexes = 0;
 	public Boolean tooHighCoverage;
 	public int nGoodOrDubiousDuplexesSisterSamples = 0;
@@ -50,7 +54,6 @@ public final class LocationExaminationResults implements Serializable {
 	public int nGoodDuplexes = 0;
 	public int strandCoverageImbalance;
 	public int nMissingStrands;
-	public MutableFloatList alleleFrequencies;
 	public final transient @NonNull
 		MapOfLists<@NonNull DuplexDisagreement, @NonNull Duplex>
 		disagreements = new MapOfLists<>();//Transient because DuplexRead is not serializable
@@ -95,6 +98,64 @@ public final class LocationExaminationResults implements Serializable {
 			intraStrandSubstitutions = Collections.emptyList();
 			intraStrandDeletions = Collections.emptyList();
 			intraStrandInsertions = Collections.emptyList();
+		}
+	}
+
+	public static Optional<Float> getTopAlleleFrequency(SortedSetIterable<CandidateSequence> candidates) {
+		return candidates.getFirstOptional().map(CandidateSequence::getFrequencyAtPosition);
+	}
+
+	public Optional<Float> getTopAlleleFrequency() {
+		return Optional.ofNullable(analyzedCandidateSequences).flatMap(LocationExaminationResults::getTopAlleleFrequency);
+	}
+
+	public FloatPair getTopTwoAlleleFreqFloat() {
+		float [] freq = new float[2];
+		iterateTopTwoCandidates((opt, index) -> freq[index] = opt.map(c ->
+			c.getFrequencyAtPosition()).orElse(Float.NaN));
+		return new FloatPair(freq[0], freq[1]);
+	}
+
+	public IntPair getTopTwoAlleleFreq() {
+		int [] freq = new int[2];
+		iterateTopTwoCandidates((opt, index) -> freq[index] = opt.map(c ->
+			(int) (10f * nanTo99(c.getFrequencyAtPosition()))).orElse(99));
+		return new IntPair(freq[0], freq[1]);
+	}
+
+	private void iterateTopTwoCandidates(BiConsumer<Optional<CandidateSequence>, Integer> consumer) {
+		Iterator<CandidateSequence> it = analyzedCandidateSequences.iterator();
+		for (int index = 0; index < 2; index++) {
+			if (it.hasNext()) {
+				consumer.accept(Optional.of(it.next()), index);
+			} else {
+				consumer.accept(Optional.empty(), index);
+			}
+		}
+	}
+
+	public @NonNull List<Integer> getTopTwoAlleleFreqList() {
+		IntPair p = getTopTwoAlleleFreq();
+		return Arrays.asList(p.i1, p.i2);
+	}
+
+	private static float nanTo99(float f) {
+		return Float.isNaN(f) ? 9.9f : f;
+	}
+
+	public static class IntPair {
+		public final int i1, i2;
+		public IntPair(int i1, int i2) {
+			this.i1 = i1;
+			this.i2 = i2;
+		}
+	}
+
+	public static class FloatPair {
+		public final float f1, f2;
+		public FloatPair(float f1, float f2) {
+			this.f1 = f1;
+			this.f2 = f2;
 		}
 	}
 }

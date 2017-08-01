@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IntSummaryStatistics;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -155,6 +156,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private Boolean negativeCodingStrand;
 	private @Persistent boolean goodCandidateForUniqueMutation;
 	@Persistent MutableSetMultimap<String, GenomeInterval> matchingGenomeIntervals;
+	private float frequencyAtPosition;
 
 	@JsonIgnore private transient Mutation mutation;
 
@@ -191,6 +193,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		nQ1PlusConcurringDuplexes = -1;
 		setGoodCandidateForUniqueMutation(false);
 		matchingGenomeIntervals = null;
+		frequencyAtPosition = -1;
 	}
 
 	@Override
@@ -340,6 +343,14 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 		return true;
 	}
+
+	public static final Comparator<CandidateSequence> reverseFrequencyComparator = (c1, c2) -> {
+		int cmp1 = Float.compare(c2.getFrequencyAtPosition(), c1.getFrequencyAtPosition());
+		if (cmp1 != 0) {
+			return cmp1;
+		}
+		return c1.getMutation().compareTo(c2.getMutation());
+	};
 
 	@Override
 	public String getChange() {
@@ -910,6 +921,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 				qualityKD);//TODO This is redundant now
 		}
 
+		Iterator<CandidateSequence> localCandidates =
+			examResults == null ? null : examResults.analyzedCandidateSequences.iterator();
+
 		String qualityKDString = qualityKD.collect(Collectors.joining(","));
 		/**
 		 * Make sure columns stay in sync with Mutinack.outputHeader
@@ -951,8 +965,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			getMedianPhredAtPosition() + '\t' +
 			(getMinInsertSize() == -1 ? "?" : getMinInsertSize()) + '\t' +
 			(getMaxInsertSize() == -1 ? "?" : getMaxInsertSize()) + '\t' +
-			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(0)) + '\t' +
-			formatter.format(examResults == null ? Float.NaN : examResults.alleleFrequencies.get(1)) + '\t' +
+			formatter.format(localCandidates == null || !localCandidates.hasNext() ? Float.NaN : localCandidates.next().getFrequencyAtPosition()) + '\t' +
+			formatter.format(localCandidates == null || !localCandidates.hasNext() ? Float.NaN : localCandidates.next().getFrequencyAtPosition()) + '\t' +
 			getSmallestConcurringDuplexDistance() + '\t' +
 			getLargestConcurringDuplexDistance() + '\t' +
 			(getSupplementalMessage() != null ? getSupplementalMessage() : "") + '\t'
@@ -1007,11 +1021,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public Mutation getMutation() {
+	public @NonNull Mutation getMutation() {
 		if (mutation == null) {
 			mutation = new Mutation(this);
 		}
-		return mutation;
+		return Objects.requireNonNull(mutation);
 	}
 
 	@Override
@@ -1275,5 +1289,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public int getBottomStrandDuplexes() {
 		return bottomStrandDuplexes;
+	}
+
+	public float getFrequencyAtPosition() {
+		return frequencyAtPosition;
+	}
+
+	public void setFrequencyAtPosition(float frequencyAtPosition) {
+		this.frequencyAtPosition = frequencyAtPosition;
 	}
 }

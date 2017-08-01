@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.list.primitive.MutableFloatList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.block.factory.Procedures;
@@ -82,6 +81,7 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.CrossSampleLocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationAnalysis;
 import uk.org.cinquin.mutinack.output.LocationExaminationResults;
+import uk.org.cinquin.mutinack.output.LocationExaminationResults.FloatPair;
 import uk.org.cinquin.mutinack.qualities.Quality;
 import uk.org.cinquin.mutinack.sequence_IO.TrimOverlappingReads;
 import uk.org.cinquin.mutinack.statistics.Histogram;
@@ -406,16 +406,11 @@ public class SubAnalyzerPhaser extends Phaser {
 			}).
 			getMax());
 
-		@SuppressWarnings("null")//getMin cannot return null because constructor with initial min is used
+		@SuppressWarnings("null")
 		final float minTopAlleleFreq = new ObjMinMax<>(Float.MAX_VALUE, - Float.MAX_VALUE, Float::compareTo).
 			acceptMin(locationExamResults, cl -> {
-				MutableFloatList freq = ((LocationExaminationResults) cl).alleleFrequencies;
-				if (freq != null) {
-					float f = ((LocationExaminationResults) cl).alleleFrequencies.getLast();
-					return Float.isNaN(f) ? Float.MAX_VALUE : f;
-				} else {
-					return Float.MAX_VALUE;
-				}
+				Float f = ((LocationExaminationResults) cl).getTopAlleleFrequency().orElse(null);
+				return (f == null || Float.isNaN(f)) ? Float.MAX_VALUE : f;
 			}).getMin();
 
 		final boolean lowTopAlleleFreq = minTopAlleleFreq != 0 &&
@@ -715,10 +710,6 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 	}
 
-	private static float nanTo99(float f) {
-		return Float.isNaN(f) ? 9.9f : f;
-	}
-
 	private static void registerAndAnalyzeCoverage(
 			final @NonNull LocationExaminationResults examResults,
 			final @NonNull Handle<Boolean> mutationToAnnotate,
@@ -760,13 +751,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 		}
 
-		MutableFloatList alleleFrequencies = examResults.alleleFrequencies;
-		if (alleleFrequencies != null) {
-			List<Integer> freq = new FastList<>(2);
-			freq.add((int) (10f * nanTo99(alleleFrequencies.get(alleleFrequencies.size() - 2))));
-			freq.add((int) (10f * nanTo99(alleleFrequencies.getLast())));
-			stats.alleleFrequencies.accept(location, freq);
-		}
+		stats.alleleFrequencies.accept(location, examResults.getTopTwoAlleleFreqList());
 
 		examResults.analyzedCandidateSequences.each(c -> {
 			if (c.getQuality().getNonNullValue().atLeast(GOOD)) {
@@ -932,6 +917,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					:
 						stats.noWtDisagreementWriter;
 				if (tpdw != null) {
+					FloatPair alleleFreq = examResults.getTopTwoAlleleFreqFloat();
 					NumberFormat formatter = mediumLengthFloatFormatter.get();
 					tpdw.append(location.getContigName() + '\t' +
 						(location.position + 1) + '\t' + (location.position + 1) + '\t' +
@@ -943,8 +929,8 @@ public class SubAnalyzerPhaser extends Phaser {
 						(d.hasAWtStrand ? "" : (d.getFst() != null ? d.getFst().mutationType : "-")) + '\t' +
 						examResults.duplexInsertSize10thP + '\t' +
 						examResults.duplexInsertSize90thP + '\t' +
-						formatter.format(examResults.alleleFrequencies.get(0)) + '\t' +
-						formatter.format(examResults.alleleFrequencies.get(1)) + '\t' +
+						formatter.format(alleleFreq.f1) + '\t' +
+						formatter.format(alleleFreq.f2) + '\t' +
 						formatter.format(d.probCollision) + '\t' +
 						formatter.format(examResults.probAtLeastOneCollision) + '\t' +
 						entry.getValue().size() + '\t' +

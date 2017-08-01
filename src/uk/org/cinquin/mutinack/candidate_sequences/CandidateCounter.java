@@ -18,7 +18,7 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.List;
 
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.SetIterable;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -30,7 +30,7 @@ import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
 public final class CandidateCounter {
-	private final @NonNull ImmutableSet<@NonNull CandidateSequence> candidates;
+	private final @NonNull SetIterable<@NonNull CandidateSequence> candidates;
 	private List<@NonNull ExtendedSAMRecord> records;
 	private final @NonNull SequenceLocation location;
 	public int minBasePhredScore = 0;
@@ -40,7 +40,7 @@ public final class CandidateCounter {
 
 	public long nPhreds, sumPhreds;
 
-	public CandidateCounter(@NonNull ImmutableSet<@NonNull CandidateSequence> candidates,
+	public CandidateCounter(@NonNull SetIterable<@NonNull CandidateSequence> candidates,
 			@NonNull SequenceLocation location) {
 		this.candidates = candidates;
 		this.location = location;
