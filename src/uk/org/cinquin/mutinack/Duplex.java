@@ -698,8 +698,8 @@ public final class Duplex implements HasInterval<Integer> {
 		}
 
 		if (nBottomStrandsWithCandidate + nTopStrandsWithCandidate <
-			param.minReadsPerDuplexQ2) {
-				dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
+				param.minReadsPerDuplexQ2) {
+			dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
 
 		final int mapQ = computeMappingQuality(allRecords);
