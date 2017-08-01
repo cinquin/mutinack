@@ -551,6 +551,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawMismatchesQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)
+	public @Final @Persistent(serialized = "true")	LongAdderFormatter rawMismatchesNReads = new LongAdderFormatter();
+
+	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<ComparablePair<String, String>> rawDeletionsQ2;
 
 	@PrintInStatus(outputLevel = VERBOSE)

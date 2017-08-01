@@ -387,7 +387,8 @@ public class SubAnalyzerPhaser extends Phaser {
 					sa.analyzer,
 					groupSettings.mutationsToAnnotate,
 					sa.analyzer.codingStrandTester,
-					repetitiveBEDs);
+					repetitiveBEDs,
+					param.rawMismatchesOnlyAtWtPos);
 			}
 		);
 
@@ -720,7 +721,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull ConcurrentMap<Pair<SequenceLocation, String>,
 				@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate,
 			final @Nullable GenomeFeatureTester codingStrandTester,
-			final @NonNull List<BedReader> repetitiveBEDs
+			final @NonNull List<BedReader> repetitiveBEDs,
+			final boolean rawMismatchesOnlyAtWtPos
 		) {
 
 		if (mutationsToAnnotate.containsKey(new Pair<>(location, a.name))) {
@@ -804,7 +806,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		if (!localTooHighCoverage) {
 			//a.stats.nPosDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
-			registerOutputDisagreements(examResults, stats, location);
+			registerOutputDisagreements(examResults, stats, location, rawMismatchesOnlyAtWtPos);
 		} else {
 			stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
 			for (@NonNull DuplexDisagreement d: examResults.disagreements.keys()) {
@@ -861,24 +863,34 @@ public class SubAnalyzerPhaser extends Phaser {
 	private static void registerOutputDisagreements(
 			final @NonNull LocationExaminationResults examResults,
 			final @NonNull AnalysisStats stats,
-			final @NonNull SequenceLocation location) {
+			final @NonNull SequenceLocation location,
+			final boolean rawMismatchesOnlyAtWtPos) {
 
-		stats.rawMismatchesQ2.accept(location, examResults.rawMismatchesQ2);
+		examResults.analyzedCandidateSequences.getFirstOptional().ifPresent(topCandidate -> {
+			if (!rawMismatchesOnlyAtWtPos ||
+					(topCandidate.getMutation().mutationType.isWildtype() && topCandidate.getFrequencyAtPosition() >= 0.7f)) {
 
-		for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
-			stats.rawDeletionsQ2.accept(location, var);
-			stats.rawDeletionLengthQ2.insert(var.snd.length());
-		}
+				stats.rawMismatchesNReads.add(topCandidate.getTotalReadsAtPosition());
 
-		for (@NonNull ComparablePair<String, String> var: examResults.rawInsertionsQ2) {
-			stats.rawInsertionsQ2.accept(location, var);
-			stats.rawInsertionLengthQ2.insert(var.snd.length());
-		}
+				stats.rawMismatchesQ2.accept(location, examResults.rawMismatchesQ2);
 
-		stats.intraStrandNReads.insert(examResults.intraStrandNReads);
-		stats.intraStrandSubstitutions.accept(location, examResults.intraStrandSubstitutions);
-		stats.intraStrandDeletions.accept(location, examResults.intraStrandDeletions);
-		stats.intraStrandInsertions.accept(location, examResults.intraStrandInsertions);
+				for (@NonNull ComparablePair<String, String> var: examResults.rawDeletionsQ2) {
+					stats.rawDeletionsQ2.accept(location, var);
+					stats.rawDeletionLengthQ2.insert(var.snd.length());
+				}
+
+				for (@NonNull ComparablePair<String, String> var: examResults.rawInsertionsQ2) {
+					stats.rawInsertionsQ2.accept(location, var);
+					stats.rawInsertionLengthQ2.insert(var.snd.length());
+				}
+
+				stats.intraStrandNReads.insert(examResults.intraStrandNReads);
+				stats.intraStrandSubstitutions.accept(location, examResults.intraStrandSubstitutions);
+				stats.intraStrandDeletions.accept(location, examResults.intraStrandDeletions);
+				stats.intraStrandInsertions.accept(location, examResults.intraStrandInsertions);
+
+			}
+		});
 
 		for (Entry<DuplexDisagreement, List<Duplex>> entry: examResults.disagreements) {
 

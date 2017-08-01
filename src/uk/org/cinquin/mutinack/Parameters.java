@@ -526,6 +526,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawMismatches = true;
 
+	@Parameter(names = "-rawMismatchesOnlyAtWtPos", description = "Compute mismatches only at positions where the wild type allele represents at least 90% of the reads", arity = 1, required = false)
+	public boolean rawMismatchesOnlyAtWtPos = true;
+
 	@Parameter(names = "-computeIntraStrandMismatches", description = "Compute mismatches between reads that belong to the same duplex strand", arity = 1, required = false)
 	public boolean computeIntraStrandMismatches = false;
 
