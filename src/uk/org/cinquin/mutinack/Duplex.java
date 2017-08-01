@@ -650,26 +650,26 @@ public final class Duplex implements HasInterval<Integer> {
 		topCounter.candidateCounts.forEachValue(si -> ir2.acceptMax(si.count, si));
 		top = ir2.getKeyMax();
 
-		final int nTopStrandsWithCandidate = topCounter.keptRecords.size();
-		final int nBottomStrandsWithCandidate = bottomCounter.keptRecords.size();
+		final int nTopReadsWithCandidate = topCounter.keptRecords.size();
+		final int nBottomReadsWithCandidate = bottomCounter.keptRecords.size();
 
 		topCounter.reset();
 		bottomCounter.reset();
 
-		stats.copyNumberOfDuplexTopStrands.insert(nTopStrandsWithCandidate);
-		stats.copyNumberOfDuplexBottomStrands.insert(nBottomStrandsWithCandidate);
-		if (nTopStrandsWithCandidate > 0 && nBottomStrandsWithCandidate > 0) {
+		stats.copyNumberOfDuplexTopStrands.insert(nTopReadsWithCandidate);
+		stats.copyNumberOfDuplexBottomStrands.insert(nBottomReadsWithCandidate);
+		if (nTopReadsWithCandidate > 0 && nBottomReadsWithCandidate > 0) {
 			stats.nPosDuplexBothStrandsPresent.accept(location);
 		}
 
 		final @NonNull DetailedQualities<DuplexAssay> dq = new DetailedDuplexQualities();
 		globalQuality.forEach(dq::add);
 
-		if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ2 &&
-				nTopStrandsWithCandidate >= param.minReadsPerStrandQ2) {
+		if (nBottomReadsWithCandidate >= param.minReadsPerStrandQ2 &&
+				nTopReadsWithCandidate >= param.minReadsPerStrandQ2) {
 			dq.addUnique(N_READS_PER_STRAND, GOOD);
-		} else if (nBottomStrandsWithCandidate >= param.minReadsPerStrandQ1 &&
-				nTopStrandsWithCandidate >= param.minReadsPerStrandQ1) {
+		} else if (nBottomReadsWithCandidate >= param.minReadsPerStrandQ1 &&
+				nTopReadsWithCandidate >= param.minReadsPerStrandQ1) {
 			if (bottom != null && top != null) {
 				dq.addUnique(N_READS_PER_STRAND, DUBIOUS);
 			}
@@ -677,9 +677,9 @@ public final class Duplex implements HasInterval<Integer> {
 			result.strandCoverageImbalance = Math.max(result.strandCoverageImbalance,
 					Math.abs(bottomStrandRecords.size() - topStrandRecords.size()));
 			if (param.logReadIssuesInOutputBam) {
-				if (nBottomStrandsWithCandidate < param.minReadsPerStrandQ2)
+				if (nBottomReadsWithCandidate < param.minReadsPerStrandQ2)
 					issues.add(location + "_TFR1B");
-				if (nTopStrandsWithCandidate < param.minReadsPerStrandQ2)
+				if (nTopReadsWithCandidate < param.minReadsPerStrandQ2)
 					issues.add(location + "_TFR1T");
 			}
 		} else {
@@ -690,14 +690,14 @@ public final class Duplex implements HasInterval<Integer> {
 				result.nMissingStrands++;
 			}
 			if (param.logReadIssuesInOutputBam) {
-				if (nTopStrandsWithCandidate < param.minReadsPerStrandQ1)
+				if (nTopReadsWithCandidate < param.minReadsPerStrandQ1)
 					issues.add(location + "_TFR0B");
-				if (nBottomStrandsWithCandidate < param.minReadsPerStrandQ1)
+				if (nBottomReadsWithCandidate < param.minReadsPerStrandQ1)
 					issues.add(location + "_TFR0T");
 			}
 		}
 
-		if (nBottomStrandsWithCandidate + nTopStrandsWithCandidate <
+		if (nBottomReadsWithCandidate + nTopReadsWithCandidate <
 				param.minReadsPerDuplexQ2) {
 			dq.addUnique(TOTAL_N_READS_Q2, DUBIOUS);
 		}
@@ -743,25 +743,25 @@ public final class Duplex implements HasInterval<Integer> {
 
 		final boolean thresholds2Met, thresholds1Met;
 
-		thresholds2Met = ((top != null) && top.count >= param.minConsensusThresholdQ2 * nTopStrandsWithCandidate) &&
-			(bottom != null && bottom.count >= param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate);
+		thresholds2Met = ((top != null) && top.count >= param.minConsensusThresholdQ2 * nTopReadsWithCandidate) &&
+			(bottom != null && bottom.count >= param.minConsensusThresholdQ2 * nBottomReadsWithCandidate);
 
 		final boolean topConsensusPassedQ1 =
-			top == null || top.count >= param.minConsensusThresholdQ1 * nTopStrandsWithCandidate;
+			top == null || top.count >= param.minConsensusThresholdQ1 * nTopReadsWithCandidate;
 		final boolean bottomConsensusPassedQ1 =
-			bottom == null || bottom.count >= param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate;
+			bottom == null || bottom.count >= param.minConsensusThresholdQ1 * nBottomReadsWithCandidate;
 		thresholds1Met = topConsensusPassedQ1 && bottomConsensusPassedQ1;
 
 		if (top != null) {
-			minFracTopCandidate = top.count / ((float) nTopStrandsWithCandidate);
+			minFracTopCandidate = top.count / ((float) nTopReadsWithCandidate);
 		}
 
 		if (bottom != null) {
-			minFracTopCandidate = Math.min(minFracTopCandidate, bottom.count / ((float) nBottomStrandsWithCandidate));
+			minFracTopCandidate = Math.min(minFracTopCandidate, bottom.count / ((float) nBottomReadsWithCandidate));
 		}
 
 		if (countedWithQ2Phred && param.computeIntraStrandMismatches &&
-				nTopStrandsWithCandidate + nBottomStrandsWithCandidate >= 3 &&//Only strands with at least
+				nTopReadsWithCandidate + nBottomReadsWithCandidate >= 3 &&//Only strands with at least
 				//1 wt and 2 [concordant] mutant reads can contribute a registered intraStrand mismatch
 				(topCounter.hasWildtype() || bottomCounter.hasWildtype())) {
 			registerRepeatedMismatch(param, top, topCounter, nTopReadsWithCandidate, result, topStrandIsNegative);
@@ -774,9 +774,9 @@ public final class Duplex implements HasInterval<Integer> {
 			stats.nConsensusQ1NotMet.increment(location);
 			if (param.logReadIssuesInOutputBam) {
 				issues.add(location + " CS0Y_" + (top != null ? top.count : "x") +
-					'_' + nTopStrandsWithCandidate + '_' +
+					'_' + nTopReadsWithCandidate + '_' +
 						(bottom != null ? bottom.count : "x") +
-					'_' + nBottomStrandsWithCandidate);
+					'_' + nBottomReadsWithCandidate);
 			}
 		}
 
@@ -811,28 +811,28 @@ public final class Duplex implements HasInterval<Integer> {
 				dq.addUnique(CONSENSUS_Q1, DUBIOUS);
 				stats.nPosDuplexWithLackOfStrandConsensus2.increment(location);
 				if (param.logReadIssuesInOutputBam) {
-					if (top.count < param.minConsensusThresholdQ2 * nTopStrandsWithCandidate)
+					if (top.count < param.minConsensusThresholdQ2 * nTopReadsWithCandidate)
 						issues.add(location + " CS1T_" + shortLengthFloatFormatter.get().format
-								(((float) top.count) / nTopStrandsWithCandidate));
-					if (bottom.count < param.minConsensusThresholdQ2 * nBottomStrandsWithCandidate)
+								(((float) top.count) / nTopReadsWithCandidate));
+					if (bottom.count < param.minConsensusThresholdQ2 * nBottomReadsWithCandidate)
 						issues.add(location + " CS1B_" + shortLengthFloatFormatter.get().format
-								(((float) bottom.count) / nBottomStrandsWithCandidate));
+								(((float) bottom.count) / nBottomReadsWithCandidate));
 				}
 			} else {
 				dq.addUnique(CONSENSUS_Q0, POOR);
 				stats.nPosDuplexWithLackOfStrandConsensus1.increment(location);
 				if (param.logReadIssuesInOutputBam) {
-					if (top.count < param.minConsensusThresholdQ1 * nTopStrandsWithCandidate)
+					if (top.count < param.minConsensusThresholdQ1 * nTopReadsWithCandidate)
 						issues.add(location + " CS0T_" + shortLengthFloatFormatter.get().format
-								(((float) top.count) / nTopStrandsWithCandidate));
-					if (bottom.count < param.minConsensusThresholdQ1 * nBottomStrandsWithCandidate)
+								(((float) top.count) / nTopReadsWithCandidate));
+					if (bottom.count < param.minConsensusThresholdQ1 * nBottomReadsWithCandidate)
 						issues.add(location + " CS0B_" + shortLengthFloatFormatter.get().format
-								(((float) bottom.count) / nBottomStrandsWithCandidate));
+								(((float) bottom.count) / nBottomReadsWithCandidate));
 				}
 			}
 		} else {//Only the top or bottom strand is represented
 			CandidateDuplexEval presentStrand = top != null ? top : bottom;
-			float total = nTopStrandsWithCandidate + nBottomStrandsWithCandidate; //One is 0, doesn't matter which
+			float total = nTopReadsWithCandidate + nBottomReadsWithCandidate; //One is 0, doesn't matter which
 			if (presentStrand != null && presentStrand.count < param.minConsensusThresholdQ1 * total) {
 				if (param.logReadIssuesInOutputBam) {
 					issues.add(location + " CS0X_" + shortLengthFloatFormatter.get().format
@@ -939,11 +939,11 @@ public final class Duplex implements HasInterval<Integer> {
 			if (noHiddenCandidateAndBSP && !noWildtype && mutantEval.count > 1) {
 				final int mutConsensus, wtConsensus;
 				if (m1.mutationType.isWildtype()) {
-					wtConsensus = (int) (100f * top.count / nTopStrandsWithCandidate);
-					mutConsensus = (int) (100f * bottom.count / nBottomStrandsWithCandidate);
+					wtConsensus = (int) (100f * top.count / nTopReadsWithCandidate);
+					mutConsensus = (int) (100f * bottom.count / nBottomReadsWithCandidate);
 				} else {
-					mutConsensus = (int) (100f * top.count / nTopStrandsWithCandidate);
-					wtConsensus = (int) (100f * bottom.count / nBottomStrandsWithCandidate);
+					mutConsensus = (int) (100f * top.count / nTopReadsWithCandidate);
+					wtConsensus = (int) (100f * bottom.count / nBottomReadsWithCandidate);
 				}
 				stats.disagMutConsensus.computeIfAbsent(
 					reverseComplementDisag ? actualMutant.reverseComplement() : actualMutant,
