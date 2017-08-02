@@ -592,6 +592,15 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		}
 	}
 
+	@SuppressWarnings("unused")
+	private @NonNull TObjectIntMap<ExtendedSAMRecord> getOriginalConcurringReads() {
+		if (originalConcurringReads == null) {
+			return getNonMutableConcurringReads();
+		} else {
+			return Objects.requireNonNull(originalConcurringReads);
+		}
+	}
+
 	@Override
 	public @Nullable StringBuilder getSupplementalMessage() {
 		return supplementalMessage;
