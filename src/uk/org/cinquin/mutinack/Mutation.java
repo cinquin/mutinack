@@ -29,6 +29,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequenceI;
+import uk.org.cinquin.mutinack.misc_util.ComparablePair;
+import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 import uk.org.cinquin.mutinack.output.json.ByteArrayStringSerializer;
 
@@ -127,6 +129,11 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 		}
 		return new Mutation(mutationType, complement(wildtype), /* XXX */ false, cMutSeq,
 				isTemplateStrand());
+	}
+
+	public static ComparablePair<@NonNull String, @NonNull String> reverseComplement(
+			Pair<@NonNull String, @NonNull String> pair) {
+		return new ComparablePair<>(Mutation.reverseComplement(pair.fst), Mutation.reverseComplement(pair.snd));
 	}
 
 	@Override

@@ -1927,7 +1927,8 @@ public final class SubAnalyzer {
 		if (param.computeRawMismatches && insertCandidateAtRegularPosition.get()) {
 			registerRawMismatch(location, extendedRec, readPosition,
 				distance, candidate.getMutableRawMismatchesQ2(), stats.rawMismatchesQ1,
-				getFromByteMap(wildType, readOnNegativeStrand), getFromByteMap(mutationUC, readOnNegativeStrand));
+				getFromByteMap(wildType, extendedRec.revCompDisags()), getFromByteMap(mutationUC,
+					extendedRec.revCompDisags()));
 		}
 		if (insertCandidateAtRegularPosition.get()) {
 			//noinspection UnusedAssignment
@@ -2074,11 +2075,10 @@ public final class SubAnalyzer {
 				Objects.requireNonNull(deletedSequence);
 				stats.rawDeletionLengthQ1.insert(deletedSequence.length);
 
-				final boolean negativeStrand = extendedRec.getReadNegativeStrandFlag();
 				registerRawMismatch(newLocation, extendedRec, readPosition,
 					distance, candidate.getMutableRawDeletionsQ2(), stats.rawDeletionsQ1,
-					getFromByteMap(deletedSequence[0], negativeStrand),
-					toUpperCase(deletedSequence, negativeStrand));
+					getFromByteMap(deletedSequence[0], extendedRec.revCompDisags()),
+					toUpperCase(deletedSequence, extendedRec.revCompDisags()));
 
 			}
 			//noinspection UnusedAssignment
@@ -2143,8 +2143,8 @@ public final class SubAnalyzer {
 			stats.rawInsertionLengthQ1.insert(insertedSequence.length);
 			registerRawMismatch(location, extendedRec, readPosition,
 				distance, candidate.getMutableRawInsertionsQ2(), stats.rawInsertionsQ1,
-				getFromByteMap(readBases[readEndOfPreviousAlignment], readOnNegativeStrand),
-				toUpperCase(insertedSequence, readOnNegativeStrand));
+				getFromByteMap(readBases[readEndOfPreviousAlignment], extendedRec.revCompDisags()),
+				toUpperCase(insertedSequence, extendedRec.revCompDisags()));
 		}
 
 		if (DebugLogControl.shouldLog(TRACE, logger, param, location)) {

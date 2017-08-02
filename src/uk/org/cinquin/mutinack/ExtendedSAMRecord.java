@@ -806,6 +806,10 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				: getReadPositiveStrand();
 	}
 
+	public boolean revCompDisags() {
+		return duplexLeft() ^ record.getFirstOfPairFlag();
+	}
+
 	public @NonNull SequenceLocation getLocation() {
 		return location;
 	}

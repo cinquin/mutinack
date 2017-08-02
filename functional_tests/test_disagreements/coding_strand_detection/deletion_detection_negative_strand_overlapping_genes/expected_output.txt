@@ -1,6 +1,6 @@
 codingStrandDelQ2: All: {}; total: 0
-rawDeletionsQ1: All: {(A, A)=2, (T, T)=2}; total: 4
-rawDeletionsQ2: All: {(A, A)=2, (T, T)=2}; total: 4
+rawDeletionsQ1: All: {(A, A)=4}; total: 4
+rawDeletionsQ2: All: {(A, A)=4}; total: 4
 topBottomDelDisagreementsQ2: All: {(wt A, del A)=1}; total: 1
 nPosDuplexCandidatesForDisagreementQ2: All: 68
 nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate: All: {}
