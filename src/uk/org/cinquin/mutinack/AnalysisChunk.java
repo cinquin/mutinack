@@ -90,7 +90,7 @@ public class AnalysisChunk {
 	public static int getProcessingThroughput(List<List<AnalysisChunk>> l0) {
 		List<ProcessingStats> processingStats =
 			l0.stream().flatMap(l -> l.stream()).flatMap(c -> c.processingStats.values().stream()).
-				collect(Collectors.toList());
+			collect(Collectors.toList());
 		return getProcessingThroughput(processingStats);
 	}
 
