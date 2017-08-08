@@ -1,0 +1,1 @@
+${CHRIII} -lookForRearrangements -startAtPosition chrIII:9,094,386 -stopAtPosition chrIII:9,096,012 -inputReads alignment-1/alignment-1.bam -sampleName alignment1 -minNumberDuplexesSisterSamples 0 -minReadsPerStrandQ2 1 -minReadsPerDuplexQ2 1 -minConcurringDuplexReads 0

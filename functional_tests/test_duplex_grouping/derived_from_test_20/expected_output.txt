@@ -1,2 +1,2 @@
 |_	chrIII:03,995,400	deletion	-T-	test	0	1	1	11	NaN	1.0000	1.0000	1.0000	60
-|_	chrIII:03,995,400	deletion	-T-	control	0	32	33	103	NaN	1.0000	1.0000	1.0000	59
+|_	chrIII:03,995,400	deletion	-T-	control	0	31	32	103	NaN	1.0000	1.0000	1.0000	59

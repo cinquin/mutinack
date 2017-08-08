@@ -65,6 +65,9 @@ public final class Parameters implements Serializable, Cloneable {
 		if (outputAlignmentFile.isEmpty()) {
 			logReadIssuesInOutputBam = false;
 		}
+		if (lookForRearrangements) {
+			fetchDistantMates = true;
+		}
 	}
 
 	public void validate() {
@@ -643,6 +646,16 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-minQ1Q2DuplexesToCallMutation", description = "Min number of Q1 or Q2 duplexes to call mutation (condition set by minQ2DuplexesToCallMutation must also be met)", required = false)
 	@OnlyUsedAfterDuplexGrouping
 	public int minQ1Q2DuplexesToCallMutation = 1;
+
+	@Parameter(names = "-minQ2DuplexesToCallRearrangement", description = "Min number of Q2 duplexes to call mutation (condition set by minQ1Q2DuplexesToCallMutation must also be met)", required = false)
+	@OnlyUsedAfterDuplexGrouping
+	public int minQ2DuplexesToCallRearrangement = 2;
+
+	@Parameter(names = "-lookForRearrangements", description = "higher computational cost", required = false)
+	public boolean lookForRearrangements = false;
+
+	@Parameter(names = "-fetchDistantMates", description = "high computational cost", required = false)
+	public boolean fetchDistantMates = false;
 
 	@Parameter(names = "-acceptNInBarCode", description = "If true, an N read within the barcode is" +
 		" considered a match", required = false)

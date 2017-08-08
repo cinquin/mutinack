@@ -1,0 +1,1 @@
+*1|_	chrIII:05,997,385.5	rearrangement	--> +chrIII:06,949,026.5 (DELETION) sizeCoveredByRearrangement=-951700; cigar1=60M83H; cigar2=60H83M	alignment1	1	1	1	4

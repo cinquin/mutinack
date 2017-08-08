@@ -1,0 +1,1 @@
+${CHRII} -lookForRearrangements -startAtPosition chrII:6,078,764 -stopAtPosition chrII:6,078,766 -inputReads alignment-1/alignment-1.bam -sampleName alignment1

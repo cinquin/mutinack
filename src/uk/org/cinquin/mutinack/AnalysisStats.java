@@ -157,6 +157,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 		topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		alleleFrequencies = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
+		topBottomRearDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		topBottomIntronDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		topBottomInsDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		codingStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
@@ -593,6 +594,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 	@AddLocationPredicates
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomDelDisagreementsQ2;
 
+	@PrintInStatus(outputLevel = TERSE)
+	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomRearDisagreementsQ2;
+
 	@PrintInStatus(outputLevel = VERBOSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<DuplexDisagreement> topBottomIntronDisagreementsQ2;
 
@@ -947,6 +951,22 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 	public @Persistent Map<String, int[]> positionByPositionCoverage;
 	transient Builder positionByPositionCoverageProtobuilder;
+
+	public final StatsCollector nChimericReadsMateWrongContig = new StatsCollector();
+
+	public final Histogram inferredRearrangementInsertSizeHistogram = new Histogram(5_000);
+
+	public final StatsCollector nChimericReadsMateOK = new StatsCollector();
+
+	public final StatsCollector nChimericReadsTooBigInsert = new StatsCollector();
+
+	public final StatsCollector nChimericReadsUnmappedMate = new StatsCollector();
+
+	public final StatsCollector nNotSingleSupplementary = new StatsCollector();
+
+	public final Histogram inferredRearrangementDistanceLogt100Histogram = new Histogram(5_000);
+
+	public final StatsCollector nChimericReadsMateWrongSide = new StatsCollector();
 
 	@SuppressWarnings("null")
 	public void print(PrintStream stream, boolean colorize) {

@@ -207,7 +207,7 @@ public class Mutinack implements Actualizable, Closeable {
 	private final Date startDate;
 
 	private final @NonNull MutinackGroup groupSettings;
-	final @NonNull Parameters param;
+	private final @NonNull Parameters param;
 	public final @NonNull String name;
 	long timeStartProcessing;
 	private final @NonNull List<SubAnalyzer> subAnalyzers = new ArrayList<>();
@@ -1416,7 +1416,7 @@ public class Mutinack implements Actualizable, Closeable {
 							Thread.currentThread().setName(analysisChunk.contigName + ' ' + analysisChunk.startAtPosition +
 								' ' + analyzer.name);
 							try {
-								ReadLoader.load(analyzer, analyzer.param, groupSettings,
+								ReadLoader.load(analyzer, analyzer.getParam(), groupSettings,
 									subAnalyzer, analysisChunk, groupSettings.PROCESSING_CHUNK,
 									contigNamesToProcess,
 									contigIndex, sharedAlignmentWriter,
@@ -1605,7 +1605,7 @@ public class Mutinack implements Actualizable, Closeable {
 		root.mutinackVersion = mutinackVersion;
 		root.parameters = param;
 		root.samples = analyzers.stream().map(a -> new ParedDownMutinack(a, a.startDate, new Date(),
-					a.param.runBatchName, a.param.runName)).
+					a.getParam().runBatchName, a.getParam().runName)).
 				collect(Collectors.toList());
 		analyzers.forEach(Actualizable::actualize);
 		analyzers.stream().flatMap(a -> a.subAnalyzers.stream()).
@@ -1743,6 +1743,10 @@ public class Mutinack implements Actualizable, Closeable {
 
 	public @NonNull MutinackGroup getGroupSettings() {
 		return groupSettings;
+	}
+
+	public Parameters getParam() {
+		return param;
 	}
 
 }

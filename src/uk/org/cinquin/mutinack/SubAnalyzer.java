@@ -90,10 +90,12 @@ import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateBuilder;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateCounter;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateDeletion;
+import uk.org.cinquin.mutinack.candidate_sequences.CandidateRearrangement;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
 import uk.org.cinquin.mutinack.candidate_sequences.PositionAssay;
+import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
 import uk.org.cinquin.mutinack.misc_util.DebugLogControl;
@@ -247,7 +249,7 @@ public final class SubAnalyzer {
 	@SuppressWarnings("null")//Stats not initialized straight away
 	SubAnalyzer(@NonNull Mutinack analyzer) {
 		this.analyzer = analyzer;
-		this.param = analyzer.param;
+		this.param = analyzer.getParam();
 		useHashMap = param.alignmentPositionMismatchAllowed == 0;
 		random = new Random(param.randomSeed);
 	}
@@ -1538,11 +1540,27 @@ public final class SubAnalyzer {
 			return -1;
 		}
 
+		boolean hasRearrangement = false;
+
+		if (param.lookForRearrangements) {
+			CandidateRearrangement rearrangement = SAMTranslocationTagParser.parse(extendedRec, param, stats, location,
+				analyzer.getGroupSettings().getIndexContigNameReverseMap(), this);
+
+			if (rearrangement != null) {
+				//noinspection UnusedAssignment
+				rearrangement = (CandidateRearrangement) readLocalCandidates.add(rearrangement, rearrangement.getLocation());
+				//noinspection UnusedAssignment
+				rearrangement = null;
+				hasRearrangement = true;
+			}
+		}
+
 		for (ExtendedAlignmentBlock block: extendedRec.getAlignmentBlocks()) {
 			processAlignmentBlock(
 				location,
 				locationInterningSet,
 				readLocalCandidates,
+				hasRearrangement,
 				ref,
 				block,
 				extendedRec,
@@ -1565,6 +1583,7 @@ public final class SubAnalyzer {
 			@NonNull SequenceLocation location,
 			InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
+			boolean hasRearrangement,
 			final @NonNull ReferenceSequence ref,
 			final ExtendedAlignmentBlock block,
 			final @NonNull ExtendedSAMRecord extendedRec,
@@ -1616,7 +1635,7 @@ public final class SubAnalyzer {
 		 * quality). This should avoid awkward comparisons between e.g. an
 		 * insertion candidate and a combo insertion + wildtype candidate.
 		 */
-		boolean forceCandidateInsertion = false;
+		boolean forceCandidateInsertion = hasRearrangement;
 
 		if (refEndOfPreviousAlignment != -1) {
 
@@ -1638,7 +1657,7 @@ public final class SubAnalyzer {
 						logger.info("Insertion at position " + readPosition + " for read " + rec.getReadName() +
 							" (effective length: " + effectiveReadLength + "; reversed:" + readOnNegativeStrand);
 					}
-					forceCandidateInsertion = processInsertion(
+					forceCandidateInsertion |= processInsertion(
 						fillInCandidateInfo,
 						readPosition,
 						refPosition,

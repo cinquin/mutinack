@@ -1,0 +1,1 @@
+*1|_	chrI:03,151,168.5	rearrangement	--> +chrIV:08,197,413.5 (INTERCHROMOSOMAL) sizeCoveredByRearrangement=-1; cigar1=88M55H; cigar2=88H55M	alignment1	1	1	1	2

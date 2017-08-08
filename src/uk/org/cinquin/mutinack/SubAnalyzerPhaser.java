@@ -992,6 +992,9 @@ public class SubAnalyzerPhaser extends Phaser {
 						else stats.codingStrandInsQ2.accept(location, d);
 					});
 					break;
+				case REARRANGEMENT:
+					stats.topBottomRearDisagreementsQ2.accept(location, d);
+					break;
 				default:
 					throw new AssertionFailedException();
 			}

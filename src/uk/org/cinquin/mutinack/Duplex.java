@@ -1003,6 +1003,9 @@ public final class Duplex implements HasInterval<Integer> {
 						case INTRON:
 							//TODO Alignment problem? Report in new stats
 							break;
+						case REARRANGEMENT:
+							//TODO Create new statistic to report this?
+							break;
 						case WILDTYPE:
 							throw new AssertionFailedException();
 						default:

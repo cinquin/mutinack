@@ -1,0 +1,1 @@
+${CHRX} -lookForRearrangements -startAtPosition chrX:11,857,476 -stopAtPosition chrX:11,857,488 -inputReads alignment-1/test1.bwa_mem_unpaired_no_adapt.map.sorted.bam -sampleName alignment1 -minNumberDuplexesSisterSamples 0 -minReadsPerStrandQ2 1 -minReadsPerDuplexQ2 1 -minConcurringDuplexReads 0

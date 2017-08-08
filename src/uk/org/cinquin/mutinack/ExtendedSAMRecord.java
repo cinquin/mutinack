@@ -40,7 +40,10 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectByteHashMap;
+import uk.org.cinquin.mutinack.candidate_sequences.CigarSplitAnalysis;
 import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
+import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser;
+import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser.ParseXT;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
@@ -651,8 +654,11 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 				return mate;
 			}
 		}
+		if (!analyzer.getParam().fetchDistantMates) {
+			return null;
+		}
 		final int inferredSize = record.getInferredInsertSize();
-		if (inferredSize != 0 && Math.abs(inferredSize) <= analyzer.param.maxInsertSize &&
+		if (inferredSize != 0 && Math.abs(inferredSize) <= analyzer.getParam().maxInsertSize &&
 				Objects.equals(record.getReferenceIndex(), record.getMateReferenceIndex())) {
 			return null;
 		}
@@ -719,6 +725,24 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public SequenceLocation getOffsetUnclippedEndLoc() {
+		final String xt = (String) record.getAttribute("XT");
+		if (xt != null) {
+			final CigarSplitAnalysis cigarAnalysis = new CigarSplitAnalysis(this);
+			if (cigarAnalysis.leftMatchNoRevcomp) {
+				ExtendedSAMRecord otherAlignment = getAlternativeAlignment(xt);
+				if (!this.equals(otherAlignment)) {
+					if (otherAlignment != null) {
+						if (Boolean.FALSE.equals(new CigarSplitAnalysis(otherAlignment).leftMatchNoRevcomp)) {
+							return otherAlignment.getOffsetUnclippedEndLoc();
+						} else {
+							return unclippedEndHelper(false);
+						}
+					} else {
+						return unclippedEndHelper(true);
+					}
+				}
+			}
+		}
 		return unclippedEndHelper(false);
 	}
 
@@ -732,11 +756,42 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public SequenceLocation getOffsetUnclippedStartLoc() {
+		final String xt = (String) record.getAttribute("XT");
+		if (xt != null) {
+			final CigarSplitAnalysis cigarAnalysis = new CigarSplitAnalysis(this);
+			if (!cigarAnalysis.leftMatchNoRevcomp) {
+				ExtendedSAMRecord otherAlignment = getAlternativeAlignment(xt);
+				if (!this.equals(otherAlignment)) {
+					if (otherAlignment != null) {
+						if (Boolean.TRUE.equals(new CigarSplitAnalysis(otherAlignment).leftMatchNoRevcomp)) {
+							return otherAlignment.getOffsetUnclippedStartLoc();
+						} else {
+							return unclippedStartHelper(false);
+						}
+					} else {
+						return unclippedStartHelper(true);
+					}
+				}
+			}
+		}
 		return unclippedStartHelper(false);
 	}
 
 	public int getOffsetUnclippedStart() {
 		return getOffsetUnclippedStartLoc().position;
+	}
+
+	private ExtendedSAMRecord getAlternativeAlignment(String tagXT) {
+		ParseXT parseXT = new SAMTranslocationTagParser.ParseXT(location.referenceGenome,
+			tagXT, groupSettings.getIndexContigNameReverseMap(), this);
+		ExtendedSAMRecord alternativeAlignment = analyzer.getRead(
+			record.getReadName(),
+			record.getFirstOfPairFlag(),
+			parseXT.otherLocation,
+			getAlignmentStart(),
+			500,
+			!runAndTile.isEmpty());
+		return alternativeAlignment;
 	}
 
 	public int getMateOffsetUnclippedEnd() {

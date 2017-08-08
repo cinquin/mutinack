@@ -204,6 +204,8 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 			case SUBSTITUTION:
 				return "subst " + (longForm ? (new String(new byte[] {wildtype}) + "->") : "") +
 					mutationSequenceString();
+			case REARRANGEMENT:
+				return "rearr ";
 			case UNKNOWN:
 				return "?";
 			default : throw new AssertionFailedException();

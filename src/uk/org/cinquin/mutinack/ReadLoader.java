@@ -56,6 +56,7 @@ import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.map.TMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
+import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.Handle;
 import uk.org.cinquin.mutinack.misc_util.NamedPoolThreadFactory;
@@ -441,7 +442,10 @@ public class ReadLoader {
 						}
 						final ExtendedSAMRecord extendedCopy = extended;
 						//Below duplicated to generate different stack traces
-						if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > 2 * param.maxInsertSize) {
+						if (SAMTranslocationTagParser.hasRearrangementAttribute(samRecord)) {
+							@SuppressWarnings("unused")
+							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+						} else if (Math.abs(samRecord.getInferredInsertSize()) > param.maxInsertSize) {
 							@SuppressWarnings("unused")
 							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
 						} else if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {

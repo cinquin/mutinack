@@ -1,0 +1,1 @@
+|_	chrII:06,078,764.5	rearrangement	--> +chrII:06,089,360.5 (TANDEM_REPEAT) sizeCoveredByRearrangement=-10595; cigar1=68H54M21S; cigar2=68M75H	alignment1	0	1	1	1

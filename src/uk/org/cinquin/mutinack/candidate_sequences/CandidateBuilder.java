@@ -27,9 +27,9 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
-import uk.org.cinquin.mutinack.misc_util.Assert;
 
 
 public final class CandidateBuilder {
@@ -52,7 +52,17 @@ public final class CandidateBuilder {
 			returned = function.apply(l, c);
 		} else {
 			@Nullable CandidateSequence previousCandidate = candidates.get(l);
-			Assert.isNull(previousCandidate);
+			if (previousCandidate != null) {
+				if (previousCandidate.getMutationType() == MutationType.WILDTYPE &&
+						c.getMutationType() == MutationType.REARRANGEMENT) {
+					//Nothing special to do; will replace wildtype by rearrangement
+				} else if (previousCandidate.getMutationType() == MutationType.REARRANGEMENT &&
+						c.getMutationType() == MutationType.WILDTYPE) {
+					return previousCandidate;
+				} else
+					throw new IllegalStateException("Trying to add " + c + " at " + l + " but " +
+						previousCandidate + " already inserted");
+			}
 			candidates.put(l, c);
 			returned = c;
 		}
