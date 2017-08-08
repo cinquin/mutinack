@@ -18,6 +18,7 @@
 package uk.org.cinquin.mutinack.tests;
 
 import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.impl.factory.Lists;
@@ -52,11 +53,15 @@ public class OpticalDuplicateTest {
 			@NonNull @Mocked MutinackGroup settings,
 			@NonNull @Mocked Mutinack analyzer) {
 
+		final ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+		map.put("mate_contig_name", 0);
 		new NonStrictExpectations() {{
 			settings.getVariableBarcodeStart(); result = 0;
 			settings.getVariableBarcodeEnd(); result = 3;
 			settings.getConstantBarcodeStart(); result = 4;
 			settings.getConstantBarcodeEnd(); result = 6;
+			settings.getIndexContigNameReverseMap(); result = map;
+			analyzer.getRead(null, false, null, 0, 0, false); result = null;
 		}};
 
 		final Parameters param = new Parameters();

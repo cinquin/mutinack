@@ -97,13 +97,17 @@ import ch.qos.logback.core.ConsoleAppender;
 import contrib.net.sf.picard.sam.BuildBamIndex;
 import contrib.net.sf.samtools.SAMFileHeader;
 import contrib.net.sf.samtools.SAMFileReader;
+import contrib.net.sf.samtools.SAMFileReader.QueryInterval;
 import contrib.net.sf.samtools.SAMFileReader.ValidationStringency;
 import contrib.net.sf.samtools.SAMFileWriter;
 import contrib.net.sf.samtools.SAMFileWriterFactory;
 import contrib.net.sf.samtools.SAMProgramRecord;
+import contrib.net.sf.samtools.SAMRecord;
+import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.net.sf.samtools.SAMSequenceRecord;
 import contrib.net.sf.samtools.util.RuntimeIOException;
 import contrib.nf.fr.eraasoft.pool.ObjectPool;
+import contrib.nf.fr.eraasoft.pool.PoolException;
 import contrib.nf.fr.eraasoft.pool.PoolSettings;
 import contrib.nf.fr.eraasoft.pool.PoolableObjectBase;
 import contrib.uk.org.lidalia.slf4jext.Logger;
@@ -202,7 +206,7 @@ public class Mutinack implements Actualizable, Closeable {
 	private final Collection<Closeable> itemsToClose = new ArrayList<>();
 	private final Date startDate;
 
-	final @NonNull MutinackGroup groupSettings;
+	private final @NonNull MutinackGroup groupSettings;
 	final @NonNull Parameters param;
 	public final @NonNull String name;
 	long timeStartProcessing;
@@ -256,6 +260,51 @@ public class Mutinack implements Actualizable, Closeable {
 	private String finalOutputBaseName;
 	public boolean notifiedUnpairedReads = false;
 	final @Nullable SAMFileWriter outputAlignmentWriter;
+
+	/**
+	 *
+	 * @param analyzer
+	 * @param readName
+	 * @param firstOfPair
+	 * @param location
+	 * @param avoidAlignmentStart0Based      Used to make sure we don't just retrieve the same read as the original,
+	 * in the case where both alignments are close together
+	 * @param windowHalfWidth
+	 * @return
+	 */
+	public @Nullable ExtendedSAMRecord getRead(String readName, boolean firstOfPair,
+			SequenceLocation location, int avoidAlignmentStart0Based, int windowHalfWidth,
+			boolean parseReadNameForPosition) {
+
+		SAMFileReader bamReader;
+		try {
+			//noinspection resource
+			bamReader = readerPool.getObj();
+		} catch (PoolException e) {
+			throw new RuntimeException(e);
+		}
+
+		try {
+			final QueryInterval[] bamContig = {
+				bamReader.makeQueryInterval(location.contigName, Math.max(location.position + 1 - windowHalfWidth, 1),
+					location.position + 1 + windowHalfWidth)};
+
+			try (SAMRecordIterator it = bamReader.queryOverlapping(bamContig)) {
+				while (it.hasNext()) {
+					SAMRecord record = it.next();
+					if (record.getReadName().equals(readName) && record.getFirstOfPairFlag() == firstOfPair &&
+							record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
+						return SubAnalyzer.getExtendedNoCaching(record,
+							new SequenceLocation(location.referenceGenome, location.contigName, groupSettings.getIndexContigNameReverseMap(),
+								record.getAlignmentStart() - 1, false), this, parseReadNameForPosition);
+					}
+				}
+				return null;
+			}
+		} finally {
+			readerPool.returnObj(bamReader);
+		}
+	}
 
 	public void addFilterForCandidateReporting(String filterName, GenomeFeatureTester filter) {
 		if (filtersForCandidateReporting.put(filterName, filter) != null) {
@@ -442,7 +491,7 @@ public class Mutinack implements Actualizable, Closeable {
 			OutputStreamWriter mutationAnnotationWriter,
 			OutputLevel outputLevel) {
 		AnalysisStats stat = new AnalysisStats(statsName, param1, statsName.contains("ins_stats"),
-			Objects.requireNonNull(groupSettings), param1.reportCoverageAtAllPositions);
+			Objects.requireNonNull(getGroupSettings()), param1.reportCoverageAtAllPositions);
 		stat.detectionOutputStream = out;
 		stat.annotationOutputStream = mutationAnnotationWriter;
 		stat.setOutputLevel(outputLevel);
@@ -723,7 +772,7 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 
 		for (int i = 0; i < contigNames.size(); i++) {
-			groupSettings.indexContigNameReverseMap.put(contigNames.get(i), i);
+			groupSettings.getIndexContigNameReverseMap().put(contigNames.get(i), i);
 		}
 		groupSettings.setContigNames(contigNames);
 		groupSettings.setContigSizes(contigSizes);
@@ -734,14 +783,14 @@ public class Mutinack implements Actualizable, Closeable {
 		groupSettings.forceOutputAtLocations.clear();
 
 		Util.parseListStartStopLocations(param.referenceGenomeShortName, param.forceOutputAtPositions,
-			groupSettings.indexContigNameReverseMap).forEach(parsedLocation -> {
+			groupSettings.getIndexContigNameReverseMap()).forEach(parsedLocation -> {
 			if (groupSettings.forceOutputAtLocations.put(parsedLocation, false) != null) {
 				printUserMustSeeMessage(Util.truncateString("Warning: repeated specification of " + parsedLocation +
 					" in list of forced output positions"));
 			}
 		});
 
-		param.tracePositions.stream().map(s -> SequenceLocation.parse(param.referenceGenomeShortName, s, groupSettings.indexContigNameReverseMap)).
+		param.tracePositions.stream().map(s -> SequenceLocation.parse(param.referenceGenomeShortName, s, groupSettings.getIndexContigNameReverseMap())).
 			forEach(param.parsedTracePositions::add);
 
 		for (String forceOutputFilePath: param.forceOutputAtPositionsTextFile) {
@@ -820,7 +869,7 @@ public class Mutinack implements Actualizable, Closeable {
 					@SuppressWarnings("null")
 					SequenceLocation l = new SequenceLocation(
 						param.referenceGenome,
-						groupSettings.indexContigNameReverseMap.get(c.getKey()),
+						groupSettings.getIndexContigNameReverseMap().get(c.getKey()),
 						c.getKey(), (int) (random.nextDouble() * (c.getValue() - 1)));
 					if (groupSettings.forceOutputAtLocations.put(l, true) == null) {
 						randomLocs++;
@@ -1461,7 +1510,7 @@ public class Mutinack implements Actualizable, Closeable {
 				for (Entry<String, Integer> e: contigSizes.entrySet()) {
 					//TODO Need to design a better API to retrieve the counts
 					ICounter<?> c = ((ICounter<?>) m.get(
-						groupSettings.indexContigNameReverseMap.get(e.getKey())));
+						groupSettings.getIndexContigNameReverseMap().get(e.getKey())));
 					final double d;
 					if (c == null) {
 						d = 0;
@@ -1690,6 +1739,10 @@ public class Mutinack implements Actualizable, Closeable {
 	@Override
 	public void actualize() {
 		stats.forEach(Actualizable::actualize);
+	}
+
+	public @NonNull MutinackGroup getGroupSettings() {
+		return groupSettings;
 	}
 
 }

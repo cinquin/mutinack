@@ -70,6 +70,7 @@ public class ExtendedSAMRecordTest {
 		 * Subtest 1
 		 */
 		//Don't take Ns into account when measuring clipping
+		final MutinackGroup groupSettings = new MutinackGroup(false);
 		new NonStrictExpectations() {{
 			byte [] bases1 = "ATGCGCCCGTNNNNNNNNNNNNNNNNNNNNNNNNNN".getBytes();
 			sr1.getReadName(); result = "read_pair_1:::::0:0";
@@ -89,6 +90,7 @@ public class ExtendedSAMRecordTest {
 				}
 			};
 			sr1.getMateAlignmentStart(); result = 11;
+			sr1.getMateNegativeStrandFlag(); result = true;
 
 			byte [] bases2 = "ATGC".getBytes();
 			sr2.getReadName(); result = "read_pair_1:::::0:0";
@@ -104,6 +106,8 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedEnd(); result = 14;
 			sr2.getMateAlignmentStart(); result = alignmentStart1;
 
+			analyzer.getGroupSettings(); result = groupSettings;
+			analyzer.getRead(null, false, null, 0, 0, false); result = null;
 		}};
 		alignmentStart1.value = 2;
 
@@ -283,6 +287,7 @@ public class ExtendedSAMRecordTest {
 		 * Subtest 1
 		 */
 		//Don't take Ns into account when measuring clipping
+		final MutinackGroup groupSettings = new MutinackGroup(false);
 		new NonStrictExpectations() {{
 			byte [] bases1 = "ATGCGCCCGT".getBytes();
 			sr1.getReadName(); result = "read1:::::0:0";
@@ -312,6 +317,7 @@ public class ExtendedSAMRecordTest {
 			sr2.getUnclippedEnd(); result = 39;
 			sr2.getMateAlignmentStart(); result = 21;
 
+			analyzer.getGroupSettings(); result = groupSettings;
 		}};
 
 		Map<String, ExtendedSAMRecord> extSAMCache = new HashMap<>();
@@ -487,6 +493,7 @@ public class ExtendedSAMRecordTest {
 			finalBQ = baseQualities;
 		}
 
+		final MutinackGroup groupSettings = new MutinackGroup(false);
 		new NonStrictExpectations() {{
 			byte [] bases1 = "ATGCGCCCGT".getBytes();
 			sr1.getReadName(); result = readName;
@@ -500,6 +507,8 @@ public class ExtendedSAMRecordTest {
 			sr1.getUnclippedStart(); result = 21;
 			sr1.getAlignmentEnd(); result = 30;
 			sr1.getUnclippedEnd(); result = 30;
+			sr1.getMateReferenceName(); result = "mate_contig_name";
+			analyzer.getGroupSettings(); result = groupSettings;
 		}};
 
 		Map<String, ExtendedSAMRecord> extSAMCache = new HashMap<>();
@@ -551,11 +560,13 @@ public class ExtendedSAMRecordTest {
 			@NonNull @Mocked MutinackGroup settings,
 			@NonNull @Mocked Mutinack analyzer) {
 
+		final MutinackGroup groupSettings = new MutinackGroup(false);
 		new NonStrictExpectations() {{
 			settings.getVariableBarcodeStart(); result = 0;
 			settings.getVariableBarcodeEnd(); result = 3;
 			settings.getConstantBarcodeStart(); result = 4;
 			settings.getConstantBarcodeEnd(); result = 6;
+			analyzer.getGroupSettings(); result = groupSettings;
 		}};
 
 		ExtendedSAMRecord e1 = getMockedESR(sr1,

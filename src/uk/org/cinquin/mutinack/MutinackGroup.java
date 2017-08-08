@@ -66,7 +66,7 @@ public class MutinackGroup implements Closeable, Serializable {
 		statusUpdateTasks = new TreeMap<>();
 	private List<@NonNull String> contigNames;
 	private Map<@NonNull String, @NonNull Integer> contigSizes;
-	public final @NonNull Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
+	private final @NonNull Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
 	public final @NonNull Map<@NonNull SequenceLocation, @NonNull Boolean> forceOutputAtLocations = new HashMap<>();
 	public final @NonNull ConcurrentMap<Pair<SequenceLocation, String>,
 		@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>>
@@ -204,4 +204,7 @@ public class MutinackGroup implements Closeable, Serializable {
 		}
 	}
 
+	public Map<String, @NonNull Integer> getIndexContigNameReverseMap() {
+		return indexContigNameReverseMap;
+	}
 }

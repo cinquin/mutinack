@@ -396,7 +396,7 @@ public final class SubAnalyzer {
 			new InterningSet<>(500);
 
 		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance(
-				analyzer.groupSettings, param);
+				analyzer.getGroupSettings(), param);
 
 		final SettableInteger nReadsExcludedFromDuplexes = new SettableInteger(0);
 
@@ -667,8 +667,8 @@ public final class SubAnalyzer {
 
 		if (!foundDuplexRead) {
 			final Duplex duplex = matchToLeft ?
-					new Duplex(analyzer.groupSettings, barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
-					new Duplex(analyzer.groupSettings, mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
+					new Duplex(analyzer.getGroupSettings(), barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
+					new Duplex(analyzer.getGroupSettings(), mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
 
 			duplex.roughLocation = location;
 			rExtended.duplex = duplex;

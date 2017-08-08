@@ -33,12 +33,8 @@ import contrib.edu.stanford.nlp.util.Interval;
 import contrib.net.sf.samtools.Cigar;
 import contrib.net.sf.samtools.CigarElement;
 import contrib.net.sf.samtools.CigarOperator;
-import contrib.net.sf.samtools.SAMFileReader;
-import contrib.net.sf.samtools.SAMFileReader.QueryInterval;
 import contrib.net.sf.samtools.SAMRecord;
-import contrib.net.sf.samtools.SAMRecordIterator;
 import contrib.net.sf.samtools.SamPairUtil.PairOrientation;
-import contrib.nf.fr.eraasoft.pool.PoolException;
 import contrib.uk.org.lidalia.slf4jext.Logger;
 import contrib.uk.org.lidalia.slf4jext.LoggerFactory;
 import gnu.trove.list.TIntList;
@@ -178,8 +174,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			@Nullable Map<String, ExtendedSAMRecord> extSAMCache,
 			boolean parseReadNameForPosition) {
 
-		this.groupSettings = Objects.requireNonNull(analyzer.groupSettings);
 		this.analyzer = Objects.requireNonNull(analyzer);
+		this.groupSettings = Objects.requireNonNull(analyzer.getGroupSettings());
 		this.extSAMCache = extSAMCache;
 		this.name = Objects.requireNonNull(fullName);
 		this.record = Objects.requireNonNull(rec);
@@ -663,8 +659,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		if (!triedRetrievingMateFromFile) {
 			synchronized (this) {
 				if (!triedRetrievingMateFromFile) {
-					mate = getRead(analyzer, record.getReadName(), !record.getFirstOfPairFlag(),
-						new SequenceLocation(location.referenceGenome, record.getMateReferenceName(), groupSettings.indexContigNameReverseMap,
+					mate = analyzer.getRead(record.getReadName(), !record.getFirstOfPairFlag(),
+						new SequenceLocation(location.referenceGenome, record.getMateReferenceName(), groupSettings.getIndexContigNameReverseMap(),
 							record.getMateAlignmentStart() - 1, false) , -1, 1, !runAndTile.isEmpty());
 					triedRetrievingMateFromFile = true;
 				}
@@ -850,48 +846,4 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return ExtendedAlignmentBlock.getAlignmentBlocks(getCigar(), record.getAlignmentStart(), "read cigar");
 	}
 
-	/**
-	 *
-	 * @param analyzer
-	 * @param name
-	 * @param firstOfPair
-	 * @param location
-	 * @param avoidAlignmentStart0Based 	 Used to make sure we don't just retrieve the same read as the original,
-	 * in the case where both alignments are close together
-	 * @param windowHalfWidth
-	 * @return
-	 */
-	public static @Nullable ExtendedSAMRecord getRead(Mutinack analyzer, String name, boolean firstOfPair,
-			SequenceLocation location, int avoidAlignmentStart0Based, int windowHalfWidth,
-			boolean parseReadNameForPosition) {
-
-		SAMFileReader bamReader;
-		try {
-			//noinspection resource
-			bamReader = analyzer.readerPool.getObj();
-		} catch (PoolException e) {
-			throw new RuntimeException(e);
-		}
-
-		try {
-			final QueryInterval[] bamContig = {
-				bamReader.makeQueryInterval(location.contigName, Math.max(location.position + 1 - windowHalfWidth, 1),
-					location.position + 1 + windowHalfWidth)};
-
-			try (SAMRecordIterator it = bamReader.queryOverlapping(bamContig)) {
-				while (it.hasNext()) {
-					SAMRecord record = it.next();
-					if (record.getReadName().equals(name) && record.getFirstOfPairFlag() == firstOfPair &&
-							record.getAlignmentStart() - 1 != avoidAlignmentStart0Based) {
-						return SubAnalyzer.getExtendedNoCaching(record,
-							new SequenceLocation(location.referenceGenome, location.contigName, analyzer.groupSettings.indexContigNameReverseMap,
-								record.getAlignmentStart() - 1, false), analyzer, parseReadNameForPosition);
-					}
-				}
-				return null;
-			}
-		} finally {
-			analyzer.readerPool.returnObj(bamReader);
-		}
-	}
 }
