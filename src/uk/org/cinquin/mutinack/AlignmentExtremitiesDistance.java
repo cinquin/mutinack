@@ -25,7 +25,7 @@ final class AlignmentExtremitiesDistance {
 	private Duplex dr;
 	public final @NonNull Duplex temp;
 
-	public AlignmentExtremitiesDistance(MutinackGroup groupSettings, Parameters param) {
+	public AlignmentExtremitiesDistance(MutinackGroup groupSettings) {
 		temp = new Duplex(groupSettings, EMPTY_BARCODE, EMPTY_BARCODE, false, false);
 	}
 

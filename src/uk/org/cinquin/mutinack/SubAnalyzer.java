@@ -398,7 +398,7 @@ public final class SubAnalyzer {
 			new InterningSet<>(500);
 
 		final AlignmentExtremitiesDistance ed = new AlignmentExtremitiesDistance(
-				analyzer.getGroupSettings(), param);
+				analyzer.getGroupSettings());
 
 		final SettableInteger nReadsExcludedFromDuplexes = new SettableInteger(0);
 
