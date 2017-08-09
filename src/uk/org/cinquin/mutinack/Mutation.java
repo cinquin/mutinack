@@ -44,9 +44,9 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 	private Boolean templateStrand;
 
 	public static final @NonNull Mutation UNKNOWN_STATUS = new Mutation(MutationType.UNKNOWN,
-		(byte) 0, false, null, Optional.empty());
+		(byte) 0, null, Optional.empty());
 
-	public Mutation(@NonNull MutationType mutationType, byte wildtype, boolean negativeStrand,
+	public Mutation(@NonNull MutationType mutationType, byte wildtype,
 			byte[] mutationSequence, @NonNull Optional<Boolean> templateStrand) {
 		this.mutationType = Objects.requireNonNull(mutationType);
 		this.wildtype = wildtype;
@@ -127,8 +127,7 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 		} else {
 			cMutSeq = null;
 		}
-		return new Mutation(mutationType, complement(wildtype), /* XXX */ false, cMutSeq,
-				isTemplateStrand());
+		return new Mutation(mutationType, complement(wildtype), cMutSeq, isTemplateStrand());
 	}
 
 	public static ComparablePair<@NonNull String, @NonNull String> reverseComplement(

@@ -230,8 +230,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 				if (wt == mut) {
 					continue;
 				}
-				Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, false, null, Util.emptyOptional());
-				Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, false, new byte [] {mut}, Util.emptyOptional());
+				Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, null, Util.emptyOptional());
+				Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, new byte [] {mut}, Util.emptyOptional());
 				ComparablePair<Mutation, Mutation> cpMut = new ComparablePair<>(wtM, to);
 				DuplexDisagreement disag = new DuplexDisagreement(wtM, to, true, Quality.GOOD);
 

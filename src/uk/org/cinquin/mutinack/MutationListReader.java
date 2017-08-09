@@ -94,7 +94,7 @@ public class MutationListReader {
 								throw new ParseRTException("Mutation string " + mutationString +
 									" should have been of length 2");
 							}
-							mutation = new Mutation(MutationType.SUBSTITUTION, (byte) mutationString.charAt(0), false,
+							mutation = new Mutation(MutationType.SUBSTITUTION, (byte) mutationString.charAt(0),
 								new byte[] {(byte) mutationString.charAt(1)}, Optional.empty());
 							break;
 						case "deletion":
@@ -103,7 +103,7 @@ public class MutationListReader {
 								throw new ParseRTException("Deletion string " + mutationString +
 									" should have been of length at least 3 and start and end with -");
 							}
-							mutation = new Mutation(MutationType.DELETION, (byte) 0 /* Don't know wt*/, false,
+							mutation = new Mutation(MutationType.DELETION, (byte) 0 /* Don't know wt*/,
 								mutationString.substring(1, mutationString.length() - 1).getBytes(), Optional.empty());
 							break;
 						case "insertion":
@@ -112,7 +112,7 @@ public class MutationListReader {
 								throw new ParseRTException("Insertion string " + mutationString +
 									" should have been of length at least 3 and start and end with ^");
 							}
-							mutation = new Mutation(MutationType.INSERTION, (byte) 0 /* Don't know wt*/, false,
+							mutation = new Mutation(MutationType.INSERTION, (byte) 0 /* Don't know wt*/,
 								mutationString.substring(1, mutationString.length() - 1).getBytes(), Optional.empty());
 							break;
 						default:
