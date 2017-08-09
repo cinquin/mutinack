@@ -119,8 +119,8 @@ public final class LocationExaminationResults implements Serializable {
 
 	public FloatPair getTopTwoAlleleFreqFloat() {
 		float [] freq = new float[2];
-		iterateTopTwoCandidates((opt, index) -> freq[index] = opt.map(c ->
-			c.getFrequencyAtPosition()).orElse(Float.NaN));
+		iterateTopTwoCandidates((opt, index) -> freq[index] = opt.map(
+			CandidateSequence::getFrequencyAtPosition).orElse(Float.NaN));
 		return new FloatPair(freq[0], freq[1]);
 	}
 

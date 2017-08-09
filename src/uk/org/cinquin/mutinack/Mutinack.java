@@ -1147,9 +1147,7 @@ public class Mutinack implements Actualizable, Closeable {
 					final GenomeFeatureTester filter0 = BedReader.getCachedBedFileReader(fileName, ".cached",
 						groupSettings.getContigNames(), filterName, param.referenceGenomeShortName, transcriptToGene, param);
 					final BedComplement filter = new BedComplement(filter0);
-					analyzer.stats.forEach(s -> {
-						s.addLocationPredicate(filterName, filter);
-					});
+					analyzer.stats.forEach(s -> s.addLocationPredicate(filterName, filter));
 
 					analyzer.addFilterForCandidateReporting(filterName, filter);
 				} catch (Exception e) {
@@ -1563,11 +1561,12 @@ public class Mutinack implements Actualizable, Closeable {
 	}
 
 	private int getProcessingThroughput(List<List<AnalysisChunk>> analysisChunks) {
+		//noinspection ObjectEquality
 		List<AnalysisChunk.ProcessingStats> chunkStats =
-			analysisChunks.stream().flatMap(l -> l.stream()).
+			analysisChunks.stream().flatMap(Collection::stream).
 			flatMap(ac -> ac.processingStats.entrySet().stream()).
 			filter(e -> e.getKey().analyzer == this).
-			map(e -> e.getValue()).
+			map(Entry::getValue).
 			collect(Collectors.toList());
 		OptionalLong timeFirstStart = chunkStats.stream().
 			mapToLong(s -> s.timeStarted).

@@ -933,7 +933,7 @@ public final class Duplex implements HasInterval<Integer> {
 				Optional<Boolean> negativeCodingStrand =
 						analyzer.codingStrandTester.getNegativeStrand(location);
 				actualMutant.setTemplateStrand(negativeCodingStrand.map(
-						b ->  b == reverseComplementDisag ? false : true));
+						b -> b != reverseComplementDisag));
 			}
 
 			if (noHiddenCandidateAndBSP && !noWildtype && mutantEval.count > 1) {

@@ -21,13 +21,12 @@ import uk.org.cinquin.mutinack.qualities.Quality;
 
 public class DuplexAssayToQualityMapTest {
 
+	@SuppressWarnings("ObjectEquality")
 	private static<K, V> void iterateEqualMaps(Map<K, V> toIterate, Map<K, V> reference0) {
 		Map<K, V> reference = Util.serializeAndDeserialize(reference0);//Avoid modifying the
 		//reference map
 
-		reference.forEach((k, v) -> {
-			Assert.isTrue(v == toIterate.get(k));
-		});
+		reference.forEach((k, v) -> Assert.isTrue(v == toIterate.get(k)));
 
 		toIterate.forEach((k, v) -> {
 			V other = reference.remove(k);

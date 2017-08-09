@@ -71,7 +71,7 @@ public class CounterWithBedFeatureBreakdown implements ICounterSeqLoc, Serializa
 		this.bedFeatures = bedFeatures;
 		supplementaryInfoProvider = bedFeatures::getSuppInfo;
 		this.refSeqToOfficialGeneName = refSeqToOfficialGeneName;
-		bedFeatures.forEach(f -> counter.initialize(f));
+		bedFeatures.forEach(counter::initialize);
 	}
 
 	@Override

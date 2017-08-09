@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 public class FieldIteration {
 
 	@FunctionalInterface
-	public static interface ThrowingFieldValueBiConsumer {
+	public interface ThrowingFieldValueBiConsumer {
 		void accept(Field field, Object fieldValue) throws IllegalArgumentException, IllegalAccessException;
 	}
 

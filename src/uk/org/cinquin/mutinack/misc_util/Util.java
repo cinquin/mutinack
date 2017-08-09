@@ -228,6 +228,7 @@ public class Util {
 		}
 	}
 
+	@SuppressWarnings("ArrayEquality")
 	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
 		checkLengthsEqual(a, b);
 		if (!allowN) {
@@ -249,6 +250,7 @@ public class Util {
 	}
 
 	public static boolean basesEqual(byte @NonNull[] a, byte @NonNull[] b, boolean allowN, int nMismatchesAllowed) {
+		//noinspection ArrayEquality
 		if (a == b) {
 			return true;
 		}
@@ -269,6 +271,7 @@ public class Util {
 	}
 
 	public static int nMismatches(byte @NonNull[] a, byte @NonNull[] b, boolean allowN) {
+		//noinspection ArrayEquality
 		if (a == b) {
 			return 0;
 		}

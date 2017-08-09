@@ -47,9 +47,7 @@ public abstract class TIntObjectCollectionHashMap<V> implements Iterable<V> {
 	}
 
 	public boolean isEmpty() {
-		return !getMap().forEachValue(l -> {
-			return !l.isEmpty();
-		});
+		return !getMap().forEachValue(l -> !l.isEmpty());
 	}
 
 	public void clear() {

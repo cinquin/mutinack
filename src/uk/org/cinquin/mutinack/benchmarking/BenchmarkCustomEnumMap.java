@@ -75,9 +75,7 @@ public class BenchmarkCustomEnumMap {
 	@SuppressWarnings("null")
 	private static Quality getMin(Map<PositionAssay, Quality> map) {
 		final Handle<Quality> min1 = new Handle<>(Quality.MAXIMUM);
-		map.forEach((k, v) -> {
-			min1.set(Quality.min(min1.get(), v));
-		});
+		map.forEach((k, v) -> min1.set(Quality.min(min1.get(), v)));
 		return min1.get();
 	}
 }

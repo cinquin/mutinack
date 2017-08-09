@@ -68,9 +68,7 @@ public final class CandidateBuilder {
 		}
 		//Reference equality check on line below is as intended
 		if (returned == c && codingStrandTester != null) {//This is the first candidate inserted at this location
-			@SuppressWarnings("null")
-			final Boolean negativeCodingStrand = Optional.ofNullable(codingStrandTester).
-				flatMap(tester -> tester.getNegativeStrand(l)).
+			final Boolean negativeCodingStrand = codingStrandTester.getNegativeStrand(l).
 				orElse(null);
 
 			c.setNegativeCodingStrand(negativeCodingStrand);

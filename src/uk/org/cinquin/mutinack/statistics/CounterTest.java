@@ -37,11 +37,11 @@ public class CounterTest {
 		Counter<Object> c = new Counter<>(false, new MutinackGroup(false));
 		SerializableFunction<Object, Object> map = (o -> o.equals(3) ? "trois" : o);
 		c.setKeyNamePrintingProcessor(Arrays.asList(null, map, null));
-		c.accept(Arrays.asList(new Object[] {2,3,4}), 10);
-		c.accept(Arrays.asList(new Object[] {2,3,7}), 20);
-		c.accept(Arrays.asList(new Object[] {4,3,2}), 1);
-		c.accept(Arrays.asList(new Object[] {2,3,7}), 12);
-		c.accept(Arrays.asList(new Object[] {2,7,7}), 13);
+		c.accept(Arrays.asList(2, 3, 4), 10);
+		c.accept(Arrays.asList(2, 3, 7), 20);
+		c.accept(Arrays.asList(4, 3, 2), 1);
+		c.accept(Arrays.asList(2, 3, 7), 12);
+		c.accept(Arrays.asList(2, 7, 7), 13);
 
 		String reference =
 				"56\n" +

@@ -92,15 +92,16 @@ public class AnalysisChunk {
 
 	public static int getProcessingThroughput(List<List<AnalysisChunk>> l0) {
 		List<ProcessingStats> processingStats =
-			l0.stream().flatMap(l -> l.stream()).flatMap(c -> c.processingStats.values().stream()).
+			l0.stream().flatMap(Collection::stream).flatMap(c -> c.processingStats.values().stream()).
 			collect(Collectors.toList());
 		return getProcessingThroughput(processingStats);
 	}
 
 	public static int getProcessingThroughput(List<List<AnalysisChunk>> l0, Mutinack analyzer) {
+		@SuppressWarnings("ObjectEquality")
 		List<ProcessingStats> processingStats =
-			l0.stream().flatMap(l -> l.stream()).flatMap(c -> c.processingStats.entrySet().stream()).
-			filter(e -> e.getKey().analyzer == analyzer).map(e -> e.getValue()).
+			l0.stream().flatMap(Collection::stream).flatMap(c -> c.processingStats.entrySet().stream()).
+			filter(e -> e.getKey().analyzer == analyzer).map(Map.Entry::getValue).
 			collect(Collectors.toList());
 		return getProcessingThroughput(processingStats);
 	}
