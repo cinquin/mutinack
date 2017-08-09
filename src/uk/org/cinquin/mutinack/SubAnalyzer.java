@@ -1022,7 +1022,7 @@ public final class SubAnalyzer {
 
 		if (qualityOKBeforeTopAllele) {
 			registerDuplexMinFracTopCandidate(duplexes,
-				topAlleleQuality == null ?
+				!topAlleleQuality.isPresent() ?
 					stats.minTopCandFreqQ2PosTopAlleleFreqOK
 				:
 					stats.minTopCandFreqQ2PosTopAlleleFreqKO
