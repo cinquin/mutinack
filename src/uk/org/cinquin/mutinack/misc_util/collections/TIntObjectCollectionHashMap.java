@@ -33,7 +33,7 @@ public abstract class TIntObjectCollectionHashMap<V> implements Iterable<V> {
 
 	public abstract @NonNull Collection<V> getCollection(int i);
 	public abstract boolean add(int i, V v);
-	public abstract boolean forEach(Predicate<? super V> predicate);
+	public abstract boolean interruptibleForEach(Predicate<? super V> predicate);
 
 	protected abstract TIntObjectHashMap<Collection> getMap();
 

@@ -70,7 +70,7 @@ public class TIntSortedSetHashMap<V> extends TIntObjectCollectionHashMap<V> impl
 	}
 
 	@Override
-	public boolean forEach(Predicate<? super V> consumer) {
+	public boolean interruptibleForEach(Predicate<? super V> consumer) {
 		return map.forEachValue(collection -> collection.forEach(consumer));
 	}
 }

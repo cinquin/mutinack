@@ -53,7 +53,7 @@ public class TIntObjectListHashMap<V> extends TIntObjectCollectionHashMap<V> imp
 	}
 
 	@Override
-	public boolean forEach(Predicate<? super V> predicate) {
+	public boolean interruptibleForEach(Predicate<? super V> predicate) {
 		return map.forEachValue(list -> {
 			int size = list.size();
 			for (int index = 0; index < size; index++) {
