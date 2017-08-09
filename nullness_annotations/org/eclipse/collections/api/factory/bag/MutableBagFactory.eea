@@ -1,0 +1,4 @@
+class org/eclipse/collections/api/factory/bag/MutableBagFactory
+empty
+ <T:Ljava/lang/Object;>()Lorg/eclipse/collections/api/bag/MutableBag<TT;>;
+ <T:Ljava/lang/Object;>()L1org/eclipse/collections/api/bag/MutableBag<TT;>;

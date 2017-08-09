@@ -32,7 +32,11 @@
 	<classpathentry kind="lib" path="lib_build_run_test/datanucleus-rdbms-5.0.6-SNAPSHOT.jar" sourcepath="lib_build_run_test/datanucleus-rdbms-5.0.6-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="lib" path="lib_build_run_test/final_annotation.jar"/>
 	<classpathentry kind="lib" path="lib/eclipse-collections-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-8.2.0-SNAPSHOT-sources.jar"/>
-	<classpathentry kind="lib" path="lib/eclipse-collections-api-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-api-8.2.0-SNAPSHOT-sources.jar"/>
+	<classpathentry kind="lib" path="lib/eclipse-collections-api-8.2.0-SNAPSHOT.jar" sourcepath="lib_build_run_test/eclipse-collections-api-8.2.0-SNAPSHOT-sources.jar">
+		<attributes>
+			<attribute name="annotationpath" value="./nullness_annotations"/>
+		</attributes>
+	</classpathentry>
         <classpathentry kind="lib" path="lib/xchart-3.3.1-SNAPSHOT.jar" sourcepath="lib_build_run_test/xchart-3.3.1-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,0 +1,4 @@
+class java/lang/Class
+getDeclaredFields
+ ()[Ljava/lang/reflect/Field;
+ ()[L1java/lang/reflect/Field;
