@@ -1665,8 +1665,7 @@ public final class SubAnalyzer {
 						refEndOfPreviousAlignment,
 						locationInterningSet,
 						readLocalCandidates,
-						extendedRec,
-						readOnNegativeStrand);
+						extendedRec);
 				}
 				else if (refPosition < refEndOfPreviousAlignment + 1) {
 					throw new AssertionFailedException("Alignment block misordering");
@@ -2115,8 +2114,7 @@ public final class SubAnalyzer {
 			final int refEndOfPreviousAlignment,
 			final InterningSet<@NonNull SequenceLocation> locationInterningSet,
 			final CandidateBuilder readLocalCandidates,
-			final @NonNull ExtendedSAMRecord extendedRec,
-			final boolean readOnNegativeStrand) {
+			final @NonNull ExtendedSAMRecord extendedRec) {
 
 		final @NonNull SequenceLocation location = SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
 			param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refEndOfPreviousAlignment, true);
