@@ -1263,7 +1263,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			r.getMate() != null && r.getMate().getnClipped() < param.maxConcurringDuplexClipping;
 	}
 
-	public void updateQualities(@NonNull Parameters param) {
+	public void updateQualities(@SuppressWarnings("unused") @NonNull Parameters param) {
 	}
 
 	public void computeNBottomTopStrandReads() {

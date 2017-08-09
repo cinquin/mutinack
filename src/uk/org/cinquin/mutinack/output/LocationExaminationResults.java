@@ -84,7 +84,7 @@ public final class LocationExaminationResults implements Serializable {
 	@JsonIgnore
 	public final transient AtomicInteger threadCount = new AtomicInteger();
 
-	MutableBag<@NonNull ComparablePair<String, String>> EMPTY_BAG =
+	@NonNull MutableBag<@NonNull ComparablePair<String, String>> EMPTY_BAG =
 		Bags.mutable.empty();
 
 	public LocationExaminationResults(Parameters param) {

@@ -18,7 +18,6 @@ package uk.org.cinquin.mutinack.candidate_sequences;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 import javax.annotation.CheckReturnValue;

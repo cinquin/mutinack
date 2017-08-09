@@ -63,7 +63,7 @@ public class DuplexArrayListKeeper extends ArrayList<Duplex> implements DuplexKe
 		return this;
 	}
 
-	public static Duplex getAndRemove(Duplex d) {
+	public static Duplex getAndRemove(@SuppressWarnings("unused") Duplex d) {
 		throw new UnsupportedOperationException();
 	}
 

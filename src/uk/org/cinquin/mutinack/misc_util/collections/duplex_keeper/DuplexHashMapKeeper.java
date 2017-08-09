@@ -58,7 +58,7 @@ public class DuplexHashMapKeeper extends TIntSortedSetHashMap<Duplex> implements
 	}
 
 	@SuppressWarnings("static-method")
-	public Duplex getAndRemove(Duplex d) {
+	public Duplex getAndRemove(@SuppressWarnings("unused") Duplex d) {
 		throw new UnsupportedOperationException();
 	}
 
