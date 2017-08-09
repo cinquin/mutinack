@@ -397,7 +397,7 @@ public final class SubAnalyzer {
 		InterningSet<SequenceLocation> sequenceLocationCache =
 			new InterningSet<>(500);
 
-		final AlignmentExtremetiesDistance ed = new AlignmentExtremetiesDistance(
+		final AlignmentExtremitiesDistance ed = new AlignmentExtremitiesDistance(
 				analyzer.getGroupSettings(), param);
 
 		final SettableInteger nReadsExcludedFromDuplexes = new SettableInteger(0);
@@ -560,7 +560,7 @@ public final class SubAnalyzer {
 	}
 
 	private void loadRead(@NonNull ExtendedSAMRecord rExtended, @NonNull DuplexKeeper duplexKeeper,
-			AlignmentExtremetiesDistance ed, InterningSet<SequenceLocation> sequenceLocationCache,
+			AlignmentExtremitiesDistance ed, InterningSet<SequenceLocation> sequenceLocationCache,
 			SettableInteger nReadsExcludedFromDuplexes) {
 
 		final @NonNull SequenceLocation location = rExtended.getLocation();

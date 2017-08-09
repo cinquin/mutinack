@@ -18,14 +18,14 @@ package uk.org.cinquin.mutinack;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-final class AlignmentExtremetiesDistance {
+final class AlignmentExtremitiesDistance {
 
 	private static final byte @NonNull[] EMPTY_BARCODE = new byte[0];
 
 	private Duplex dr;
 	public final @NonNull Duplex temp;
 
-	public AlignmentExtremetiesDistance(MutinackGroup groupSettings, Parameters param) {
+	public AlignmentExtremitiesDistance(MutinackGroup groupSettings, Parameters param) {
 		temp = new Duplex(groupSettings, EMPTY_BARCODE, EMPTY_BARCODE, false, false);
 	}
 
