@@ -1,8 +1,7 @@
 package uk.org.cinquin.mutinack.statistics.collectors;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -46,6 +45,6 @@ public class HistogramSumCollector implements Collector<Histogram, Histogram, Hi
 	@Override
 	public Set<Characteristics> characteristics() {
 		return Collections.unmodifiableSet(
-			new HashSet<>(Arrays.asList(Characteristics.CONCURRENT, Characteristics.IDENTITY_FINISH)));
+			EnumSet.of(Characteristics.CONCURRENT, Characteristics.IDENTITY_FINISH));
 	}
 }

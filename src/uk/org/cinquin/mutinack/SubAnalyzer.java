@@ -1013,7 +1013,7 @@ public final class SubAnalyzer {
 					break;
 				}
 				Assert.isTrue(topAlleleQuality.get() == DUBIOUS);
-				topAlleleQuality.ifPresent(q -> positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, q));
+				positionQualities.addUnique(PositionAssay.TOP_ALLELE_FREQUENCY, topAlleleQuality.get());
 				leave = true;//Just one more iteration
 				//noinspection UnnecessaryContinue
 				continue;

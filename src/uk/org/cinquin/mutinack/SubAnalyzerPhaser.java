@@ -1013,7 +1013,6 @@ public class SubAnalyzerPhaser extends Phaser {
 			//If outputting an alignment populated with fields identifying the duplexes,
 			//fill in the fields here
 			subAnalyzer.analyzedDuplexes.forEach(duplexRead -> {
-			//for (DuplexRead duplexRead: subAnalyzer.analyzedDuplexes) {
 				boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
 					duplexRead.maxInsertSize > 10_000;
 				boolean write = location.equals(duplexRead.rightAlignmentEnd) ||

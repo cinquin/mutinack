@@ -263,13 +263,13 @@ public class Mutinack implements Actualizable, Closeable {
 
 	/**
 	 *
-	 * @param analyzer
 	 * @param readName
 	 * @param firstOfPair
 	 * @param location
 	 * @param avoidAlignmentStart0Based      Used to make sure we don't just retrieve the same read as the original,
 	 * in the case where both alignments are close together
 	 * @param windowHalfWidth
+	 * @param parseReadNameForPosition
 	 * @return
 	 */
 	public @Nullable ExtendedSAMRecord getRead(String readName, boolean firstOfPair,
