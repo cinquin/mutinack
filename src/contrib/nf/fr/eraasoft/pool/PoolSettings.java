@@ -15,7 +15,7 @@ public class PoolSettings<T> {
 	/**
 	 * Wait (in second) before
 	 */
-	public static final int DEFAUL_MAX_WAIT = 5;
+	public static final int DEFAUL_MAX_WAIT = Integer.MAX_VALUE;
 	public static final int DEFAULT_MIN = 1;
 	public static final int DEFAULT_MAX = 10;
 	/**
