@@ -1260,7 +1260,6 @@ public final class Duplex implements HasInterval<Integer> {
 			stats.nDuplexesTooMuchClipping.accept(requireNonNull(roughLocation));
 		}
 
-
 		final int inferredSize = Math.abs(allRecords.getFirst().getInsertSize());
 		if (inferredSize < 130) {
 			stats.duplexInsert100_130AverageNClipped.insert(averageNClipped);
