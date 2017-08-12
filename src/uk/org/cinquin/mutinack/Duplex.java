@@ -348,7 +348,7 @@ public final class Duplex implements HasInterval<Integer> {
 				min(Comparator.comparing(Entry::getValue)).map(Entry::getKey).map(
 					Enum::toString).orElse("") + ' ')) +
 			"->" + maxQuality + "; all records: " + topStrandRecords.toString() + ' ' +
-			bottomStrandRecords.toString();
+			bottomStrandRecords.toString() + " (" + allRecords.size() + " records)";
 	}
 
 	@Override
