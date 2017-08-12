@@ -1251,6 +1251,7 @@ public final class Duplex implements HasInterval<Integer> {
 			referenceDisagreementRate = (float) (sumDisagreementRates / i);
 			stats.averageDuplexReferenceDisagreementRate.insert((int) (1000 * referenceDisagreementRate));
 			averageNClipped = sumNClipped / i;
+			Assert.isTrue(averageNClipped >= 0);
 			stats.duplexAverageNClipped.insert(averageNClipped);
 		}
 
