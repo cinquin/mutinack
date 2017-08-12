@@ -486,7 +486,7 @@ public final class SubAnalyzer {
 
 		cleanedUpDuplexes.forEach(duplexRead -> duplexRead.analyzeForStats(param, stats));
 
-		cleanedUpDuplexes.forEach(finalResult::add);
+		finalResult.addAll(cleanedUpDuplexes);
 
 		averageClippingOffset = fromPosition;
 		final int arrayLength = toPosition - fromPosition + 1;
