@@ -1208,7 +1208,9 @@ public final class Duplex implements HasInterval<Integer> {
 	void analyzeForStats(Parameters param, AnalysisStats stats) {
 		Assert.isFalse(invalid);
 
-		stats.duplexTotalRecords.insert(allRecords.size());
+		final int nRecords = allRecords.size();
+		Assert.isTrue(nRecords > 0);
+		stats.duplexTotalRecords.insert(nRecords);
 
 		if (param.filterOpticalDuplicates) {
 			markDuplicates(param, stats, allRecords);
