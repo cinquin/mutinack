@@ -726,8 +726,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public SequenceLocation getOffsetUnclippedEndLoc() {
 		final String xt = (String) record.getAttribute("XT");
-		if (xt != null) {
-			final CigarSplitAnalysis cigarAnalysis = new CigarSplitAnalysis(this);
+		final CigarSplitAnalysis cigarAnalysis;
+		if (xt != null && (cigarAnalysis = new CigarSplitAnalysis(this)).leftMatchNoRevcomp != null) {
 			if (cigarAnalysis.leftMatchNoRevcomp) {
 				ExtendedSAMRecord otherAlignment = getAlternativeAlignment(xt);
 				if (!this.equals(otherAlignment)) {
@@ -757,8 +757,8 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 
 	public SequenceLocation getOffsetUnclippedStartLoc() {
 		final String xt = (String) record.getAttribute("XT");
-		if (xt != null) {
-			final CigarSplitAnalysis cigarAnalysis = new CigarSplitAnalysis(this);
+		final CigarSplitAnalysis cigarAnalysis;
+		if (xt != null && (cigarAnalysis = new CigarSplitAnalysis(this)).leftMatchNoRevcomp != null) {
 			if (!cigarAnalysis.leftMatchNoRevcomp) {
 				ExtendedSAMRecord otherAlignment = getAlternativeAlignment(xt);
 				if (!this.equals(otherAlignment)) {
