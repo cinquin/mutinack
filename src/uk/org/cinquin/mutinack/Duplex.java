@@ -1281,6 +1281,7 @@ public final class Duplex implements HasInterval<Integer> {
 
 		if (i == 0) {
 			stats.nDuplexesNoStats.add(1);
+			averageNClipped = -2;
 		} else {
 			stats.nDuplexesWithStats.add(1);
 			referenceDisagreementRate = (float) (sumDisagreementRates / i);
