@@ -412,6 +412,9 @@ public final class Duplex implements HasInterval<Integer> {
 
 	public static final Comparator<Duplex> duplexCountQualComparator =
 		(d1, d2) -> {
+			if (d1 == d2) {
+				return 0;
+			}
 			int compResult;
 			compResult = Integer.compare(d2.allRecords.size(), d1.allRecords.size());
 			if (compResult != 0) {
