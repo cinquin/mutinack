@@ -468,6 +468,13 @@ public final class Duplex implements HasInterval<Integer> {
 			return 0;
 		};
 
+	@SuppressWarnings("ReferenceEquality")
+	public static final Comparator<Duplex> duplexCountQualComparatorAssertor =
+		(d1, d2) -> {
+			final int comp = duplexCountQualComparator.compare(d1, d2);
+			Assert.isFalse(comp == 0 ^ d1.equals(d2));
+			return comp;
+		};
 
 	static DuplexKeeper groupDuplexes(
 			DuplexKeeper duplexes,
@@ -484,7 +491,11 @@ public final class Duplex implements HasInterval<Integer> {
 			SettableInteger index = new SettableInteger(0);
 			duplexes.forEach(d -> sorted[index.getAndIncrement()] = d);
 		}
-		Arrays.parallelSort(sorted, duplexCountQualComparator);//TODO Sorting could be done in
+		final Comparator<Duplex> comparator = param.enableCostlyAssertions ?
+				duplexCountQualComparatorAssertor
+			:
+				duplexCountQualComparator;
+		Arrays.parallelSort(sorted, comparator);//TODO Sorting could be done in
 		//smaller chunks when no alignment slop is aligned, and in any case be done more
 		//efficiently in the case of sorted sets
 
@@ -500,10 +511,10 @@ public final class Duplex implements HasInterval<Integer> {
 			Collection<Duplex> overlapping = result.get().getOverlapping(duplex1);
 			if (overlapping instanceof ArrayList<?>) {
 				iterate = true;
-				Util.arrayListParallelSort((ArrayList<Duplex>) overlapping, duplexCountQualComparator);
+				Util.arrayListParallelSort((ArrayList<Duplex>) overlapping, comparator);
 			} else if (overlapping instanceof List<?>) {
 				iterate = true;
-				((List<Duplex>) overlapping).sort(duplexCountQualComparator);
+				((List<Duplex>) overlapping).sort(comparator);
 			} else {
 				// if the result is a sorted set, no need to sort
 				iterate = false;
