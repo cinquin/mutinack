@@ -866,7 +866,7 @@ public final class SubAnalyzer {
 		duplexes.forEach(duplex -> {
 			Assert.isFalse(duplex.invalid);
 			if (duplex.averageNClipped < 0) {
-				System.err.println("averageNClipped: " + duplex.averageNClipped + " for " + duplex);
+				throw new AssertionFailedException("averageNClipped: " + duplex.averageNClipped + " for " + duplex);
 			}
 			Assert.isTrue(param.variableBarcodeLength > 0 ||
 				Double.isNaN(duplex.probAtLeastOneCollision) ||
