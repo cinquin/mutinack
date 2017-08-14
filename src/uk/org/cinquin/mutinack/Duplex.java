@@ -628,7 +628,7 @@ public final class Duplex implements HasInterval<Integer> {
 		stats.nPosDuplex.accept(location);
 		final @Nullable CandidateDuplexEval bottom, top;
 
-		//Find if there is a clear candidate with which duplexRead is
+		//Find if there is a clear candidate with which duplex is
 		//associated; if not, discard it
 		//The same reads can be associated with two or three candidates in case
 		//there is an insertion or deletion (since the wildtype base or a

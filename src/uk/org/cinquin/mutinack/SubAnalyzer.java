@@ -287,7 +287,7 @@ public final class SubAnalyzer {
 	}
 
 	/**
-	 * Load all reads currently referred to by candidate sequences and group them into DuplexReads
+	 * Load all reads currently referred to by candidate sequences and group them into Duplexes
 	 * @param toPosition
 	 * @param fromPosition
 	 */
@@ -484,7 +484,7 @@ public final class SubAnalyzer {
 			});
 		}
 
-		cleanedUpDuplexes.forEach(duplexRead -> duplexRead.analyzeForStats(param, stats));
+		cleanedUpDuplexes.forEach(duplex -> duplex.analyzeForStats(param, stats));
 
 		finalResult.addAll(cleanedUpDuplexes);
 
@@ -493,14 +493,14 @@ public final class SubAnalyzer {
 		averageClipping = new float[arrayLength];
 		int[] duplexNumber = new int[arrayLength];
 
-		cleanedUpDuplexes.forEach(duplexRead -> {
-			int start = duplexRead.getUnclippedAlignmentStart() - fromPosition;
-			int stop = duplexRead.getUnclippedAlignmentEnd() - fromPosition;
+		cleanedUpDuplexes.forEach(duplex -> {
+			int start = duplex.getUnclippedAlignmentStart() - fromPosition;
+			int stop = duplex.getUnclippedAlignmentEnd() - fromPosition;
 			start = Math.min(Math.max(0, start), toPosition - fromPosition);
 			stop = Math.min(Math.max(0, stop), toPosition - fromPosition);
 
 			for (int i = start; i <= stop; i++) {
-				averageClipping[i] += duplexRead.averageNClipped;
+				averageClipping[i] += duplex.averageNClipped;
 				duplexNumber[i]++;
 			}
 		});
@@ -524,16 +524,16 @@ public final class SubAnalyzer {
 	}//End loadAll
 
 	private static void insertDuplexGroupSizeStats(DuplexKeeper keeper, int offset, Histogram stats) {
-		keeper.forEach(duplexRead -> {
-			duplexRead.assignedToLocalGroup = duplexRead.leftAlignmentStart.position == ExtendedSAMRecord.NO_MATE_POSITION ||
-				duplexRead.rightAlignmentEnd.position == ExtendedSAMRecord.NO_MATE_POSITION;//Ignore duplexes from reads that
+		keeper.forEach(duplex -> {
+			duplex.assignedToLocalGroup = duplex.leftAlignmentStart.position == ExtendedSAMRecord.NO_MATE_POSITION ||
+				duplex.rightAlignmentEnd.position == ExtendedSAMRecord.NO_MATE_POSITION;//Ignore duplexes from reads that
 			//have a missing mate
 		});
-		keeper.forEach(duplexRead -> {
-			if (!duplexRead.assignedToLocalGroup) {
-				int groupSize = countDuplexesInWindow(duplexRead, keeper, offset, 5);
+		keeper.forEach(duplex -> {
+			if (!duplex.assignedToLocalGroup) {
+				int groupSize = countDuplexesInWindow(duplex, keeper, offset, 5);
 				stats.insert(groupSize);
-				duplexRead.assignedToLocalGroup = true;
+				duplex.assignedToLocalGroup = true;
 			}
 		});
 	}
@@ -586,7 +586,7 @@ public final class SubAnalyzer {
 			return;
 		}
 
-		boolean foundDuplexRead = false;
+		boolean foundDuplex = false;
 		final boolean matchToLeft = rExtended.duplexLeft();
 
 		ed.set(rExtended);
@@ -655,7 +655,7 @@ public final class SubAnalyzer {
 				}
 				rExtended.duplex = duplex;
 				//stats.nVariableBarcodeMatchAfterPositionCheck.increment(location);
-				foundDuplexRead = true;
+				foundDuplex = true;
 				break;
 			} else {//left and/or right barcodes do not match
 				/*
@@ -667,7 +667,7 @@ public final class SubAnalyzer {
 			}
 		}//End loop over duplexReads
 
-		if (!foundDuplexRead) {
+		if (!foundDuplex) {
 			final Duplex duplex = matchToLeft ?
 					new Duplex(analyzer.getGroupSettings(), barcode, mateBarcode, !r.getReadNegativeStrandFlag(), r.getReadNegativeStrandFlag()) :
 					new Duplex(analyzer.getGroupSettings(), mateBarcode, barcode, r.getReadNegativeStrandFlag(), !r.getReadNegativeStrandFlag());
@@ -797,7 +797,7 @@ public final class SubAnalyzer {
 
 	@SuppressWarnings({"null", "ReferenceEquality"})
 	/**
-	 * This method is *NOT* thread-safe (it modifies DuplexReads associated with location retrieved
+	 * This method is *NOT* thread-safe (it modifies Duplexes associated with location retrieved
 	 * from field candidateSequences)
 	 * @param location
 	 * @return
@@ -826,7 +826,7 @@ public final class SubAnalyzer {
 
 		candidateSet.forEach(candidate -> {
 			candidate.reset();
-			final Set<Duplex> candidateDuplexReads =
+			final Set<Duplex> candidateDuplexes =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			List<ExtendedSAMRecord> discarded = Lists.mutable.empty();
 			candidate.getMutableConcurringReads().retainEntries((r, c) -> {
@@ -842,7 +842,7 @@ public final class SubAnalyzer {
 				@Nullable Duplex d = r.duplex;
 				//noinspection StatementWithEmptyBody
 				if (d != null) {
-					candidateDuplexReads.add(d);
+					candidateDuplexes.add(d);
 				} else {
 					//throw new AssertionFailedException("Read without a duplex :" + r);
 				}
@@ -850,27 +850,27 @@ public final class SubAnalyzer {
 			});
 			discarded.forEach(candidate.getMutableConcurringReads()::remove);
 			if (param.enableCostlyAssertions) {
-				checkDuplexes(candidateDuplexReads);
+				checkDuplexes(candidateDuplexes);
 			}
-			duplexes.addAll(candidateDuplexReads);
+			duplexes.addAll(candidateDuplexes);
 		});
 
-		//Allocate here to avoid repeated allocation in DuplexRead::examineAtLoc
+		//Allocate here to avoid repeated allocation in Duplex::examineAtLoc
 		final CandidateCounter topCounter = new CandidateCounter(candidateSet, location);
 		final CandidateCounter bottomCounter = new CandidateCounter(candidateSet, location);
 
 		int[] insertSizes = new int [duplexes.size()];
 		SettableDouble averageCollisionProbS = new SettableDouble(0d);
 		SettableInteger index = new SettableInteger(0);
-		duplexes.forEach(duplexRead -> {
-			Assert.isFalse(duplexRead.invalid);
-			if (duplexRead.averageNClipped < 0) {
-				System.err.println("averageNClipped: " + duplexRead.averageNClipped + " for " + duplexRead);
+		duplexes.forEach(duplex -> {
+			Assert.isFalse(duplex.invalid);
+			if (duplex.averageNClipped < 0) {
+				System.err.println("averageNClipped: " + duplex.averageNClipped + " for " + duplex);
 			}
 			Assert.isTrue(param.variableBarcodeLength > 0 ||
-				Double.isNaN(duplexRead.probAtLeastOneCollision) ||
-				duplexRead.probAtLeastOneCollision >= 0);
-			duplexRead.examineAtLoc(
+				Double.isNaN(duplex.probAtLeastOneCollision) ||
+				duplex.probAtLeastOneCollision >= 0);
+			duplex.examineAtLoc(
 				location,
 				result,
 				candidateSet,
@@ -882,14 +882,14 @@ public final class SubAnalyzer {
 			if (index.get() < insertSizes.length) {
 				//Check in case array size was capped (for future use; it is
 				//never capped currently)
-				insertSizes[index.get()] = duplexRead.maxInsertSize;
+				insertSizes[index.get()] = duplex.maxInsertSize;
 				index.incrementAndGet();
 			}
 
-			averageCollisionProbS.addAndGet(duplexRead.probAtLeastOneCollision);
-			if (param.variableBarcodeLength == 0 && !duplexRead.missingStrand) {
+			averageCollisionProbS.addAndGet(duplex.probAtLeastOneCollision);
+			if (param.variableBarcodeLength == 0 && !duplex.missingStrand) {
 				stats.duplexCollisionProbabilityWhen2Strands.insert((int)
-					(1_000f * duplexRead.probAtLeastOneCollision));
+					(1_000f * duplex.probAtLeastOneCollision));
 			}
 		});
 
