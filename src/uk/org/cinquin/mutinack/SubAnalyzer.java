@@ -731,7 +731,8 @@ public final class SubAnalyzer {
 					rExtended.getMateOffsetUnclippedEndLoc());
 			}
 
-			duplexKeeper.add(duplex);
+			boolean changed = duplexKeeper.add(duplex);
+			Assert.isTrue(changed);
 
 			if (false) //noinspection RedundantCast
 				Assert.isFalse( /* There are funny alignments that can trigger this assert;
