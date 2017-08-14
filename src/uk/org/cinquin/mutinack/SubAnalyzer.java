@@ -376,7 +376,7 @@ public final class SubAnalyzer {
 	private void loadAll(
 			final int fromPosition,
 			final int toPosition,
-			final @NonNull List<Duplex> finalResult) {
+			final @NonNull Collection<Duplex> finalResult) {
 
 		/**
 		 * Use a custom hash map type to keep track of duplexes when
