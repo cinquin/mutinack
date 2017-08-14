@@ -410,6 +410,7 @@ public final class Duplex implements HasInterval<Integer> {
 		otherDuplex.invalid = true;
 	}
 
+	@SuppressWarnings("ReferenceEquality")
 	public static final Comparator<Duplex> duplexCountQualComparator =
 		(d1, d2) -> {
 			if (d1 == d2) {
