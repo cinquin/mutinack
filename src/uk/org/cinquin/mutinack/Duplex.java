@@ -423,13 +423,45 @@ public final class Duplex implements HasInterval<Integer> {
 			if (compResult != 0) {
 				return compResult;
 			}
+
 			compResult = Integer.compare(Math.min(d2.topStrandRecords.size(),
 				d2.bottomStrandRecords.size()), Math.min(d1.topStrandRecords.size(),
 					d1.bottomStrandRecords.size()));
 			if (compResult != 0) {
 				return compResult;
 			}
-			return Integer.compare(System.identityHashCode(d1), System.identityHashCode(d2));
+
+			compResult = d1.leftAlignmentStart.compareTo(d2.leftAlignmentStart);
+			if (compResult != 0) {
+				return compResult;
+			}
+
+			compResult = d1.rightAlignmentStart.compareTo(d2.rightAlignmentStart);
+			if (compResult != 0) {
+				return compResult;
+			}
+
+			compResult = d1.leftAlignmentEnd.compareTo(d2.leftAlignmentEnd);
+			if (compResult != 0) {
+				return compResult;
+			}
+
+			compResult = d1.rightAlignmentEnd.compareTo(d2.rightAlignmentEnd);
+			if (compResult != 0) {
+				return compResult;
+			}
+
+			compResult = Mutation.compareByteArray(d1.leftBarcode, d2.leftBarcode);
+			if (compResult != 0) {
+				return compResult;
+			}
+
+			compResult = Mutation.compareByteArray(d1.rightBarcode, d2.rightBarcode);
+			if (compResult != 0) {
+				return compResult;
+			}
+
+			return 0;
 		};
 
 
