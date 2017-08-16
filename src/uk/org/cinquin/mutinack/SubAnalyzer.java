@@ -649,7 +649,7 @@ public final class SubAnalyzer {
 						duplex.topStrandRecords.add(rExtended);
 					}
 				}
-				if (param.enableCostlyAssertions) {//XXX May fail if there was a barcode
+				if (param.enableCostlyAssertions && false) {//XXX May fail if there was a barcode
 					//read error and duplex grouping was forced for mate
 					Assert.noException(duplex::assertAllBarcodesEqual);
 				}
