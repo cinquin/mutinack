@@ -166,7 +166,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 		templateStrandDelQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		codingStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
 		templateStrandInsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
-		topBottomDisagreementsQ2TooHighCoverage = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
+		topBottomDisagreementsQ2TooHighCoverage = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		nPosDuplexCandidatesForDisagreementQ2TooHighCoverage = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexWithLackOfStrandConsensus1 = new StatsCollector();
 		nPosDuplexWithLackOfStrandConsensus2 = new StatsCollector();
