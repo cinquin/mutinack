@@ -62,6 +62,29 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 		KNOWN_BASES_AS_CHARS.stream().map(c -> Byte.valueOf((byte) c.charValue())).
 			collect(Collectors.toList()));
 
+	public static void checkIsValidUCBase(byte b) {
+		switch (b) {
+			case 'B':
+			case 'D':
+			case 'H':
+			case 'K':
+			case 'M':
+			case 'R':
+			case 'S':
+			case 'V':
+			case 'W':
+			case 'Y':
+			case 'A':
+			case 'T':
+			case 'G':
+			case 'C':
+			case 'N':
+				break;
+			default:
+				throw new IllegalArgumentException(new String(new byte [] {b}) + " is not a valid upper-case base");
+		}
+	}
+
 	public static byte complement (byte b) {
 		switch (b) {
 			case 'A': return 'T';

@@ -271,18 +271,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (sequence != null) {
 			for (byte b: sequence) {
 				byte up = StringUtil.toUpperCase(b);
-				switch (up) {
-					case 'A':
-					case 'T':
-					case 'G':
-					case 'C':
-					case 'N':
-					case 'Y':
-					case 'R':
-						break;
-					default:
-						throw new IllegalArgumentException("Unknown base " + new String(new byte[] {b}) + " at " + location +
-							" from deleted reference sequence or from sequence of read " + initialConcurringRead);
+				try {
+					Mutation.checkIsValidUCBase(up);
+				} catch (IllegalArgumentException e) {
+					throw new IllegalArgumentException("Unknown base " + new String(new byte[] {b}) + " at " + location +
+						" from deleted reference sequence or from sequence of read " + initialConcurringRead);
 				}
 			}
 		}
