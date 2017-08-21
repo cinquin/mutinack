@@ -1,0 +1,4 @@
+class org/eclipse/collections/api/RichIterable
+detect
+ (Lorg/eclipse/collections/api/block/predicate/Predicate<-TT;>;)TT;
+ (Lorg/eclipse/collections/api/block/predicate/Predicate<-TT;>;)T0T;
