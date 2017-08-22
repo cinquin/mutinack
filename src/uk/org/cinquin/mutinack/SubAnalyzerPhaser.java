@@ -218,6 +218,7 @@ public class SubAnalyzerPhaser extends Phaser {
 							param.collapseFilteredReads,
 							param.writeBothStrands,
 							param.clipPairOverlap,
+							param.allowMissingSupplementaryFlag || param.rnaSeq,
 							dn);
 					}
 
@@ -1007,6 +1008,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			final boolean collapseFilteredReads,
 			final boolean writeBothStrands,
 			final boolean clipPairOverlap,
+			final boolean suppressMultipleOutputException,
 			final @NonNull AtomicInteger dn
 		) {
 		analysisChunk.subAnalyzersParallel.forEach(subAnalyzer -> {
@@ -1050,7 +1052,7 @@ public class SubAnalyzerPhaser extends Phaser {
 						samRecord.setAttribute("IS", null);
 					}
 					samRecord.setAttribute("AI", subAnalyzer.getAnalyzer().name);
-					subAnalyzer.queueOutputRead(e, samRecord, useAnyStart);
+					subAnalyzer.queueOutputRead(e, samRecord, useAnyStart || suppressMultipleOutputException);
 				};
 				Consumer<List<ExtendedSAMRecord>> writePair = (List<ExtendedSAMRecord> list) -> {
 					final ExtendedSAMRecord e = list.get(0);
