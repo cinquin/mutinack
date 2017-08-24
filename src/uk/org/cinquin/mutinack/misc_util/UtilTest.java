@@ -27,7 +27,10 @@ public class UtilTest {
 
 	@Test
 	public void testBasesEqualByteByteBoolean() {
+		assertFalse(Util.basesEqual((byte) 'a', (byte) 'N', false));
+		assertFalse(Util.basesEqual((byte) 'A', (byte) 'N', false));
 		assertFalse(Util.basesEqual((byte) 'a', (byte) 'b', true));
+		assertFalse(Util.basesEqual((byte) 'a', (byte) 'B', true));
 		assertTrue(Util.basesEqual((byte) 'a', (byte) 'N', true));
 		assertTrue(Util.basesEqual((byte) 'a', (byte) 'a', true));
 		assertTrue(Util.basesEqual((byte) 'N', (byte) 'N', true));
