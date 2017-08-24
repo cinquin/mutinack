@@ -42,7 +42,7 @@ public class ZInputStream extends FilterInputStream {
 
   protected int flush=JZlib.Z_NO_FLUSH;
   protected boolean compress;
-  protected InputStream in=null;
+  protected InputStream in1=null;
 
   protected Deflater deflater;
   protected InflaterInputStream iis;
@@ -58,7 +58,7 @@ public class ZInputStream extends FilterInputStream {
 
   public ZInputStream(InputStream in, int level) throws IOException {
     super(in);
-    this.in=in;
+    this.in1=in;
     deflater = new Deflater();
     deflater.init(level);
     compress=true;
@@ -78,7 +78,7 @@ public class ZInputStream extends FilterInputStream {
     if(compress){
       deflater.setOutput(b, off, len);
       while(true){
-        int datalen = in.read(buf, 0, buf.length);
+        int datalen = in1.read(buf, 0, buf.length);
         if(datalen == -1) return -1;
         deflater.setInput(buf, 0, datalen, true);
         int err = deflater.deflate(flush);

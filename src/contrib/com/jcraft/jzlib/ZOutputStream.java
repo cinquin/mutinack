@@ -45,7 +45,7 @@ public class ZOutputStream extends FilterOutputStream {
   protected byte[] buf=new byte[bufsize];
   protected boolean compress;
 
-  protected OutputStream out;
+  protected OutputStream out1;
   private boolean end=false;
 
   private DeflaterOutputStream dos;
@@ -53,7 +53,7 @@ public class ZOutputStream extends FilterOutputStream {
 
   public ZOutputStream(OutputStream out) throws IOException {
     super(out);
-    this.out=out;
+    this.out1=out;
     inflater = new Inflater();
     inflater.init();
     compress=false;
@@ -65,7 +65,7 @@ public class ZOutputStream extends FilterOutputStream {
 
   public ZOutputStream(OutputStream out, int level, boolean nowrap) throws IOException {
     super(out);
-    this.out=out;
+    this.out1=out;
     Deflater deflater = new Deflater(level, nowrap);
     dos = new DeflaterOutputStream(out, deflater);
     compress=true;
@@ -91,7 +91,7 @@ public class ZOutputStream extends FilterOutputStream {
         inflater.setOutput(buf, 0, buf.length);
         err = inflater.inflate(flush);
         if(inflater.next_out_index>0)
-          out.write(buf, 0, inflater.next_out_index);
+          out1.write(buf, 0, inflater.next_out_index);
         if(err != JZlib.Z_OK)
           break;
       }
@@ -141,8 +141,8 @@ public class ZOutputStream extends FilterOutputStream {
     }
     finally{
       end();
-      out.close();
-      out=null;
+      out1.close();
+      out1=null;
     }
   }
 
@@ -158,7 +158,7 @@ public class ZOutputStream extends FilterOutputStream {
 
   @Override
 	public void flush() throws IOException {
-    out.flush();
+    out1.flush();
   }
 
 }

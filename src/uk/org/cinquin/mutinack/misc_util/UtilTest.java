@@ -17,7 +17,6 @@
 
 package uk.org.cinquin.mutinack.misc_util;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -28,10 +27,10 @@ public class UtilTest {
 
 	@Test
 	public void testBasesEqualByteByteBoolean() {
-	    assertEquals(Util.basesEqual((byte) 'a', (byte) 'b', true), false);
-	    assertEquals(Util.basesEqual((byte) 'a', (byte) 'N', true), true);
-	    assertEquals(Util.basesEqual((byte) 'a', (byte) 'a', true), true);
-	    assertEquals(Util.basesEqual((byte) 'N', (byte) 'N', true), true);
+	    assertFalse(Util.basesEqual((byte) 'a', (byte) 'b', true));
+	    assertTrue(Util.basesEqual((byte) 'a', (byte) 'N', true));
+	    assertTrue(Util.basesEqual((byte) 'a', (byte) 'a', true));
+	    assertTrue(Util.basesEqual((byte) 'N', (byte) 'N', true));
 	}
 
 	@Test
