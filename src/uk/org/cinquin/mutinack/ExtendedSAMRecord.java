@@ -43,7 +43,7 @@ import gnu.trove.map.hash.TObjectByteHashMap;
 import uk.org.cinquin.mutinack.candidate_sequences.CigarSplitAnalysis;
 import uk.org.cinquin.mutinack.candidate_sequences.ExtendedAlignmentBlock;
 import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser;
-import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser.ParseXT;
+import uk.org.cinquin.mutinack.candidate_sequences.SAMTranslocationTagParser.ParsedChimeraTag;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
@@ -75,6 +75,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	final int medianPhred;
 	final float averagePhred;
 	private final Cigar cigar;
+	private volatile boolean checkedForAlternativeAlignment = false;
+	private @Nullable ExtendedSAMRecord alternativeAlignment;
+	private @Nullable CigarSplitAnalysis cigarAnalysis;
 	/**
 	 * Length of read ignoring trailing Ns.
 	 */
@@ -725,20 +728,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public SequenceLocation getOffsetUnclippedEndLoc() {
-		final String xt = (String) record.getAttribute("XT");
-		final CigarSplitAnalysis cigarAnalysis;
-		if (xt != null && (cigarAnalysis = new CigarSplitAnalysis(this)).leftMatchNoRevcomp != null) {
+		if (getAlternativeAlignment() != null && cigarAnalysis.leftMatchNoRevcomp != null) {
 			if (cigarAnalysis.leftMatchNoRevcomp) {
-				ExtendedSAMRecord otherAlignment = getAlternativeAlignment(xt);
-				if (!this.equals(otherAlignment)) {
-					if (otherAlignment != null) {
-						if (Boolean.FALSE.equals(new CigarSplitAnalysis(otherAlignment).leftMatchNoRevcomp)) {
-							return otherAlignment.getOffsetUnclippedEndLoc();
-						} else {
-							return unclippedEndHelper(false);
-						}
+				if (!this.equals(alternativeAlignment)) {
+					if (Boolean.FALSE.equals(new CigarSplitAnalysis(alternativeAlignment).leftMatchNoRevcomp)) {
+						return alternativeAlignment.getOffsetUnclippedEndLoc();
 					} else {
-						return unclippedEndHelper(true);
+						return unclippedEndHelper(false);
 					}
 				}
 			}
@@ -756,20 +752,13 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	public SequenceLocation getOffsetUnclippedStartLoc() {
-		final String xt = (String) record.getAttribute("XT");
-		final CigarSplitAnalysis cigarAnalysis;
-		if (xt != null && (cigarAnalysis = new CigarSplitAnalysis(this)).leftMatchNoRevcomp != null) {
+		if (getAlternativeAlignment() != null && cigarAnalysis.leftMatchNoRevcomp != null) {
 			if (!cigarAnalysis.leftMatchNoRevcomp) {
-				ExtendedSAMRecord otherAlignment = getAlternativeAlignment(xt);
-				if (!this.equals(otherAlignment)) {
-					if (otherAlignment != null) {
-						if (Boolean.TRUE.equals(new CigarSplitAnalysis(otherAlignment).leftMatchNoRevcomp)) {
-							return otherAlignment.getOffsetUnclippedStartLoc();
-						} else {
-							return unclippedStartHelper(false);
-						}
+				if (!this.equals(alternativeAlignment)) {
+					if (Boolean.TRUE.equals(new CigarSplitAnalysis(alternativeAlignment).leftMatchNoRevcomp)) {
+						return alternativeAlignment.getOffsetUnclippedStartLoc();
 					} else {
-						return unclippedStartHelper(true);
+						return unclippedStartHelper(false);
 					}
 				}
 			}
@@ -781,17 +770,35 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		return getOffsetUnclippedStartLoc().position;
 	}
 
-	private ExtendedSAMRecord getAlternativeAlignment(String tagXT) {
-		ParseXT parseXT = new SAMTranslocationTagParser.ParseXT(location.referenceGenome,
-			tagXT, groupSettings.getIndexContigNameReverseMap(), this);
-		ExtendedSAMRecord alternativeAlignment = analyzer.getRead(
+	private @Nullable ExtendedSAMRecord getAlternativeAlignment() {
+		if (checkedForAlternativeAlignment) {
+			return alternativeAlignment;
+		}
+		String xtAttr = (String) record.getAttribute("XT");
+		String saAttr = (String) record.getAttribute("SA");
+		if (xtAttr == null && saAttr == null) {
+			return null;
+		}
+		ParsedChimeraTag parsedChimeraTag = xtAttr != null ?
+				SAMTranslocationTagParser.ParsedChimeraTag.fromXT(location.referenceGenome,
+					xtAttr, groupSettings.getIndexContigNameReverseMap(), this)
+			:
+				SAMTranslocationTagParser.ParsedChimeraTag.fromSA(location.referenceGenome,
+					saAttr, groupSettings.getIndexContigNameReverseMap());
+		if (parsedChimeraTag == null) {
+			return null;
+		}
+		ExtendedSAMRecord altAlignment = analyzer.getRead(
 			record.getReadName(),
 			record.getFirstOfPairFlag(),
-			parseXT.otherLocation,
+			parsedChimeraTag.joinTo,
 			getAlignmentStart(),
 			500,
 			!runAndTile.isEmpty());
-		return alternativeAlignment;
+		this.alternativeAlignment = altAlignment;
+		this.cigarAnalysis = this.alternativeAlignment == null ? null : new CigarSplitAnalysis(this);
+		this.checkedForAlternativeAlignment = true;
+		return this.alternativeAlignment;
 	}
 
 	public int getMateOffsetUnclippedEnd() {

@@ -36,16 +36,23 @@ import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class SAMTranslocationTagParser {
 
-	public static class ParseXT {
-		public final @NonNull SequenceLocation otherLocation;
+	public static class ParsedChimeraTag {
+		public final @NonNull SequenceLocation joinTo;
 
-		public ParseXT(@NonNull String referenceGenomeName, String string, Map<String, Integer> indexContigNameReverseMap,
+		private ParsedChimeraTag(@NonNull SequenceLocation joinTo) {
+			this.joinTo  = joinTo;
+		}
+
+		public static ParsedChimeraTag fromXT(
+				@NonNull String referenceGenomeName,
+				String tagXT,
+				Map<String, Integer> indexContigNameReverseMap,
 				ExtendedSAMRecord originalRecord) {
 			final String info;
 			try {
-				info = string.split(",")[3];
+				info = tagXT.split(",")[3];
 			} catch (Exception e) {
-				throw new ParseRTException("Could not retrieve fourth comma-separated item from " + string, e);
+				throw new ParseRTException("Could not retrieve fourth comma-separated item from " + tagXT, e);
 			}
 			final String from, to;
 			try {
@@ -74,7 +81,23 @@ public class SAMTranslocationTagParser {
 				joinTo = loc1;
 			}
 
-			otherLocation = joinTo;
+			return new ParsedChimeraTag(joinTo);
+		}
+
+		public static @Nullable ParsedChimeraTag fromSA(
+				@NonNull String referenceGenomeName,
+				String tagSA,
+				Map<String, Integer> indexContigNameReverseMap) {
+			final String[] alignments = tagSA.split(";");
+			if (alignments.length != 1) {
+				return null;
+			}
+			final String a = alignments[0];
+			final @NonNull String @NonNull[] aSplit = a.split(",");
+			final int otherAlignmentStart = Integer.parseInt(aSplit[1]) - 1;
+
+			final SequenceLocation joinTo = new SequenceLocation(referenceGenomeName, aSplit[0], indexContigNameReverseMap, otherAlignmentStart, true);
+			return new ParsedChimeraTag(joinTo);
 		}
 	}
 
@@ -113,18 +136,14 @@ public class SAMTranslocationTagParser {
 		@NonNull SequenceLocation joinTo;
 
 		if (tagXT != null) {//GSNAP
-			ParseXT parsed = new ParseXT(param.referenceGenomeShortName, tagXT, indexContigNameReverseMap, extendedRec);
-			joinTo = parsed.otherLocation;
+			ParsedChimeraTag parsed = ParsedChimeraTag.fromXT(param.referenceGenomeShortName, tagXT, indexContigNameReverseMap, extendedRec);
+			joinTo = parsed.joinTo;
 		} else if (tagSA != null) {//BWA
-			final String[] alignments = tagSA.split(";");
-			if (alignments.length != 1) {
-				stats.nNotSingleSupplementary.increment(roughLocation);
+			ParsedChimeraTag parsed = ParsedChimeraTag.fromSA(param.referenceGenomeShortName, tagSA, indexContigNameReverseMap);
+			if (parsed == null) {
 				return null;
 			}
-			final String a = alignments[0];
-			final @NonNull String @NonNull[] aSplit = a.split(",");
-			final int otherAlignmentStart = Integer.parseInt(aSplit[1]) - 1;
-			joinTo = new SequenceLocation(param.referenceGenomeShortName, aSplit[0], indexContigNameReverseMap, otherAlignmentStart, true);
+			joinTo = parsed.joinTo;
 		} else {
 			throw new AssertionFailedException();
 		}
