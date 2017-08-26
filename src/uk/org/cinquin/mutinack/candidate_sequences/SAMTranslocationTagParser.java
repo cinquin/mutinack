@@ -31,6 +31,7 @@ import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.SubAnalyzer;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.IllegalInputException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class SAMTranslocationTagParser {
@@ -95,7 +96,7 @@ public class SAMTranslocationTagParser {
 		String tagXT = (String) extendedRec.record.getAttribute("XT");//Set by GSNAP
 
 		if (tagSA != null && tagXT != null) {
-			throw new RuntimeException("Both SA and XT tags are set in read " + extendedRec);
+			throw new IllegalInputException("Both SA and XT tags are set in read " + extendedRec);
 		}
 
 		if (tagSA == null && tagXT == null) {

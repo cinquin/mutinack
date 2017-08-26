@@ -17,7 +17,7 @@
 
 package uk.org.cinquin.mutinack.misc_util.exceptions;
 
-public final class ParseRTException extends RuntimeException {
+public final class ParseRTException extends IllegalInputException {
 
 	private static final long serialVersionUID = -3713797417129778021L;
 
