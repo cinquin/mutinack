@@ -89,7 +89,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	public boolean duplexAlreadyVisitedForStats = false;
 
 	public final int xLoc, yLoc;
-	public final String runAndTile;
+	public final @NonNull String runAndTile;
 	public boolean opticalDuplicate = false;
 	public boolean hasOpticalDuplicates = false;
 	public boolean visitedForOptDups = false;
@@ -186,6 +186,22 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.location = location;
 		hashCode = fullName.hashCode();
 		mateName = getReadFullName(rec, true);
+		if (parseReadNameForPosition) {
+			String readName = record.getReadName();
+			int endFirstChunk = nthIndexOf(readName, ':', 5);
+			//Interning below required for equality checks performed in optical duplicate detection
+			runAndTile = record.getReadName().substring(0, endFirstChunk).intern();
+			byte[] readNameBytes = readName.getBytes();
+
+			xLoc = parseInt(readNameBytes, endFirstChunk + 1);
+			int endXLoc = readName.indexOf(':', endFirstChunk + 1);
+			yLoc = parseInt(readNameBytes, endXLoc + 1);
+			//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
+		} else {
+			xLoc = -1;
+			yLoc = -1;
+			runAndTile = "";
+		}
 
 		final int readLength = rec.getReadLength();
 
@@ -292,22 +308,6 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			constantBarcode = DUMMY_BARCODE;
 		}
 
-		if (parseReadNameForPosition) {
-			String readName = record.getReadName();
-			int endFirstChunk = nthIndexOf(readName, ':', 5);
-			//Interning below required for equality checks performed in optical duplicate detection
-			runAndTile = record.getReadName().substring(0, endFirstChunk).intern();
-			byte[] readNameBytes = readName.getBytes();
-
-			xLoc = parseInt(readNameBytes, endFirstChunk + 1);
-			int endXLoc = readName.indexOf(':', endFirstChunk + 1);
-			yLoc = parseInt(readNameBytes, endXLoc + 1);
-			//interval = Interval.toInterval(rec.getAlignmentStart(), rec.getAlignmentEnd());
-		} else {
-			xLoc = -1;
-			yLoc = -1;
-			runAndTile = "";
-		}
 	}
 
 	@SuppressWarnings("unused")
