@@ -88,6 +88,7 @@
     <target name="clean">
         <delete dir="bin"/>
         <delete dir="{junit.output.dir}" failonerror="false"/>
+        <delete file="target/jacoco.exec"/>
     </target>
     <target name="clean_main">
         <delete dir="bin/uk/org/cinquin"/>
