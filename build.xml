@@ -30,8 +30,8 @@
         </jacoco:report>
     </target>
 
-    <property name="jmh.jar" location="lib_build_run_test/jmh-core-1.17-SNAPSHOT.jar"/>
-    <property name="jmh-generator-annprocess.jar" location="lib_build_run_test/jmh-generator-annprocess-1.17-SNAPSHOT.jar"/>
+    <property name="jmh.jar" location="lib_build_run_test/jmh-core-1.20-SNAPSHOT.jar"/>
+    <property name="jmh-generator-annprocess.jar" location="lib_build_run_test/jmh-generator-annprocess-1.20-SNAPSHOT.jar"/>
 
     <property name="build.compiler" value="extJavac"/>
     <property environment="env"/>
@@ -130,6 +130,7 @@
            <compilerarg value="-parameters"/>
            <compilerarg value="-Xep:Finally:OFF"/>
            <compilerarg value="-Xep:DefaultCharset:OFF"/>
+           <compilerarg value="-XepDisableWarningsInGeneratedCode"/>
            <src path="src"/>
            <classpath refid="SequenceAnalysis.classpath"/>
            <compilerclasspath refid="errorprone"/>
