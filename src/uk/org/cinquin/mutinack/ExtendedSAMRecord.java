@@ -727,6 +727,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			noMatePosition ? NO_MATE_POSITION : record.getUnclippedEnd() - 1 - intronAdjustment(16, true));
 	}
 
+	@SuppressWarnings("null")
 	public SequenceLocation getOffsetUnclippedEndLoc() {
 		if (getAlternativeAlignment() != null && cigarAnalysis.leftMatchNoRevcomp != null) {
 			if (cigarAnalysis.leftMatchNoRevcomp) {
@@ -751,6 +752,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			noMatePosition ? NO_MATE_POSITION : record.getUnclippedStart() - 1 + intronAdjustment(16, false));
 	}
 
+	@SuppressWarnings("null")
 	public SequenceLocation getOffsetUnclippedStartLoc() {
 		if (getAlternativeAlignment() != null && cigarAnalysis.leftMatchNoRevcomp != null) {
 			if (!cigarAnalysis.leftMatchNoRevcomp) {
