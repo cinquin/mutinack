@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -32,8 +33,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
-import gnu.trove.map.TMap;
-import gnu.trove.map.hash.THashMap;
 import uk.org.cinquin.mutinack.Cacheable;
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
@@ -55,7 +54,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@JsonIgnore
 	protected final boolean sortByValue;
 	@JsonUnwrapped
-	private final @NonNull TMap<Object, @NonNull Object> map = new THashMap<>(4, 0.1f);
+	private final @NonNull ConcurrentMap<Object, @NonNull Object> map = new ConcurrentHashMap<>();
 	@JsonIgnore
 	private boolean isMultidimensionalCounter = false;
 	@JsonIgnore
@@ -94,12 +93,11 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void setKeyNamePrintingProcessor(List<SerializableFunction<Object, Object>> l) {
 		nameProcessors = l;
-		map.forEachValue(v -> {
+		map.values().forEach(v -> {
 			if (v instanceof Counter) {
 				((Counter) v).setKeyNamePrintingProcessor(
 						new ArrayList<>(l.subList(1, l.size())));
 			}
-			return true;
 		});
 	}
 
@@ -144,37 +142,31 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void accept(@NonNull Object t, Consumer<DoubleAdderFormatter> action, int offset) {
-		@NonNull Object index = t;
-		boolean terminal = true;
+		@NonNull Handle<@NonNull Object> index = new Handle<>(t);
+		Handle<Boolean> terminal = new Handle(true);
 		final List<@NonNull Object> list;
 		if (t instanceof List) {
 			list = (List<@NonNull Object>) t;
-			index = list.get(offset);
-			terminal = offset == list.size() - 1;
+			index.set(list.get(offset));
+			terminal.set(offset == list.size() - 1);
 		} else {
 			list = null;
 		}
-		Object preExistingValue = map.get(index);
-		if (preExistingValue == null) {
-			synchronized (map) {
-				preExistingValue = map.get(index);
-				if (preExistingValue == null) {
-					if (terminal) {
-						index = getCachedKey(index);
-						preExistingValue = new DoubleAdderFormatter();
-					} else {
-						preExistingValue = new Counter<>(sortByValue, groupSettings);
-						((Counter) preExistingValue).setKeyNamePrintingProcessor(nameProcessors.subList(1, nameProcessors.size()));
-						isMultidimensionalCounter = true;
-					}
-					map.put(index, preExistingValue);
-				}
+		Object counter = map.computeIfAbsent(index.get(), i -> {
+			if (terminal.get()) {
+				index.set(getCachedKey(index.get()));
+				return new DoubleAdderFormatter();
+			} else {
+				Counter newCounter = new Counter<>(sortByValue, groupSettings);
+				newCounter.setKeyNamePrintingProcessor(nameProcessors.subList(1, nameProcessors.size()));
+				isMultidimensionalCounter = true;
+				return newCounter;
 			}
-		}
-		if (terminal) {
-			action.accept((DoubleAdderFormatter) preExistingValue);
+		});
+		if (terminal.get()) {
+			action.accept((DoubleAdderFormatter) counter);
 		} else {
-			((Counter<Object>) preExistingValue).accept(Objects.requireNonNull(list), action, offset + 1);
+			((Counter<Object>) counter).accept(Objects.requireNonNull(list), action, offset + 1);
 		}
 	}
 
@@ -294,11 +286,10 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 	@Override
 	public void actualize() {
 		//TODO Finish this
-		map.forEachValue(val -> {
+		map.values().forEach(val -> {
 			if (val instanceof Actualizable) {
 				((Actualizable) val).actualize();
 			}
-			return true;
 		});
 	}
 
