@@ -17,9 +17,8 @@
 package uk.org.cinquin.mutinack.statistics;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
@@ -30,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import uk.org.cinquin.mutinack.SequenceLocation;
-import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.output.json.StatsCollectorSerializer;
 
 @JsonSerialize(using=StatsCollectorSerializer.class)
@@ -42,7 +40,7 @@ public class StatsCollector implements Serializable, Traceable, Actualizable {
 	private String tracePrefix = null;
 
 	public final @NonNull List<@NonNull LongAdderFormatter> values =
-			new ArrayList<>();
+		new CopyOnWriteArrayList<>();
 
 	private @NonNull LongAdderFormatter get(int index) {
 		if (values.size() < index + 1) {
@@ -52,14 +50,7 @@ public class StatsCollector implements Serializable, Traceable, Actualizable {
 				}
 			}
 		}
-		LongAdderFormatter result = Util.nullableify(values.get(index));
-		if (result == null) {//Race condition can result in retrieval of null value
-			synchronized(values) {
-				result = values.get(index);
-			}
-			Objects.requireNonNull(result);
-		}
-		return result;
+		return values.get(index);
 	}
 
 	public void increment(@NonNull SequenceLocation location) {
