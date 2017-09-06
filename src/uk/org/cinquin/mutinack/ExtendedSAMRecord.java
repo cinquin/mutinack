@@ -773,6 +773,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	}
 
 	private @Nullable ExtendedSAMRecord getAlternativeAlignment() {
+		if (!analyzer.getParam().fetchDistantMates) {
+			return null;
+		}
 		if (checkedForAlternativeAlignment) {
 			return alternativeAlignment;
 		}
