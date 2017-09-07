@@ -442,15 +442,17 @@ public class ReadLoader {
 						}
 						final ExtendedSAMRecord extendedCopy = extended;
 						//Below duplicated to generate different stack traces
-						if (SAMTranslocationTagParser.hasRearrangementAttribute(samRecord)) {
-							@SuppressWarnings("unused")
-							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
-						} else if (Math.abs(samRecord.getInferredInsertSize()) > param.maxInsertSize) {
-							@SuppressWarnings("unused")
-							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
-						} else if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
-							@SuppressWarnings("unused")
-							Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+						if (param.fetchDistantMates) {
+							if (SAMTranslocationTagParser.hasRearrangementAttribute(samRecord)) {
+								@SuppressWarnings("unused")
+								Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							} else if (Math.abs(samRecord.getInferredInsertSize()) > param.maxInsertSize) {
+								@SuppressWarnings("unused")
+								Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							} else if (!samRecord.getMateUnmappedFlag() && !samRecord.getReferenceIndex().equals(samRecord.getMateReferenceIndex())) {
+								@SuppressWarnings("unused")
+								Future<?> f = distantMatePrefetcherService.submit(extendedCopy::checkMate);
+							}
 						}
 						furthestPositionReadInContig = Math.max(furthestPositionReadInContig,
 								samRecord.getAlignmentEnd() - 1);
