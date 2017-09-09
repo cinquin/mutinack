@@ -12,16 +12,15 @@ import gnu.trove.set.hash.THashSet;
 /**
  * Data structure representing an interval.
  */
-public final class IntervalData<T> implements Comparable<IntervalData<T>>, Serializable {
+public final class IntervalData<T> implements Comparable<IntervalData<?>>, Serializable {
 
 	private static final long serialVersionUID = -6998782952815928057L;
 	long start = Long.MIN_VALUE;
 	long end = Long.MAX_VALUE;
 	final @NonNull THashSet<T> set;
-	private static final @NonNull THashSet<Object> emptyTHashSet = new EmptyTHashSet();
 
 	@SuppressWarnings({ "rawtypes" })
-	public static final IntervalData EMPTY = new IntervalData<>(emptyTHashSet, Long.MIN_VALUE, Long.MIN_VALUE);
+	public static final IntervalData EMPTY = new IntervalData<>(new EmptyTHashSet(), Long.MIN_VALUE, Long.MIN_VALUE);
 
 	/**
 	 * Interval data using object as its unique identifier
@@ -193,7 +192,7 @@ public final class IntervalData<T> implements Comparable<IntervalData<T>>, Seria
 	 * {@inheritDoc}
 	 */
 	@Override
-	public int compareTo(IntervalData<T> d) {
+	public int compareTo(IntervalData<?> d) {
 		if (this.end < d.end)
 			return -1;
 		if (d.end < this.end)
