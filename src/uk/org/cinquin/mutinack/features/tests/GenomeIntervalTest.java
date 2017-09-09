@@ -33,8 +33,8 @@ import java.util.stream.IntStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jwetherell.algorithms.data_structures.IntervalData;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
-import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import gnu.trove.set.hash.THashSet;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
@@ -72,7 +72,7 @@ public class GenomeIntervalTest {
 					(int) (Math.random() - 0.5) * 2 * 200,
 					(int) (Math.random() - 0.5) * 2 * 200, null, Util.emptyOptional(), 0, null);
 
-			intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
+			intervalDataList.add(new IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 		}
 
 		intervalDataList = new ArrayList<>(
@@ -151,15 +151,15 @@ public class GenomeIntervalTest {
 		for (int i = 0; i < 91; i++) {
 			for (String name: names) {
 				GenomeInterval i1 = new GenomeInterval(name, -1, "", "", 10 + i, 100, null, Util.emptyOptional(), 0, null);
-				intervalDataList.add(new IntervalTree.IntervalData<>(i1.getStart(), i1.getEnd(), i1));
+				intervalDataList.add(new IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 				GenomeInterval i2 = new GenomeInterval(name, -1, "", "", 10, 101 - i, null, Util.emptyOptional(), 0, null);
-				intervalDataList.add(new IntervalTree.IntervalData<>(i2.getStart(), i2.getEnd(), i2));
+				intervalDataList.add(new IntervalData<>(i2.getStart(), i2.getEnd(), i2));
 			}
 		}
 
 		GenomeInterval i3 = new GenomeInterval("name_3", -1, "", "", 105, 150, null, Util.emptyOptional(), 0, null);
 
-		intervalDataList.add(new IntervalTree.IntervalData<>(i3.getStart(), i3.getEnd(), i3));
+		intervalDataList.add(new IntervalData<>(i3.getStart(), i3.getEnd(), i3));
 
 		return new ArrayList<>(
 			intervalDataList.stream().collect(TroveSetCollector.uniqueValueCollector()));

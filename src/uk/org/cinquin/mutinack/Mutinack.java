@@ -88,9 +88,7 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-//import com.google.monitoring.runtime.instrumentation.AllocationRecorder;
-//import com.google.monitoring.runtime.instrumentation.Sampler;
-import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
+import com.jwetherell.algorithms.data_structures.IntervalData;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;

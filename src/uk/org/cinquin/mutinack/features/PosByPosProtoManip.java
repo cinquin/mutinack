@@ -50,8 +50,8 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.jwetherell.algorithms.data_structures.IntervalData;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
-import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import uk.org.cinquin.mutinack.MutinackGroup;
 import uk.org.cinquin.mutinack.Parameters.HideInToString;
@@ -297,19 +297,19 @@ public class PosByPosProtoManip {
 		//Note we can't just sum sizes of selected intervals since they
 		//may overlap
 
-		final MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>>
+		final MapOfLists<String, IntervalData<GenomeInterval>>
 			bedFileIntervals = new MapOfLists<>();		
 		AtomicInteger lineCount = new AtomicInteger(0);
 		int contigIndex = 0;
 		for (String s: contigNames0) {
 			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(s, new IntervalTree.IntervalData<>(-1, -1, 
+			bedFileIntervals.addAt(s, new IntervalData<>(-1, -1,
 					new GenomeInterval("", contigIndex++, "", s, -1, -1, null, Util.emptyOptional(), 0, null)));
 		}
 
 		for (GenomeInterval interval: resultIntervals) {
 			bedFileIntervals.addAt(interval.contigName, 
-					new IntervalTree.IntervalData<>(interval.getStart(), interval.getEnd(), interval));
+					new IntervalData<>(interval.getStart(), interval.getEnd(), interval));
 		}
 
 		List<Entry<String, List<IntervalData<GenomeInterval>>>> sortedContigs = 

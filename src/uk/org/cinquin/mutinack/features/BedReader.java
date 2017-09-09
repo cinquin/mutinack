@@ -51,8 +51,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.jwetherell.algorithms.data_structures.IntervalData;
 import com.jwetherell.algorithms.data_structures.IntervalTree;
-import com.jwetherell.algorithms.data_structures.IntervalTree.IntervalData;
 
 import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
@@ -76,7 +76,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	private static final Set<@NonNull String> missingContigNames = new HashSet<>();
 
 	@JsonIgnore
-	public final transient MapOfLists<String, IntervalTree.IntervalData<GenomeInterval>> bedFileIntervals;
+	public final transient MapOfLists<String, IntervalData<GenomeInterval>> bedFileIntervals;
 	@JsonIgnore
 	private final transient List<IntervalTree<@NonNull GenomeInterval>> contigTrees = new ArrayList<>();
 	@JsonIgnore
@@ -162,7 +162,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 
 		for (int i = 0; i < contigNames.size(); i++) {
 			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(contigNames.get(i), new IntervalTree.IntervalData<>(-1, -1,
+			bedFileIntervals.addAt(contigNames.get(i), new IntervalData<>(-1, -1,
 					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null)));
 		}
 
@@ -286,7 +286,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex, referenceGenomeName,
 						/*contig*/ components[contigNameColumn].intern(), start, end, length, strandPolarity, score,
 						transcriptToGeneNameMap.get(name));
-					bedFileIntervals.addAt(interval.contigName, new IntervalTree.IntervalData<>(start, end, interval));
+					bedFileIntervals.addAt(interval.contigName, new IntervalData<>(start, end, interval));
 				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);
 				}
