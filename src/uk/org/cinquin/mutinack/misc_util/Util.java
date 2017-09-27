@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
@@ -405,6 +406,17 @@ public class Util {
 		@Override
 		public String toString() {
 			return lines.stream().collect(Collectors.joining("\n", "", "\n"));
+		}
+
+		public void write(OutputStream os) {
+			lines.forEach(l -> {
+				try {
+					os.write(Objects.requireNonNull(l).getBytes());
+					os.write('\n');
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 		}
 	}
 
