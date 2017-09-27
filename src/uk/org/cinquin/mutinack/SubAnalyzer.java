@@ -1059,6 +1059,10 @@ public final class SubAnalyzer {
 				candidateSet.forEach(c -> result.rawInsertionsQ2.addAllIterable(c.getRawInsertionsQ2()));
 				candidateSet.forEach(c -> result.rawDeletionsQ2.addAllIterable(c.getRawDeletionsQ2()));
 			}
+
+			if (totalGoodOrDubiousDuplexes <= analyzer.maxNDuplexes) {
+				duplexes.forEach(duplex -> {duplex.updateTwoOrMoreReadPairsStats(stats, analyzer.name);});
+			}
 		}
 
 		final int totalReadsAtPosition = (int) candidateSet.sumOfInt(

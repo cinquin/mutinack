@@ -790,6 +790,14 @@ public class AnalysisStats implements Serializable, Actualizable {
 		}
 	};
 
+	@PrintInStatus(outputLevel = VERBOSE, description = "Number of duplexes that have both strands represented " +
+		"(and therefore two or more read pairs)")
+	public @Final @Persistent StatsCollector nDuplexesTwoOrMoreReadPairsAndBothStrands = new StatsCollector();
+
+	@PrintInStatus(outputLevel = VERBOSE, description = "Number of duplexes that have two or more read pairs " +
+		"(for comparison with nDuplexesTwoOrMoreReadPairsAndBothStrands)")
+	public @Final @Persistent StatsCollector nDuplexesTwoOrMoreReadPairs = new StatsCollector();
+
 	@PrintInStatus(outputLevel = VERY_VERBOSE, description = "Duplex collision probability")
 	public @Final @Persistent(serialized = "true") @Extension(vendorName = "datanucleus", key = "is-second-class", value="false")
 	Histogram duplexCollisionProbability = new Histogram(100);

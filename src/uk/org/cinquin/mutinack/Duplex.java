@@ -1317,6 +1317,21 @@ public final class Duplex implements HasInterval<Integer> {
 
 	}
 
+	public void updateTwoOrMoreReadPairsStats(AnalysisStats stats, @NonNull String analyzerName) {//Only called if local coverage is low enough
+		if (!topStrandRecords.isEmpty() && !bottomStrandRecords.isEmpty()) {
+			@NonNull SequenceLocation location = requireNonNull(roughLocation);
+			stats.nDuplexesTwoOrMoreReadPairsAndBothStrands.add(location, 1);
+			//System.err.println(analyzerName + "\t" + roughLocation);
+			if (DebugLogControl.shouldLog(TRACE, logger, stats.analysisParameters, location)) {
+				logger.trace(analyzerName + "\t" + location);
+			}
+		}
+
+		if (allRecords.size() > 1 * 2 /* 2 reads per pair*/) {
+			stats.nDuplexesTwoOrMoreReadPairs.add(requireNonNull(roughLocation), 1);
+		}
+	}
+
 	public void markDuplicates(Parameters param, AnalysisStats stats, Iterable<ExtendedSAMRecord> reads0) {
 		MutableList<ExtendedSAMRecord> reads = Lists.mutable.ofAll(reads0);
 		final int nReads = reads.size();
