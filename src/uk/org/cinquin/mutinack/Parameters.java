@@ -74,7 +74,7 @@ public final class Parameters implements Serializable, Cloneable {
 		try {
 			validate1();
 		} catch (IllegalArgumentException e) {
-			throw new RuntimeException("Problem while validating command line " + commandLine, e);
+			throw new RuntimeException("Problem while validating arguments " + commandLine, e);
 		}
 	}
 
