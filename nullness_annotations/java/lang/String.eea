@@ -5,9 +5,15 @@ getBytes
 intern
  ()Ljava/lang/String;
  ()L1java/lang/String;
+replaceAll
+ (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ (Ljava/lang/String;Ljava/lang/String;)L1java/lang/String;
 split
  (Ljava/lang/String;)[Ljava/lang/String;
  (Ljava/lang/String;)[1L1java/lang/String;
+split
+ (Ljava/lang/String;I)[Ljava/lang/String;
+ (Ljava/lang/String;I)[L1java/lang/String;
 substring
  (I)Ljava/lang/String;
  (I)L1java/lang/String;
