@@ -120,6 +120,7 @@
            <src path="src"/>
            <include name="contrib/edu/**/*.java"/>
            <include name="contrib/net/**/*.java"/>
+           <include name="contrib/com/jcraft/**/*.java"/>
            <include name="**/*PB.java"/>
            <include name="contrib/jdk/**/*.java"/>
            <classpath refid="SequenceAnalysis.classpath"/>
