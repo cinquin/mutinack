@@ -89,8 +89,8 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 
 		final int nMaxDupArg = maxNDuplexes.size();
-		if (nMaxDupArg > 0 && nMaxDupArg < inputReads.size()) {
-			throw new IllegalArgumentException("maxNDuplexes must be specified once for each input file or not at all");
+		if (nMaxDupArg > 1 && nMaxDupArg < inputReads.size()) {
+			throw new IllegalArgumentException("maxNDuplexes must be specified once, once for each input file, or not at all");
 		}
 
 		final OutputLevel[] d = OutputLevel.values();

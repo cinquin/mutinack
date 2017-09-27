@@ -953,7 +953,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			final int maxNDuplexes = param.maxNDuplexes.isEmpty() ? Integer.MAX_VALUE :
-				param.maxNDuplexes.get(i);
+				(param.maxNDuplexes.size() == 1 ? param.maxNDuplexes.get(0) : param.maxNDuplexes.get(i));
 
 			final OutputLevel[] d = OutputLevel.values();
 			@SuppressWarnings("null")
