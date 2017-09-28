@@ -780,6 +780,7 @@ public class Mutinack implements Actualizable, Closeable {
 			groupSettings.getIndexContigNameReverseMap().put(contigNames.get(i), i);
 		}
 		groupSettings.setContigNames(contigNames);
+		groupSettings.setContigNamesToProcess(contigNamesToProcess);
 		groupSettings.setContigSizes(contigSizes);
 
 		StaticStuffToAvoidMutating.loadContigs(param.referenceGenomeShortName, param.referenceGenome,

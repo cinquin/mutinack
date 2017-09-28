@@ -191,18 +191,18 @@ public class AnalysisStats implements Serializable, Actualizable {
 
 		{	//Force output of fields annotated with AddChromosomeBins to be broken down by
 			//bins for each contig (bin size as defined by CounterWithSeqLocation.BIN_SIZE, for now)
-			List<String> contigNames = groupSettings.getContigNames();
+			List<String> contigNamesToProcess = groupSettings.getContigNamesToProcess();
 			for (Field field : AnalysisStats.class.getDeclaredFields()) {
 				@Nullable AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
 				if (annotation != null) {
-					for (int contig = 0; contig < contigNames.size(); contig++) {
+					for (int contig = 0; contig < contigNamesToProcess.size(); contig++) {
 						int contigCopy = contig;
 						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
-								contigNames.get(contig))) / groupSettings.BIN_SIZE; c++) {
+								contigNamesToProcess.get(contig))) / groupSettings.BIN_SIZE; c++) {
 							int cCopy = c;
 							try {
 								MultiCounter <?> counter = ((MultiCounter<?>) field.get(this));
-								counter.addPredicate(contigNames.get(contig) + "_bin_" + String.format("%03d", c),
+								counter.addPredicate(contigNamesToProcess.get(contig) + "_bin_" + String.format("%03d", c),
 										loc -> {
 											final int min = groupSettings.BIN_SIZE * cCopy;
 											final int max = groupSettings.BIN_SIZE * (cCopy + 1);
@@ -211,7 +211,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 													loc.position < max;
 										});
 								counter.accept(new SequenceLocation(analysisParameters.referenceGenomeShortName, contig,
-									Objects.requireNonNull(contigNames.get(contig)), c * groupSettings.BIN_SIZE), 0);
+									Objects.requireNonNull(contigNamesToProcess.get(contig)), c * groupSettings.BIN_SIZE), 0);
 							} catch (IllegalArgumentException | IllegalAccessException e) {
 								throw new RuntimeException(e);
 							}

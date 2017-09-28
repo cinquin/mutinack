@@ -64,7 +64,7 @@ public class MutinackGroup implements Closeable, Serializable {
 
 	private final transient SortedMap<String, BiConsumer<PrintStream, Integer>>
 		statusUpdateTasks = new TreeMap<>();
-	private List<@NonNull String> contigNames;
+	private List<@NonNull String> contigNames, contigNamesToProcess;
 	private Map<@NonNull String, @NonNull Integer> contigSizes;
 	private final @NonNull Map<String, @NonNull Integer> indexContigNameReverseMap = new ConcurrentHashMap<>();
 	public final @NonNull Map<@NonNull SequenceLocation, @NonNull Boolean> forceOutputAtLocations = new HashMap<>();
@@ -157,6 +157,11 @@ public class MutinackGroup implements Closeable, Serializable {
 		return Objects.requireNonNull(contigNames);
 	}
 
+	public @NonNull List<@NonNull String> getContigNamesToProcess() {
+		Assert.isNonNull(contigNamesToProcess, "Uninitialized contigNamesToProcess");
+		return Objects.requireNonNull(contigNamesToProcess);
+	}
+
 	public @NonNull Map<@NonNull String, @NonNull Integer> getContigSizes() {
 		Assert.isNonNull(contigNames, "Uninitialized contigSizes");
 		return Objects.requireNonNull(contigSizes);
@@ -164,6 +169,10 @@ public class MutinackGroup implements Closeable, Serializable {
 
 	public void setContigNames(@NonNull List<@NonNull String> contigNames) {
 		this.contigNames = contigNames;
+	}
+
+	public void setContigNamesToProcess(@NonNull List<@NonNull String> contigNamesToProcess) {
+		this.contigNamesToProcess = contigNamesToProcess;
 	}
 
 	public void setContigSizes(@NonNull Map<@NonNull String, @NonNull Integer> contigSizes) {
