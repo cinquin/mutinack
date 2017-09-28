@@ -431,8 +431,7 @@ public final class Parameters implements Serializable, Cloneable {
 		"Contigs whose name contains one of these strings will be ignored (unless explicitly specified with -contigNamesToProcess); " +
 			"matching is case insensitive",
 		required = false)
-	public @NonNull List<@NonNull String> ignoreContigsContaining = Arrays.asList("decoy", "_alt", "_random");
-
+	public @NonNull List<@NonNull String> ignoreContigsContaining = Arrays.asList("decoy", "_alt", "_random", "HLA-", "chrUn_");
 
 	@Parameter(names = "-startAtPosition", description = "Formatted as chrI:12,000,000 or chrI:12000000; specify up to once per contig", required = false,
 			converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
