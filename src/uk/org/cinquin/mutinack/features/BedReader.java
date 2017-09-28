@@ -160,9 +160,17 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		final AtomicInteger lineCount = new AtomicInteger(0);
 		final AtomicInteger skipped = new AtomicInteger(0);
 
+		final List<@NonNull String> contigNameIgnorePatternsUC = param == null ? Collections.emptyList() :
+			param.ignoreContigsContaining;
+
 		for (int i = 0; i < contigNames.size(); i++) {
+			final String contigName = contigNames.get(i);
+			if (contigNameIgnorePatternsUC.stream().anyMatch(pattern -> contigName.toUpperCase().contains(pattern))) {
+				bedFileIntervals.addAt(contigName, Collections.emptyList());
+				continue;
+			}
 			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(contigNames.get(i), new IntervalData<>(-1, -1,
+			bedFileIntervals.addAt(contigName, new IntervalData<>(-1, -1,
 					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null)));
 		}
 
