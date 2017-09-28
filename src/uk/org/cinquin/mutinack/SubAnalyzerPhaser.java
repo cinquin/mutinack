@@ -18,6 +18,7 @@
 package uk.org.cinquin.mutinack;
 
 import static contrib.uk.org.lidalia.slf4jext.Level.TRACE;
+import static java.util.Objects.requireNonNull;
 import static uk.org.cinquin.mutinack.MutationType.SUBSTITUTION;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.AT_LEAST_ONE_DISAG;
 import static uk.org.cinquin.mutinack.candidate_sequences.PositionAssay.DISAG_THAT_MISSED_Q2;
@@ -38,7 +39,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Phaser;
@@ -159,7 +159,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				Boolean insertion = null;
 				for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
 					subAnalyzer.stats = subAnalyzer.analyzer.stats.get(statsIndex);
-					subAnalyzer.param = Objects.requireNonNull(subAnalyzer.stats.analysisParameters);
+					subAnalyzer.param = requireNonNull(subAnalyzer.stats.analysisParameters);
 					if (insertion == null) {
 						insertion = subAnalyzer.stats.forInsertions;
 					} else {
@@ -191,7 +191,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 					final @NonNull SequenceLocation location =
 						new SequenceLocation(param.referenceGenomeShortName, contigIndex, contigName, position,
-							Objects.requireNonNull(insertion));
+							requireNonNull(insertion));
 
 					for (GenomeFeatureTester tester: excludeBEDs) {
 						if (tester.test(location)) {
@@ -300,7 +300,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			if (completedNormally) {
 				for (SubAnalyzer subAnalyzer: analysisChunk.subAnalyzers) {
 					subAnalyzer.stats = subAnalyzer.analyzer.stats.get(0);
-					subAnalyzer.param = Objects.requireNonNull(subAnalyzer.stats.analysisParameters);
+					subAnalyzer.param = requireNonNull(subAnalyzer.stats.analysisParameters);
 				}
 			} else {
 				forceTermination();
@@ -380,9 +380,9 @@ public class SubAnalyzerPhaser extends Phaser {
 				sa.c4 = false;
 				sa.processed = false;
 				registerAndAnalyzeCoverage(
-					Objects.requireNonNull(locationExamResultsMap.get(sa)),
+					requireNonNull(locationExamResultsMap.get(sa)),
 					mutationToAnnotate,
-					Objects.requireNonNull(sa.stats),
+					requireNonNull(sa.stats),
 					location,
 					locationExamResultsMap,
 					sa.analyzer,
@@ -400,7 +400,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				if (isMutant) mutantCandidates.add(c);
 			}));
 
-		final @NonNull Quality maxCandMutQuality = Objects.requireNonNull(new ObjMinMax<>
+		final @NonNull Quality maxCandMutQuality = requireNonNull(new ObjMinMax<>
 			(Quality.ATROCIOUS, Quality.ATROCIOUS, Quality::compareTo).
 			acceptMax(mutantCandidates, c -> {
 				CandidateSequence c0 = (CandidateSequence) c;
@@ -420,7 +420,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		locationExamResults.forEach(c -> c.analyzedCandidateSequences.forEach(candidate -> {
 			if (candidate.getQuality().getNonNullValue().atLeast(GOOD)) {
-				final @NonNull AnalysisStats stats = Objects.requireNonNull(
+				final @NonNull AnalysisStats stats = requireNonNull(
 					candidate.getOwningSubAnalyzer().stats);
 				candidate.computeNQ1PlusConcurringDuplexes(stats.concurringDuplexDistance, param);
 			}
@@ -535,7 +535,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					(!param.candidateQ2Criterion.equals("1Q2Duplex") || candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation) &&
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
 					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE,
-						!Objects.requireNonNull(locationExamResultsMap.get(candidate.getOwningSubAnalyzer())).tooHighCoverage) &&
+						!requireNonNull(locationExamResultsMap.get(candidate.getOwningSubAnalyzer())).tooHighCoverage) &&
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
 						candidate.getnDuplexesSisterSamples() >= param.minNumberDuplexesSisterSamples) &&
 					(!param.Q2DisagCapsMatchingMutationQuality ||
@@ -549,13 +549,12 @@ public class SubAnalyzerPhaser extends Phaser {
 					)
 				) {
 
-				final @NonNull AnalysisStats stats = Objects.requireNonNull(
-					candidate.getOwningSubAnalyzer().stats);
+				final @NonNull AnalysisStats stats = requireNonNull(candidate.getOwningSubAnalyzer().stats);
 
 				SubAnalyzer sa0 = candidate.getOwningSubAnalyzer();
 				if (!sa0.incrementednPosDuplexQualityQ2OthersQ1Q2) {
 					@NonNull LocationExaminationResults ler =
-						Objects.requireNonNull(locationExamResultsMap.get(candidate.getOwningSubAnalyzer()));
+						requireNonNull(locationExamResultsMap.get(candidate.getOwningSubAnalyzer()));
 					boolean c1 = ler.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation;
 					boolean c2 = ler.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation;
 					boolean c3 = ler.nGoodOrDubiousDuplexesSisterSamples >= stats.analysisParameters.minNumberDuplexesSisterSamples;
@@ -586,11 +585,11 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				}
 
-				analysisChunk.subAnalyzers.select(sa -> Objects.requireNonNull(locationExamResultsMap.get(sa)).
+				analysisChunk.subAnalyzers.select(sa -> requireNonNull(locationExamResultsMap.get(sa)).
 						analyzedCandidateSequences.contains(candidate)).
 					forEach(sa -> {
 						final LocationExaminationResults examResults =
-							Objects.requireNonNull(locationExamResultsMap.get(sa));
+							requireNonNull(locationExamResultsMap.get(sa));
 						final AnalysisStats stats0 = sa.stats;
 						stats0.nReadsAtPosWithSomeCandidateForQ2UniqueMutation.insert(
 							(int) examResults.analyzedCandidateSequences.sumOfInt(
@@ -623,7 +622,7 @@ public class SubAnalyzerPhaser extends Phaser {
 			for (@NonNull SubAnalyzer sa: analysisChunk.subAnalyzers) {
 
 				final @NonNull LocationExaminationResults examResults =
-					Objects.requireNonNull(locationExamResultsMap.get(sa));
+					requireNonNull(locationExamResultsMap.get(sa));
 				final List<CandidateSequence> l = examResults.analyzedCandidateSequences.
 					select(c -> c.equals(candidate)).toList();
 
@@ -743,7 +742,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 
 		if (stats.positionByPositionCoverage != null) {
-			int[] array = Objects.requireNonNull(stats.positionByPositionCoverage.get(
+			int[] array = requireNonNull(stats.positionByPositionCoverage.get(
 					location.getContigName()));
 			if (array.length <= location.position) {
 				throw new IllegalArgumentException("Position goes beyond end of contig " +
