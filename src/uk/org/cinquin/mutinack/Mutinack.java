@@ -762,10 +762,16 @@ public class Mutinack implements Actualizable, Closeable {
 		List<@NonNull String> contigNames0 = new ArrayList<>(contigSizes0.keySet());
 		contigNames0.sort(null);
 		contigNames = Collections.unmodifiableList(contigNames0);
+		for (int i = 0; i < contigNames.size(); i++) {
+			groupSettings.getIndexContigNameReverseMap().put(contigNames.get(i), i);
+		}
+		groupSettings.setContigNames(contigNames);
+		groupSettings.setContigSizes(contigSizes);
+
 		if (param.contigNamesToProcess.isEmpty()) {
 			if (!param.ignoreContigsContaining.isEmpty()) {
-				contigNamesToProcess = contigNames.stream().filter(c ->
-					param.ignoreContigsContaining.stream().noneMatch(pattern -> c.toUpperCase().contains(
+				contigNamesToProcess = contigNames.stream().filter(contigName ->
+					param.ignoreContigsContaining.stream().noneMatch(pattern -> contigName.toUpperCase().contains(
 						pattern))).
 					collect(Collectors.toList());
 			} else {
@@ -775,13 +781,7 @@ public class Mutinack implements Actualizable, Closeable {
 			contigNamesToProcess = new ArrayList<>(param.contigNamesToProcess);
 			contigNamesToProcess.sort(null);
 		}
-
-		for (int i = 0; i < contigNames.size(); i++) {
-			groupSettings.getIndexContigNameReverseMap().put(contigNames.get(i), i);
-		}
-		groupSettings.setContigNames(contigNames);
 		groupSettings.setContigNamesToProcess(contigNamesToProcess);
-		groupSettings.setContigSizes(contigSizes);
 
 		StaticStuffToAvoidMutating.loadContigs(param.referenceGenomeShortName, param.referenceGenome,
 			contigNames);
@@ -1081,10 +1081,10 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			for (final String contigName: contigNamesToProcess) {
-				final int finalContigIndex = Objects.requireNonNull(
+				final int contigIndex = Objects.requireNonNull(
 					groupSettings.getIndexContigNameReverseMap().get(contigName));
 				final SerializablePredicate<SequenceLocation> p =
-					l -> l.contigIndex == finalContigIndex;
+					l -> l.contigIndex == contigIndex;
 				analyzer.stats.forEach(s -> {
 					s.topBottomSubstDisagreementsQ2.addPredicate(contigName, p);
 					s.topBottomDelDisagreementsQ2.addPredicate(contigName, p);
