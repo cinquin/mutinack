@@ -68,6 +68,8 @@ public final class Parameters implements Serializable, Cloneable {
 		if (lookForRearrangements) {
 			fetchDistantMates = true;
 		}
+		ignoreContigsContaining = ignoreContigsContaining.stream().
+			map(String::toUpperCase).collect(Collectors.toList());
 	}
 
 	public void validate() {
@@ -424,6 +426,13 @@ public final class Parameters implements Serializable, Cloneable {
 			"Reads not mapped to any of these contigs will be ignored")
 	@NoDuplicates
 	@NonNull List<@NonNull String> contigNamesToProcess = new ArrayList<>();
+
+	@Parameter(names = "-ignoreContigsContaining", description =
+		"Contigs whose name contains one of these strings will be ignored (unless explicitly specified with -contigNamesToProcess); " +
+			"matching is case insensitive",
+		required = false)
+	public @NonNull List<@NonNull String> ignoreContigsContaining = Arrays.asList("decoy", "_alt", "_random");
+
 
 	@Parameter(names = "-startAtPosition", description = "Formatted as chrI:12,000,000 or chrI:12000000; specify up to once per contig", required = false,
 			converter = SwallowCommasConverter.class, listConverter = SwallowCommasConverter.class)
