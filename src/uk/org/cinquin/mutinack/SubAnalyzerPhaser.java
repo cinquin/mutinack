@@ -535,7 +535,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					(!param.candidateQ2Criterion.equals("1Q2Duplex") || candidate.getnGoodDuplexes() >= param.minQ2DuplexesToCallMutation) &&
 					candidate.getnGoodOrDubiousDuplexes() >= param.minQ1Q2DuplexesToCallMutation &&
 					candidate.getQuality().downgradeUniqueIfFalse(TOO_HIGH_COVERAGE,
-						!locationExamResultsMap.get(candidate.getOwningSubAnalyzer()).tooHighCoverage) &&
+						!Objects.requireNonNull(locationExamResultsMap.get(candidate.getOwningSubAnalyzer())).tooHighCoverage) &&
 					candidate.getQuality().downgradeUniqueIfFalse(MIN_DUPLEXES_SISTER_SAMPLE,
 						candidate.getnDuplexesSisterSamples() >= param.minNumberDuplexesSisterSamples) &&
 					(!param.Q2DisagCapsMatchingMutationQuality ||
@@ -555,7 +555,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				SubAnalyzer sa0 = candidate.getOwningSubAnalyzer();
 				if (!sa0.incrementednPosDuplexQualityQ2OthersQ1Q2) {
 					@NonNull LocationExaminationResults ler =
-						locationExamResultsMap.get(candidate.getOwningSubAnalyzer());
+						Objects.requireNonNull(locationExamResultsMap.get(candidate.getOwningSubAnalyzer()));
 					boolean c1 = ler.nGoodDuplexes >= stats.analysisParameters.minQ2DuplexesToCallMutation;
 					boolean c2 = ler.nGoodOrDubiousDuplexes >= stats.analysisParameters.minQ1Q2DuplexesToCallMutation;
 					boolean c3 = ler.nGoodOrDubiousDuplexesSisterSamples >= stats.analysisParameters.minNumberDuplexesSisterSamples;
