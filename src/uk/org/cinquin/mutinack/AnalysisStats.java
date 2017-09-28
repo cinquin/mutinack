@@ -195,23 +195,24 @@ public class AnalysisStats implements Serializable, Actualizable {
 			for (Field field : AnalysisStats.class.getDeclaredFields()) {
 				@Nullable AddChromosomeBins annotation = field.getAnnotation(AddChromosomeBins.class);
 				if (annotation != null) {
-					for (int contig = 0; contig < contigNamesToProcess.size(); contig++) {
-						int contigCopy = contig;
-						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(
-								contigNamesToProcess.get(contig))) / groupSettings.BIN_SIZE; c++) {
-							int cCopy = c;
+					for (final @NonNull String contigName: contigNamesToProcess) {
+						final int contigIndex = Objects.requireNonNull(
+							groupSettings.getIndexContigNameReverseMap().get(contigName));
+						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(contigName))
+								/ groupSettings.BIN_SIZE; c++) {
+							final int finalBinIndex = c;
 							try {
 								MultiCounter <?> counter = ((MultiCounter<?>) field.get(this));
-								counter.addPredicate(contigNamesToProcess.get(contig) + "_bin_" + String.format("%03d", c),
+								counter.addPredicate(contigName + "_bin_" + String.format("%03d", c),
 										loc -> {
-											final int min = groupSettings.BIN_SIZE * cCopy;
-											final int max = groupSettings.BIN_SIZE * (cCopy + 1);
-											return loc.contigIndex == contigCopy &&
+											final int min = groupSettings.BIN_SIZE * finalBinIndex;
+											final int max = groupSettings.BIN_SIZE * (finalBinIndex + 1);
+											return loc.contigIndex == contigIndex &&
 													loc.position >= min &&
 													loc.position < max;
 										});
-								counter.accept(new SequenceLocation(analysisParameters.referenceGenomeShortName, contig,
-									Objects.requireNonNull(contigNamesToProcess.get(contig)), c * groupSettings.BIN_SIZE), 0);
+								counter.accept(new SequenceLocation(analysisParameters.referenceGenomeShortName, contigName,
+									groupSettings.getIndexContigNameReverseMap(), c * groupSettings.BIN_SIZE), 0);
 							} catch (IllegalArgumentException | IllegalAccessException e) {
 								throw new RuntimeException(e);
 							}
