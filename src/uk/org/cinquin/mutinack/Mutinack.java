@@ -1163,9 +1163,9 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 
 			final Set<String> outputPaths = new HashSet<>();
-			for (int index = 0; index < param.reportBreakdownForBED.size(); index++) {
+			for (final String bedPath: param.reportBreakdownForBED) {
 				try {
-					final File f = new File(param.reportBreakdownForBED.get(index));
+					final File f = new File(bedPath);
 					final BedReader filter = new BedReader(
 						groupSettings.getContigNames(),
 						new BufferedReader(new FileReader(f)),
@@ -1175,14 +1175,13 @@ public class Mutinack implements Actualizable, Closeable {
 							new BufferedReader(new FileReader(file)))).orElse(null),
 						transcriptToGene, false, param);
 					final String filterName = f.getName();
-					int index0 = index;
 					analyzer.addFilterForCandidateReporting(filterName, filter);
 					analyzer.stats.forEach(s -> {
 						CounterWithBedFeatureBreakdown counter =
 							new CounterWithBedFeatureBreakdown(filter, transcriptToGene, groupSettings);
 						counter.setNormalizedOutput(true);
 						counter.setAnalyzerName(name);
-						String outputPath = param.saveBEDBreakdownToPathPrefix.get(index0) + '_' + s.getName();
+						String outputPath = bedPath + '_' + s.getName();
 						if (!outputPaths.add(outputPath)) {
 							throw new AssertionFailedException();
 						}
@@ -1202,12 +1201,12 @@ public class Mutinack implements Actualizable, Closeable {
 
 						counter = new CounterWithBedFeatureBreakdown(filter, transcriptToGene, groupSettings);
 						counter.setAnalyzerName(name);
-						counter.setOutputFile(new File(param.saveBEDBreakdownToPathPrefix.get(index0) + '_' + s.getName() +
+						counter.setOutputFile(new File(bedPath + '_' + s.getName() +
 							"_nPosDuplexQualityQ2OthersQ1Q2_" + name + ".bed"));
 						s.nPosDuplexQualityQ2OthersQ1Q2.addPredicate("breakdown_" + f.getName(), filter, counter);
 					});
 				} catch (Exception e) {
-					throw new RuntimeException("Problem setting up BED file " + param.reportBreakdownForBED.get(index), e);
+					throw new RuntimeException("Problem setting up BED file " + bedPath, e);
 				}
 			}
 		});//End parallel loop over analyzers
