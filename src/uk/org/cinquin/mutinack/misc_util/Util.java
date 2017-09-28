@@ -525,9 +525,9 @@ public class Util {
 	public static void versionCheck() {
 		try (Scanner scanner = new Scanner(new URL("http://cinquin.org.uk/static/mutinack/latestVersion.txt").openStream(), "UTF-8")) {
 			String s = scanner.useDelimiter("\n").next();
-			double version = Double.parseDouble(s);
-			if (version > VersionNumber.version) {
-				System.err.println("New Mutinack version " + version + " is available at http://cinquin.org.uk/static/mutinack.jar ; " +
+			double latestVersion = Double.parseDouble(s);
+			if (latestVersion - VersionNumber.version > 0.0001) {
+				System.err.println("New Mutinack version " + latestVersion + " is available at http://cinquin.org.uk/static/mutinack.jar ; " +
 					"current version is " + VersionNumber.version);
 			} else {
 				System.err.println("Mutinack is up to date");
