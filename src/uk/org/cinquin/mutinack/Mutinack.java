@@ -774,6 +774,7 @@ public class Mutinack implements Actualizable, Closeable {
 					param.ignoreContigsContaining.stream().noneMatch(pattern -> contigName.toUpperCase().contains(
 						pattern))).
 					collect(Collectors.toList());
+				printUserMustSeeMessage("Processing contigs " + contigNamesToProcess);
 			} else {
 				contigNamesToProcess = contigNames;
 			}
