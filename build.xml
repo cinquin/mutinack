@@ -117,6 +117,9 @@
         <javac encoding="ISO-8859-1" debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
            <compilerarg value="-XDignore.symbol.file"/>
            <compilerarg value="-parameters"/>
+           <compilerarg value="--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"/>
+           <compilerarg value="--add-modules=java.xml.ws.annotation"/>
+           <compilerarg value="--add-exports=java.xml.ws.annotation/javax.annotation=ALL-UNNAMED"/>
            <src path="src"/>
            <include name="contrib/edu/**/*.java"/>
            <include name="contrib/net/**/*.java"/>
@@ -134,6 +137,9 @@
            <compilerarg value="-Xep:Finally:OFF"/>
            <compilerarg value="-Xep:DefaultCharset:OFF"/>
            <compilerarg value="-XepDisableWarningsInGeneratedCode"/>
+           <compilerarg value="--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"/>
+           <compilerarg value="--add-modules=java.xml.ws.annotation"/>
+           <compilerarg value="--add-exports=java.xml.ws.annotation/javax.annotation=ALL-UNNAMED"/>
            <src path="src"/>
            <exclude name="uk/org/cinquin/mutinack/benchmarking/*.java"/>
            <classpath refid="SequenceAnalysis.classpath"/>
