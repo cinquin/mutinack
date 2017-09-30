@@ -1,6 +1,7 @@
 #!/bin/bash
 set -o pipefail
 set -e
+source define_module_exports
 uname=`uname`
 #suspend=`[[ ${uname} == Darwin ]] && echo y || echo n`
 suspend=n
@@ -12,7 +13,7 @@ trap 'rm -Rf "$tmp_dir"' EXIT INT TERM HUP
 tmp_pipe=${tmp_dir}/pid
 mkfifo -m 600 "${tmp_pipe}"
 
-(java `echo -agentlib:jdwp=transport=dt_socket,server=y,suspend=${suspend},address=``./getAvailablePort.py 4567` -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.keyStore=mutinack_public_selfsigned.jks -Djavax.net.ssl.keyStorePassword=passphrase -Djava.security.policy==java.policy -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3 -javaagent:lib_build_run_test/org.jacoco.agent-0.7.5.201505241946-runtime.jar=destfile=target/jacoco.exec -jar mutinack.jar -startWorker ${serverName} -writePIDPath ${tmp_pipe} > run_worker_out_err 2>&1 || true ; (echo FAILED > ${tmp_pipe}) 2> /dev/null ) > /dev/null  2> /dev/null &
+(java ${module_exports} `echo -agentlib:jdwp=transport=dt_socket,server=y,suspend=${suspend},address=``./getAvailablePort.py 4567` -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.keyStore=mutinack_public_selfsigned.jks -Djavax.net.ssl.keyStorePassword=passphrase -Djava.security.policy==java.policy -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:CICompilerCount=3 -jar mutinack.jar -startWorker ${serverName} -writePIDPath ${tmp_pipe} > run_worker_out_err 2>&1 || true ; (echo FAILED > ${tmp_pipe}) 2> /dev/null ) > /dev/null &
 
 result=`cat "${tmp_pipe}"`
 if [ "${result}" = "FAILED" ];

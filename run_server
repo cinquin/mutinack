@@ -1,6 +1,7 @@
 #!/bin/bash
 set -o pipefail
 set -e
+source define_module_exports
 serverName=localhost/mutinackTesting
 if [ ! -z $1 ]; then serverName="$1"; fi
 tmp_dir=$(mktemp -d /tmp/Mutinack_server_PID.XXXXXX)
@@ -8,7 +9,7 @@ trap 'rm -Rf "$tmp_dir"' EXIT INT TERM HUP
 tmp_pipe=${tmp_dir}/pid
 mkfifo -m 600 "${tmp_pipe}"
 
-(java -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djava.security.manager -Djava.security.policy==java.policy -jar mutinack.jar -recordRunsTo recordedFunctionalTestRuns.bin -startServer ${serverName} -writePIDPath ${tmp_pipe} -noStatusMessages > run_server_out_err 2>&1 || true; (echo FAILED > ${tmp_pipe}) 2> /dev/null) > /dev/null &
+(java ${module_exports} -Djavax.net.ssl.trustStore=mutinack_public_trustStore -Djavax.net.ssl.trustStorePassword=changeit -Djava.security.manager -Djava.security.policy==java.policy -jar mutinack.jar -recordRunsTo recordedFunctionalTestRuns.bin -startServer ${serverName} -writePIDPath ${tmp_pipe} -noStatusMessages > run_server_out_err 2>&1 || true; (echo FAILED > ${tmp_pipe}) 2> /dev/null) > /dev/null &
 
 result=`cat "${tmp_pipe}"`
 if [ "${result}" = "FAILED" ];
