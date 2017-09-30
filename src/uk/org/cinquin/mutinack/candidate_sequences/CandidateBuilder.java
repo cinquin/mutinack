@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
-import javax.annotation.CheckReturnValue;
-
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -29,6 +27,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import uk.org.cinquin.mutinack.MutationType;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
+import uk.org.cinquin.mutinack.misc_util.CheckReturnValue;
 
 
 public final class CandidateBuilder {

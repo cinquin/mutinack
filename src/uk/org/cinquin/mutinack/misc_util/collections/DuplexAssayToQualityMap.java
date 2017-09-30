@@ -3,10 +3,9 @@ package uk.org.cinquin.mutinack.misc_util.collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import javax.annotation.CheckReturnValue;
-
 import uk.org.cinquin.mutinack.candidate_sequences.DuplexAssay;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.CheckReturnValue;
 import uk.org.cinquin.mutinack.qualities.Quality;
 
 public class DuplexAssayToQualityMap extends CustomEnumQualityMap<DuplexAssay> {

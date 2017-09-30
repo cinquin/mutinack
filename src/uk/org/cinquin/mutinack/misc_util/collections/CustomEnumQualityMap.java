@@ -1,10 +1,9 @@
 package uk.org.cinquin.mutinack.misc_util.collections;
 
-import javax.annotation.CheckReturnValue;
-
 import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.CheckReturnValue;
 import uk.org.cinquin.mutinack.qualities.Quality;
 
 public abstract class CustomEnumQualityMap<K extends Enum<K>> extends CustomEnumToEnumMap<K, @NonNull Quality> {
