@@ -16,7 +16,7 @@ import java.util.function.BiConsumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import sun.misc.SharedSecrets;
+import jdk.internal.misc.SharedSecrets;
 
 /**
  *

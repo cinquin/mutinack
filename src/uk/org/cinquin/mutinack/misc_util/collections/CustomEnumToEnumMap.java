@@ -12,8 +12,7 @@ import java.util.function.BiConsumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-//JDK9: will need to look for SharedSecrets in jdk.internal.misc
-import sun.misc.SharedSecrets;
+import jdk.internal.misc.SharedSecrets;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
 
