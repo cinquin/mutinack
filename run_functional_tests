@@ -8,7 +8,8 @@ else
 	MAKE=make
 fi
 
-rm -f mutinack.jar && ant jar_enhanced
+#rm -f mutinack.jar && ant jar_enhanced
+ant jar
 
 if [ "$uname" = FreeBSD -o "$uname" = Darwin ]; then
        TIME=time
