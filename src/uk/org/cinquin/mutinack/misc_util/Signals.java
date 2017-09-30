@@ -47,7 +47,8 @@ public class Signals {
 			List<SignalProcessor> list = processors.get(name);
 			if (list == null) {
 				if (!handledSignals.contains(name)) {
-					throw new IllegalArgumentException("Unknown signal " + name);
+					System.err.println("Unknown signal " + name);
+					return;
 				}
 				list = new CopyOnWriteArrayList<>();
 				processors.put(name, list);
@@ -104,9 +105,7 @@ public class Signals {
 			try {
 				Signal.handle(new Signal(signalName), new Handler(signalName).sigHandler);
 			} catch (IllegalArgumentException e) {
-				if (!System.getProperty("os.name", "Linux default").contains("Linux")) {
-					System.err.println(e.toString());
-				}
+				System.err.println(e.toString());
 			}
 		}
 	}
