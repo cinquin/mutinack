@@ -123,6 +123,7 @@
            <include name="contrib/com/jcraft/**/*.java"/>
            <include name="**/*PB.java"/>
            <include name="contrib/jdk/**/*.java"/>
+           <exclude name="uk/org/cinquin/mutinack/benchmarking/*.java"/>
            <classpath refid="SequenceAnalysis.classpath"/>
            <compilerclasspath refid="errorprone"/>
         </javac>
@@ -134,6 +135,7 @@
            <compilerarg value="-Xep:DefaultCharset:OFF"/>
            <compilerarg value="-XepDisableWarningsInGeneratedCode"/>
            <src path="src"/>
+           <exclude name="uk/org/cinquin/mutinack/benchmarking/*.java"/>
            <classpath refid="SequenceAnalysis.classpath"/>
            <compilerclasspath refid="errorprone"/>
         </javac>
