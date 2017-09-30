@@ -1,6 +1,6 @@
 language: c
 language: java
-jdk: oraclejdk8
+jdk: oraclejdk9
 sudo: required
 
 branches:
@@ -10,7 +10,7 @@ branches:
 addons:
     apt:
         packages:
-            - oracle-java8-installer
+            - oracle-java9-installer
             - libonig-dev
             - valgrind
             - bison
