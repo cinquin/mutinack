@@ -18,5 +18,5 @@
 package uk.org.cinquin.mutinack.misc_util;
 
 public class VersionNumber {
-	public static final float version = 0.11f;
+	public static final float version = 1.12f;
 }
