@@ -6,6 +6,7 @@ sudo: required
 branches:
   only:
   - master
+  - java9
 
 addons:
     apt:
