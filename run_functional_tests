@@ -31,7 +31,7 @@ fi
 BAIL_IF_FAILED_TESTS_NOT_FIXED=1
 
 #make -j parameter
-N_PARALLEL_JOBS=2
+N_PARALLEL_JOBS=1
 
 #NailGun server seems to require a kill -9 to exit
 trap 'code=$?; ([ "$server_pid" != "" ] && kill $server_pid 2>/dev/null && kill $server_pid 2>/dev/null ); ([ "$worker_pids" != "" ] && kill $worker_pids 2>/dev/null ); processes="$nailgun_server_pid"; ([ "$processes" != "" ] && kill -9 $processes 2>/dev/null ) || true; exit $code' INT QUIT TERM EXIT
