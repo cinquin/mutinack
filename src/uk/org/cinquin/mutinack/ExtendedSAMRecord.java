@@ -106,6 +106,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			(getMate ? rec.getMateNegativeStrandFlag() : rec.getReadNegativeStrandFlag()) +
 			(getMate ? rec.getMateAlignmentStart() : rec.getAlignmentStart()) +
 			(!getMate && rec.getSupplementaryAlignmentFlag() ? "--suppl" : "")   ) /*.intern()*/;
+		//TODO Add cigar string to full name
 	}
 
 	public @NonNull String getFullName() {

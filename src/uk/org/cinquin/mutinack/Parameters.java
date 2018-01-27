@@ -382,6 +382,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-allowMissingSupplementaryFlag", description = "", required = false)
 	public boolean allowMissingSupplementaryFlag = false;
 
+	@Parameter(names = "-ignoreMultipleAlignments", description = "Ignore multiple alignments of the same read that start at the same position (TODO: process them correctly)", required = false)
+	public boolean ignoreMultipleAlignments = false;
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-originalReadFile1", description = "Fastq-formatted raw read data", required = false, hidden = true)

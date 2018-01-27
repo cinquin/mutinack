@@ -1459,6 +1459,11 @@ public final class SubAnalyzer {
 			final @NonNull ExtendedSAMRecord extendedRec,
 			final @NonNull ReferenceSequence ref) {
 
+		if (extendedRec.processed && param.ignoreMultipleAlignments) {
+			Util.printUserMustSeeMessage("Ignoring extra alignments of " + extendedRec.getFullName() +
+				", which probably started at the same position");
+			return -1;
+		}
 		Assert.isFalse(extendedRec.processed, () -> "Double processing of record "
 			+ extendedRec.getFullName());
 		extendedRec.processed = true;
