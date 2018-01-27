@@ -1459,8 +1459,8 @@ public final class SubAnalyzer {
 			final @NonNull ExtendedSAMRecord extendedRec,
 			final @NonNull ReferenceSequence ref) {
 
-		Assert.isFalse(extendedRec.processed, "Double processing of record %s"/*,
-		 extendedRec.getFullName()*/);
+		Assert.isFalse(extendedRec.processed, () -> "Double processing of record "
+			+ extendedRec.getFullName());
 		extendedRec.processed = true;
 
 		final SAMRecord rec = extendedRec.record;
