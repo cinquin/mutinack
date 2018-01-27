@@ -484,8 +484,7 @@ public class ReadLoader {
 									return false;
 								}
 								return true;
-							}
-								);
+							});
 							firstRun.set(false);
 							locationInterningSet.clear();
 							phaser.arriveAndAwaitAdvance();
