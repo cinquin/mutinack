@@ -101,7 +101,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 	private final @NonNull MutinackGroup groupSettings;
 	private final @NonNull Mutinack analyzer;
 
-	public static @NonNull String getReadFullName(SAMRecord rec, boolean getMate) {
+	public static @NonNull String getFullName(SAMRecord rec, boolean getMate) {
 		return (   rec.getReadName() + "--" + ((getMate ^ rec.getFirstOfPairFlag())? "1" : "2") + "--" +
 			(getMate ? rec.getMateNegativeStrandFlag() : rec.getReadNegativeStrandFlag()) +
 			(getMate ? rec.getMateAlignmentStart() : rec.getAlignmentStart()) +
@@ -189,7 +189,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		this.cigar = rec.getCigar();
 		this.location = location;
 		hashCode = fullName.hashCode();
-		mateName = getReadFullName(rec, true);
+		mateName = getFullName(rec, true);
 		if (parseReadNameForPosition) {
 			String readName = record.getReadName();
 			int endFirstChunk = nthIndexOf(readName, ':', 5);
@@ -382,7 +382,7 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			@NonNull Mutinack analyzer, @NonNull SequenceLocation location,
 			@NonNull Map<String, ExtendedSAMRecord> extSAMCache,
 			boolean parseReadNameForPosition) {
-		this(rec, getReadFullName(rec, false),
+		this(rec, getFullName(rec, false),
 				analyzer.stats, analyzer, location, extSAMCache, parseReadNameForPosition);
 	}
 
