@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -53,6 +55,8 @@ public class MutationListReader {
 		}
 	}
 
+	private static final Pattern groupOfDigits = Pattern.compile("\\d+");
+
 	public static ConcurrentMap<Pair<@NonNull SequenceLocation, @NonNull String>,
 		@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> readMutationList(
 			BufferedReader reader, String readerName, List<@NonNull String> contigNames,
@@ -74,7 +78,16 @@ public class MutationListReader {
 						unknownSamples.add(sampleName);
 						return;
 					}
-					final String contigName = components[1];
+					final String contigName;
+					if (!components[1].startsWith("c")) {
+						Matcher m = groupOfDigits.matcher(components[1]);
+						if (!m.find()) {
+							throw new ParseRTException("Could not find digits in " + components[1]);
+						}
+						contigName = "chr" + m.group();
+					} else {
+						contigName = components[1];
+					}
 					final long position = Long.parseLong(components[2]) - 1;
 					final String mutationString = components[3];
 					final String mutationKind = components[4];
