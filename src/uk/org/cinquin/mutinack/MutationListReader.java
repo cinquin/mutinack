@@ -38,6 +38,8 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.annotation.NonNull;
 
 import uk.org.cinquin.mutinack.misc_util.Pair;
+import uk.org.cinquin.mutinack.misc_util.SingleTimeAction;
+import uk.org.cinquin.mutinack.misc_util.SingleTimePrinter;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 public class MutationListReader {
@@ -66,6 +68,7 @@ public class MutationListReader {
 		final ConcurrentMap<Pair<@NonNull SequenceLocation, @NonNull String>,
 				@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> result =
 					new ConcurrentHashMap<>();
+		final SingleTimeAction<String> contigTranslationPrinter = new SingleTimePrinter();
 		try(Stream<String> lines = reader.lines()) {
 			lines.forEach(l -> {
 				try {
@@ -85,6 +88,7 @@ public class MutationListReader {
 							throw new ParseRTException("Could not find digits in " + components[1]);
 						}
 						contigName = "chr" + m.group();
+						contigTranslationPrinter.accept("Translating contig name " + components[1] + " to " + contigName);
 					} else {
 						contigName = components[1];
 					}
