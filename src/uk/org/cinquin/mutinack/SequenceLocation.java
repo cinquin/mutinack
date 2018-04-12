@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.misc_util.Assert;
+import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 import uk.org.cinquin.mutinack.misc_util.collections.InterningSet;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
@@ -292,6 +294,13 @@ public final class SequenceLocation implements Comparable<SequenceLocation>, Ser
 			throw new ParseRTException("Could not parse number in location " + location, e);
 		}
 		return new SequenceLocation(referenceGenome, split[0], indexContigNameReverseMap, position);
+	}
+
+	public byte[] getSequenceContext(int windowHalfWidth) {
+		final byte[] refSeq = StaticStuffToAvoidMutating.getContigSequence(
+			referenceGenome, contigName).getBases();
+		return Arrays.copyOfRange(refSeq, Math.max(0, position - windowHalfWidth),
+			1 + Math.min(refSeq.length - 1, position + windowHalfWidth));
 	}
 
 }

@@ -70,7 +70,6 @@ import uk.org.cinquin.mutinack.features.GenomeFeatureTester;
 import uk.org.cinquin.mutinack.features.GenomeInterval;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.ComparablePair;
-import uk.org.cinquin.mutinack.misc_util.StaticStuffToAvoidMutating;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.SingletonObjectIntMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
@@ -885,11 +884,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	public byte[] getSequenceContext(int windowHalfWidth) {
-		final byte[] refSeq = StaticStuffToAvoidMutating.getContigSequence(
-			location.referenceGenome, location.contigName).
-		getBases();
-		return Arrays.copyOfRange(refSeq, Math.max(0, location.position - windowHalfWidth),
-			1 + Math.min(refSeq.length - 1, location.position + windowHalfWidth));
+		return location.getSequenceContext(windowHalfWidth);
 	}
 
 	@Override
