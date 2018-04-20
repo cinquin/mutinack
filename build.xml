@@ -131,6 +131,8 @@
            <compilerarg value="-XDignore.symbol.file"/>
            <compilerarg value="-parameters"/>
            <compilerarg value="-Xep:Finally:OFF"/>
+           <compilerarg value="-Xep:StringSplitter:OFF"/>
+           <compilerarg value="-Xep:CatchAndPrintStackTrace:OFF"/>
            <compilerarg value="-Xep:DefaultCharset:OFF"/>
            <compilerarg value="-XepDisableWarningsInGeneratedCode"/>
            <src path="src"/>
