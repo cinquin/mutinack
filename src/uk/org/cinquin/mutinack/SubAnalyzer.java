@@ -595,8 +595,10 @@ public final class SubAnalyzer {
 			//stats.nVariableBarcodeCandidateExaminations.increment(location);
 
 			boolean forceGrouping = false;
-			if (duplex.allRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
-				forceGrouping = true;
+			if (param.forceDuplexGroupingByBame) {
+				if (duplex.allRecords.detect(drRec -> drRec.record.getReadName().equals(r.getReadName())) != null) {
+					forceGrouping = true;
+				}
 			}
 
 			ed.set(duplex);

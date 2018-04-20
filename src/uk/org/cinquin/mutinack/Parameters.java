@@ -409,6 +409,11 @@ public final class Parameters implements Serializable, Cloneable {
 		" the number in the top strand and the number in the bottom strand; WARNING: this will lead to incorrect mutation and disagreement detection")
 	public boolean randomizeStrand = false;
 
+	@UsedAtDuplexGrouping
+	@Parameter(names = "-forceDuplexGroupingByBame", required = false, arity = 1, description = "Reads with the same name are forced into the same"
+		+ " duplex; this can be useful for dealing with split reads, but has a performance impact")
+	public boolean forceDuplexGroupingByBame = true;
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-intersectAlignment", description = "List of BAM files with which alignments in inputReads must agree; each file must be sorted", required = false, hidden = hideInProgressParameters)
