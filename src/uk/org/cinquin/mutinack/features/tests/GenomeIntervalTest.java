@@ -69,8 +69,8 @@ public class GenomeIntervalTest {
 		//Same sort of test as above, but using random intervals
 		for (int i = 0; i < 10_000; i++) {
 			GenomeInterval i1 = new GenomeInterval("Random interval", -1, "", "",
-					(int) (Math.random() - 0.5) * 2 * 200,
-					(int) (Math.random() - 0.5) * 2 * 200, null, Util.emptyOptional(), 0, null);
+					(int) ((Math.random() - 0.5) * 2 * 200),
+					(int) ((Math.random() - 0.5) * 2 * 200), null, Util.emptyOptional(), 0, null);
 
 			intervalDataList.add(new IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 		}
