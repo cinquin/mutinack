@@ -44,6 +44,12 @@ public final class IntervalData<T> implements Comparable<IntervalData<?>>, Seria
 		return set.forEach((T arg0) -> keepGoingPredicate.test(arg0));
 	}
 
+	private static void checkIntervalRange(long start, long end) {
+		if (start > end) {
+			throw new IllegalArgumentException("Inverted interval range: " + start + "-" + end);
+		}
+	}
+
 	/**
 	 * Interval data using object as its unique identifier
 	 *
@@ -51,6 +57,7 @@ public final class IntervalData<T> implements Comparable<IntervalData<?>>, Seria
 	 *            Object which defines the interval data
 	 */
 	public IntervalData(long start, long end, T object) {
+		checkIntervalRange(start, end);
 		this.start = start;
 		this.end = end;
 		set = new THashSet<>();
@@ -64,12 +71,14 @@ public final class IntervalData<T> implements Comparable<IntervalData<?>>, Seria
 	 *            of interval data objects
 	 */
 	public IntervalData(long start, long end, @NonNull Set<T> set) {
+		checkIntervalRange(start, end);
 		this.start = start;
 		this.end = end;
 		this.set = new THashSet<>(set);
 	}
 
 	private IntervalData(@NonNull THashSet<T> uncopiedSet, long start, long end) {
+		checkIntervalRange(start, end);
 		this.start = start;
 		this.end = end;
 		this.set = uncopiedSet;
