@@ -1013,6 +1013,7 @@ public class SubAnalyzerPhaser extends Phaser {
 		analysisChunk.subAnalyzersParallel.forEach(subAnalyzer -> {
 			//If outputting an alignment populated with fields identifying the duplexes,
 			//fill in the fields here
+			final SettableInteger nSubQ2DuplexesOutput = new SettableInteger(0);
 			subAnalyzer.analyzedDuplexes.forEach(duplexRead -> {
 				boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
 					duplexRead.maxInsertSize > 10_000;
@@ -1026,6 +1027,9 @@ public class SubAnalyzerPhaser extends Phaser {
 				final int nReads = duplexRead.allRecords.size();
 				final Quality minDuplexQuality = duplexRead.minQuality;
 				final Quality maxDuplexQuality = duplexRead.maxQuality;
+				if (maxDuplexQuality.atMost(Quality.DUBIOUS) && nSubQ2DuplexesOutput.getAndIncrement() >= 100) {
+					return;
+				}
 				Handle<String> topOrBottom = new Handle<>();
 				BiConsumer<ExtendedSAMRecord, SAMRecord> queueWrite = (ExtendedSAMRecord e, SAMRecord samRecord) -> {
 					samRecord.setAttribute("DS", nReads);
