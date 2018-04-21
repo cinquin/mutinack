@@ -75,6 +75,8 @@ import uk.org.cinquin.mutinack.misc_util.IntMinMax;
 import uk.org.cinquin.mutinack.misc_util.ObjMinMax;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
+import uk.org.cinquin.mutinack.misc_util.SingleTimeAction;
+import uk.org.cinquin.mutinack.misc_util.SingleTimePrinter;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.PositionAssayToQualityMap;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
@@ -1001,6 +1003,9 @@ public class SubAnalyzerPhaser extends Phaser {
 		}
 	}
 
+	static final SingleTimeAction<String> truncatedBAMOutputPrinter = new SingleTimePrinter();
+	final static int maxSubQ2DuplexesForBAMOutput = 100;
+
 	private static void prepareReadsToWrite(
 			final @NonNull SequenceLocation location,
 			final @NonNull AnalysisChunk analysisChunk,
@@ -1027,7 +1032,10 @@ public class SubAnalyzerPhaser extends Phaser {
 				final int nReads = duplexRead.allRecords.size();
 				final Quality minDuplexQuality = duplexRead.minQuality;
 				final Quality maxDuplexQuality = duplexRead.maxQuality;
-				if (maxDuplexQuality.atMost(Quality.DUBIOUS) && nSubQ2DuplexesOutput.getAndIncrement() >= 100) {
+				if (maxDuplexQuality.atMost(Quality.DUBIOUS) &&
+						nSubQ2DuplexesOutput.getAndIncrement() > maxSubQ2DuplexesForBAMOutput) {
+					truncatedBAMOutputPrinter.accept("Truncating the number of sub-Q2 duplexes written to output BAM to "
+						+ maxSubQ2DuplexesForBAMOutput);
 					return;
 				}
 				Handle<String> topOrBottom = new Handle<>();
