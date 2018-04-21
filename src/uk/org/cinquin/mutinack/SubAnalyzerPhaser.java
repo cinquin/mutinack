@@ -1034,7 +1034,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				final Quality maxDuplexQuality = duplexRead.maxQuality;
 				if (maxDuplexQuality.atMost(Quality.DUBIOUS) &&
 						nSubQ2DuplexesOutput.getAndIncrement() > maxSubQ2DuplexesForBAMOutput) {
-					truncatedBAMOutputPrinter.accept("Truncating the number of sub-Q2 duplexes written to output BAM to "
+					truncatedBAMOutputPrinter.accept("Truncating the local number of sub-Q2 duplexes written to output BAM to "
 						+ maxSubQ2DuplexesForBAMOutput);
 					return;
 				}
