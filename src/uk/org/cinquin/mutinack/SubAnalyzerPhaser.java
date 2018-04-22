@@ -1020,19 +1020,19 @@ public class SubAnalyzerPhaser extends Phaser {
 			//If outputting an alignment populated with fields identifying the duplexes,
 			//fill in the fields here
 			final SettableInteger nSubQ2DuplexesOutput = new SettableInteger(0);
-			subAnalyzer.analyzedDuplexes.forEach(duplexRead -> {
-				boolean useAnyStart = duplexRead.maxInsertSize == 0 ||
-					duplexRead.maxInsertSize > 10_000;
-				boolean write = location.equals(duplexRead.rightAlignmentEnd) ||
-					(useAnyStart && location.equals(duplexRead.leftAlignmentEnd));
+			subAnalyzer.analyzedDuplexes.forEach(duplex -> {
+				boolean useAnyStart = duplex.maxInsertSize == 0 ||
+					duplex.maxInsertSize > 10_000;
+				boolean write = location.equals(duplex.rightAlignmentEnd) ||
+					(useAnyStart && location.equals(duplex.leftAlignmentEnd));
 				if (!write) {
 					return;
 				}
 				final int randomIndexForDuplexName = dn.incrementAndGet();
 
-				final int nReads = duplexRead.allRecords.size();
-				final Quality minDuplexQuality = duplexRead.minQuality;
-				final Quality maxDuplexQuality = duplexRead.maxQuality;
+				final int nReads = duplex.allRecords.size();
+				final Quality minDuplexQuality = duplex.minQuality;
+				final Quality maxDuplexQuality = duplex.maxQuality;
 				if (maxDuplexQuality.atMost(Quality.DUBIOUS) &&
 						nSubQ2DuplexesOutput.getAndIncrement() > maxSubQ2DuplexesForBAMOutput) {
 					truncatedBAMOutputPrinter.accept("Truncating the local number of sub-Q2 duplexes written to output BAM to "
@@ -1042,24 +1042,24 @@ public class SubAnalyzerPhaser extends Phaser {
 				Handle<String> topOrBottom = new Handle<>();
 				BiConsumer<ExtendedSAMRecord, SAMRecord> queueWrite = (ExtendedSAMRecord e, SAMRecord samRecord) -> {
 					samRecord.setAttribute("DS", nReads);
-					samRecord.setAttribute("DT", duplexRead.topStrandRecords.size());
-					samRecord.setAttribute("DB", duplexRead.bottomStrandRecords.size());
+					samRecord.setAttribute("DT", duplex.topStrandRecords.size());
+					samRecord.setAttribute("DB", duplex.bottomStrandRecords.size());
 					samRecord.setAttribute("DQ", minDuplexQuality.toInt());
 					samRecord.setAttribute("DR", maxDuplexQuality.toInt());
 					samRecord.setDuplicateReadFlag(e.isOpticalDuplicate());
 					String info = topOrBottom.get() + " Q" +
 						minDuplexQuality.toShortString() + "->" + maxDuplexQuality.toShortString() +
-						" global Qs: " + duplexRead.globalQuality +
-						" P" + duplexRead.getMinMedianPhred() +
-						" D" + mediumLengthFloatFormatter.get().format(duplexRead.referenceDisagreementRate);
+						" global Qs: " + duplex.globalQuality +
+						" P" + duplex.getMinMedianPhred() +
+						" D" + mediumLengthFloatFormatter.get().format(duplex.referenceDisagreementRate);
 					samRecord.setAttribute("DI", info);
-					samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplexRead));
+					samRecord.setAttribute("DN", randomIndexForDuplexName + "--" + System.identityHashCode(duplex));
 					samRecord.setAttribute("VB", new String(e.variableBarcode));
 					samRecord.setAttribute("VM", new String(e.getMateVariableBarcode()));
-					samRecord.setAttribute("DE", duplexRead.leftAlignmentStart + "-" + duplexRead.leftAlignmentEnd + " --- " +
-						duplexRead.rightAlignmentStart + '-' + duplexRead.rightAlignmentEnd);
-					if (!duplexRead.issues.isEmpty()) {
-						samRecord.setAttribute("IS", duplexRead.issues.toString());
+					samRecord.setAttribute("DE", duplex.leftAlignmentStart + "-" + duplex.leftAlignmentEnd + " --- " +
+						duplex.rightAlignmentStart + '-' + duplex.rightAlignmentEnd);
+					if (!duplex.issues.isEmpty()) {
+						samRecord.setAttribute("IS", duplex.issues.toString());
 					} else {
 						samRecord.setAttribute("IS", null);
 					}
@@ -1092,23 +1092,23 @@ public class SubAnalyzerPhaser extends Phaser {
 					}
 				};
 				if (collapseFilteredReads) {
-					final boolean topPresent = !duplexRead.topStrandRecords.isEmpty();
+					final boolean topPresent = !duplex.topStrandRecords.isEmpty();
 					if (topPresent) {
 						topOrBottom.set("T");
-						writePair.accept(duplexRead.topStrandRecords);
+						writePair.accept(duplex.topStrandRecords);
 					}
-					if ((writeBothStrands || !topPresent) && !duplexRead.bottomStrandRecords.isEmpty()) {
+					if ((writeBothStrands || !topPresent) && !duplex.bottomStrandRecords.isEmpty()) {
 						topOrBottom.set("B");
-						writePair.accept(duplexRead.bottomStrandRecords);
+						writePair.accept(duplex.bottomStrandRecords);
 					}
-					if (!duplexRead.topStrandRecords.isEmpty() && !duplexRead.bottomStrandRecords.isEmpty()) {
-						Assert.isFalse(duplexRead.topStrandRecords.get(0).equals(duplexRead.bottomStrandRecords.get(0)));
+					if (!duplex.topStrandRecords.isEmpty() && !duplex.bottomStrandRecords.isEmpty()) {
+						Assert.isFalse(duplex.topStrandRecords.get(0).equals(duplex.bottomStrandRecords.get(0)));
 					}
 				} else {
 					topOrBottom.set("T");
-					duplexRead.topStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
+					duplex.topStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
 					topOrBottom.set("B");
-					duplexRead.bottomStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
+					duplex.bottomStrandRecords.forEach(e-> queueWrite.accept(e, e.record));
 				}
 			});
 		});
