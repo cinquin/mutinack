@@ -694,7 +694,7 @@ public class Mutinack implements Actualizable, Closeable {
 		//documentation somewhere of what programGroupId should be??
 		mutinackRecord.setProgramName("Mutinack");
 		mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
-		mutinackRecord.setCommandLine(param.toString());
+		mutinackRecord.setCommandLine(param.toString().replace("\n", "___"));
 		programs.add(mutinackRecord);
 		header.setProgramRecords(programs);
 
