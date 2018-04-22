@@ -683,18 +683,20 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 		final File inputBam = new File(param.inputReads.get(0));
 
+		final List<SAMProgramRecord> programs;
 		try (SAMFileReader tempReader = new SAMFileReader(inputBam)) {
 			final SAMFileHeader inputHeader = tempReader.getFileHeader();
 			header.setSequenceDictionary(inputHeader.getSequenceDictionary());
-			List<SAMProgramRecord> programs = new ArrayList<>(inputHeader.getProgramRecords());
-			SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
-			//documentation somewhere of what programGroupId should be??
-			mutinackRecord.setProgramName("Mutinack");
-			mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
-			mutinackRecord.setCommandLine(param.toString());
-			programs.add(mutinackRecord);
-			header.setProgramRecords(programs);
+			programs = new ArrayList<>(inputHeader.getProgramRecords());
 		}
+
+		SAMProgramRecord mutinackRecord = new SAMProgramRecord("Mutinack");//TODO Is there
+		//documentation somewhere of what programGroupId should be??
+		mutinackRecord.setProgramName("Mutinack");
+		mutinackRecord.setProgramVersion(GitCommitInfo.getGitCommit());
+		mutinackRecord.setCommandLine(param.toString());
+		programs.add(mutinackRecord);
+		header.setProgramRecords(programs);
 
 		SAMFileWriter result = factory.makeBAMWriter(header, false, new File(path), 0);
 		closeableCloser.add(new CloseableWrapper<>(result, SAMFileWriter::close));
