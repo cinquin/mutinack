@@ -712,6 +712,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-writeBothStrands", description = "Used in conjunction with -collapseFilteredReads; write read pairs from both the top and the bottom strand, when available", required = false, arity = 1)
 	public boolean writeBothStrands = true;
 
+	@Parameter(names = "-maxSubQ2DuplexesForBAMOutput", description = "Only this many sub-Q2 duplexes will be chosen to be written out at any position (actual coverage with sub-Q2 duplexes may end up being substantially higher because, for now, different duplexes are chosen at nearby positions)", required = false)
+	public int maxSubQ2DuplexesForBAMOutput = Integer.MAX_VALUE;
+
 	@Parameter(names = "-clipPairOverlap", description = "Hard clip overlap between read pairs (currently does not add an H block to the Cigar); requires -collapseFilteredReads", required = false)
 	public boolean clipPairOverlap = false;
 

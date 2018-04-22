@@ -221,7 +221,8 @@ public class SubAnalyzerPhaser extends Phaser {
 							param.writeBothStrands,
 							param.clipPairOverlap,
 							param.allowMissingSupplementaryFlag || param.rnaSeq,
-							dn);
+							dn,
+							param.maxSubQ2DuplexesForBAMOutput);
 					}
 
 				}
@@ -1004,7 +1005,6 @@ public class SubAnalyzerPhaser extends Phaser {
 	}
 
 	static final SingleTimeAction<String> truncatedBAMOutputPrinter = new SingleTimePrinter();
-	final static int maxSubQ2DuplexesForBAMOutput = 100;
 
 	private static void prepareReadsToWrite(
 			final @NonNull SequenceLocation location,
@@ -1013,7 +1013,8 @@ public class SubAnalyzerPhaser extends Phaser {
 			final boolean writeBothStrands,
 			final boolean clipPairOverlap,
 			final boolean suppressMultipleOutputException,
-			final @NonNull AtomicInteger dn
+			final @NonNull AtomicInteger dn,
+			final int maxSubQ2DuplexesForBAMOutput
 		) {
 		analysisChunk.subAnalyzersParallel.forEach(subAnalyzer -> {
 			//If outputting an alignment populated with fields identifying the duplexes,
