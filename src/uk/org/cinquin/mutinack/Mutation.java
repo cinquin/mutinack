@@ -48,6 +48,9 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 
 	public Mutation(@NonNull MutationType mutationType, byte wildtype,
 			byte[] mutationSequence, @NonNull Optional<Boolean> templateStrand) {
+		if (mutationType == MutationType.SUBSTITUTION && mutationSequence[0] == wildtype) {
+			throw new IllegalArgumentException("Substitution with identical base");
+		}
 		this.mutationType = Objects.requireNonNull(mutationType);
 		this.wildtype = wildtype;
 		this.mutationSequence = mutationSequence;
