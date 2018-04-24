@@ -346,34 +346,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public String getChange() {
-		final String result;
-		switch (getMutationType()) {
-			case DELETION:
-				result = '-' + new String(getSequence()) + '-';
-				break;
-			case INTRON:
-				result = "-INTRON-";
-				break;
-			case INSERTION:
-				result = '^' + new String(getSequence()) + '^';
-				break;
-			case SUBSTITUTION:
-				if (Boolean.TRUE.equals(getNegativeCodingStrand())) {
-					@NonNull Mutation rc = getMutation().reverseComplement();
-					result = new String(new byte[] {rc.wildtype}) +
-						"->" + new String(rc.mutationSequence);
-				} else {
-					result = new String(new byte[] {getWildtypeSequence()}) +
-						"->" + new String(getSequence());
-				}
-				break;
-			case WILDTYPE:
-				result = "wt";
-				break;
-			default:
-				throw new AssertionFailedException();
-		}
-		return result;
+		return getMutation().getChange(Boolean.TRUE.equals(getNegativeCodingStrand()));
 	}
 
 	@Override

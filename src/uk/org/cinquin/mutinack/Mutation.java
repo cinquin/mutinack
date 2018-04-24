@@ -290,4 +290,23 @@ public final class Mutation implements Comparable<Mutation>, Serializable, Cache
 		return mutationSequence == null || mutationSequence.length < 3;
 	}
 
+	public String getChange(final boolean reverseComplement) {
+		final Mutation mut = reverseComplement ? reverseComplement() : this;
+		switch (mutationType) {
+			case DELETION:
+				return '-' + new String(mut.getSequence()) + '-';
+			case INTRON:
+				return "-INTRON-";
+			case INSERTION:
+				return '^' + new String(mut.getSequence()) + '^';
+			case SUBSTITUTION:
+				return new String(new byte[] {mut.wildtype}) +
+						"->" + new String(mut.getSequence());
+			case WILDTYPE:
+				return "wt";
+			default:
+				throw new AssertionFailedException();
+		}
+	}
+
 }
