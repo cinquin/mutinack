@@ -143,7 +143,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Final @Persistent private @NonNull MutationType mutationType;
 	@Final @Persistent @JsonSerialize(using = ByteArrayStringSerializer.class)
 		private byte @Nullable[] sequence;
-	@JsonIgnore private final int hashCode;
+	@JsonIgnore private transient int hashCode;
 	@JsonSerialize(using = ByteStringSerializer.class)
 		private byte wildtypeSequence;
 	private final transient @NonNull ExtendedSAMRecord initialConcurringRead;
@@ -309,13 +309,16 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@Override
 	public final int hashCode() {
+		if (hashCode == 0) {//Can happen because of serialization
+			hashCode = computeHashCode();
+		}
 		return hashCode;
 	}
 
 	private int computeHashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + getMutationType().hashCode();
+		result = prime * result + getMutationType().ordinal();
 		result = prime * result + Arrays.hashCode(getSequence());
 		return result;
 	}
