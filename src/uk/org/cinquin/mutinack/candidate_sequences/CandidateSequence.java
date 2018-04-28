@@ -147,6 +147,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@JsonIgnore private transient int hashCode;
 	@JsonSerialize(using = ByteStringSerializer.class)
 		private byte wildtypeSequence;
+	@JsonSerialize(using = ByteStringSerializer.class)
+		private byte precedingWildtypeBase;
 	private final transient @NonNull ExtendedSAMRecord initialConcurringRead;
 	@Final private int initialLigationSiteD;
 	@Final @Persistent private @NonNull SequenceLocation location;
@@ -613,6 +615,24 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public byte getWildtypeSequence() {
 		return wildtypeSequence;
+	}
+
+	public byte[] getFullWildtypeSequence() {
+		if (wildtypeSequence == 0 && getMutationType() != MutationType.DELETION) {
+			//wildtypeSequence = getSequenceContext(5)[5];
+			throw new IllegalStateException();
+		}
+		byte [] wt = new byte[] {wildtypeSequence};
+		switch (getMutationType()) {
+			case WILDTYPE:
+			case INSERTION:
+			case SUBSTITUTION:
+				return wt;
+			case DELETION:
+				return Util.addAll(new byte [] {getPrecedingWildtypeBase()}, sequence);
+			default:
+				throw new IllegalStateException();
+		}
 	}
 
 	@Override
@@ -1277,5 +1297,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public void setFrequencyAtPosition(float frequencyAtPosition) {
 		this.frequencyAtPosition = frequencyAtPosition;
+	}
+
+	public byte getPrecedingWildtypeBase() {
+		return precedingWildtypeBase;
+	}
+
+	public void setPrecedingWildtypeBase(byte precedingWildtypeBase) {
+		this.precedingWildtypeBase = precedingWildtypeBase;
 	}
 }

@@ -1674,6 +1674,7 @@ public final class SubAnalyzer {
 						fillInCandidateInfo,
 						readPosition,
 						refPosition,
+						ref.getBases()[refPosition - 1],
 						readEndOfPreviousAlignment,
 						refEndOfPreviousAlignment,
 						locationInterningSet,
@@ -1690,6 +1691,8 @@ public final class SubAnalyzer {
 						block,
 						readPosition,
 						refPosition,
+						ref.getBases()[refEndOfPreviousAlignment],
+						(byte) 0,
 						readEndOfPreviousAlignment,
 						refEndOfPreviousAlignment,
 						locationInterningSet,
@@ -2023,6 +2026,8 @@ public final class SubAnalyzer {
 		final ExtendedAlignmentBlock block,
 		final int readPosition,
 		final int refPosition,
+		final byte precedingWildtypeBase,
+		final byte wildtypeBase,
 		final int readEndOfPreviousAlignment,
 		final int refEndOfPreviousAlignment,
 		final InterningSet<@NonNull SequenceLocation> locationInterningSet,
@@ -2092,8 +2097,9 @@ public final class SubAnalyzer {
 			CandidateSequence candidate = new CandidateDeletion(this,
 				deletedSequence, newLocation, extendedRec, distance, isIntron ? MutationType.INTRON : MutationType.DELETION,
 				newLocation, SequenceLocation.get(locationInterningSet, extendedRec.getLocation().contigIndex,
-					param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refPosition));
-
+					param.referenceGenomeShortName, extendedRec.getLocation().getContigName(), refPosition - 1));
+			candidate.setWildtypeSequence((byte) 0);
+			candidate.setPrecedingWildtypeBase(precedingWildtypeBase);
 			if (!extendedRec.formsWrongPair()) {
 				candidate.acceptLigSiteDistance(distance);
 			}
@@ -2123,6 +2129,7 @@ public final class SubAnalyzer {
 			final CandidateFiller candidateFiller,
 			final int readPosition,
 			final int refPosition,
+			final byte wildtypeBase,
 			final int readEndOfPreviousAlignment,
 			final int refEndOfPreviousAlignment,
 			final InterningSet<@NonNull SequenceLocation> locationInterningSet,
@@ -2161,6 +2168,8 @@ public final class SubAnalyzer {
 			location,
 			extendedRec,
 			distance);
+		candidate.setPrecedingWildtypeBase(wildtypeBase);
+		candidate.setWildtypeSequence((byte) 0);
 
 		if (!extendedRec.formsWrongPair()) {
 			candidate.acceptLigSiteDistance(distance);
