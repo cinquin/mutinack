@@ -154,7 +154,12 @@ public class StaticStuffToAvoidMutating {
 				throw new IllegalStateException("Reference genome " + referenceGenomeName + " not loaded");
 			}
 		}
-		return sequences.get(contigName);
+		ReferenceSequence result = sequences.get(contigName);
+		if (result == null) {
+			throw new RuntimeException("Could not find " + contigName + " in " + sequences.keySet());
+		} else {
+			return result;
+		}
 	}
 
 	public static @NonNull Map<@NonNull String, @NonNull Integer> loadContigsFromFile(
