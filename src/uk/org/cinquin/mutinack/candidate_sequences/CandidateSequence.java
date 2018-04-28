@@ -102,7 +102,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Persistent private DetailedQualities<PositionAssay> quality;
 	private transient TObjectLongHashMap<Duplex> issues;
 	private @Nullable StringBuilder supplementalMessage;
-	private transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
+	protected transient TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
 	private transient @Nullable MutableSet<@NonNull Duplex> duplexes;
 	private int nGoodDuplexes;
 	private int nGoodDuplexesIgnoringDisag;
@@ -303,7 +303,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			default:
 				throw new AssertionFailedException();
 		}
-		result += " at " + getLocation() + ' ' + matchingGenomeIntervals + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
+		result += " at " + getLocation() + ' ' + matchingGenomeIntervals +
+			(singletonConcurringRead == null && concurringReads == null ? "" : " (" + getNonMutableConcurringReads().size() + " concurring reads)");
 		return result;
 	}
 
@@ -515,7 +516,8 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		return concurringReads;
 	}
 
-	private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
+	transient @Nullable
+	protected TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
 
 	@SuppressWarnings("null")
 	@Override

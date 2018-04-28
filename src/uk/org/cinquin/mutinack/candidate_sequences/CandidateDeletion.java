@@ -50,7 +50,8 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 
 	@Override
 	public final String toString() {
-		String result = "deletion at " + getLocation() + " spanning " + deletionStart + "--" + deletionEnd + " (" + getNonMutableConcurringReads().size() + " concurring reads)";
+		String result = "deletion at " + getLocation() + " spanning " + deletionStart + "--" + deletionEnd +
+			(singletonConcurringRead == null && concurringReads == null ? "" : " (" + getNonMutableConcurringReads().size() + " concurring reads)");
 		return result;
 	}
 
