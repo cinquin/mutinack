@@ -1300,6 +1300,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	public byte getPrecedingWildtypeBase() {
+		if (precedingWildtypeBase == 0) {
+			precedingWildtypeBase = getSequenceContext(5)[4];
+		}
 		return precedingWildtypeBase;
 	}
 
