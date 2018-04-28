@@ -148,7 +148,11 @@ public class StaticStuffToAvoidMutating {
 	public static ReferenceSequence getContigSequence(String referenceGenomeName, String contigName) {
 		Map<String, ReferenceSequence> sequences = contigSequences.get(referenceGenomeName);
 		if (sequences == null) {
-			throw new IllegalStateException("Reference genome " + referenceGenomeName + " not loaded");
+			loadContigs(referenceGenomeName, referenceGenomeName + ".fa", null);
+			sequences = contigSequences.get(referenceGenomeName);
+			if (sequences == null) {
+				throw new IllegalStateException("Reference genome " + referenceGenomeName + " not loaded");
+			}
 		}
 		return sequences.get(contigName);
 	}
