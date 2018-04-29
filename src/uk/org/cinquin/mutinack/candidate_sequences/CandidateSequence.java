@@ -157,7 +157,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private boolean hidden = false;
 	private Boolean negativeCodingStrand;
 	private @Persistent boolean goodCandidateForUniqueMutation;
-	@Persistent MutableSetMultimap<String, GenomeInterval> matchingGenomeIntervals;
+	@Persistent @Nullable MutableSetMultimap<String, GenomeInterval> matchingGenomeIntervals;
 	private float frequencyAtPosition;
 
 	@JsonIgnore private transient Mutation mutation;
@@ -313,7 +313,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			default:
 				throw new AssertionFailedException();
 		}
-		result += " at " + getLocation() + ' ' + matchingGenomeIntervals +
+		result += " at " + getLocation() + (matchingGenomeIntervals != null ? (" " + matchingGenomeIntervals) : "") +
 			getConcurringReadString();
 		return result;
 	}
@@ -872,7 +872,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public void addMatchingGenomeIntervals(String name, GenomeFeatureTester intervals) {
 		initializeGenomeIntervals();
-		intervals.apply(location).forEach(gi -> matchingGenomeIntervals.put(name, gi));
+		intervals.apply(location).forEach(gi -> Objects.requireNonNull(matchingGenomeIntervals).put(name, gi));
 	}
 
 	public void recordMatchingGenomeIntervals(TMap<String, GenomeFeatureTester> intervalsMap) {
