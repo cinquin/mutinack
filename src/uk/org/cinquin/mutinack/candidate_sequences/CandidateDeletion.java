@@ -50,7 +50,9 @@ public final class CandidateDeletion extends CandidateSequence implements Serial
 
 	@Override
 	public final String toString() {
-		String result = "deletion at " + getLocation() + " spanning " + deletionStart + "--" + deletionEnd +
+		String result = goodCandidateForUniqueMutation ? "*" : "";
+		result += getnQ1PlusConcurringDuplexes() + " ";
+		result += "deletion at " + getLocation() + " spanning " + deletionStart + "--" + deletionEnd +
 			getConcurringReadString();
 		return result;
 	}

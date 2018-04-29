@@ -156,7 +156,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Final private String sampleName;
 	private boolean hidden = false;
 	private Boolean negativeCodingStrand;
-	private @Persistent boolean goodCandidateForUniqueMutation;
+	protected @Persistent boolean goodCandidateForUniqueMutation;
 	@Persistent @Nullable MutableSetMultimap<String, GenomeInterval> matchingGenomeIntervals;
 	private float frequencyAtPosition;
 
