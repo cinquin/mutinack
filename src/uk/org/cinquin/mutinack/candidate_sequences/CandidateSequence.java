@@ -519,7 +519,9 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads(
 			Parameters param) {
 		if (concurringReads == null) {
-			concurringReads = new TObjectIntHashMap<>(100, param.hashMapLoadFactor, NO_ENTRY_VALUE);
+			concurringReads = new TObjectIntHashMap<>(100,
+				getMutationType().isWildtype() ? 0.5f : param.hashMapLoadFactor,
+				NO_ENTRY_VALUE);
 			if (initialConcurringRead != null) {
 				concurringReads.put(initialConcurringRead, initialLigationSiteD);
 			}
