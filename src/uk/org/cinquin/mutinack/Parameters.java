@@ -705,6 +705,9 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeDuplexDistances", description = "Compute pairwise distances between duplexes", arity = 1, required = false)
 	public boolean computeDuplexDistances = false;
 
+	@Parameter(names = "-computeShiftedDuplexStats", description = "TODO", arity = 1, required = false)
+	public boolean computeShiftedDuplexStats = false;
+
 	@FilePathList
 	@NoDuplicates
 	@Parameter(names = "-saveFilteredReadsTo", description = "Not implemented; write raw reads that were kept for analysis to specified files", required = false, hidden = hideInProgressParameters)

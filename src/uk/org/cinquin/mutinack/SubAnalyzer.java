@@ -506,7 +506,9 @@ public final class SubAnalyzer {
 		});
 
 		insertDuplexGroupSizeStats(cleanedUpDuplexes, 0, stats.duplexLocalGroupSize);
-		insertDuplexGroupSizeStats(cleanedUpDuplexes, 15, stats.duplexLocalShiftedGroupSize);
+		if (param.computeShiftedDuplexStats) {
+			insertDuplexGroupSizeStats(cleanedUpDuplexes, 15, stats.duplexLocalShiftedGroupSize);
+		}
 
 		if (param.computeDuplexDistances && cleanedUpDuplexes.size() < analyzer.maxNDuplexes) {
 			cleanedUpDuplexes.forEach(d1 -> cleanedUpDuplexes.forEach(d2 ->
