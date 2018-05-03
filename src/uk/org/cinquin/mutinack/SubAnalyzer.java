@@ -1394,17 +1394,17 @@ public final class SubAnalyzer {
 				c.getMutableConcurringReads(param).keySet()));
 
 			Set<Duplex> duplexesSupportingC = c.computeSupportingDuplexes();
-			candidateSet.each(c2 -> {
+			candidateSet.each(other -> {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
 					c.getMutableConcurringReads(param).keySet()));
 				//noinspection ObjectEquality
-				if (c2 == c) {
+				if (other == c) {
 					return;
 				}
-				if (c2.equals(c)) {
+				if (other.equals(c)) {
 					throw new AssertionFailedException();
 				}
-				c2.getNonMutableConcurringReads().keySet().forEach(r -> {
+				other.getNonMutableConcurringReads().keySet().forEach(r -> {
 					//if (r.isOpticalDuplicate()) {
 					//	return;
 					//}
@@ -1414,7 +1414,7 @@ public final class SubAnalyzer {
 						boolean disowned = !d.allRecords.contains(r);
 
 						throw new AssertionFailedException(disowned + " Duplex " + d +
-							" associated with candidates " + c + " and " + c2);
+							" associated with candidates " + c + " and " + other);
 					}
 				});
 			});
