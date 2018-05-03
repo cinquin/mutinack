@@ -1081,7 +1081,7 @@ public final class Duplex implements HasInterval<Integer> {
 			}
 
 			final @NonNull TObjectIntMap<ExtendedSAMRecord> reads =
-				candidate.getMutableConcurringReads();
+				candidate.getMutableConcurringReads(param);
 
 			final int noEntryValue = CandidateSequence.NO_ENTRY_VALUE;
 			SettableInteger nRemoved = new SettableInteger(0);

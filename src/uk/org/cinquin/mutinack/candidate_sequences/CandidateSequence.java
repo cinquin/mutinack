@@ -516,9 +516,10 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	@SuppressWarnings("null")
 	@Override
-	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads() {
+	public @NonNull TObjectIntHashMap<ExtendedSAMRecord> getMutableConcurringReads(
+			Parameters param) {
 		if (concurringReads == null) {
-			concurringReads = new TObjectIntHashMap<>(100, 0.5f, NO_ENTRY_VALUE);
+			concurringReads = new TObjectIntHashMap<>(100, param.hashMapLoadFactor, NO_ENTRY_VALUE);
 			if (initialConcurringRead != null) {
 				concurringReads.put(initialConcurringRead, initialLigationSiteD);
 			}
@@ -555,11 +556,11 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	@Override
 	public int removeConcurringRead(@NonNull ExtendedSAMRecord er) {
 		if (originalConcurringReads == null) {
-			@NonNull TObjectIntMap<ExtendedSAMRecord> mutable = getMutableConcurringReads();
-			originalConcurringReads = new TObjectIntHashMap<>(mutable.size(), 0.5f, NO_ENTRY_VALUE);
+			@NonNull TObjectIntMap<ExtendedSAMRecord> mutable = getMutableConcurringReads(er.analyzer.getParam());
+			originalConcurringReads = new TObjectIntHashMap<>(mutable.size(), er.analyzer.getParam().hashMapLoadFactor, NO_ENTRY_VALUE);
 			originalConcurringReads.putAll(mutable);
 		}
-		return getMutableConcurringReads().remove(er);
+		return getMutableConcurringReads(er.analyzer.getParam()).remove(er);
 	}
 
 	private void restoreConcurringReads() {
@@ -744,7 +745,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	}
 
 	@Override
-	public void mergeWith(@NonNull CandidateSequenceI candidate) {
+	public void mergeWith(@NonNull CandidateSequenceI candidate, Parameters param) {
 		Assert.isTrue(this.getClass().isInstance(candidate), "Cannot merge %s to %s %s"/*,
 				this, candidate, candidate.getNonMutableConcurringReads()*/);
 		final Boolean ncs = getNegativeCodingStrand();
@@ -757,7 +758,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 		if (ncs == null) {
 			setNegativeCodingStrand(ncsOther);
 		}
-		getMutableConcurringReads().putAll(candidate.getNonMutableConcurringReads());
+		getMutableConcurringReads(param).putAll(candidate.getNonMutableConcurringReads());
 		candidate.addPhredScoresToList(getPhredScores());
 		acceptLigSiteDistance(candidate.getMinDistanceToLigSite());
 		acceptLigSiteDistance(candidate.getMaxDistanceToLigSite());

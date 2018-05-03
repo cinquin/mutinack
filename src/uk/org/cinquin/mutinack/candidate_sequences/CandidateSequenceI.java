@@ -72,7 +72,7 @@ public interface CandidateSequenceI extends Serializable {
 	void setnGoodDuplexes(int nGoodDuplexes);
 	MutableSet<@NonNull Duplex> getDuplexes();
 	void setDuplexes(@NonNull MutableSet<@NonNull Duplex> duplexes);
-	@NonNull TObjectIntMap<ExtendedSAMRecord> getMutableConcurringReads();
+	@NonNull TObjectIntMap<ExtendedSAMRecord> getMutableConcurringReads(Parameters param);
 	@NonNull TObjectIntMap<ExtendedSAMRecord> getNonMutableConcurringReads();
 	StringBuilder getSupplementalMessage();
 	void setSupplementalMessage(StringBuilder supplementalMessage);
@@ -84,7 +84,7 @@ public interface CandidateSequenceI extends Serializable {
 	String getKind();
 	String getChange();
 	void addPhredScoresToList(@NonNull TByteCollection ql);
-	void mergeWith(@NonNull CandidateSequenceI c);
+	void mergeWith(@NonNull CandidateSequenceI c, Parameters param);
 	int getMaxDistanceToLigSite();
 	int getMinDistanceToLigSite();
 	Bag<ComparablePair<String, String>> getRawMismatchesQ2();

@@ -193,7 +193,7 @@ public class ReadLoader {
 
 				int furthestPositionReadInContig = 0;
 				final TMap<String, Pair<@NonNull ExtendedSAMRecord, @NonNull ReferenceSequence>> readsToProcess =
-					new THashMap<>(5_000);
+					new THashMap<>(5_000, param.hashMapLoadFactor);
 				final @NonNull List<@NonNull AnalysisStats> stats = analyzer.stats;
 				try (IteratorPrefetcher<SAMRecord> iterator = new IteratorPrefetcher<>(it0, 100, it0,
 						e -> {

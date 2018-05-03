@@ -106,8 +106,8 @@ public final class CandidateRearrangement extends CandidateSequence implements S
 	}
 
 	@Override
-	public void mergeWith(@NonNull CandidateSequenceI candidate) {
-		super.mergeWith(candidate);
+	public void mergeWith(@NonNull CandidateSequenceI candidate, Parameters param) {
+		super.mergeWith(candidate, param);
 		CandidateRearrangement r = (CandidateRearrangement) candidate;
 		minMapQ = Math.max(minMapQ, r.getMinMapQ());
 	}

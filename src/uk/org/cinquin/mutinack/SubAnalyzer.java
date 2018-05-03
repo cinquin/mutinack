@@ -135,8 +135,7 @@ public final class SubAnalyzer {
 	MutableList<@NonNull Duplex> analyzedDuplexes;
 	float[] averageClipping;
 	int averageClippingOffset = Integer.MAX_VALUE;
-	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache =
-			new THashMap<>(10_000, 0.5f);
+	final @NonNull THashMap<String, @NonNull ExtendedSAMRecord> extSAMCache;
 	private final AtomicInteger threadCount = new AtomicInteger();
 	@SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 	@NonNull Map<@NonNull ExtendedSAMRecord, @NonNull SAMRecord> readsToWrite
@@ -250,6 +249,7 @@ public final class SubAnalyzer {
 	SubAnalyzer(@NonNull Mutinack analyzer) {
 		this.analyzer = analyzer;
 		this.param = analyzer.getParam();
+		this.extSAMCache = new THashMap<>(10_000, param.hashMapLoadFactor);
 		useHashMap = param.alignmentPositionMismatchAllowed == 0;
 		random = new Random(param.randomSeed);
 	}
@@ -280,7 +280,7 @@ public final class SubAnalyzer {
 			boolean added = candidates.add(candidate);
 			Assert.isTrue(added);
 		} else {
-			candidateMapValue.mergeWith(candidate);
+			candidateMapValue.mergeWith(candidate, param);
 			candidate = candidateMapValue;
 		}
 		return candidate;
@@ -831,7 +831,7 @@ public final class SubAnalyzer {
 			final Set<Duplex> candidateDuplexes =
 				new TCustomHashSet<>(HashingStrategies.identityHashingStrategy, 200);
 			List<ExtendedSAMRecord> discarded = Lists.mutable.empty();
-			candidate.getMutableConcurringReads().retainEntries((r, c) -> {
+			candidate.getMutableConcurringReads(param).retainEntries((r, c) -> {
 				if (r.discarded) {
 					discarded.add(r);
 					return false;
@@ -850,7 +850,7 @@ public final class SubAnalyzer {
 				}
 				return true;
 			});
-			discarded.forEach(candidate.getMutableConcurringReads()::remove);
+			discarded.forEach(candidate.getMutableConcurringReads(param)::remove);
 			if (param.enableCostlyAssertions) {
 				checkDuplexes(candidateDuplexes);
 			}
@@ -1382,19 +1382,19 @@ public final class SubAnalyzer {
 	}
 
 	@SuppressWarnings("ReferenceEquality")
-	private static void checkDuplexAndCandidates(Set<Duplex> duplexes,
+	private void checkDuplexAndCandidates(Set<Duplex> duplexes,
 			SetIterable<CandidateSequence> candidateSet) {
 
 		checkDuplexes(duplexes);
 
 		candidateSet.each(c -> {
 			Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
-				c.getMutableConcurringReads().keySet()));
+				c.getMutableConcurringReads(param).keySet()));
 
 			Set<Duplex> duplexesSupportingC = c.computeSupportingDuplexes();
 			candidateSet.each(c2 -> {
 				Assert.isTrue(c.getNonMutableConcurringReads().keySet().equals(
-					c.getMutableConcurringReads().keySet()));
+					c.getMutableConcurringReads(param).keySet()));
 				//noinspection ObjectEquality
 				if (c2 == c) {
 					return;

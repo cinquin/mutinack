@@ -351,6 +351,10 @@ public final class Parameters implements Serializable, Cloneable {
 	public int maxParallelContigs = 30;
 
 	@IgnoreInHashcodeEquals
+	@Parameter(names = "-hashMapLoadFactor", description = "TODO", required = false)
+	public float hashMapLoadFactor = 0.5f;
+
+	@IgnoreInHashcodeEquals
 	@Parameter(names = "-terminateImmediatelyUponError", description = "If true, any error causes immediate termination of the run", required = false)
 	public boolean terminateImmediatelyUponError = true;
 
