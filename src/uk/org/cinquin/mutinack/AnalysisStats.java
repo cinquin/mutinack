@@ -70,6 +70,7 @@ import uk.org.cinquin.mutinack.statistics.Actualizable;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnly;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocOnlyReportAll;
 import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocation;
+import uk.org.cinquin.mutinack.statistics.CounterWithSeqLocationReportAll;
 import uk.org.cinquin.mutinack.statistics.DivideByTwo;
 import uk.org.cinquin.mutinack.statistics.DoubleAdderFormatter;
 import uk.org.cinquin.mutinack.statistics.Histogram;
@@ -109,21 +110,12 @@ public class AnalysisStats implements Serializable, Actualizable {
 		this.forInsertions = forInsertions;
 		this.groupSettings = groupSettings;
 
-		if (reportCoverageAtAllPositions) {
-			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
-			nPosDuplexCandidatesForDisagreementQ1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
-			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
-			nPosDuplexTooFewReadsPerStrand1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
-			nPosDuplexTooFewReadsPerStrand2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
-			nPosDuplexTooFewReadsAboveQ2Phred = new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(false, groupSettings));
-		} else {
-			nPosDuplexCandidatesForDisagreementQ2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-			nPosDuplexCandidatesForDisagreementQ1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-			nPosDuplexQualityQ2OthersQ1Q2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-			nPosDuplexTooFewReadsPerStrand1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-			nPosDuplexTooFewReadsPerStrand2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-			nPosDuplexTooFewReadsAboveQ2Phred = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-		}
+		nPosDuplexCandidatesForDisagreementQ2 = getCounterSecLocOnly(reportCoverageAtAllPositions, groupSettings, false);
+		nPosDuplexCandidatesForDisagreementQ1 = getCounterSecLocOnly(reportCoverageAtAllPositions, groupSettings, false);
+		nPosDuplexQualityQ2OthersQ1Q2 = getCounterSecLocOnly(reportCoverageAtAllPositions, groupSettings, false);
+		nPosDuplexTooFewReadsPerStrand1 = getCounterSecLocOnly(reportCoverageAtAllPositions, groupSettings, false);
+		nPosDuplexTooFewReadsPerStrand2 = getCounterSecLocOnly(reportCoverageAtAllPositions, groupSettings, false);
+		nPosDuplexTooFewReadsAboveQ2Phred = getCounterSecLocOnly(reportCoverageAtAllPositions, groupSettings, false);
 
 		nRecordsNotInIntersection1 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nRecordsNotInIntersection2 = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
@@ -135,31 +127,33 @@ public class AnalysisStats implements Serializable, Actualizable {
 		phredAndLigSiteDistance = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, false);
 		nDuplexesTooMuchClipping = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nDuplexesNoStats = new DoubleAdder();
-		nDuplexesWithStats = new DoubleAdder();
 		nPosDuplexWithTopBottomDuplexDisagreementNoWT = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexWithTopBottomDuplexDisagreementNotASub = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-		rawMismatchesQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+		nDuplexesWithStats = new DoubleAdder();
 		vBarcodeMismatches1M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		vBarcodeMismatches2M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		vBarcodeMismatches3OrMore = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		rawDeletionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawDeletionLengthQ1 = new Histogram(200);
-		rawInsertionsQ1 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawInsertionLengthQ1 = new Histogram(200);
-		rawMismatchesQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		rawDeletionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		rawDeletionLengthQ2 = new Histogram(200);
-		rawInsertionsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
+
+		rawMismatchesQ1 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		rawDeletionsQ1 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		rawInsertionsQ1 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		rawMismatchesQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		rawDeletionsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		rawInsertionsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		intraStrandSubstitutions = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		intraStrandDeletions = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		intraStrandInsertions = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		topBottomSubstDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, false);
+		topBottomDelDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		topBottomRearDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		topBottomIntronDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
+		topBottomInsDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
 		rawInsertionLengthQ2 = new Histogram(200);
-		intraStrandSubstitutions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		intraStrandDeletions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		intraStrandInsertions = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
-		topBottomSubstDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
+
 		alleleFrequencies = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
-		topBottomDelDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
-		topBottomRearDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
-		topBottomIntronDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
-		topBottomInsDisagreementsQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null);
 		codingStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		templateStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		codingStrandDelQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(groupSettings), null);
@@ -1102,4 +1096,22 @@ public class AnalysisStats implements Serializable, Actualizable {
 		}, this);
 	}
 
+	private static<T> MultiCounter<T> getCounterSecLocOnly(
+			boolean reportCoverageAtAllPositions,
+			@NonNull MutinackGroup groupSettings,
+			boolean sortByValue) {
+		return reportCoverageAtAllPositions ?
+				new MultiCounter<>(null, () -> new CounterWithSeqLocOnlyReportAll(sortByValue, groupSettings))
+			:
+				new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(sortByValue, groupSettings));
+	}
+
+	private static<T> MultiCounter<T> getCounterTypeSecLoc(
+			boolean reportCoverageAtAllPositions,
+			@NonNull MutinackGroup groupSettings, boolean sortByValue) {
+		return reportCoverageAtAllPositions ?
+				new MultiCounter<>(() -> new CounterWithSeqLocationReportAll<>(sortByValue, groupSettings), null, true)
+			:
+				new MultiCounter<>(() -> new CounterWithSeqLocation<>(sortByValue, groupSettings), null, true);
+	}
 }
