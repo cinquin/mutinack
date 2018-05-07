@@ -135,6 +135,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private int largestConcurringDuplexDistance = -1;
 	private int nQ1PlusConcurringDuplexes = -1;
 	private float fractionTopStrandReads;
+	private float fractionForwardReads;
 	private boolean topAndBottomStrandsPresent;
 	private int topStrandDuplexes = -1;
 	private int bottomStrandDuplexes = -1;
@@ -941,6 +942,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 			formatter.format((getNonMutableConcurringReads().size() / ((float) getTotalReadsAtPosition()))) + '\t' +
 			(getAverageMappingQuality() == -1 ? "?" : getAverageMappingQuality()) + '\t' +
 			formatter.format(fractionTopStrandReads) + '\t' +
+			formatter.format(fractionForwardReads) + '\t' +
 			topAndBottomStrandsPresent + '\t' +
 			new String(getSequenceContext(5)) + '\t' +
 			nDuplexesSisterSamples + '\t' +
@@ -1262,8 +1264,12 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public void computeNBottomTopStrandReads() {
 		final long topReads = getDuplexes().sumOfInt(d -> d.topStrandRecords.size());
-		final float bottomReads = getDuplexes().sumOfInt(d -> d.bottomStrandRecords.size());
-		setFractionTopStrandReads(topReads / (topReads + bottomReads));
+		final long bottomReads = getDuplexes().sumOfInt(d -> d.bottomStrandRecords.size());
+		final float nReads = topReads + bottomReads;
+		final long forwardReads = getDuplexes().sumOfInt(
+			d -> d.allRecords.count(ExtendedSAMRecord::getReadPositiveStrand));
+		setFractionTopStrandReads(topReads / nReads);
+		setFractionForwardReads(forwardReads / nReads);
 		setTopAndBottomStrandsPresent(topReads > 0 && bottomReads > 0);
 
 		topStrandDuplexes = (int) getDuplexes().sumOfInt(d -> Math.min(1, d.topStrandRecords.size()));
@@ -1311,5 +1317,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	public void setPrecedingWildtypeBase(byte precedingWildtypeBase) {
 		this.precedingWildtypeBase = precedingWildtypeBase;
+	}
+
+	public float getFractionForwardReads() {
+		return fractionForwardReads;
+	}
+
+	private void setFractionForwardReads(float fractionForwardReads) {
+		this.fractionForwardReads = fractionForwardReads;
 	}
 }
