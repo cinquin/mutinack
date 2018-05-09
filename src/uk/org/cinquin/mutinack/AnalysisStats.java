@@ -191,8 +191,9 @@ public class AnalysisStats implements Serializable, Actualizable {
 				if (annotation != null) {
 					for (final @NonNull String contigName: contigNamesToProcess) {
 						final int contigIndex = Objects.requireNonNull(
-							groupSettings.getIndexContigNameReverseMap().get(contigName));
-						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(contigName))
+							groupSettings.getIndexContigNameReverseMap().get(contigName), () -> "Missing contig index for " + contigName);
+						for (int c = 0; c < Objects.requireNonNull(groupSettings.getContigSizes().get(contigName),
+									() -> "Missing contig size for contig " + contigName)
 								/ groupSettings.BIN_SIZE; c++) {
 							final int finalBinIndex = c;
 							try {
