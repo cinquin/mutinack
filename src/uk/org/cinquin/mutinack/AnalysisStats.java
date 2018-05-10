@@ -43,7 +43,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -126,10 +125,10 @@ public class AnalysisStats implements Serializable, Actualizable {
 		nReadMedianPhredBelowThreshold = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		phredAndLigSiteDistance = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, false);
 		nDuplexesTooMuchClipping = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-		nDuplexesNoStats = new DoubleAdder();
+		nDuplexesNoStats = new LongAdder();
+		nDuplexesWithStats = new LongAdder();
 		nPosDuplexWithTopBottomDuplexDisagreementNoWT = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
 		nPosDuplexWithTopBottomDuplexDisagreementNotASub = new MultiCounter<>(null, () -> new CounterWithSeqLocOnly(false, groupSettings));
-		nDuplexesWithStats = new DoubleAdder();
 		vBarcodeMismatches1M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		vBarcodeMismatches2M = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
 		vBarcodeMismatches3OrMore = new MultiCounter<>(() -> new CounterWithSeqLocation<>(true, groupSettings), null, true);
@@ -151,8 +150,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 		topBottomRearDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
 		topBottomIntronDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
 		topBottomInsDisagreementsQ2 = getCounterTypeSecLoc(reportCoverageAtAllPositions, groupSettings, true);
-		rawInsertionLengthQ2 = new Histogram(200);
 
+		rawInsertionLengthQ2 = new Histogram(200);
 		alleleFrequencies = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		codingStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
 		templateStrandSubstQ2 = new MultiCounter<>(() -> new CounterWithSeqLocation<>(false, groupSettings), null);
@@ -492,10 +491,10 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nDuplexesTooMuchClipping;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public @Final @Persistent DoubleAdder nDuplexesNoStats;
+	public @Final @Persistent LongAdder nDuplexesNoStats;
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public @Final @Persistent DoubleAdder nDuplexesWithStats;
+	public @Final @Persistent LongAdder nDuplexesWithStats;
 
 	@PrintInStatus(outputLevel = TERSE)
 	public @Final @Persistent(serialized = "true") MultiCounter<?> nPosDuplexTooFewReadsPerStrand1;
@@ -944,7 +943,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public final StatsCollector nProcessedFirst6BasesSecondOfPair = new StatsCollector();*/
 
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
-	public @Final @Persistent DoubleAdder phredSumProcessedbases = new DoubleAdder();
+	public @Final @Persistent LongAdder phredSumProcessedbases = new LongAdder();
 
 	/*
 	@PrintInStatus(outputLevel = VERY_VERBOSE)
