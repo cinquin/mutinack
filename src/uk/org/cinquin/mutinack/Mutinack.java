@@ -782,6 +782,7 @@ public class Mutinack implements Actualizable, Closeable {
 			}
 		}	else {
 			contigNamesToProcess = new ArrayList<>(param.contigNamesToProcess);
+			Util.checkContained(contigNamesToProcess, contigNames, "Error with -contigNamesToProcess: ");
 			contigNamesToProcess.sort(null);
 		}
 		groupSettings.setContigNamesToProcess(contigNamesToProcess);
