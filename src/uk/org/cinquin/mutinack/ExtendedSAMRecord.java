@@ -277,29 +277,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			"Unclipped end is %s for read %s");
 		Assert.isTrue(rec.getAlignmentStart() - 1 >= getUnclippedStart());
 
-		String bcAttr = (String) record.getAttribute("BC");
 		if (groupSettings.getVariableBarcodeEnd() > 0) {
 			final int firstBarcodeInNameIndex = name.indexOf("BC:Z:");
-			final @NonNull String fullBarcodeString;
-			if (bcAttr == null) {
-				if (firstBarcodeInNameIndex == -1) {
-					throw new ParseRTException("Missing first barcode for read " + name +
-						' ' + record.toString());
-				}
-				final int index;
-				if (record.getFirstOfPairFlag()) {
-					index = firstBarcodeInNameIndex;
-				} else {
-					index = name.indexOf("BC:Z:", firstBarcodeInNameIndex + 1);
-					if (index == -1) {
-						throw new ParseRTException("Missing second barcode for read " + name +
-							' ' + record.toString());
-					}
-				}
-				fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf('_', index)));
-			} else {
-				fullBarcodeString = bcAttr;
-			}
+			final @NonNull String fullBarcodeString = getFullBarcodeString(record, fullName, firstBarcodeInNameIndex);
 			variableBarcode = Util.getInternedVB(fullBarcodeString.substring(
 				groupSettings.getVariableBarcodeStart(), groupSettings.getVariableBarcodeEnd() + 1).getBytes());
 			constantBarcode = Util.getInternedCB(fullBarcodeString.substring(
@@ -311,7 +291,34 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 			variableBarcode = EMPTY_BARCODE;
 			constantBarcode = DUMMY_BARCODE;
 		}
+	}
 
+	public static @NonNull String getFullBarcodeString(
+			SAMRecord record,
+			String name,
+			int firstBarcodeInNameIndex) {
+		final @NonNull String fullBarcodeString;
+		String bcAttr = (String) record.getAttribute("BC");
+		if (bcAttr == null) {
+			if (firstBarcodeInNameIndex == -1) {
+				throw new ParseRTException("Missing first barcode for read " + name +
+					' ' + record.toString());
+			}
+			final int index;
+			if (record.getFirstOfPairFlag()) {
+				index = firstBarcodeInNameIndex;
+			} else {
+				index = name.indexOf("BC:Z:", firstBarcodeInNameIndex + 1);
+				if (index == -1) {
+					throw new ParseRTException("Missing second barcode for read " + name +
+						' ' + record.toString());
+				}
+			}
+			fullBarcodeString = nonNullify(name.substring(index + 5, name.indexOf('_', index)));
+		} else {
+			fullBarcodeString = bcAttr;
+		}
+		return fullBarcodeString;
 	}
 
 	@SuppressWarnings("unused")
