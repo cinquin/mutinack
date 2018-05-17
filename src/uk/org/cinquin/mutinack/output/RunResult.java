@@ -19,14 +19,26 @@ package uk.org.cinquin.mutinack.output;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
+import org.eclipse.jdt.annotation.NonNull;
+
+import uk.org.cinquin.mutinack.DuplexDisagreement;
 import uk.org.cinquin.mutinack.Parameters;
+import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
+import uk.org.cinquin.mutinack.misc_util.Pair;
+import uk.org.cinquin.mutinack.misc_util.Util;
+import uk.org.cinquin.mutinack.qualities.Quality;
 
 @PersistenceCapable
 public class RunResult implements Serializable {
@@ -36,10 +48,31 @@ public class RunResult implements Serializable {
 	public @Persistent Parameters parameters;
 	public @Persistent List<ParedDownMutinack> samples;
 
-	public Stream<CandidateSequence> extractDetections() {
+	public Stream<Entry<@NonNull SequenceLocation, LocationAnalysis>> extractLocationAnalyses() {
 		return samples.stream().
 			flatMap(sample -> sample.stats.stream()).
-			flatMap(stats -> stats.detections.entrySet().stream()).
+			flatMap(stats -> stats.detections.entrySet().stream());
+	}
+
+	public Stream<CandidateSequence> extractDetections() {
+		return extractLocationAnalyses().
 			flatMap(e -> e.getValue().candidates.stream());
+	}
+
+	public Stream<Pair<SequenceLocation, DuplexDisagreement>> extractDisagreements() {
+		return extractLocationAnalyses().
+			flatMap(e -> e.getValue().disagreements.stream().
+				map(dis -> new Pair<>(e.getKey(), dis)));
+	}
+
+	public SortedSet<Map.Entry<DuplexDisagreement, Long>> getQ2DisagreementCounts() {
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		SortedSet<Map.Entry<DuplexDisagreement, Long>> sortedSet =
+			new TreeSet(Util.mapEntryByValueSorter);
+		sortedSet.addAll(extractDisagreements().
+			filter(pair -> pair.snd.quality.atLeast(Quality.GOOD)).
+			collect(Collectors.groupingBy(p -> p.snd, Collectors.counting())).
+			entrySet());
+		return sortedSet;
 	}
 }
