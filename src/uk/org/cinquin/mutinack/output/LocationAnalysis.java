@@ -7,6 +7,8 @@ import java.util.Set;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.DuplexDisagreement;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
@@ -18,7 +20,7 @@ public class LocationAnalysis implements Serializable {
 	public @Persistent CrossSampleLocationAnalysis crossSampleLocationAnalysis;
 	public @Final @Persistent LocationExaminationResults locationStats;
 	public @Final @Persistent Set<CandidateSequence> candidates = new HashSet<>();
-	public @Final @Persistent Set<DuplexDisagreement> disagreements = new HashSet<>();
+	public @Final @Persistent Set<@NonNull DuplexDisagreement> disagreements = new HashSet<>();
 
 	public LocationAnalysis(CrossSampleLocationAnalysis crossSampleLocationAnalysis,
 			LocationExaminationResults locationStats) {
