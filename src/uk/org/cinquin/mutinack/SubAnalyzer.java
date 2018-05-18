@@ -1204,6 +1204,7 @@ public final class SubAnalyzer {
 
 		final MutableSet<Duplex> candidateDuplexes = candidate.computeSupportingDuplexes();
 		candidate.setDuplexes(candidateDuplexes);
+		candidate.setDuplexIDs(candidateDuplexes.stream().map(Duplex::getID).collect(Collectors.toSet()));
 		candidate.setnDuplexes(candidateDuplexes.size());
 
 		if (candidate.getnDuplexes() == 0) {

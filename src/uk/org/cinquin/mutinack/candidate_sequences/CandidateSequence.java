@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -105,6 +106,7 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 	private transient @Nullable TObjectIntHashMap<ExtendedSAMRecord> concurringReads;
 	private transient @Nullable TObjectIntMap<ExtendedSAMRecord> singletonConcurringRead;
 	private transient @Nullable MutableSet<@NonNull Duplex> duplexes;
+	private Set<UUID> duplexIDs;
 	private int nGoodDuplexes;
 	private int nGoodDuplexesIgnoringDisag;
 	private int nGoodOrDubiousDuplexes;
@@ -1325,5 +1327,13 @@ public class CandidateSequence implements CandidateSequenceI, Serializable {
 
 	private void setFractionForwardReads(float fractionForwardReads) {
 		this.fractionForwardReads = fractionForwardReads;
+	}
+
+	public Set<UUID> getDuplexIDs() {
+		return duplexIDs;
+	}
+
+	public void setDuplexIDs(Set<UUID> duplexIDs) {
+		this.duplexIDs = duplexIDs;
 	}
 }

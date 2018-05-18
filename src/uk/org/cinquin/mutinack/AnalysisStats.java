@@ -228,7 +228,7 @@ public class AnalysisStats implements Serializable, Actualizable {
 				Mutation wtM = new Mutation(MutationType.WILDTYPE, wt, null, Util.emptyOptional());
 				Mutation to = new Mutation(MutationType.SUBSTITUTION, wt, new byte [] {mut}, Util.emptyOptional());
 				ComparablePair<Mutation, Mutation> cpMut = new ComparablePair<>(wtM, to);
-				DuplexDisagreement disag = new DuplexDisagreement(wtM, to, true, Quality.GOOD);
+				DuplexDisagreement disag = new DuplexDisagreement(null, wtM, to, true, Quality.GOOD);
 
 				List<String> contigNames = groupSettings.getContigNames();
 				for (int contig = 0; contig < contigNames.size(); contig++) {

@@ -52,6 +52,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
@@ -106,6 +108,7 @@ public final class Duplex implements HasInterval<Integer> {
 
 	private static final Logger logger = LoggerFactory.getLogger(Duplex.class);
 
+	private final AtomicReference<UUID> uuid = new AtomicReference<>();
 	private final MutinackGroup groupSettings;
 	public byte @NonNull[] leftBarcode, rightBarcode;
 	public SequenceLocation leftAlignmentStart, rightAlignmentStart, leftAlignmentEnd, rightAlignmentEnd;
@@ -934,6 +937,7 @@ public final class Duplex implements HasInterval<Integer> {
 						nonNullEval == bottom;
 
 				duplexDisagreement = new DuplexDisagreement(
+					getID(),
 					Mutation.UNKNOWN_STATUS,
 					reverseComplementDisag ?
 						nonNullEval.candidate.getMutation().reverseComplement()
@@ -1022,16 +1026,16 @@ public final class Duplex implements HasInterval<Integer> {
 
 					final boolean switchOrder = nonNullTop > nonNullBottom;
 					duplexDisagreement = switchOrder ?
-							new DuplexDisagreement(m1, m2, false, GOOD)
+							new DuplexDisagreement(getID(), m1, m2, false, GOOD)
 						:
-							new DuplexDisagreement(m2, m1, false, GOOD);
+							new DuplexDisagreement(getID(), m2, m1, false, GOOD);
 
 					duplexDisagreement.probCollision = probAtLeastOneCollision;
 				} else {
 					duplexDisagreement = reverseComplementDisag ?
-						new DuplexDisagreement(wildtype.reverseComplement(), actualMutant.reverseComplement(), true, GOOD)
+						new DuplexDisagreement(getID(), wildtype.reverseComplement(), actualMutant.reverseComplement(), true, GOOD)
 					:
-						new DuplexDisagreement(wildtype, actualMutant, true, GOOD);
+						new DuplexDisagreement(getID(), wildtype, actualMutant, true, GOOD);
 					duplexDisagreement.probCollision = probAtLeastOneCollision;
 
 					switch(actualMutant.mutationType) {
@@ -1496,7 +1500,6 @@ public final class Duplex implements HasInterval<Integer> {
 		return rightAlignmentEnd.position;
 	}
 
-	@SuppressWarnings("ReferenceEquality")
 	public boolean checkReadOwnership() {
 		checkReadOwnerShip(topStrandRecords, bottomStrandRecords);
 		checkReadOwnerShip(bottomStrandRecords, topStrandRecords);
@@ -1515,6 +1518,17 @@ public final class Duplex implements HasInterval<Integer> {
 				throw new AssertionFailedException();
 			}
 		});
+	}
+
+	public UUID getID() {
+		UUID result = uuid.get();
+		if (result == null) {
+			result = UUID.randomUUID();
+			if (uuid.compareAndSet(null, result)) {
+				return result;
+			}
+		}
+		return uuid.get();
 	}
 
 }
