@@ -897,9 +897,9 @@ public class SubAnalyzerPhaser extends Phaser {
 			}
 		});
 
-		for (Entry<DuplexDisagreement, List<Duplex>> entry: examResults.disagreements) {
+		for (Entry<@NonNull DuplexDisagreement, List<Duplex>> entry: examResults.disagreements) {
 
-			DuplexDisagreement d = entry.getKey();
+			@NonNull DuplexDisagreement d = entry.getKey();
 
 			if (!stats.detections.computeIfAbsent(location, loc -> new LocationAnalysis(null,
 					Util.serializeAndDeserialize(examResults))).
