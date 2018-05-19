@@ -19,8 +19,6 @@ package uk.org.cinquin.mutinack.output;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -48,31 +46,35 @@ public class RunResult implements Serializable {
 	public @Persistent Parameters parameters;
 	public @Persistent List<ParedDownMutinack> samples;
 
-	public Stream<Entry<@NonNull SequenceLocation, LocationAnalysis>> extractLocationAnalyses() {
+	public Stream<Pair<@NonNull SequenceLocation, LocationAnalysis>> extractLocationAnalyses() {
 		return samples.stream().
 			flatMap(sample -> sample.stats.stream()).
-			flatMap(stats -> stats.detections.entrySet().stream());
+			flatMap(stats -> stats.detections.entrySet().stream()).
+			map(e -> new Pair<>(e.getKey(), e.getValue()));
 	}
 
 	public Stream<CandidateSequence> extractDetections() {
 		return extractLocationAnalyses().
-			flatMap(e -> e.getValue().candidates.stream());
+			flatMap(e -> e.snd.candidates.stream());
 	}
 
-	public Stream<Pair<SequenceLocation, DuplexDisagreement>> extractDisagreements() {
+	public Stream<Pair<@NonNull SequenceLocation, @NonNull DuplexDisagreement>> extractDisagreements() {
 		return extractLocationAnalyses().
-			flatMap(e -> e.getValue().disagreements.stream().
-				map(dis -> new Pair<>(e.getKey(), dis)));
+			flatMap(e -> e.snd.disagreements.stream().
+			map(dis -> new Pair<>(e.fst, dis)));
 	}
 
-	public SortedSet<Map.Entry<DuplexDisagreement, Long>> getQ2DisagreementCounts() {
+	@SuppressWarnings("null")
+	public SortedSet<Pair<DuplexDisagreement, Long>> getQ2DisagreementCounts() {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
-		SortedSet<Map.Entry<DuplexDisagreement, Long>> sortedSet =
+		SortedSet<Pair<DuplexDisagreement, Long>> sortedSet =
 			new TreeSet(Util.mapEntryByValueSorter);
-		sortedSet.addAll(extractDisagreements().
+		extractDisagreements().
 			filter(pair -> pair.snd.quality.atLeast(Quality.GOOD)).
 			collect(Collectors.groupingBy(p -> p.snd, Collectors.counting())).
-			entrySet());
+			entrySet().stream().
+			map(Pair::fromEntry).
+			forEach(sortedSet::add);
 		return sortedSet;
 	}
 }
