@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.misc_util;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -42,6 +43,14 @@ public class Pair<A,B> implements Serializable, Cacheable {
 		super();
 		this.fst = first;
 		this.snd = second;
+	}
+
+	public Pair(Map.Entry<@NonNull A, @NonNull B> e) {
+		this(e.getKey(), e.getValue());
+	}
+
+	public static<K, V> Pair<K, V> fromEntry(Map.Entry<@NonNull K, @NonNull V> e) {
+		return new Pair<>(e);
 	}
 
 	@SuppressWarnings("null")
