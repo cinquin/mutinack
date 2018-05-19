@@ -92,7 +92,8 @@ public class AnalysisStats implements Serializable, Actualizable {
 	public @Final @Persistent @NonNull Parameters analysisParameters;
 	public @Final @Persistent boolean forInsertions;
 	//Changed to Map instead of ConcurrentMap to please datanucleus
-	public @Final @Persistent @Join Map<SequenceLocation, LocationAnalysis> detections = new ConcurrentHashMap<>();
+	public @Final @Persistent @Join Map<@NonNull SequenceLocation, @NonNull LocationAnalysis> detections
+		= new ConcurrentHashMap<>();
 	public transient PrintStream detectionOutputStream;
 	public transient OutputStreamWriter annotationOutputStream;
 	public transient @Nullable OutputStreamWriter topBottomDisagreementWriter, noWtDisagreementWriter,
