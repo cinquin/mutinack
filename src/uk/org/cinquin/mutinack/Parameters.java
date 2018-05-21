@@ -178,6 +178,31 @@ public final class Parameters implements Serializable, Cloneable {
 		}
 
 		checkValues();
+
+		checkOnlyValidIfAnnotations();
+	}
+
+	private void checkOnlyValidIfAnnotations() {
+		FieldIteration.iterateFields((field, obj) -> {
+			OnlyValidWithNonEmpty checkAnnotation = field.getAnnotation(OnlyValidWithNonEmpty.class);
+			if (checkAnnotation == null || obj == null) {
+				return;
+			}
+			if (obj.equals(field.get(defaultValues))) {
+				return;
+			}
+			try {
+				final Field referredTo = Parameters.class.getField(checkAnnotation.nonEmptyList());
+				referredTo.setAccessible(true);
+				if (((List<?>) referredTo.get(this)).isEmpty()) {
+					throw new IllegalArgumentException("Parameter " + field.getName() +
+						" is set to " + obj.toString() +
+						" but should only be set in conjunction with " + referredTo.getName());
+				}
+			} catch (NoSuchFieldException | SecurityException e) {
+				throw new RuntimeException(e);
+			}
+		}, this);
 	}
 
 	private void checkValues() {
@@ -719,6 +744,7 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-writeBothStrands", description = "Used in conjunction with -collapseFilteredReads; write read pairs from both the top and the bottom strand, when available", required = false, arity = 1)
 	public boolean writeBothStrands = true;
 
+	@OnlyValidWithNonEmpty(nonEmptyList = "outputAlignmentFile")
 	@Parameter(names = "-maxSubQ2DuplexesForBAMOutput", description = "Only this many sub-Q2 duplexes will be chosen to be written out at any position (actual coverage with sub-Q2 duplexes may end up being substantially higher because, for now, different duplexes are chosen at nearby positions)", required = false)
 	public int maxSubQ2DuplexesForBAMOutput = Integer.MAX_VALUE;
 
@@ -790,9 +816,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-discardedReadFile", description = "Write discarded reads to BAM file specified by parameter", required = false, hidden = hideInProgressParameters)
 	public @Column(length = 1_000) String discardedReadFile = null;
 
+	//@OnlyValidWithNonEmpty(nonEmptyList = "outputAlignmentFile")
 	@Parameter(names = "-logReadIssuesInOutputBam", description = "Use custom fields in output BAM to give reasons why duplexes as a whole or individual bases did not reach maximum quality", required = false, arity = 1)
 	public boolean logReadIssuesInOutputBam = true;
 
+	@OnlyValidWithNonEmpty(nonEmptyList = "outputAlignmentFile")
 	@Parameter(names = "-sortOutputAlignmentFile", description = "Sort BAM file; can require a large amount of memory", required = false, arity = 1)
 	public boolean sortOutputAlignmentFile = false;
 
@@ -956,6 +984,11 @@ public final class Parameters implements Serializable, Cloneable {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface NoDuplicates {}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	private @interface OnlyValidWithNonEmpty {
+		String nonEmptyList();
+	}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	private @interface FilePath {}
