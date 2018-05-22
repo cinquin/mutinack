@@ -179,7 +179,9 @@ public final class Parameters implements Serializable, Cloneable {
 
 		checkValues();
 
-		checkOnlyValidIfAnnotations();
+		if (!ignoreExtraneousParameters) {
+			checkOnlyValidIfAnnotations();
+		}
 	}
 
 	private void checkOnlyValidIfAnnotations() {
@@ -310,6 +312,12 @@ public final class Parameters implements Serializable, Cloneable {
 	@JsonIgnore
 	@IgnoreInHashcodeEquals
 	public boolean skipVersionCheck = false;
+
+	@Parameter(names = "-ignoreExtraneousParameters", description = "When false, presence of parameters that are not expected to be specified generates an error", required = false, arity = 1)
+	@HideInToString
+	@JsonIgnore
+	@IgnoreInHashcodeEquals
+	public boolean ignoreExtraneousParameters = true;
 
 	@Parameter(names = "-verbosity", description = "0: main mutation detection results only; 3: open the firehose", required = false)
 	public int verbosity = 0;
