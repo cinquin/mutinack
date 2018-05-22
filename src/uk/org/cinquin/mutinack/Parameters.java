@@ -582,8 +582,11 @@ public final class Parameters implements Serializable, Cloneable {
 	@Parameter(names = "-computeRawMismatches", description = "Compute mismatches between raw reads and reference sequence", arity = 1, required = false)
 	public boolean computeRawMismatches = true;
 
-	@Parameter(names = "-rawMismatchesOnlyAtWtPos", description = "Compute mismatches only at positions where the wild type allele represents at least 90% of the reads", arity = 1, required = false)
-	public boolean rawMismatchesOnlyAtWtPos = true;
+	@Parameter(names = "-minTopAlleleFrequencyForDisagreement", description = "Disagreements will only be reported at positions where the top allele is present at least at this frequency", arity = 1, required = false)
+	public float minTopAlleleFrequencyForDisagreement = 0f;
+
+	@Parameter(names = "-rawMismatchesOnlyAtWtPos", description = "Obsolete and ignored", required = false, arity = 1)
+	public boolean rawMismatchesOnlyAtWtPos;
 
 	@Parameter(names = "-computeIntraStrandMismatches", description = "Compute mismatches between reads that belong to the same duplex strand", arity = 1, required = false)
 	public boolean computeIntraStrandMismatches = false;

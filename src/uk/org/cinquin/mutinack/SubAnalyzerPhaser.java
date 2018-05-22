@@ -392,7 +392,7 @@ public class SubAnalyzerPhaser extends Phaser {
 					groupSettings.mutationsToAnnotate,
 					sa.analyzer.codingStrandTester,
 					repetitiveBEDs,
-					param.rawMismatchesOnlyAtWtPos);
+					param.minTopAlleleFrequencyForDisagreement);
 			}
 		);
 
@@ -725,7 +725,7 @@ public class SubAnalyzerPhaser extends Phaser {
 				@NonNull List<@NonNull Pair<@NonNull Mutation, @NonNull String>>> mutationsToAnnotate,
 			final @Nullable GenomeFeatureTester codingStrandTester,
 			final @NonNull List<BedReader> repetitiveBEDs,
-			final boolean rawMismatchesOnlyAtWtPos
+			final float minTopAlleleFrequencyForDisagreement
 		) {
 
 		if (mutationsToAnnotate.containsKey(new Pair<>(location, a.name))) {
@@ -809,7 +809,7 @@ public class SubAnalyzerPhaser extends Phaser {
 
 		if (!localTooHighCoverage) {
 			//a.stats.nPosDuplexesCandidatesForDisagreementQ2.accept(location, examResults.nGoodDuplexesIgnoringDisag);
-			registerOutputDisagreements(examResults, stats, location, rawMismatchesOnlyAtWtPos);
+			registerOutputDisagreements(examResults, stats, location, minTopAlleleFrequencyForDisagreement);
 		} else {
 			stats.nPosDuplexCandidatesForDisagreementQ2TooHighCoverage.accept(location, examResults.nGoodDuplexesIgnoringDisag);
 			for (@NonNull DuplexDisagreement d: examResults.disagreements.keys()) {
@@ -867,15 +867,17 @@ public class SubAnalyzerPhaser extends Phaser {
 			final @NonNull LocationExaminationResults examResults,
 			final @NonNull AnalysisStats stats,
 			final @NonNull SequenceLocation location,
-			final boolean rawMismatchesOnlyAtWtPos) {
+			final float minTopAlleleFrequencyForDisagreement) {
 
 		if (examResults.ignoreDisagreements) {
 			return;
 		}
-		examResults.analyzedCandidateSequences.getFirstOptional().ifPresent(topCandidate -> {
-			if (!rawMismatchesOnlyAtWtPos ||
-					(topCandidate.getMutation().mutationType.isWildtype() && topCandidate.getFrequencyAtPosition() >= 0.7f)) {
 
+		final Handle<Boolean> registerDisagreement = new Handle<>(true);
+		examResults.analyzedCandidateSequences.getFirstOptional().ifPresent(topCandidate -> {
+			if (topCandidate.getFrequencyAtPosition() < minTopAlleleFrequencyForDisagreement) {
+				registerDisagreement.set(false);
+			} else {
 				stats.intraStrandAndRawMismatchNPositions.increment();
 
 				stats.rawMismatchesNReads.add(topCandidate.getTotalReadsAtPosition());
@@ -893,9 +895,12 @@ public class SubAnalyzerPhaser extends Phaser {
 				stats.intraStrandSubstitutions.accept(location, examResults.intraStrandSubstitutions);
 				stats.intraStrandDeletions.accept(location, examResults.intraStrandDeletions);
 				stats.intraStrandInsertions.accept(location, examResults.intraStrandInsertions);
-
 			}
 		});
+
+		if (!registerDisagreement.get()) {
+			return;
+		}
 
 		for (Entry<@NonNull DuplexDisagreement, List<Duplex>> entry: examResults.disagreements) {
 
