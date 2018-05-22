@@ -33,4 +33,28 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 		this.quality = quality;
 	}
 
+	public boolean hasAWtStrand() {
+		return hasAWtStrand;
+	}
+
+	public Quality getQuality() {
+		return quality;
+	}
+
+	public void setQuality(Quality quality) {
+		this.quality = quality;
+	}
+
+	public UUID getDuplexID() {
+		return duplexID;
+	}
+
+	public double getProbCollision() {
+		return probCollision;
+	}
+
+	public void setProbCollision(double probCollision) {
+		this.probCollision = probCollision;
+	}
+
 }
