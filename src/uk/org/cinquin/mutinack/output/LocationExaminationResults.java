@@ -47,6 +47,9 @@ import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
 public final class LocationExaminationResults implements Serializable {
 	private static final long serialVersionUID = -2966237959317593137L;
 
+	/**
+	 * Sorted by decreasing allele frequency
+	 **/
 	@JsonIgnore //Already listed in LocationAnalysis
 	public transient SortedSetIterable<CandidateSequence> analyzedCandidateSequences;
 	public int nGoodOrDubiousDuplexes = 0;
