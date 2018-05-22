@@ -642,8 +642,4 @@ public class Util {
 		return array.clone();
 	}
 
-	public final static Comparator<Map.Entry<Comparable<Object>, Long>> mapEntryByValueSorter =
-		Comparator.comparingLong((Map.Entry<Comparable<Object>, Long> e) -> e.getValue()).
-			thenComparing(Map.Entry::getKey);
-
 }

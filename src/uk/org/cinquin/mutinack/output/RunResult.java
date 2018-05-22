@@ -35,7 +35,6 @@ import uk.org.cinquin.mutinack.Parameters;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.candidate_sequences.CandidateSequence;
 import uk.org.cinquin.mutinack.misc_util.Pair;
-import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.qualities.Quality;
 
 @PersistenceCapable
@@ -68,7 +67,7 @@ public class RunResult implements Serializable {
 	public SortedSet<Pair<DuplexDisagreement, Long>> getQ2DisagreementCounts() {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		SortedSet<Pair<DuplexDisagreement, Long>> sortedSet =
-			new TreeSet(Util.mapEntryByValueSorter);
+			new TreeSet(Pair.pairBySecondSorter);
 		extractDisagreements().
 			filter(pair -> pair.snd.quality.atLeast(Quality.GOOD)).
 			collect(Collectors.groupingBy(p -> p.snd, Collectors.counting())).

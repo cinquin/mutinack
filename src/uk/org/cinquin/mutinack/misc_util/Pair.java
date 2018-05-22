@@ -19,6 +19,7 @@ package uk.org.cinquin.mutinack.misc_util;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
@@ -129,5 +130,9 @@ public class Pair<A,B> implements Serializable, Cacheable {
 		}
 		return ((Cacheable) fst).shouldCache() && ((Cacheable) snd).shouldCache();
 	}
+
+	public final static Comparator<Pair<Comparable<Object>, Long>> pairBySecondSorter =
+		Comparator.comparingLong((Pair<Comparable<Object>, Long> e) -> e.getSnd()).
+			thenComparing(Pair::getFst);
 
 }
