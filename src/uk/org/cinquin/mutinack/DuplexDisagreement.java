@@ -17,11 +17,10 @@ public class DuplexDisagreement extends ComparablePair<Mutation, Mutation> {
 
 	private static final long serialVersionUID = 8966639744689364931L;
 
+	//None of the following fields are taken into account for equality
 	public @Final boolean hasAWtStrand;
 	public @Persistent Quality quality;
 	public @Final @Persistent UUID duplexID;
-
-	//Not taken into account for equality
 	public double probCollision;
 
 	public DuplexDisagreement(UUID duplexUUID, @NonNull Mutation first, @NonNull Mutation second,
