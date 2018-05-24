@@ -163,10 +163,10 @@ public class StaticStuffToAvoidMutating {
 	}
 
 	public static @NonNull Map<@NonNull String, @NonNull Integer> loadContigsFromFile(
-			String referenceGenome) {
-		return Objects.requireNonNull(FileCache.getCached(referenceGenome, ".info", path -> {
+			String referenceGenomePath) {
+		return Objects.requireNonNull(FileCache.getCached(referenceGenomePath, ".info", path -> {
 			@NonNull Map<@NonNull String, @NonNull Integer> contigSizes0 = new HashMap<>();
-			try(Stream<String> lines = Files.lines(Paths.get(referenceGenome))) {
+			try(Stream<String> lines = Files.lines(Paths.get(referenceGenomePath))) {
 				Handle<String> currentName = new Handle<>();
 				SettableInteger currentLength = new SettableInteger(0);
 				lines.forEachOrdered(l -> {
