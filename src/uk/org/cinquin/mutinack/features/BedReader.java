@@ -96,7 +96,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			try {
 				return new BedReader(contigNames,
 					new BufferedReader(new FileReader(new File(path))), readerName, referenceGenomeName, null,
-						transcriptToGeneNameMap, false, param);
+						transcriptToGeneNameMap, false, param, null);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -139,7 +139,19 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			@NonNull String referenceGenomeName,
 			BufferedReader suppInfoReader,
 			Parameters param) {
-		this(contigNames, reader, readerName, referenceGenomeName, suppInfoReader, Collections.emptyMap(), false, param);
+		this(contigNames, reader, readerName, referenceGenomeName, suppInfoReader, Collections.emptyMap(), false, param, null);
+	}
+
+	public static class BedFileColumnIndices {
+		public int contigNameColumn;
+		public int entryNameColumn;
+		public int entryStartColumn;
+		public int entryEndColumn;
+		public int entryOrientationColumn;
+		public int scoreColumn;
+		public int blockLengthsColumn;
+		public int annotationsColumn;
+		public boolean autogenerateName;
 	}
 
 	public BedReader(
@@ -150,7 +162,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			@Nullable BufferedReader suppInfoReader,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
 			boolean parseScore,
-			@Nullable Parameters param) throws ParseRTException {
+			@Nullable Parameters param,
+			@Nullable BedFileColumnIndices columnIndices) throws ParseRTException {
 
 		Map<String, Integer> reverseIndex = invertList(contigNames);
 
@@ -171,7 +184,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			}
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(contigName, new IntervalData<>(-1, -1,
-					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null)));
+					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null, null)));
 		}
 
 		try(Stream<String> lines = reader.lines()) {
@@ -189,11 +202,23 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			final int entryOrientationColumn;
 			final int scoreColumn;
 			final int blockLengthsColumn;
+			final int annotationsColumn;
 			final boolean autogenerateName;
 
 			final Stream<String> lines1;
 
-			if (line1[0].startsWith("#")) {
+			if (columnIndices != null) {
+				contigNameColumn = columnIndices.contigNameColumn;
+				entryNameColumn = columnIndices.entryNameColumn;
+				entryStartColumn = columnIndices.entryStartColumn;
+				entryEndColumn = columnIndices.entryEndColumn;
+				entryOrientationColumn = columnIndices.entryOrientationColumn;
+				scoreColumn = columnIndices.scoreColumn;
+				blockLengthsColumn = columnIndices.blockLengthsColumn;
+				autogenerateName = columnIndices.autogenerateName;
+				annotationsColumn = columnIndices.annotationsColumn;
+				lines1 = Stream.concat(Stream.of(line1String), remaining);
+			} else if (line1[0].startsWith("#")) {
 				final Parameters param1 = param == null ? new Parameters() : param;
 				line1[0] = line1[0].substring(1);
 				final List<String> components = Arrays.asList(line1);
@@ -206,6 +231,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 				scoreColumn = getIndexOf(components, param1.bedEntryScoreColumn, eatenColumnNames, true);
 				autogenerateName = entryNameColumn == -1;
 				blockLengthsColumn = getIndexOf(components, param1.bedBlockLengthsColumn, eatenColumnNames, true);
+				annotationsColumn = -1;
 				lines1 = remaining;
 			} else {
 				contigNameColumn = 0;
@@ -216,6 +242,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 				entryOrientationColumn = line1.length > 5 ? 5 : -1;
 				autogenerateName = line1.length == 3;
 				blockLengthsColumn = line1.length >= 11 ? 10 : -1;
+				annotationsColumn = -1;
 				lines1 = Stream.concat(Stream.of(line1String), remaining);
 			}
 
@@ -281,6 +308,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						score = 0f;
 					}
 
+					final String annotations = annotationsColumn == -1 ? null : components[annotationsColumn].intern();
+
 					Integer contigIndex = reverseIndex.get(components[contigNameColumn]);
 					if (contigIndex == null) {
 						if (IGNORE_MISSING_CONTIGS) {
@@ -293,7 +322,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					}
 					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex, referenceGenomeName,
 						/*contig*/ components[contigNameColumn].intern(), start, end, length, strandPolarity, score,
-						transcriptToGeneNameMap.get(name));
+						transcriptToGeneNameMap.get(name), annotations);
 					bedFileIntervals.addAt(interval.contigName, new IntervalData<>(start, end, interval));
 				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);

@@ -48,10 +48,11 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 	private final @JsonIgnore double lengthInverse;
 	private final @JsonIgnore Interval<Integer> interval;
 	private @Nullable Boolean negativeStrand;
+	private final @Nullable String annotations;
 
 	public GenomeInterval(String name, int contigIndex, @NonNull String referenceGenomeName,
 			@NonNull String contigName, int start, int end, Integer length,
-			@NonNull Optional<Boolean> negativeStrand, float score, String geneName) {
+			@NonNull Optional<Boolean> negativeStrand, float score, String geneName, String annotations) {
 		this.name = name;
 		this.referenceGenomeName = referenceGenomeName;
 		this.contigName = contigName;
@@ -64,6 +65,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 		this.negativeStrand = negativeStrand.orElse(null);
 		this.score = score;
 		this.geneName = geneName;
+		this.annotations = annotations;
 	}
 
 	private static final Optional<Boolean> optionalTrue = Optional.of(true);
@@ -153,4 +155,7 @@ public final class GenomeInterval implements HasInterval<Integer>, Serializable 
 		return interval;
 	}
 
+	public String getAnnotations() {
+		return annotations;
+	}
 }
