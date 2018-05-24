@@ -300,7 +300,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					}
 
 					final String annotations = annotationsColumn == -1 || annotationsColumn > components.length - 1 ? null
-						: components[annotationsColumn].intern();
+						: doIntern(internStrings, components[annotationsColumn]);
 
 					Integer contigIndex = reverseIndex.get(components[contigNameColumn]);
 					if (contigIndex == null) {
