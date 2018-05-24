@@ -155,6 +155,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		public boolean autogenerateName;
 	}
 
+	private static @NonNull String doIntern(boolean intern, @NonNull String s) {
+		return intern ? s.intern() : s;
+	}
+
 	public static Pair<Integer, Integer> consumeBed(
 			List<@NonNull String> contigNames,
 			BufferedReader reader,
@@ -165,7 +169,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			@Nullable Parameters param,
 			@Nullable BedFileColumnIndices columnIndices,
 			Consumer<GenomeInterval> consumer,
-			boolean parallelize
+			boolean parallelize,
+			boolean internStrings
 		) {
 
 		Map<String, Integer> reverseIndex = invertList(contigNames);
@@ -307,8 +312,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 							throw new IllegalArgumentException("Could not find contig " + components[contigNameColumn]);
 						}
 					}
-					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex, referenceGenomeName,
-						/*contig*/ components[contigNameColumn].intern(), start, end, length, strandPolarity, score,
+					GenomeInterval interval = new GenomeInterval(doIntern(internStrings, name), contigIndex, referenceGenomeName,
+						/*contig*/ doIntern(internStrings, components[contigNameColumn]), start, end, length, strandPolarity, score,
 						transcriptToGeneNameMap.get(name), annotations);
 					consumer.accept(interval);
 				} catch (IllegalArgumentException | ParseRTException e) {
@@ -358,7 +363,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		Pair<Integer, Integer> counts = consumeBed(contigNames, reader, readerName, referenceGenomeName,
 			transcriptToGeneNameMap, parseScore, param, columnIndices, interval ->
 				bedFileIntervals.addAt(interval.contigName, new IntervalData<>(interval.getStart(), interval.getEnd(), interval)),
-				false
+				false, true
 			);
 
 		List<Entry<@NonNull String, @NonNull List<@NonNull IntervalData<@NonNull GenomeInterval>>>> sortedContigs =
