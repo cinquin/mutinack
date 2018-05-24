@@ -160,6 +160,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	}
 
 	public static Pair<Integer, Integer> consumeBed(
+			int offset,
 			List<@NonNull String> contigNames,
 			BufferedReader reader,
 			@NonNull String readerName,
@@ -169,8 +170,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			@Nullable Parameters param,
 			@Nullable BedFileColumnIndices columnIndices,
 			Consumer<GenomeInterval> consumer,
-			boolean parallelize,
-			boolean internStrings
+			boolean parallelize, boolean internStrings
 		) {
 
 		Map<String, Integer> reverseIndex = invertList(contigNames);
@@ -244,8 +244,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					if (components.length < (parseScore ? 4 : 3)) {
 						throw new ParseRTException("Missing fields");
 					}
-					int start = Integer.parseInt(underscorePattern.matcher(components[entryStartColumn]).replaceAll("")) - 1;
-					int end = Integer.parseInt(underscorePattern.matcher(components[entryEndColumn]).replaceAll("")) - 1;
+					int start = Integer.parseInt(underscorePattern.matcher(components[entryStartColumn]).replaceAll("")) + offset;
+					int end = Integer.parseInt(underscorePattern.matcher(components[entryEndColumn]).replaceAll("")) + offset;
 					final String name;
 					if (autogenerateName) {
 						name = "line_" + line;
@@ -360,10 +360,10 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null, null)));
 		}
 
-		Pair<Integer, Integer> counts = consumeBed(contigNames, reader, readerName, referenceGenomeName,
-			transcriptToGeneNameMap, parseScore, param, columnIndices, interval ->
-				bedFileIntervals.addAt(interval.contigName, new IntervalData<>(interval.getStart(), interval.getEnd(), interval)),
-				false, true
+		Pair<Integer, Integer> counts = consumeBed(-1, contigNames, reader, readerName,
+			referenceGenomeName, transcriptToGeneNameMap, parseScore, param, columnIndices,
+				interval ->
+					bedFileIntervals.addAt(interval.contigName, new IntervalData<>(interval.getStart(), interval.getEnd(), interval)), false, true
 			);
 
 		List<Entry<@NonNull String, @NonNull List<@NonNull IntervalData<@NonNull GenomeInterval>>>> sortedContigs =
