@@ -54,6 +54,8 @@ public enum PositionAssay implements AssayInfo {
 
 	PRESENT_IN_SISTER_SAMPLE,
 
+	COMMON_VARIANT,
+
 	PRESENT_IN_OTHER_EXPERIMENTS,
 
 	/**
