@@ -304,7 +304,7 @@ public class PosByPosProtoManip {
 		for (String s: contigNames0) {
 			lineCount.incrementAndGet();
 			bedFileIntervals.addAt(s, new IntervalData<>(-1, -1,
-					new GenomeInterval("", contigIndex++, "", s, -1, -1, null, Util.emptyOptional(), 0, null)));
+					new GenomeInterval("", contigIndex++, "", s, -1, -1, null, Util.emptyOptional(), 0, null, null)));
 		}
 
 		for (GenomeInterval interval: resultIntervals) {

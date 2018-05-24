@@ -59,6 +59,7 @@ import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.FileCache;
 import uk.org.cinquin.mutinack.misc_util.Handle;
+import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.collections.MapOfLists;
@@ -154,43 +155,28 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		public boolean autogenerateName;
 	}
 
-	public BedReader(
+	public static Pair<Integer, Integer> consumeBed(
 			List<@NonNull String> contigNames,
 			BufferedReader reader,
 			@NonNull String readerName,
 			@NonNull String referenceGenomeName,
-			@Nullable BufferedReader suppInfoReader,
 			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
 			boolean parseScore,
 			@Nullable Parameters param,
-			@Nullable BedFileColumnIndices columnIndices) throws ParseRTException {
+			@Nullable BedFileColumnIndices columnIndices,
+			Consumer<GenomeInterval> consumer,
+			boolean parallelize
+		) {
 
 		Map<String, Integer> reverseIndex = invertList(contigNames);
-
-		this.readerName = readerName;
-		bedFileIntervals = new MapOfLists<>();
 
 		final AtomicInteger lineCount = new AtomicInteger(0);
 		final AtomicInteger skipped = new AtomicInteger(0);
 
-		final List<@NonNull String> contigNameIgnorePatternsUC = param == null ? Collections.emptyList() :
-			param.ignoreContigsContaining;
-
-		for (int i = 0; i < contigNames.size(); i++) {
-			final String contigName = contigNames.get(i);
-			if (contigNameIgnorePatternsUC.stream().anyMatch(pattern -> contigName.toUpperCase().contains(pattern))) {
-				bedFileIntervals.addAt(contigName, Collections.emptyList());
-				continue;
-			}
-			lineCount.incrementAndGet();
-			bedFileIntervals.addAt(contigName, new IntervalData<>(-1, -1,
-					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null, null)));
-		}
-
 		try(Stream<String> lines = reader.lines()) {
 			Iterator<String> lineIt = lines.iterator();
 			final Stream<String> remaining = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-				lineIt, Spliterator.ORDERED), false);
+				lineIt, Spliterator.ORDERED), parallelize);
 
 			final String line1String = lineIt.next();
 			final String[] line1 = line1String.split("\t");
@@ -323,7 +309,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 					GenomeInterval interval = new GenomeInterval(name.intern(), contigIndex, referenceGenomeName,
 						/*contig*/ components[contigNameColumn].intern(), start, end, length, strandPolarity, score,
 						transcriptToGeneNameMap.get(name), annotations);
-					bedFileIntervals.addAt(interval.contigName, new IntervalData<>(start, end, interval));
+					consumer.accept(interval);
 				} catch (IllegalArgumentException | ParseRTException e) {
 					throw new ParseRTException("Error parsing line: " + l + " of " + readerName, e);
 				}
@@ -336,6 +322,44 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			}
 		}
 
+		return new Pair<>(lineCount.get(), skipped.get());
+	}
+
+	public BedReader(
+			List<@NonNull String> contigNames,
+			BufferedReader reader,
+			@NonNull String readerName,
+			@NonNull String referenceGenomeName,
+			@Nullable BufferedReader suppInfoReader,
+			@NonNull Map<@NonNull String, @NonNull String> transcriptToGeneNameMap,
+			boolean parseScore,
+			@Nullable Parameters param,
+			@Nullable BedFileColumnIndices columnIndices) throws ParseRTException {
+
+		this.readerName = readerName;
+		bedFileIntervals = new MapOfLists<>();
+
+		final List<@NonNull String> contigNameIgnorePatternsUC = param == null ? Collections.emptyList() :
+			param.ignoreContigsContaining;
+
+		int lineCountSupp = 0;
+		for (int i = 0; i < contigNames.size(); i++) {
+			final String contigName = contigNames.get(i);
+			if (contigNameIgnorePatternsUC.stream().anyMatch(pattern -> contigName.toUpperCase().contains(pattern))) {
+				bedFileIntervals.addAt(contigName, Collections.emptyList());
+				continue;
+			}
+			lineCountSupp++;
+			bedFileIntervals.addAt(contigName, new IntervalData<>(-1, -1,
+					new GenomeInterval("", i, referenceGenomeName, contigNames.get(i), -1, -1, null, Optional.empty(), 0, null, null)));
+		}
+
+		Pair<Integer, Integer> counts = consumeBed(contigNames, reader, readerName, referenceGenomeName,
+			transcriptToGeneNameMap, parseScore, param, columnIndices, interval ->
+				bedFileIntervals.addAt(interval.contigName, new IntervalData<>(interval.getStart(), interval.getEnd(), interval)),
+				false
+			);
+
 		List<Entry<@NonNull String, @NonNull List<@NonNull IntervalData<@NonNull GenomeInterval>>>> sortedContigs =
 				bedFileIntervals.entrySet().stream().sorted(Comparator.comparing(Entry::getKey)).collect(Collectors.toList());
 
@@ -347,8 +371,8 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			contigTrees.add(new IntervalTree<>(sortedContig.getValue()));
 		}
 
-		Assert.isFalse(entryCount != lineCount.get() - skipped.get(),
-				"Incorrect number of entries after BED file reading: %s vs %s", entryCount, lineCount.get());
+		Assert.isFalse(entryCount != (counts.fst + lineCountSupp) - counts.snd,
+				"Incorrect number of entries after BED file reading: %s vs %s", entryCount, (counts.fst + lineCountSupp));
 
 		if (suppInfoReader == null) {
 			suppInfo = Collections.emptyMap();

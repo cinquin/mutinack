@@ -72,7 +72,7 @@ public class GenomeIntervalTest {
 			final int end = start + (int) (Math.random() * 200);
 			GenomeInterval i1 = new GenomeInterval("Random interval", -1, "", "",
 					start,
-					end, null, Util.emptyOptional(), 0, null);
+					end, null, Util.emptyOptional(), 0, null, null);
 
 			intervalDataList.add(new IntervalData<>(i1.getStart(), i1.getEnd(), i1));
 		}
@@ -152,14 +152,14 @@ public class GenomeIntervalTest {
 				 collect(Collectors.toList());
 		for (int i = 0; i < 91; i++) {
 			for (String name: names) {
-				GenomeInterval i1 = new GenomeInterval(name, -1, "", "", 10 + i, 100, null, Util.emptyOptional(), 0, null);
+				GenomeInterval i1 = new GenomeInterval(name, -1, "", "", 10 + i, 100, null, Util.emptyOptional(), 0, null, null);
 				intervalDataList.add(new IntervalData<>(i1.getStart(), i1.getEnd(), i1));
-				GenomeInterval i2 = new GenomeInterval(name, -1, "", "", 10, 101 - i, null, Util.emptyOptional(), 0, null);
+				GenomeInterval i2 = new GenomeInterval(name, -1, "", "", 10, 101 - i, null, Util.emptyOptional(), 0, null, null);
 				intervalDataList.add(new IntervalData<>(i2.getStart(), i2.getEnd(), i2));
 			}
 		}
 
-		GenomeInterval i3 = new GenomeInterval("name_3", -1, "", "", 105, 150, null, Util.emptyOptional(), 0, null);
+		GenomeInterval i3 = new GenomeInterval("name_3", -1, "", "", 105, 150, null, Util.emptyOptional(), 0, null, null);
 
 		intervalDataList.add(new IntervalData<>(i3.getStart(), i3.getEnd(), i3));
 

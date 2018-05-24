@@ -1176,7 +1176,7 @@ public class Mutinack implements Actualizable, Closeable {
 						param.referenceGenomeShortName,
 						Optional.ofNullable(param.bedFeatureSuppInfoFile).map(Functions.throwing(file ->
 							new BufferedReader(new FileReader(file)))).orElse(null),
-						transcriptToGene, false, param);
+						transcriptToGene, false, param, null);
 					final String filterName = f.getName();
 					analyzer.addFilterForCandidateReporting(filterName, filter);
 					analyzer.stats.forEach(s -> {
