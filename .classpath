@@ -38,5 +38,6 @@
 		</attributes>
 	</classpathentry>
         <classpathentry kind="lib" path="lib/xchart-3.3.1-SNAPSHOT.jar" sourcepath="lib_build_run_test/xchart-3.3.1-SNAPSHOT-sources.jar"/>
+	<classpathentry kind="lib" path="lib/xz-1.8.jar" sourcepath="lib_build_run_test/xz-java-1.8-sources.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
