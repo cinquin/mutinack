@@ -16,6 +16,7 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
@@ -34,7 +35,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import gnu.trove.map.hash.THashMap;
-import uk.org.cinquin.final_annotation.Final;
 import uk.org.cinquin.mutinack.SequenceLocation;
 import uk.org.cinquin.mutinack.misc_util.Pair;
 import uk.org.cinquin.mutinack.misc_util.SerializablePredicate;
@@ -63,6 +63,8 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 	@JsonIgnore
 	private static final transient @NonNull SerializablePredicate<SequenceLocation> yes = l -> true;
 
+	private final boolean sortByKey;
+
 	@SuppressWarnings("rawtypes")
 	private interface SerializableComparator extends
 		Comparator<Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>, Serializable {
@@ -85,7 +87,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 
 	@JsonIgnore
 	@SuppressWarnings("rawtypes")
-	private @Final transient Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
+	private transient Comparator<? super Entry<String, Pair<Predicate<SequenceLocation>, Comparable>>>
 		printingSorter;
 
 	public MultiCounter(@Nullable SerializableSupplier<@NonNull ICounter<T>> factory1,
@@ -102,6 +104,7 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		}
 		this.factory1 = factory1;
 		this.factory2 = factory2;
+		this.sortByKey = !sortByValue;
 		addPredicate("All", yes);
 	}
 
@@ -296,4 +299,8 @@ public class MultiCounter<T> implements ICounterSeqLoc, Serializable, Actualizab
 		});
 	}
 
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		printingSorter = sortByKey ? byKeySorter : byValueSorter;
+	}
 }

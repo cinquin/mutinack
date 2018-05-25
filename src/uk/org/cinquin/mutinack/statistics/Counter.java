@@ -16,6 +16,7 @@
  */
 package uk.org.cinquin.mutinack.statistics;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +79,7 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		};
 
 	@JsonIgnore
-	private final transient Comparator<? super Map.Entry<Object,Object>> printingSorter;
+	private transient Comparator<? super Map.Entry<Object,Object>> printingSorter;
 
 	public Counter(boolean sortByValue, MutinackGroup groupSettings) {
 		this.sortByValue = sortByValue;
@@ -293,4 +294,8 @@ public class Counter<T> implements ICounter<T>, Serializable, Actualizable {
 		});
 	}
 
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		printingSorter = sortByValue ? byValueSorter : byKeySorter;
+	}
 }

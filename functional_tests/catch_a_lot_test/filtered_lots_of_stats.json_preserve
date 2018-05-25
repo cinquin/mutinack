@@ -186,7 +186,8 @@
           }
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "duplexTotalRecords": {
       "nEntries": "2",
@@ -214,7 +215,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nRecordsNotInIntersection2": {
       "counters": {},
@@ -222,7 +224,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nTooLowMapQIntersect": {
       "counters": {},
@@ -230,7 +233,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplex": {
       "counters": {},
@@ -246,7 +250,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexBothStrandsPresent": {
       "counters": {},
@@ -262,7 +267,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nReadMedianPhredBelowThreshold": {
       "counters": {},
@@ -270,7 +276,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nDuplexesTooMuchClipping": {
       "counters": {},
@@ -278,7 +285,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexTooFewReadsPerStrand1": {
       "counters": {},
@@ -286,7 +294,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexTooFewReadsPerStrand2": {
       "counters": {},
@@ -294,7 +303,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexTooFewReadsAboveQ2Phred": {
       "counters": {},
@@ -302,7 +312,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexWithTopBottomDuplexDisagreementNoWT": {
       "counters": {},
@@ -310,7 +321,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexWithTopBottomDuplexDisagreementNotASub": {
       "counters": {},
@@ -326,7 +338,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "rawMismatchesQ1": {
       "counters": {
@@ -334,7 +347,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "vBarcodeMismatches1M": {
       "counters": {
@@ -342,7 +356,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "vBarcodeMismatches2M": {
       "counters": {
@@ -350,7 +365,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "vBarcodeMismatches3OrMore": {
       "counters": {
@@ -358,7 +374,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawDeletionsQ1": {
       "counters": {
@@ -366,7 +383,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawInsertionsQ1": {
       "counters": {
@@ -374,7 +392,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawMismatchesQ2": {
       "counters": {
@@ -382,7 +401,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawDeletionsQ2": {
       "counters": {
@@ -394,7 +414,8 @@
           }
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawInsertionsQ2": {
       "counters": {
@@ -402,7 +423,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+     "seqLocCounters": {},
+     "sortByKey": false
     },
     "topBottomSubstDisagreementsQ2": {
       "counters": {
@@ -2308,7 +2330,8 @@
           }
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "topBottomDelDisagreementsQ2": {
       "counters": {
@@ -2487,7 +2510,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "alleleFrequencies": {
       "counters": {
@@ -2717,7 +2741,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "topBottomInsDisagreementsQ2": {
       "counters": {
@@ -2884,7 +2909,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "codingStrandSubstQ2": {
       "counters": {
@@ -2950,7 +2976,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "templateStrandSubstQ2": {
       "counters": {
@@ -3016,7 +3043,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "codingStrandDelQ2": {
       "counters": {
@@ -3045,7 +3073,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "templateStrandDelQ2": {
       "counters": {
@@ -3082,7 +3111,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "codingStrandInsQ2": {
       "counters": {
@@ -3111,7 +3141,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "templateStrandInsQ2": {
       "counters": {
@@ -3140,7 +3171,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "topBottomDisagreementsQ2TooHighCoverage": {
       "counters": {
@@ -3148,7 +3180,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "nPosDuplexCandidatesForDisagreementQ2": {
       "counters": {},
@@ -3854,7 +3887,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexCandidatesForDisagreementQ2TooHighCoverage": {
       "counters": {},
@@ -3862,7 +3896,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexQualityQ2OthersQ1Q2": {
       "counters": {},
@@ -3878,7 +3913,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate": {
       "counters": {},
@@ -3894,7 +3930,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosCandidatesForUniqueMutation": {
       "counters": {},
@@ -3902,7 +3939,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosExcluded": {
       "total": "0",
@@ -5324,7 +5362,8 @@
           }
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "duplexTotalRecords": {
       "nEntries": "10",
@@ -5352,7 +5391,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nRecordsNotInIntersection2": {
       "counters": {},
@@ -5360,7 +5400,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nTooLowMapQIntersect": {
       "counters": {},
@@ -5368,7 +5409,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplex": {
       "counters": {},
@@ -5384,7 +5426,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexBothStrandsPresent": {
       "counters": {},
@@ -5400,7 +5443,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nReadMedianPhredBelowThreshold": {
       "counters": {},
@@ -5408,7 +5452,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nDuplexesTooMuchClipping": {
       "counters": {},
@@ -5416,7 +5461,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexTooFewReadsPerStrand1": {
       "counters": {},
@@ -5424,7 +5470,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexTooFewReadsPerStrand2": {
       "counters": {},
@@ -5440,7 +5487,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexTooFewReadsAboveQ2Phred": {
       "counters": {},
@@ -5448,7 +5496,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexWithTopBottomDuplexDisagreementNoWT": {
       "counters": {},
@@ -5456,7 +5505,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexWithTopBottomDuplexDisagreementNotASub": {
       "counters": {},
@@ -5464,7 +5514,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "rawMismatchesQ1": {
       "counters": {
@@ -5472,7 +5523,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "vBarcodeMismatches1M": {
       "counters": {
@@ -5480,7 +5532,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "vBarcodeMismatches2M": {
       "counters": {
@@ -5488,7 +5541,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "vBarcodeMismatches3OrMore": {
       "counters": {
@@ -5496,7 +5550,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawDeletionsQ1": {
       "counters": {
@@ -5504,7 +5559,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawInsertionsQ1": {
       "counters": {
@@ -5512,7 +5568,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawMismatchesQ2": {
       "counters": {
@@ -5520,7 +5577,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawDeletionsQ2": {
       "counters": {
@@ -5528,7 +5586,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "rawInsertionsQ2": {
       "counters": {
@@ -5536,7 +5595,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+     "seqLocCounters": {},
+     "sortByKey": false
     },
     "topBottomSubstDisagreementsQ2": {
       "counters": {
@@ -7442,7 +7502,8 @@
           }
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "topBottomDelDisagreementsQ2": {
       "counters": {
@@ -7609,7 +7670,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "alleleFrequencies": {
       "counters": {
@@ -7825,7 +7887,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "topBottomInsDisagreementsQ2": {
       "counters": {
@@ -7992,7 +8055,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": false
     },
     "codingStrandSubstQ2": {
       "counters": {
@@ -8058,7 +8122,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "templateStrandSubstQ2": {
       "counters": {
@@ -8124,7 +8189,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "codingStrandDelQ2": {
       "counters": {
@@ -8153,7 +8219,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "templateStrandDelQ2": {
       "counters": {
@@ -8182,7 +8249,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "codingStrandInsQ2": {
       "counters": {
@@ -8211,7 +8279,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "templateStrandInsQ2": {
       "counters": {
@@ -8240,7 +8309,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "topBottomDisagreementsQ2TooHighCoverage": {
       "counters": {
@@ -8248,7 +8318,8 @@
           "map": {}
         }
       },
-      "seqLocCounters": {}
+      "seqLocCounters": {},
+      "sortByKey": true
     },
     "nPosDuplexCandidatesForDisagreementQ2": {
       "counters": {},
@@ -8954,7 +9025,8 @@
             }
           }
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexCandidatesForDisagreementQ2TooHighCoverage": {
       "counters": {},
@@ -8962,7 +9034,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexQualityQ2OthersQ1Q2": {
       "counters": {},
@@ -8970,7 +9043,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosDuplexQualityQ2OthersQ1Q2CodingOrTemplate": {
       "counters": {},
@@ -8978,7 +9052,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosCandidatesForUniqueMutation": {
       "counters": {},
@@ -8986,7 +9061,8 @@
         "All": {
           "map": {}
         }
-      }
+      },
+      "sortByKey": true
     },
     "nPosExcluded": {
       "total": "0",
