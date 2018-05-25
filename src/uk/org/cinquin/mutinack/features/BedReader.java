@@ -144,14 +144,14 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 	}
 
 	public static class BedFileColumnIndices {
-		public int contigNameColumn;
-		public int entryNameColumn;
-		public int entryStartColumn;
-		public int entryEndColumn;
-		public int entryOrientationColumn;
-		public int scoreColumn;
-		public int blockLengthsColumn;
-		public int annotationsColumn;
+		public int contigNameColumn = -1;
+		public int entryNameColumn = -1;
+		public int entryStartColumn = -1;
+		public int entryEndColumn = -1;
+		public int entryOrientationColumn = -1;
+		public int scoreColumn = -1;
+		public int blockLengthsColumn = -1;
+		public int annotationsColumn = -1;
 		public boolean autogenerateName;
 	}
 
