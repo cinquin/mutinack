@@ -1732,7 +1732,7 @@ public class Mutinack implements Actualizable, Closeable {
 		}
 	}
 
-	private static final ThreadLocal<NumberFormat> mutationRateFormatter
+	public static final ThreadLocal<NumberFormat> mutationRateFormatter
 		= ThreadLocal.withInitial(() -> {
 			DecimalFormat f = new DecimalFormat("0.###E0");
 			DoubleAdderFormatter.setNanAndInfSymbols(f);
