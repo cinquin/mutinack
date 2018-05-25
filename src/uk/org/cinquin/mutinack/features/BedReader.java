@@ -152,6 +152,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 		public int scoreColumn = -1;
 		public int blockLengthsColumn = -1;
 		public int annotationsColumn = -1;
+		public int annotationsColumn2 = -1;
 		public boolean autogenerateName;
 	}
 
@@ -193,7 +194,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 			final int entryOrientationColumn;
 			final int scoreColumn;
 			final int blockLengthsColumn;
-			final int annotationsColumn;
+			final int annotationsColumn, annotationsColumn2;
 			final boolean autogenerateName;
 
 			final Stream<String> lines1;
@@ -208,6 +209,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 				blockLengthsColumn = columnIndices.blockLengthsColumn;
 				autogenerateName = columnIndices.autogenerateName;
 				annotationsColumn = columnIndices.annotationsColumn;
+				annotationsColumn2 = columnIndices.annotationsColumn2;
 				lines1 = Stream.concat(Stream.of(line1String), remaining);
 			} else if (line1[0].startsWith("#")) {
 				final Parameters param1 = param == null ? new Parameters() : param;
@@ -222,7 +224,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 				scoreColumn = getIndexOf(components, param1.bedEntryScoreColumn, eatenColumnNames, true);
 				autogenerateName = entryNameColumn == -1;
 				blockLengthsColumn = getIndexOf(components, param1.bedBlockLengthsColumn, eatenColumnNames, true);
-				annotationsColumn = -1;
+				annotationsColumn = annotationsColumn2 = -1;
 				lines1 = remaining;
 			} else {
 				contigNameColumn = 0;
@@ -233,7 +235,7 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 				entryOrientationColumn = line1.length > 5 ? 5 : -1;
 				autogenerateName = line1.length == 3;
 				blockLengthsColumn = line1.length >= 11 ? 10 : -1;
-				annotationsColumn = -1;
+				annotationsColumn = annotationsColumn2 = -1;
 				lines1 = Stream.concat(Stream.of(line1String), remaining);
 			}
 
@@ -299,8 +301,11 @@ public class BedReader implements GenomeFeatureTester, Serializable {
 						score = 0f;
 					}
 
-					final String annotations = annotationsColumn == -1 || annotationsColumn > components.length - 1 ? null
+					String annotations = annotationsColumn == -1 || annotationsColumn > components.length - 1 ? null
 						: doIntern(internStrings, components[annotationsColumn]);
+					annotations = annotationsColumn2 == -1 || annotationsColumn2 > components.length - 1 ? annotations
+						: doIntern(internStrings, annotations + "\t" + components[annotationsColumn2]);
+
 
 					Integer contigIndex = reverseIndex.get(components[contigNameColumn]);
 					if (contigIndex == null) {
