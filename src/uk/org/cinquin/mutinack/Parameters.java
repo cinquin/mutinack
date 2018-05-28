@@ -1038,6 +1038,9 @@ public final class Parameters implements Serializable, Cloneable {
 			if (field.getAnnotation(FilePath.class) != null) {
 				Assert.isTrue(fieldValue instanceof String, "Field %s not string", field);
 				String path = (String) fieldValue;
+				if (path.isEmpty()) {
+					return;
+				}
 				String transformed = transformer.apply(path);
 				field.set(this, transformed);
 			} else if (field.getAnnotation(FilePathList.class) != null) {
@@ -1046,6 +1049,9 @@ public final class Parameters implements Serializable, Cloneable {
 				List<String> paths = (List<String>) fieldValue;
 				for (int i = 0; i < paths.size(); i++) {
 					String path = paths.get(i);
+					if (path.isEmpty()) {
+						return;
+					}
 					String transformed = transformer.apply(path);
 					paths.set(i, transformed);
 				}
