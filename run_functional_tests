@@ -77,6 +77,12 @@ do
 			${MAKE} clean_results
 		fi
 		export COSTLY_ASSERTIONS="$assertions"
+		if [ "$assertions" = "false" ]
+		then
+			export OUTPUT_OPTION="-outputSerializedTo /dev/null"
+		else
+			export OUTPUT_OPTION=""
+		fi
 		counter=0
 		while true
 		do
