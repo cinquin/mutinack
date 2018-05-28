@@ -1030,6 +1030,24 @@ public final class Parameters implements Serializable, Cloneable {
 			});
 	}
 
+	public void canonifyFilePaths(String wd) {
+		transformFilePaths(s -> {
+			try {
+				final String s2 = s.startsWith("/") ? s : wd + "/" + s;
+				File f = new File(s2);
+				String canonical = f.getCanonicalPath();
+				if (f.isDirectory()) {
+					return canonical + '/';
+				} else {
+					return canonical;
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
+
+
 	private void transformFilePaths(Function<String, String> transformer) {
 		FieldIteration.iterateFields((field, fieldValue) -> {
 			if (fieldValue == null) {

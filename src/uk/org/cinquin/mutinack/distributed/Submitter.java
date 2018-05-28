@@ -39,10 +39,10 @@ public class Submitter {
 		param.submitToServer = null;
 		if (param.workingDirectory != null) {
 			synchronized(Runtime.getRuntime()) {
-				String saveUserDir = System.getProperty("user.dir");
-				System.setProperty("user.dir", param.workingDirectory);
-				param.canonifyFilePaths();
-				System.setProperty("user.dir", saveUserDir);
+				//String saveUserDir = System.getProperty("user.dir");
+				//System.setProperty("user.dir", param.workingDirectory);
+				param.canonifyFilePaths(param.workingDirectory);
+				//System.setProperty("user.dir", saveUserDir);
 			}
 		} else {
 			param.canonifyFilePaths();
