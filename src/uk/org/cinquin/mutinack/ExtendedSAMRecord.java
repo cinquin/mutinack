@@ -48,6 +48,7 @@ import uk.org.cinquin.mutinack.misc_util.Assert;
 import uk.org.cinquin.mutinack.misc_util.SettableInteger;
 import uk.org.cinquin.mutinack.misc_util.Util;
 import uk.org.cinquin.mutinack.misc_util.exceptions.AssertionFailedException;
+import uk.org.cinquin.mutinack.misc_util.exceptions.IllegalInputException;
 import uk.org.cinquin.mutinack.misc_util.exceptions.ParseRTException;
 
 /**
@@ -241,6 +242,9 @@ public final class ExtendedSAMRecord implements HasInterval<Integer> {
 		for (int index1 = 0; index1 < n; index1++) {
 			nConsidered0++;
 			final byte b = baseQualities[index1];
+			if (b < 0) {
+				throw new IllegalInputException("Negative Phred at base " + index1 + " in read " + fullName);
+			}
 			sumBaseQualities0 += b;
 			stats.forEach(s -> s.nProcessedBases.add(location, 1));
 			stats.forEach(s -> s.phredSumProcessedbases.add(b));
