@@ -33,6 +33,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
@@ -78,6 +79,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.output.NullOutputStream;
 import org.eclipse.collections.impl.block.factory.Functions;
 import org.eclipse.collections.impl.block.factory.Procedures;
 import org.eclipse.jdt.annotation.NonNull;
@@ -1284,7 +1286,10 @@ public class Mutinack implements Actualizable, Closeable {
 			if (!param.outputSerializedTo.isEmpty()) {
 				futures.add(StaticStuffToAvoidMutating.getExecutorService().submit(() -> {
 					RunResult root = getRunResult(param, analyzers);
-					try (FileOutputStream fos = new FileOutputStream(param.outputSerializedTo)) {
+					try (OutputStream fos = param.outputSerializedTo.equals("/dev/null") ?
+							NullOutputStream.NULL_OUTPUT_STREAM
+						:
+							new FileOutputStream(param.outputSerializedTo)) {
 						ObjectOutputStream oos = new ObjectOutputStream(fos);
 						oos.writeObject(root);
 					} catch (IOException e) {
